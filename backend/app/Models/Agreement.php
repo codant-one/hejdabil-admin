@@ -505,7 +505,7 @@ class Agreement extends Model
 
         switch ($request->agreement_type_id) {
             case 1:
-                 switch ($company->type) {
+                switch ($company->type) {
                     case 1:
                         PDF::loadView('pdfs.sales.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                         break;
@@ -1068,16 +1068,16 @@ class Agreement extends Model
     public static function coordinates($agreement, $coordinateType) {
         switch ($agreement->agreement_type_id) {
             case 1: // Sales
-                return $coordinateType === 'x' ? 12.9134 : 189.1954;
+                return $coordinateType === 'x' ? 14.5134 : 186.6954;
                 break;
             case 2: // Purchase
-                return $coordinateType === 'x' ? 60.3543 : 87.8653;
+                return $coordinateType === 'x' ? 57.3543 : 87.8653;
                 break;
             case 3: // Commission
-                return $coordinateType === 'x' ? 16.9134 : 88.5772;
+                return $coordinateType === 'x' ? 13.9134 : 89.5772;
                 break;
             case 4: // Offer    
-                return $coordinateType === 'x' ? 12.9134 : 86.1954;
+                return $coordinateType === 'x' ? 14.9134 : 84.1954;
                 break;
             default:
                 return null;

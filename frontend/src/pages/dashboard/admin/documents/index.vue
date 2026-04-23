@@ -2001,7 +2001,7 @@ onBeforeUnmount(() => {
                     <VuePdfEmbed
                       :source="placementPdfSource"
                       :page="page"
-                      :width="130"
+                      :width="146"
                     />
                   </div>
                 </div>
@@ -2706,9 +2706,20 @@ onBeforeUnmount(() => {
     }
 
     :deep(.vue-pdf-embed) {
+      width: 100% !important;
+
       > div {
+        width: 100% !important;
         box-shadow: none !important;
         margin: 0 !important;
+      }
+
+      canvas,
+      img,
+      svg {
+        width: 100% !important;
+        height: auto !important;
+        display: block;
       }
     }
 

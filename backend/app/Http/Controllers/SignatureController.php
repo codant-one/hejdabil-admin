@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 
 use App\Mail\SignedDocumentMail;
+use App\Jobs\SendEmailJob;
 
 use PDF;
 
@@ -26,7 +27,9 @@ use App\Models\Document;
 use App\Models\SupplierActivity;
 use App\Models\Token;
 use App\Models\TokenHistory;
-use App\Jobs\SendEmailJob;
+use App\Models\Setting;
+use App\Models\SettingColor;
+use App\Models\SettingAgreement;
 
 class SignatureController extends Controller
 {
@@ -988,6 +991,8 @@ class SignatureController extends Controller
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configAgreements = Config::getByKey('agreements')    ?? ['value' => '[]'];
 
             // Extract the "value" supporting array or object
             $getValue = function ($cfg) {
@@ -1001,6 +1006,8 @@ class SignatureController extends Controller
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
             $signatureRaw    = $getValue($configSignature);
+            $colorRaw   = $getValue($configColor);
+            $agreementsRaw   = $getValue($configAgreements);
 
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -1017,10 +1024,25 @@ class SignatureController extends Controller
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
             $signatureObj    = $decodeSafe($signatureRaw);
+            $colorObj   = $decodeSafe($colorRaw);
+            $agreementsObj   = $decodeSafe($agreementsRaw);
             
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
             $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            $company->type = $agreementsObj->type ?? 1;
+
+            $colorSettingId = $colorObj->setting_color_id ?? null;
+
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB';
+            }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
             $company = $user->user->userDetail;
@@ -1028,6 +1050,26 @@ class SignatureController extends Controller
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
             $logo = $user->user->userDetail->logo_url ?? null;
+
+            $setting = Setting::where('supplier_id', $agreement->supplier_id)->first();
+
+            if($setting && $setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary ?? '#E3F4FB';
+            } else {
+                $company->primary_color = $setting->primary_color ?? '#29ABE2';
+                $company->secondary_color = $setting->secondary_color ?? '#E3F4FB';
+            }
+
+            if($setting && $setting->setting_agreement_id) {//existe un id de agreement
+                $agreementSetting = SettingAgreement::find($setting->setting_agreement_id);
+
+                $company->type = $agreementSetting ? $agreementSetting->type : 1;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
         }
 
         $data = [
@@ -1043,19 +1085,67 @@ class SignatureController extends Controller
         $fileName = '';
         switch ($agreement->agreement_type_id) {
             case 1:
-                $viewName = 'pdfs.sales';
+                switch ($company->type) {
+                    case 1:
+                        $viewName = 'pdfs.sales.classic';
+                        break;
+                    case 2:
+                        $viewName = 'pdfs.sales.modern';
+                        break;
+                    case 3:
+                        $viewName = 'pdfs.sales.compact';
+                        break;
+                    default:
+                        $viewName = 'pdfs.sales.classic';
+                }
                 $fileName = 'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'-signed.pdf';
                 break;
             case 2:
-                $viewName = 'pdfs.purchase';
+                switch ($company->type) {
+                    case 1:
+                        $viewName = 'pdfs.purchases.classic';
+                        break;
+                    case 2:
+                        $viewName = 'pdfs.purchases.modern';
+                        break;
+                    case 3:
+                        $viewName = 'pdfs.purchases.compact';
+                        break;
+                    default:
+                        $viewName = 'pdfs.purchases.classic';
+                }
                 $fileName = 'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'-signed.pdf';
                 break;
             case 3:
-                $viewName = 'pdfs.mediation';
+                switch ($company->type) {
+                    case 1:
+                        $viewName = 'pdfs.mediation.classic';
+                        break;
+                    case 2:
+                        $viewName = 'pdfs.mediation.modern';
+                        break;
+                    case 3:
+                        $viewName = 'pdfs.mediation.compact';
+                        break;
+                    default:
+                        $viewName = 'pdfs.mediation.classic';
+                }
                 $fileName = 'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'-signed.pdf';
                 break;
             case 4:
-                $viewName = 'pdfs.business';
+                switch ($company->type) {
+                    case 1:
+                        $viewName = 'pdfs.business.classic';
+                        break;
+                    case 2:
+                        $viewName = 'pdfs.business.modern';
+                        break;
+                    case 3:
+                        $viewName = 'pdfs.business.compact';
+                        break;
+                    default:
+                        $viewName = 'pdfs.business.classic';
+                }
                 $fileName = 'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'-signed.pdf';
                 break;
             default:

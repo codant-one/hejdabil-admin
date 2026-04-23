@@ -59,6 +59,9 @@ const pdfZoom = ref(1)
 const minZoom = 0.5
 const maxZoom = 3
 const zoomStep = 0.25
+const isHighQualityPass = ref(false)
+const isOverlayVisible = computed(() => isSubmitting.value || (isRequestOngoing.value && !pdfSource.value))
+const pdfRenderKey = computed(() => `${pdfSource.value || 'empty'}-${isHighQualityPass.value ? 'hq' : 'lq'}`)
 
 // --- Lógica del Tema (para el lienzo de firma) ---
 const { global } = useTheme()
@@ -70,14 +73,50 @@ const isIOS = computed(() => {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 })
 
+const isAndroid = computed(() => {
+  if (typeof navigator === 'undefined') return false
+  return /Android/i.test(navigator.userAgent)
+})
+
+const deviceMemoryGb = computed(() => {
+  if (typeof navigator === 'undefined') return 4
+  const memory = Number(navigator.deviceMemory || 4)
+  return Number.isFinite(memory) ? memory : 4
+})
+
 const isMobile = computed(() => windowWidth.value < 1024)
+const isLowMemoryMobile = computed(() => isMobile.value && deviceMemoryGb.value <= 4)
 
 // --- PDF Computed Properties ---
 const pdfQuality = computed(() => {
   const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
-  // iOS Safari: permitir hasta 2x para nitidez Retina, el MAX_CANVAS_DIM protege la memoria
-  if (isIOS.value) return Math.min(2, dpr)
-  return Math.min(3, Math.max(2, dpr))
+  const numPages = Number(pdfNumPages.value || 1)
+
+  // Render progresivo para PDFs multipágina: primero rápido, luego nítido
+  if (numPages > 1) {
+    if (!isHighQualityPass.value) {
+      if (isIOS.value) return 1
+      if (isAndroid.value) return isLowMemoryMobile.value ? 1.05 : 1.1
+      if (isMobile.value) return 1.08
+      return 1
+    }
+
+    if (isIOS.value) return Math.min(1.65, Math.max(1.35, dpr * 0.8))
+    if (isAndroid.value) {
+      if (isLowMemoryMobile.value) return Math.min(1.85, Math.max(1.5, dpr * 0.9))
+      return Math.min(2.1, Math.max(1.7, dpr * 1.05))
+    }
+    if (isMobile.value) return Math.min(1.9, Math.max(1.55, dpr * 0.95))
+    return Math.min(2.05, Math.max(1.7, dpr))
+  }
+
+  // Para una sola página mantener alta nitidez sin disparar consumo
+  if (isIOS.value) return Math.min(1.9, Math.max(1.45, dpr))
+  if (isAndroid.value) {
+    if (isLowMemoryMobile.value) return Math.min(2.05, Math.max(1.65, dpr * 0.95))
+    return Math.min(2.35, Math.max(1.85, dpr * 1.1))
+  }
+  return Math.min(2.25, Math.max(1.75, dpr * 1.05))
 })
 
 const pdfPageAspect = computed(() => {
@@ -92,19 +131,8 @@ const pdfFitPageWidth = computed(() => {
   const vw = Math.max(100, Number(pdfViewportSize.value?.width || 0) - (mobile ? 8 : 24))
   const vh = Math.max(100, Number(pdfViewportSize.value?.height || 0) - 24)
   const aspect = pdfPageAspect.value
-  const numPages = Number(pdfNumPages.value || 0)
-  
-  // Para múltiples páginas verticales en mobile, usar todo el ancho disponible
-  if (numPages > 1 && mobile) {
-    return vw
-  }
-  
-  // Para múltiples páginas en desktop, solo constrain por el ancho
-  if (numPages > 1) {
-    return vw
-  }
-  
-  // Para una sola página, calcular basado en altura disponible
+
+  // Mantener misma escala visual para una o múltiples páginas
   const heightBasedWidth = vh * aspect
   return Math.min(vw, heightBasedWidth)
 })
@@ -196,8 +224,18 @@ const initPdfResizeObserver = () => {
 
 const handlePdfLoaded = async (doc) => {
   try {
+    const pages = Number(doc?.numPages || 0)
     pdfDoc.value = doc
-    pdfNumPages.value = Number(doc?.numPages || 0)
+    pdfNumPages.value = pages
+
+    if (pages > 1 && !isHighQualityPass.value) {
+      // Segunda pasada breve para subir nitidez tras la primera pintura
+      safeTimeout(() => {
+        isHighQualityPass.value = true
+      }, 140)
+    } else if (pages <= 1 && !isHighQualityPass.value) {
+      isHighQualityPass.value = true
+    }
 
     const page = await doc.getPage(1)
     const viewport = page.getViewport({ scale: 1 })
@@ -354,6 +392,7 @@ const revokePdfSource = () => {
 // Cargar el PDF según el estado
 const loadPdf = async () => {
   try {
+    isHighQualityPass.value = false
     let pdfResponse
     
     if (isAlreadySigned.value) {
@@ -538,11 +577,18 @@ const loadSignatureData = async () => {
     
     // Registrar la visita a la página (solo si no está firmado)
     if (!isAlreadySigned.value) {
-      await logPageView()
+      logPageView()
     }
-    
-    // Cargar el PDF
-    await loadPdf()
+
+    if (!isAlreadySigned.value) {
+      // Cargar PDF y detalles en paralelo para reducir tiempo inicial
+      await Promise.all([
+        loadPdf(),
+        loadSignatureDetails(),
+      ])
+    } else {
+      await loadPdf()
+    }
     
     // Inicializar el ResizeObserver después de cargar el PDF
     await nextTick()
@@ -557,10 +603,8 @@ const loadSignatureData = async () => {
       }, 300)
     }
     
-    // Solo cargar detalles de firma si no está firmado
+    // Solo preparar interacciones de firma si no está firmado
     if (!isAlreadySigned.value) {
-      await loadSignatureDetails()
-      
       // Esperar a que el PDF se renderice y calcular posición
       await nextTick()
       // Primer cálculo sin scroll - esperar más para que el PDF se renderice completamente
@@ -749,7 +793,7 @@ onMounted(loadSignatureData);
 
 <template>
   <section>
-    <LoadingOverlay :is-loading="isRequestOngoing" />
+    <LoadingOverlay :is-loading="isOverlayVisible" />
 
     <!-- Visor de PDF cuando ya está firmado -->
     <div v-if="isAlreadySigned" class="signing-card placement-modal-card">
@@ -793,6 +837,7 @@ onMounted(loadSignatureData);
             >
               <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed 
+                  :key="`signed-${pdfRenderKey}`"
                   :source="pdfSource"
                   :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
@@ -845,7 +890,7 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
-    <div v-if="!isRequestOngoing && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
+    <div v-if="(!isRequestOngoing || pdfSource) && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
       <div class="placement-content bg-page">
         <div class="placement-body">
           <!-- Sidebar izquierda con controles -->
@@ -895,7 +940,7 @@ onMounted(loadSignatureData);
                   <VuePdfEmbed
                     :source="pdfSource"
                     :page="page"
-                    :width="130"
+                    :width="146"
                   />
                 </div>
               </div>
@@ -913,7 +958,7 @@ onMounted(loadSignatureData);
             >
               <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed
-                  :key="`pdf-${pdfSource}`"
+                  :key="`unsigned-${pdfRenderKey}`"
                   ref="pdfViewerRef"
                   :source="pdfSource"
                   :width="pdfVisualWidth"
@@ -1240,9 +1285,20 @@ onMounted(loadSignatureData);
   }
 
   :deep(.vue-pdf-embed) {
+    width: 100% !important;
+
     > div {
+      width: 100% !important;
       box-shadow: none !important;
       margin: 0 !important;
+    }
+
+    canvas,
+    img,
+    svg {
+      width: 100% !important;
+      height: auto !important;
+      display: block;
     }
   }
 
