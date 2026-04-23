@@ -681,8 +681,8 @@ class Billing extends Model
                 $company->primary_color = $color->primary ?? '#29ABE2';
                 $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $colorObj->primary_color ?? null;
-                $company->secondary_color = $colorObj->secondary_color ?? null;
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB'; 
             }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
@@ -699,8 +699,8 @@ class Billing extends Model
                 $company->primary_color = $color->primary ?? '#29ABE2';
                 $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting ? $setting->primary_color : null;
-                $company->secondary_color = $setting ? $setting->secondary_color : null;
+                $company->primary_color = $setting ? $setting->primary_color : '#29ABE2';
+                $company->secondary_color = $setting ? $setting->secondary_color : '#E3F4FB';
             }
 
             if($setting && $setting->setting_billing_id) {//existe un id de billing
