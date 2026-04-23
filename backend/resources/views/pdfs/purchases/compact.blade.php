@@ -752,9 +752,9 @@
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - VACÍA -->
                 <td style="vertical-align: bottom; position: relative;" class="card-footer">
-                    <div style="min-height: 100px; text-align: center;">
+                    <div style="min-height: 150px; text-align: center;">
                         @if($company->img_signature)
-                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 150px;">
                         @endif
                     </div>
                     <div class="signature-box">(Köparens underskrift)</div>
@@ -762,9 +762,9 @@
 
                 <!-- Celda Derecha: Firma del Vendedor (Säljarens) - CON LA FIRMA DEL CLIENTE -->
                 <td style="vertical-align: bottom; position: relative;" class="card-footer">
-                    <div style="min-height: 100px; text-align: center;">
+                    <div style="min-height: 150px; text-align: center;">
                         @if(isset($signature_url))
-                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 100px;">
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 150px;">
                         @endif
                     </div>
                     <div class="signature-box">(Säljarens underskrift)</div>
