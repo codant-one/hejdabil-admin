@@ -619,6 +619,32 @@ const openStaticSignatureDialog = (agreementData) => {
   isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
 }
 
+const openResendSignature = async (agreementData) => {
+  if (!agreementData?.id) return
+
+  try {
+    isRequestOngoing.value = true
+    const response = await agreementsStores.resendSignature(agreementData.id)
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'E-postmeddelandet har skickats igen.',
+      show: true,
+    }
+    await fetchData()
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.',
+      show: true,
+    }
+  } finally {
+    isRequestOngoing.value = false
+    setTimeout(() => {
+      advisor.value = { show: false }
+    }, 3000)
+  }
+}
+
 /**
  * Esta función se ejecuta al hacer clic en "Skicka" dentro del diálogo.
  * Valida el formulario y llama a la acción de Pinia con los datos correctos.
@@ -1356,6 +1382,15 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>
+                  <VListItem 
+                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'delivered'"
+                    @click="openResendSignature(agreement)"
+                   >
+                    <template #prepend>
+                      <VIcon icon="custom-forward" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Vidarebefordra</VListItemTitle>
+                  </VListItem>
                   <VListItem
                      v-if="$can('view', 'agreements')"
                      @click="openLink(agreement)">
@@ -2040,6 +2075,14 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-signature" class="mr-2" />
             </template>
             <VListItemTitle>Signera</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'delivered'" 
+            @click="openResendSignature(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-forward" class="mr-2" />
+            </template>
+            <VListItemTitle>Vidarebefordra</VListItemTitle>
           </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"

@@ -245,6 +245,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
         Route::get('/{agreement}/get-admin-preview-pdf', [AgreementController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
+        Route::post('/{agreement}/resend-signature-request', [SignatureController::class, 'resendSignatureRequest'])->name('agreements.resendSignatureRequest');
         Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
     });

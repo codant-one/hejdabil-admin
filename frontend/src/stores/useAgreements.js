@@ -195,6 +195,14 @@ export const useAgreementsStores = defineStore('agreements', {
             })
         },
 
+        resendSignature(agreementId) {
+            return new Promise((resolve, reject) => {
+                Agreements.resendSignatureRequest(agreementId)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
+
         getAdminPreviewPdf(id) {
             this.setLoading(true)
 

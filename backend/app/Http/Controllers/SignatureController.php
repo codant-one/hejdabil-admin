@@ -478,6 +478,180 @@ class SignatureController extends Controller
     }
 
     /**
+     * Re-send the signature request using the latest active token (same URL).
+     * URL: POST /api/agreements/{agreement}/resend-signature-request
+     */
+    public function resendSignatureRequest(Agreement $agreement, Request $request)
+    {
+        $token = $agreement->token()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om.'
+            ], 422);
+        }
+
+        try {
+            $agreement->loadMissing(['agreement_client', 'agreement_type']);
+
+            $recipientEmail = $token->recipient_email ?: $agreement->agreement_client?->email;
+
+            if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                $token->update(['signature_status' => 'delivery_issues']);
+
+                TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: 'Ogiltig e-postadress vid vidarebefordran',
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                );
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Det finns ingen giltig mottagare för vidarebefordran.'
+                ], 422);
+            }
+
+            $token->update([
+                'recipient_email' => $recipientEmail,
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'sent',
+            ]);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_SENT,
+                description: 'Vidarebefordran av signaturpost påbörjad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+            );
+
+            if($agreement->supplier_id === null) {
+                //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                $signatureRaw    = $getValue($configSignature);
+
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                $signatureObj    = $decodeSafe($signatureRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+                $company->img_signature = $signatureObj->img_signature ?? null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            } else {
+                $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+                $logo = $user->user->userDetail->logo_url ?? null;
+            }
+
+            $agreementForMail = Agreement::with('agreement_client')->find($agreement->id);
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $subject = $agreement->agreement_type_id === 4
+                ? 'Prisförslag från ' . $company->company
+                : 'Avtal för digital signering från ' . $company->company;
+
+            $data = [
+                'agreement' => $agreementForMail,
+                'signingUrl' => $signingUrl,
+                'company' => $company,
+                'user' => $agreementForMail?->agreement_client?->fullname ?? '',
+                'title' => 'Avtal ' . strtolower($agreement->agreement_type?->name ?? ''),
+                'icon' => asset('/images/agreements.png'),
+                'logo' => $logo
+            ];
+
+            SendEmailJob::dispatch(
+                'emails.agreements.signature_request',
+                $data,
+                $recipientEmail,
+                $subject
+            );
+
+            $token->update(['signature_status' => 'delivered']);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_DELIVERED,
+                description: 'E-post vidarebefordrad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+            );
+
+            $this->createAgreementSignatureResentActivity($agreement, $token, $recipientEmail);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error resending signature email for agreement: ' . $e->getMessage(), [
+                'exception' => $e,
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'email' => $token->recipient_email,
+            ]);
+
+            $token->update(['signature_status' => 'delivery_issues']);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid vidarebefordran av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'recipient' => $token->recipient_email,
+                    'resend' => true,
+                ]
+            );
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Method 2: Show the signing page (Activated when the client opens the link).
      * URL: GET /sign/{token}
      */
@@ -1197,6 +1371,27 @@ class SignatureController extends Controller
                 'recipient_email' => $recipientEmail,
                 'signature_status' => $token->signature_status,
                 'static_signature' => $isStaticSignature,
+            ])
+        ]);
+    }
+
+    private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail): void
+    {
+        SupplierActivity::createActivity([
+            'entity_id' => $agreement->id,
+            'entity_type' => 'agreements',
+            'action_type' => 'resend_signature_agreement',
+            'title' => $this->agreementActivityTitle($agreement, ' - skickat igen för signering'),
+            'description' => 'Skickades igen för signering.',
+            'icon' => 'custom-signature',
+            'route' => $this->agreementActivityRoute($agreement->id),
+            'metadata' => json_encode([
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'recipient_email' => $recipientEmail,
+                'signature_status' => $token->signature_status,
+                'resend' => true,
+                'static_signature' => is_null($token->placement_x) && is_null($token->placement_y),
             ])
         ]);
     }

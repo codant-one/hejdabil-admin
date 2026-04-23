@@ -30,6 +30,10 @@ class Agreements {
         return axios.post(`/agreements/sendMails/${data.id}`, data)
     }
 
+    resendSignatureRequest(agreementId) {
+        return axios.post(`/agreements/${agreementId}/resend-signature-request`)
+    }
+
     getAdminPreviewPdf(id) {
         return axios.get(`/agreements/${id}/get-admin-preview-pdf`, {
             responseType: 'blob'
