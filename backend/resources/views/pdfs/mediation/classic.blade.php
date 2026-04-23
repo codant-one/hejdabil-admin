@@ -161,7 +161,7 @@
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 115px;
             white-space: pre-line;
         }
 
