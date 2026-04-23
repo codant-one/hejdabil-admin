@@ -729,6 +729,10 @@ class SupplierController extends Controller
 
             $supplier = Supplier::createSupplier($request);
 
+            $supplier->update([
+                'position' => $request->position === 'null' ? null : $request->position
+            ]);
+
             UserRegisterToken::updateOrCreate(
                 ['user_id' => $supplier->user_id],
                 ['token' => Str::random(60)]
@@ -912,6 +916,12 @@ class SupplierController extends Controller
             $user->updateUser($request, $user); 
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
+
+            $supplier = Supplier::where('user_id', $user->id)->first();
+            
+            $supplier->update([
+                'position' => $request->position === 'null' ? null : $request->position
+            ]);
 
             return response()->json([
                 'success' => true,

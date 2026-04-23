@@ -207,6 +207,17 @@ const showActivateDialog = supplierData => {
   selectedUser.value = { ...supplierData }
 }
 
+const resolvePosition = position => {
+  if (position === 1)
+    return { name: 'Admin' }
+  if (position === 2)
+    return { name: 'Inköpare' }
+  if (position === 3)
+    return { name: 'Säljare' }
+  if (position === 4)
+    return { name: 'Revisor' }
+}
+
 const createUser = () => {
   router.push({ name : 'dashboard-admin-suppliers-users-create' })
 }
@@ -546,6 +557,7 @@ defineExpose({
             <th class="text-center" scope="col"> E-post </th>
             <th class="text-center" scope="col"> Telefon </th>
             <th scope="col" class="text-center">Adress</th>
+            <th scope="col" class="text-center">Roll</th>
             <th scope="col" 
               v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users') ||
                     $can('view', 'my-team') || $can('edit', 'my-team') || $can('delete','my-team')"> 
@@ -604,7 +616,15 @@ defineExpose({
                 </template>
                 <span>{{ user.user.user_detail.personal_address }}</span>
               </VTooltip>
-              <span v-else>{{ user.user.user_detail.personal_address }}</span>
+              <span v-else>{{ user.user.user_detail.personal_address ?? '----' }}</span>
+            </td>
+            <td class="d-flex align-center justify-center text-center">
+              <div class="status-chip status-chip-disabled" v-if="user.position">
+                {{ resolvePosition(user.position).name }}
+              </div>
+              <span v-else class="text-neutral-3" >
+                ----  
+              </span>
             </td>
             <!-- 👉 Actions -->
             <td style="width: 3rem;">
@@ -668,15 +688,20 @@ defineExpose({
       >
         <VExpansionPanel v-for="user in users" :key="user.id" readonly>
           <VExpansionPanelTitle
-            class="mobile-user-actions-title"
+            class="mobile-user-actions-title my-2 border-none"
             hide-actions
           >
             <div class="d-flex align-center justify-space-between w-100">
-              <div class="d-flex align-center">
+              <div class="d-flex align-center w-100">
                 <span class="order-id">{{  user.order_id }}</span>
 
-                <div class="d-flex flex-column gap-1">
-                    <span class="text-aqua">{{ user.user.name }}  {{ user.user.last_name ?? '' }}</span>
+                <div class="d-flex flex-column gap-1 w-100 mx-2">
+                    <span class="text-aqua d-flex gap-2 align-center justify-between" @click.stop="showUserDetailDialog(user.user, true)">
+                      {{ user.user.name }} {{ user.user.last_name ?? '' }}
+                      <div class="status-chip-mobile status-chip-disabled" v-if="user.position">
+                        {{ resolvePosition(user.position).name }}
+                      </div>
+                    </span>
                     <span class="text-neutral-3">{{ user.user.email }}</span>
                     <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
                 </div>

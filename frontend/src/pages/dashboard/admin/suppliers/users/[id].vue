@@ -49,10 +49,17 @@ const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
+const position = ref(null)
 const assignedPermissions = ref([])
 const readonly =  ref(false)
 const permissionsRol = ref([])
 
+const positions = ref ([
+  { id: 1, name: "Admin" },
+  { id: 2, name: "Inköpare" },
+  { id: 3, name: "Säljare" },
+  { id: 4, name: "Revisor" }
+])
 
 // Recargar la página al crear otro acuerdo
 function reloadPage() {
@@ -86,19 +93,26 @@ async function fetchData() {
 
     await usersStores.fetchUsers(data)
 
-    selectedUser.value = usersStores.getUsers
+    const routeUserId = Number(route.params.id)
+    const users = Array.isArray(usersStores.getUsers) ? usersStores.getUsers : []
+    selectedUser.value = users.find(item => Number(item.id) === routeUserId)
 
-    id.value = selectedUser.value[0].user.id
-    email.value = selectedUser.value[0].user.email
-    name.value = selectedUser.value[0].user.name
-    password.value = selectedUser.value[0].user.password
-    last_name.value = selectedUser.value[0].user.last_name
-    phone.value = selectedUser.value[0].user.user_detail?.personal_phone
-    address.value = selectedUser.value[0].user.user_detail?.personal_address
+    if (!selectedUser.value?.user) {
+        isRequestOngoing.value = false
+        return
+    }
 
+    id.value = selectedUser.value.user.id
+    email.value = selectedUser.value.user.email
+    name.value = selectedUser.value.user.name
+    password.value = selectedUser.value.user.password
+    last_name.value = selectedUser.value.user.last_name
+    phone.value = selectedUser.value.user.user_detail?.personal_phone
+    address.value = selectedUser.value.user.user_detail?.personal_address
+    position.value = selectedUser.value.position
     permissionsRol.value = []
 
-    selectedUser.value[0].user.permissions.forEach(function(pe) {
+    selectedUser.value.user.permissions.forEach(function(pe) {
         permissionsRol.value.push(pe.name)
     })
 
@@ -148,8 +162,8 @@ const onSubmit = async () => {
         !phone.value?.trim() ||
         !address.value?.trim() ||
         (phone.value && phoneValidator(phone.value) !== true) ||
-        (email.value && emailValidator(email.value) !== true) 
-
+        (email.value && emailValidator(email.value) !== true) ||
+        !position.value
 
     // Lógica de navegación entre tabs (0, 1, 2, 3)
     if (currentTab.value === 0) {
@@ -216,6 +230,8 @@ const onSubmit = async () => {
                 formData.append('last_name', last_name.value)
                 formData.append('personal_phone', phone.value)
                 formData.append('personal_address', address.value)
+                formData.append('position', position.value)
+
                 assignedPermissions.value.forEach(p => formData.append('permissions[]', p))
 
                 isRequestOngoing.value = true
@@ -250,6 +266,7 @@ const currentData = computed(() => ({
     last_name: last_name.value,
     phone: phone.value,
     address: address.value,
+    position: position.value,
     assignedPermissions: assignedPermissions.value
 }))
 
@@ -417,23 +434,23 @@ const goToProfile = () => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
-                                            v-model="name"
-                                            :rules="[requiredValidator]"
+                                                v-model="name"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Efternamn*" />
                                             <VTextField
-                                            v-model="last_name"
-                                            :rules="[requiredValidator]"
+                                                v-model="last_name"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
-                                            v-model="email"
-                                            type="email"
-                                            :rules="[requiredValidator,emailValidator]"
+                                                v-model="email"
+                                                type="email"
+                                                :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -449,17 +466,30 @@ const goToProfile = () => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                                             <VTextField
-                                            v-model="phone"
-                                            type="tel"
-                                            :rules="[requiredValidator, phoneValidator]"
-                                            placeholder="+(XX) XXXXXXXXX"
+                                                v-model="phone"
+                                                type="tel"
+                                                :rules="[requiredValidator, phoneValidator]"
+                                                placeholder="+(XX) XXXXXXXXX"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                                             <VTextField
-                                            v-model="address"
-                                            :rules="[requiredValidator]"
+                                                v-model="address"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <AppAutocomplete
+                                                v-model="position"
+                                                label="Roll*"
+                                                :items="positions"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
                                             />
                                         </div>
                                     </div>

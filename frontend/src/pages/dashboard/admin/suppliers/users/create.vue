@@ -49,9 +49,16 @@ const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
+const position = ref(null)
 const assignedPermissions = ref([])
 const readonly =  ref(false)
 
+const positions = ref ([
+  { id: 1, name: "Admin" },
+  { id: 2, name: "Inköpare" },
+  { id: 3, name: "Säljare" },
+  { id: 4, name: "Revisor" }
+])
 
 // Recargar la página al crear otro acuerdo
 function reloadPage() {
@@ -190,8 +197,8 @@ const onSubmit = async () => {
         !last_name.value?.trim() ||
         !email.value?.trim() ||
         (email.value && emailValidator(email.value) !== true) ||
-        !password.value?.trim()
-
+        !password.value?.trim() ||
+        !position.value
 
     // Lógica de navegación entre tabs (0, 1, 2, 3)
     if (currentTab.value === 0) {
@@ -259,6 +266,8 @@ const onSubmit = async () => {
                 formData.append('last_name', last_name.value)
                 formData.append('phone', phone.value)
                 formData.append('address', address.value)
+                formData.append('position', position.value)
+                
                 assignedPermissions.value.forEach(p => formData.append('permissions[]', p))
 
                 isRequestOngoing.value = true
@@ -310,6 +319,7 @@ const currentData = computed(() => ({
     last_name: last_name.value,
     phone: phone.value,
     address: address.value,
+    position: position.value,
     assignedPermissions: assignedPermissions.value
 }))
 
@@ -477,23 +487,23 @@ const goToProfile = () => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
-                                            v-model="name"
-                                            :rules="[requiredValidator]"
+                                                v-model="name"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Efternamn*" />
                                             <VTextField
-                                            v-model="last_name"
-                                            :rules="[requiredValidator]"
+                                                v-model="last_name"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
-                                            v-model="email"
-                                            type="email"
-                                            :rules="[requiredValidator,emailValidator]"
+                                                v-model="email"
+                                                type="email"
+                                                :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -509,17 +519,30 @@ const goToProfile = () => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
                                             <VTextField
-                                            v-model="phone"
-                                            type="tel"
-                                            placeholder="+(XX) XXXXXXXXX"
-                                            disabled
+                                                v-model="phone"
+                                                type="tel"
+                                                placeholder="+(XX) XXXXXXXXX"
+                                                disabled
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress" />
                                             <VTextField
-                                            v-model="address"
-                                            disabled
+                                                v-model="address"
+                                                disabled
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <AppAutocomplete
+                                                v-model="position"
+                                                label="Roll*"
+                                                :items="positions"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
                                             />
                                         </div>
                                     </div>
