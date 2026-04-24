@@ -5,6 +5,7 @@
    import { requiredValidator } from '@validators';
    import { formatDate, formatDateYMD } from '@/@core/utils/formatters'
    import InlineBanner from '@/components/common/InlineBanner.vue'
+   import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
    const emit = defineEmits(['refresh', 'advisor'])
 
@@ -33,6 +34,7 @@
    const formInstanceKey = ref(0)
    const refVForm = ref()
    const isSubmitting = ref(false)
+   const reminderDateMenuVisible = ref(false)
    const form = ref({
       description: '',
       date: '',
@@ -40,10 +42,18 @@
    })
 
    const startDateTimePickerConfig = computed(() => ({
+      inline: true,
+      mode: 'single',
       enableTime: true, 
       dateFormat: 'Y-m-d H:i',
-      position: 'auto right'
+      position: 'auto right',
+      time_24hr: true,
+      monthSelectorType: 'dropdown',
    }))
+
+   const openReminderDateMenu = () => {
+      reminderDateMenuVisible.value = true
+   }
 
    const resetForm = async () => {
       form.value = {
@@ -215,15 +225,30 @@
                </div>
                <div class="d-flex gap-2 w-100 information-form__dates">
                   <div class="information-form__field">
-                     <AppDateTimePicker
-                        :key="JSON.stringify(startDateTimePickerConfig)"
+                     <VTextField
+                        id="information-date-input"
                         v-model="form.date"
-                        density="default"
-                        :config="startDateTimePickerConfig"
-                        class="field-solo-flat"
                         placeholder="Datum"
                         :rules="[requiredValidator]"
+                        readonly
                         hide-details="auto"
+                        @click="openReminderDateMenu"
+                        @focus="openReminderDateMenu"
+                     />
+
+                     <ExportDateMenu
+                        v-model="form.date"
+                        v-model:menuVisible="reminderDateMenuVisible"
+                        :show-activator="false"
+                        :is-mobile="windowWidth < 1024"
+                        :reset-on-open="false"
+                        activator="#information-date-input"
+                        button-text="Spara"
+                        button-icon="custom-save"
+                        picker-label="Datum"
+                        picker-placeholder="Datum"
+                        :picker-config="startDateTimePickerConfig"
+                        @update:filtrera="reminderDateMenuVisible = false"
                      />
                   </div>
                   

@@ -1,4 +1,5 @@
 <script setup>
+
 import FlatPickr from 'vue-flatpickr-component'
 import { useTheme } from 'vuetify'
 import {
@@ -58,14 +59,27 @@ const selectedPreset = ref(null)
 const isRangeMode = computed(() => props.config?.mode === 'range')
 const showRangePresets = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.rangePresets !== false)
 const showSplitRangeInputs = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.splitRangeInputs !== false)
+const showSingleInlineHeader = computed(() => isInlinePicker.value && !isRangeMode.value)
+const showSingleInlineTimeFields = computed(() => showSingleInlineHeader.value && props.config?.enableTime)
 const isMobile = computed(() => props.isMobile)
+const selectedHour = ref('00')
+const selectedMinute = ref('00')
 
 const datepickerConfig = computed(() => {
   const config = { ...props.config }
 
-  svLocale.sv.time_24hr = false
-  config.locale = svLocale.sv
   config.disableMobile = true
+
+  if (config.locale === undefined) {
+    svLocale.sv.time_24hr = Boolean(config.time_24hr)
+    config.locale = svLocale.sv
+  }
+
+  if (showSingleInlineTimeFields.value) {
+    config.enableTime = false
+    config.dateFormat = 'Y-m-d'
+    config.monthSelectorType = config.monthSelectorType ?? 'dropdown'
+  }
 
   return config
 })
@@ -112,9 +126,136 @@ onMounted(() => {
   updateThemeClassInCalendar(vuetifyTheme.name.value)
 })
 
+const normalizeTimePart = (value, max) => {
+  const digits = String(value ?? '').replace(/\D/g, '').slice(0, 2)
+  if (!digits)
+    return '00'
+
+  const numericValue = Number.parseInt(digits, 10)
+  if (Number.isNaN(numericValue))
+    return '00'
+
+  return `${Math.min(Math.max(numericValue, 0), max)}`.padStart(2, '0')
+}
+
+const sanitizeTimePartInput = value => String(value ?? '').replace(/\D/g, '').slice(0, 2)
+
+const toHm = value => {
+  if (!value)
+    return { hour: '00', minute: '00' }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const hour = `${value.getHours()}`.padStart(2, '0')
+    const minute = `${value.getMinutes()}`.padStart(2, '0')
+
+    return { hour, minute }
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const hmMatch = normalized.match(/(\d{1,2}):(\d{2})/)
+
+    if (hmMatch)
+      return {
+        hour: normalizeTimePart(hmMatch[1], 23),
+        minute: normalizeTimePart(hmMatch[2], 59),
+      }
+  }
+
+  return { hour: '00', minute: '00' }
+}
+
+const getSingleModelValue = value => {
+  if (Array.isArray(value))
+    return value[0]
+
+  return value
+}
+
+const buildSingleDateTimeValue = dateValue => {
+  if (!dateValue)
+    return ''
+
+  const hour = normalizeTimePart(selectedHour.value, 23)
+  const minute = normalizeTimePart(selectedMinute.value, 59)
+
+  return `${dateValue} ${hour}:${minute}`
+}
+
+const singleInlineCalendarModel = computed(() => {
+  if (!showSingleInlineTimeFields.value)
+    return props.modelValue
+
+  return toYmd(getSingleModelValue(props.modelValue))
+})
+
+watch(
+  () => props.modelValue,
+  value => {
+    if (!showSingleInlineTimeFields.value)
+      return
+
+    const { hour, minute } = toHm(getSingleModelValue(value))
+    selectedHour.value = hour
+    selectedMinute.value = minute
+  },
+  { immediate: true },
+)
+
 const emitModelValue = val => {
   selectedPreset.value = null
+
+  if (showSingleInlineTimeFields.value) {
+    const dateValue = toYmd(getSingleModelValue(val))
+    emit('update:modelValue', buildSingleDateTimeValue(dateValue))
+
+    return
+  }
+
   emit('update:modelValue', val)
+}
+
+const emitInlineDateTimeIfPossible = () => {
+  if (!showSingleInlineTimeFields.value)
+    return
+
+  const dateValue = toYmd(getSingleModelValue(props.modelValue))
+
+  if (!dateValue)
+    return
+
+  emit('update:modelValue', buildSingleDateTimeValue(dateValue))
+}
+
+const commitInlineTimePart = (part, value) => {
+  const isHour = part === 'hour'
+  const normalizedValue = normalizeTimePart(value, isHour ? 23 : 59)
+
+  if (part === 'hour') {
+    selectedHour.value = normalizedValue
+  } else {
+    selectedMinute.value = normalizedValue
+  }
+
+  emitInlineDateTimeIfPossible()
+}
+
+const setInlineTimePartDraft = (part, value) => {
+  const sanitizedValue = sanitizeTimePartInput(value)
+
+  if (part === 'hour') {
+    selectedHour.value = sanitizedValue
+  } else {
+    selectedMinute.value = sanitizedValue
+  }
+
+  if (sanitizedValue.length === 2)
+    commitInlineTimePart(part, sanitizedValue)
+}
+
+const onInlineTimePartBlur = part => {
+  const rawValue = part === 'hour' ? selectedHour.value : selectedMinute.value
+  commitInlineTimePart(part, rawValue)
 }
 
 const toYmd = value => {
@@ -162,6 +303,28 @@ const splitRangeValue = computed(() => {
   const single = toYmd(props.modelValue)
   return { start: single, end: single }
 })
+
+const singleInlineValue = computed(() => {
+  if (!props.modelValue)
+    return ''
+
+  if (props.modelValue instanceof Date && !Number.isNaN(props.modelValue.getTime())) {
+    const year = props.modelValue.getFullYear()
+    const month = `${props.modelValue.getMonth() + 1}`.padStart(2, '0')
+    const day = `${props.modelValue.getDate()}`.padStart(2, '0')
+    const hours = `${props.modelValue.getHours()}`.padStart(2, '0')
+    const minutes = `${props.modelValue.getMinutes()}`.padStart(2, '0')
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  }
+
+  if (Array.isArray(props.modelValue))
+    return String(props.modelValue[0] ?? '').trim()
+
+  return String(props.modelValue).trim()
+})
+
+const singleInlineDisplayValue = computed(() => singleInlineValue.value || props.placeholder || 'Datum')
 
 const formatDateForPreset = date => {
   const year = date.getFullYear()
@@ -226,7 +389,7 @@ const applyPreset = preset => {
 <template>
   <!-- v-input -->
   <VInput
-    v-if="!showSplitRangeInputs"
+    v-if="!isInlinePicker && !showSplitRangeInputs"
     v-bind="{ ...inputProps, ...rootAttrs }"
     :model-value="modelValue"
     :hide-details="props.hideDetails"
@@ -262,14 +425,6 @@ const applyPreset = preset => {
               @on-close="isCalendarOpen = false"
               @update:model-value="emitModelValue"
             />
-
-            <!-- simple input for inline prop -->
-            <input
-              v-if="isInlinePicker"
-              :value="modelValue"
-              class="flat-picker-custom-style"
-              type="text"
-            >
           </div>
         </template>
       </VField>
@@ -280,8 +435,14 @@ const applyPreset = preset => {
   <div
     v-if="isInlinePicker"
     class="app-inline-picker-layout"
-    :class="{ 'has-range-presets': showRangePresets }"
+    :class="{ 'has-range-presets': showRangePresets, 'is-single-inline': showSingleInlineHeader }"
   >
+    <span v-if="showSingleInlineHeader" class="app-inline-time-section__label">Välj ett datum och en tid för åtgärden.</span>
+    <div v-if="showSingleInlineHeader" class="app-inline-single-header">
+      <VIcon icon="custom-calendar-2" :size="isMobile ? 22 : 24" />
+      <span class="app-inline-single-header__text">{{ singleInlineDisplayValue }}</span>
+    </div>
+
     <div v-if="showSplitRangeInputs && !isMobile" class="app-inline-range-header">
       <div class="app-inline-range-field"> 
         <VIcon icon="custom-calendar-2" size="24" />
@@ -294,7 +455,13 @@ const applyPreset = preset => {
       </div>
     </div>
 
-    <div class="d-flex justify-between" :class="isMobile ? 'gap-2' : 'gap-4'">
+    <div
+      class="app-inline-picker-body"
+      :class="[
+        showRangePresets ? 'd-flex justify-between' : 'd-flex justify-center',
+        isMobile ? 'gap-2' : 'gap-4',
+      ]"
+    >
       <div v-if="showRangePresets" class="app-inline-picker-presets">
         <button
           type="button"
@@ -346,11 +513,39 @@ const applyPreset = preset => {
         v-bind="datepickerAttrs"
         :config="datepickerConfig"
         ref="refFlatPicker"
-        :model-value="modelValue"
+        :model-value="showSingleInlineTimeFields ? singleInlineCalendarModel : modelValue"
         @update:model-value="emitModelValue"
         @on-open="isCalendarOpen = true"
         @on-close="isCalendarOpen = false"
       />
+    </div>
+
+    <div v-if="showSingleInlineTimeFields" class="app-inline-time-section">
+      <div class="app-inline-time-section__label">Välj en tid</div>
+
+      <div class="app-inline-time-fields">
+        <input
+          :value="selectedHour"
+          type="text"
+          inputmode="numeric"
+          maxlength="2"
+          class="app-inline-time-field"
+          @input="setInlineTimePartDraft('hour', $event.target.value)"
+          @blur="onInlineTimePartBlur('hour')"
+        >
+
+        <span class="app-inline-time-separator">:</span>
+
+        <input
+          :value="selectedMinute"
+          type="text"
+          inputmode="numeric"
+          maxlength="2"
+          class="app-inline-time-field"
+          @input="setInlineTimePartDraft('minute', $event.target.value)"
+          @blur="onInlineTimePartBlur('minute')"
+        >
+      </div>
     </div>
   </div>
 </template>
@@ -380,6 +575,30 @@ input[altinputclass="inlinePicker"] {
 
 .app-inline-picker-layout {
   display: block;
+}
+
+.app-inline-picker-layout.is-single-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-inline-single-header {
+  align-items: center;
+  background: #F6F6F6;
+  border: 1px solid #E7E7E7;
+  border-radius: 8px;
+  color: #5D5D5D;
+  display: flex;
+  gap: 8px;
+  min-block-size: 52px;
+  padding-inline: 16px;
+}
+
+.app-inline-single-header__text {
+  color: #5D5D5D;
+  font-size: 16px;
+  line-height: 20px;
 }
 
 .app-inline-range-header {
@@ -413,6 +632,10 @@ input[altinputclass="inlinePicker"] {
   gap: 8px;
 }
 
+.app-inline-picker-body {
+  inline-size: 100%;
+}
+
 .app-inline-picker-presets {
   display: flex;
   flex-direction: column;
@@ -439,6 +662,59 @@ input[altinputclass="inlinePicker"] {
   background-color: #F6F6F6;
   border-radius: 64px;
   color: #454545;
+}
+
+.app-inline-time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-block-start: 10px;
+}
+
+.app-inline-time-section__label {
+  color: #454545;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0%;
+}
+
+.app-inline-time-fields {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.app-inline-time-field {
+  appearance: textfield;
+  background: #F6F6F6;
+  border: 1px solid #E7E7E7;
+  border-radius: 12px;
+  color: #5D5D5D;
+  font-size: 16px;
+  line-height: 20px;
+  inline-size: 100%;
+  min-block-size: 52px;
+  outline: none;
+  padding: 10px 14px;
+  text-align: start;
+}
+
+.app-inline-time-field:focus {
+  border-color: #6E9383;
+}
+
+.app-inline-time-separator {
+  color: #5D5D5D;
+  font-size: 24px;
+  line-height: 1;
+  padding-block-end: 3px;
+}
+
+.app-inline-time-field::-webkit-outer-spin-button,
+.app-inline-time-field::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .flatpickr-calendar {
@@ -733,6 +1009,24 @@ input[altinputclass="inlinePicker"] {
   .app-inline-picker-layout .d-flex.justify-between.gap-4,
   .app-inline-picker-layout .d-flex.justify-between.gap-2 {
     flex-direction: column;
+  }
+
+  .app-inline-single-header {
+    min-block-size: 40px;
+  }
+
+  .app-inline-single-header__text {
+    font-size: 12px;
+  }
+
+  .app-inline-time-section__label {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .app-inline-time-field {
+    min-block-size: 40px;
+    font-size: 12px;
   }
 
   .app-inline-picker-presets {

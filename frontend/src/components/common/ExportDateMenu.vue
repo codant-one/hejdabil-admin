@@ -1,6 +1,7 @@
 <script setup>
 
 import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
+import { requiredValidator } from '@validators'
 
 const props = defineProps({
   modelValue: {
@@ -63,6 +64,8 @@ const internalMenuVisible = ref(false)
 const pickerKey = ref(0)
 const filtrera = ref(false)
 const pendingValue = ref(props.modelValue)
+const validationError = ref('')
+const singleDateTimeMenuWidth = 332
 
 const toDateString = value => {
   if (!value)
@@ -112,8 +115,34 @@ const normalizeRangeValue = value => {
   return value
 }
 
+const isRangePickerMode = computed(() => (props.pickerConfig?.mode ?? 'range') === 'range')
+const isSingleDateTimePickerMode = computed(() => !isRangePickerMode.value && Boolean(props.pickerConfig?.enableTime))
+
+const resolveModelValue = value => {
+  if (!isRangePickerMode.value)
+    return value
+
+  return normalizeRangeValue(value)
+}
+
+const hasRequiredValue = value => {
+  if (Array.isArray(value))
+    return value.length > 0 && value.every(item => requiredValidator(item) === true)
+
+  return requiredValidator(value) === true
+}
+
 const applyFilter = () => {
-  emit('update:modelValue', normalizeRangeValue(pendingValue.value))
+  const nextValue = resolveModelValue(pendingValue.value)
+
+  if (!hasRequiredValue(nextValue)) {
+    validationError.value = requiredValidator('')
+
+    return
+  }
+
+  validationError.value = ''
+  emit('update:modelValue', nextValue)
   filtrera.value = true
   emit('update:filtrera', true)
 }
@@ -129,11 +158,15 @@ const resolvedMenuVisible = computed({
 })
 
 watch(resolvedMenuVisible, isVisible => {
-  if (!isVisible)
+  if (!isVisible) {
+    validationError.value = ''
+
     return
+  }
 
   pickerKey.value += 1
   pendingValue.value = props.resetOnOpen ? null : props.modelValue
+  validationError.value = ''
 })
 
 watch(() => props.modelValue, value => {
@@ -142,6 +175,10 @@ watch(() => props.modelValue, value => {
 
 const onPickerUpdate = value => {
   pendingValue.value = value
+
+  const nextValue = resolveModelValue(value)
+  if (validationError.value && hasRequiredValue(nextValue))
+    validationError.value = ''
 }
 </script>
 
@@ -151,8 +188,10 @@ const onPickerUpdate = value => {
     :close-on-content-click="false"
     :activator="activator"
     :open-on-click="showActivator"
-    location="bottom"
-    origin="top center"
+    :min-width="isSingleDateTimePickerMode ? singleDateTimeMenuWidth : undefined"
+    :max-width="isSingleDateTimePickerMode ? singleDateTimeMenuWidth : undefined"
+    location="bottom start"
+    origin="top start"
     :offset="8"
     v-if="!isMobile"
   >
@@ -170,7 +209,7 @@ const onPickerUpdate = value => {
       </VBtn>
     </template>
 
-    <VCard class="export-date-menu-card">
+    <VCard :class="['export-date-menu-card', { 'export-date-menu-card--single-time': isSingleDateTimePickerMode }]">
       <AppDateTimePicker
         :key="pickerKey"
         :model-value="pendingValue"
@@ -179,14 +218,19 @@ const onPickerUpdate = value => {
         :placeholder="pickerPlaceholder"
         :config="pickerConfig"
       />
-      <div class="d-flex justify-end mt-2">
+
+      <div v-if="validationError" class="export-date-menu-error">
+        {{ validationError }}
+      </div>
+
+      <div :class="isSingleDateTimePickerMode ? 'd-flex mt-3' : 'd-flex justify-end mt-2'">
         <VBtn
-          class="btn-light px-3"
+          :class="isSingleDateTimePickerMode ? 'btn-light px-3 w-100' : 'btn-light px-3'"
           @click="applyFilter"
-          style="width: 264px;"
+          :style="isSingleDateTimePickerMode ? undefined : 'width: 264px;'"
         >
           <VIcon :icon="buttonIcon" size="24" />
-          <span class="d-none d-md-block">{{ buttonText }}</span>
+          <span :class="isSingleDateTimePickerMode ? '' : 'd-none d-md-block'">{{ buttonText }}</span>
         </VBtn>
       </div>
     </VCard>
@@ -226,6 +270,10 @@ const onPickerUpdate = value => {
           :is-mobile="true"
         />
 
+        <div v-if="validationError" class="export-date-menu-error mt-2">
+          {{ validationError }}
+        </div>
+
         <div class="d-flex justify-end mt-2 mt-auto">
           <VBtn
             class="btn-light px-3"
@@ -243,12 +291,25 @@ const onPickerUpdate = value => {
 
 <style scoped>
   .export-date-menu-card {
-    width: 544px;
+    /*width: 544px;*/
     height: 388px;
     border-radius: 8px !important;
     opacity: 1;
     padding: 16px;
     gap: 16px;
     box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .export-date-menu-error {
+    color: #E65100;
+    font-size: 12px;
+    line-height: 16px;
+    margin-top: 6px;
+  }
+
+  .export-date-menu-card--single-time {
+    height: auto;
+    min-height: 0;
+    width: 300px;
   }
 </style>
