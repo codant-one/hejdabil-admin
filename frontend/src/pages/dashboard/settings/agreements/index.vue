@@ -54,6 +54,16 @@ const terms_and_conditions_purchase = ref('')
 const terms_and_conditions_sales = ref('')
 const terms_and_conditions_mediation = ref('')
 const terms_and_conditions_business = ref('')
+const isTermsDialogVisible = ref(false)
+const termsDialogDraft = ref('')
+const activeTermsFieldKey = ref('terms_and_conditions_purchase')
+
+const termsFieldRefMap = {
+  terms_and_conditions_purchase,
+  terms_and_conditions_sales,
+  terms_and_conditions_mediation,
+  terms_and_conditions_business,
+}
 
 const automaticRemindersEnabled = ref(DEFAULT_AGREEMENT_SEND_REMINDER)
 const deliveryMethod = ref(DEFAULT_AGREEMENT_DELIVERY_METHOD)
@@ -305,6 +315,34 @@ const onSubmit = async () => {
   }
 }
 
+const openTermsDialog = fieldKey => {
+  if (role.value === 'User')
+    return
+
+  const targetFieldRef = termsFieldRefMap[fieldKey]
+
+  if (!targetFieldRef)
+    return
+
+  activeTermsFieldKey.value = fieldKey
+  termsDialogDraft.value = targetFieldRef.value || ''
+  isTermsDialogVisible.value = true
+}
+
+const closeTermsDialog = () => {
+  isTermsDialogVisible.value = false
+}
+
+const saveTermsDialog = () => {
+  const targetFieldRef = termsFieldRefMap[activeTermsFieldKey.value]
+
+  if (!targetFieldRef)
+    return
+
+  targetFieldRef.value = termsDialogDraft.value
+  closeTermsDialog()
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -460,6 +498,10 @@ onBeforeUnmount(() => {
                       v-model="terms_and_conditions_purchase"
                       :disabled="role === 'User'"
                       :rules="[requiredValidator]"
+                      readonly
+                      class="terms-trigger-field"
+                      @click="openTermsDialog('terms_and_conditions_purchase')"
+                      @keydown.enter.prevent="openTermsDialog('terms_and_conditions_purchase')"
                     />
                 </div>
                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
@@ -476,6 +518,10 @@ onBeforeUnmount(() => {
                       v-model="terms_and_conditions_sales"
                       :disabled="role === 'User'"
                       :rules="[requiredValidator]"
+                      readonly
+                      class="terms-trigger-field"
+                      @click="openTermsDialog('terms_and_conditions_sales')"
+                      @keydown.enter.prevent="openTermsDialog('terms_and_conditions_sales')"
                     />
                 </div>
                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
@@ -492,6 +538,10 @@ onBeforeUnmount(() => {
                       v-model="terms_and_conditions_mediation"
                       :disabled="role === 'User'"
                       :rules="[requiredValidator]"
+                      readonly
+                      class="terms-trigger-field"
+                      @click="openTermsDialog('terms_and_conditions_mediation')"
+                      @keydown.enter.prevent="openTermsDialog('terms_and_conditions_mediation')"
                     />
                 </div>
                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
@@ -508,6 +558,10 @@ onBeforeUnmount(() => {
                       v-model="terms_and_conditions_business"
                       :disabled="role === 'User'"
                       :rules="[requiredValidator]"
+                      readonly
+                      class="terms-trigger-field"
+                      @click="openTermsDialog('terms_and_conditions_business')"
+                      @keydown.enter.prevent="openTermsDialog('terms_and_conditions_business')"
                     />
                 </div>
               </div>
@@ -620,6 +674,47 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
       </VCard>
+
+      <VDialog
+        v-model="isTermsDialogVisible"
+        persistent
+        class="action-dialog"
+      >
+        <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="closeTermsDialog"
+        >
+          <VIcon size="16" icon="custom-close" />
+        </VBtn>
+
+        <VCard>
+          <VCardText class="dialog-title-box">
+            <div class="dialog-title">Textredigering</div>
+          </VCardText>
+
+          <VCardText class="dialog-text card-form">
+            <VTextarea
+              v-model="termsDialogDraft"
+              rows="6"
+              :max-rows="windowWidth < 1024 ? 10 : 14"
+              auto-grow
+              no-resize
+              class="terms-editor-textarea"
+              :rules="[requiredValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-gradient"
+              @click="saveTermsDialog"
+            >
+              Spara
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VDialog>
     </section>
 </template>
 
@@ -680,6 +775,18 @@ onBeforeUnmount(() => {
   .agreement-option:focus-visible {
     outline: 2px solid #22a9e1;
     outline-offset: 2px;
+  }
+
+  .terms-trigger-field .v-field__input {
+    cursor: pointer;
+  }
+
+  .terms-editor-textarea .v-field {
+    background-color: #f6f6f6;
+  }
+
+  .terms-editor-textarea textarea {
+    overflow-y: auto !important;
   }
 
   .reminders-title {

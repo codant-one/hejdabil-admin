@@ -51,6 +51,8 @@ const advisor = ref({
 
 const due_date = ref(null)
 const terms_and_conditions = ref('')
+const isTermsDialogVisible = ref(false)
+const termsDialogDraft = ref('')
 
 const isRequestOngoing = ref(true);
 const billingPreviewSources = ref({
@@ -288,6 +290,23 @@ const onSubmit = async () => {
   }
 }
 
+const openTermsDialog = () => {
+  if (role.value === 'User')
+    return
+
+  termsDialogDraft.value = terms_and_conditions.value || ''
+  isTermsDialogVisible.value = true
+}
+
+const closeTermsDialog = () => {
+  isTermsDialogVisible.value = false
+}
+
+const saveTermsDialog = () => {
+  terms_and_conditions.value = termsDialogDraft.value
+  closeTermsDialog()
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -465,6 +484,10 @@ onBeforeUnmount(() => {
                       v-model="terms_and_conditions"
                       :disabled="role === 'User'"
                       :rules="[requiredValidator]"
+                      readonly
+                      class="terms-trigger-field"
+                      @click="openTermsDialog"
+                      @keydown.enter.prevent="openTermsDialog"
                     />
                 </div>
               </div>
@@ -568,6 +591,47 @@ onBeforeUnmount(() => {
         </VCardText>
 
       </VCard>
+
+      <VDialog
+        v-model="isTermsDialogVisible"
+        persistent
+        class="action-dialog"
+      >
+        <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="closeTermsDialog"
+        >
+          <VIcon size="16" icon="custom-close" />
+        </VBtn>
+
+        <VCard>
+          <VCardText class="dialog-title-box">
+            <div class="dialog-title">Textredigering</div>
+          </VCardText>
+
+          <VCardText class="dialog-text card-form">
+            <VTextarea
+              v-model="termsDialogDraft"
+              rows="6"
+              :max-rows="windowWidth < 1024 ? 10 : 14"
+              auto-grow
+              no-resize
+              class="terms-editor-textarea"
+              :rules="[requiredValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-gradient"
+              @click="saveTermsDialog"
+            >
+              Spara
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VDialog>
     </section>
 </template>
 
@@ -628,6 +692,18 @@ onBeforeUnmount(() => {
   .billing-option:focus-visible {
     outline: 2px solid #22a9e1;
     outline-offset: 2px;
+  }
+
+  .terms-trigger-field .v-field__input {
+    cursor: pointer;
+  }
+
+  .terms-editor-textarea .v-field {
+    background-color: #f6f6f6;
+  }
+
+  .terms-editor-textarea textarea {
+    overflow-y: auto !important;
   }
 
   .reminders-title {
