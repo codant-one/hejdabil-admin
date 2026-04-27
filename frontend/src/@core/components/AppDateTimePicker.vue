@@ -75,10 +75,11 @@ const datepickerConfig = computed(() => {
     config.locale = svLocale.sv
   }
 
+  config.monthSelectorType = config.monthSelectorType ?? 'dropdown'
+
   if (showSingleInlineTimeFields.value) {
     config.enableTime = false
     config.dateFormat = 'Y-m-d'
-    config.monthSelectorType = config.monthSelectorType ?? 'dropdown'
   }
 
   return config
@@ -437,7 +438,7 @@ const applyPreset = preset => {
     class="app-inline-picker-layout"
     :class="{ 'has-range-presets': showRangePresets, 'is-single-inline': showSingleInlineHeader }"
   >
-    <span v-if="showSingleInlineHeader" class="app-inline-time-section__label">Välj ett datum och en tid för åtgärden.</span>
+    <span v-if="showSingleInlineHeader && isMobile" class="app-inline-time-section__label">Välj ett datum och en tid för åtgärden.</span>
     <div v-if="showSingleInlineHeader" class="app-inline-single-header">
       <VIcon icon="custom-calendar-2" :size="isMobile ? 22 : 24" />
       <span class="app-inline-single-header__text">{{ singleInlineDisplayValue }}</span>
@@ -634,6 +635,7 @@ input[altinputclass="inlinePicker"] {
 
 .app-inline-picker-body {
   inline-size: 100%;
+  overflow-x: hidden;
 }
 
 .app-inline-picker-presets {
@@ -668,7 +670,6 @@ input[altinputclass="inlinePicker"] {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-block-start: 10px;
 }
 
 .app-inline-time-section__label {
@@ -735,8 +736,8 @@ input[altinputclass="inlinePicker"] {
 
       .dayContainer {
         justify-content: center !important;
-        inline-size: 16.625rem;
-        min-inline-size: 16.625rem;
+        inline-size: 100%;
+        min-inline-size: 0;
         padding-block-end: 0.5rem;
         padding-block-start: 0;
         gap: 1px;
@@ -916,13 +917,16 @@ input[altinputclass="inlinePicker"] {
 
   .flatpickr-monthDropdown-months,
   .numInputWrapper {
-    height: 28px;
-    margin: 0 2px 0 0;
-    padding: 2px;
-    border-radius: 4px;
-    color: $heading-color;
-    font-size: 1rem;
-    font-weight: 500;
+    background-color: #fff;
+    border: 1px solid #E7E7E7;
+    border-radius: 8px;
+    color: #5D5D5D;
+    font-size: 16px;
+    font-weight: 400;
+    height: 2.25rem;
+    line-height: 100%;
+    margin: 0;
+    padding-inline: 0.75rem;
     transition: all 0.15s ease-out;
 
     span {
@@ -934,8 +938,182 @@ input[altinputclass="inlinePicker"] {
     }
 
     .numInput.cur-year {
-      font-weight: 500;
+      font-size: 16px;
+      font-weight: 400;
     }
+  }
+
+  .flatpickr-monthDropdown-months {
+    background-image: url('@/assets/images/iconify-svg/chevron-down-timer.svg');
+    background-position: calc(100% - 10px) 50%;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+    min-inline-size: 5.5rem;
+    padding-inline-end: 1.7rem;
+    text-transform: capitalize;
+  }
+
+  .numInputWrapper {
+    min-inline-size: 4.25rem;
+    padding-inline: 0.6rem;
+
+    .arrowUp,
+    .arrowDown {
+      display: none;
+    }
+
+    .numInput.cur-year {
+      appearance: textfield;
+      background: transparent;
+      border: 0;
+      color: #5D5D5D;
+      inline-size: 100%;
+      min-block-size: 2rem;
+      padding: 0;
+      text-align: start;
+      height: 36px;
+    }
+
+    .numInput.cur-year::-webkit-inner-spin-button,
+    .numInput.cur-year::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+  }
+}
+
+.app-inline-picker-layout .flatpickr-calendar .flatpickr-months {
+  padding-block: 8px;
+  padding-inline: 0.5rem;
+  max-inline-size: 100%;
+  position: relative;
+
+  .flatpickr-prev-month,
+  .flatpickr-next-month {
+    align-items: center;
+    background: transparent;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    block-size: 2.5rem;
+    border-radius: 0;
+    color: transparent;
+    display: inline-flex;
+    inline-size: 2rem;
+    inset-block-start: 0.4rem !important;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .flatpickr-prev-month svg,
+  .flatpickr-next-month svg {
+    display: none;
+  }
+
+  .flatpickr-prev-month {
+    background-image: url('@/assets/images/iconify-svg/chevron-left-timer.svg');
+    inset-inline-start: 0.5rem !important;
+    inset-inline-end: auto !important;
+    left: 0 !important;
+    right: auto !important;
+  }
+
+  .flatpickr-next-month {
+    background-image: url('@/assets/images/iconify-svg/chevron-right-timer.svg');
+    inset-inline-end: 0.5rem !important;
+    inset-inline-start: auto !important;
+    left: auto !important;
+    right: 0 !important;
+  }
+
+  .flatpickr-month {
+    block-size: 2.25rem;
+    overflow: visible;
+    position: relative;
+
+    .flatpickr-current-month {
+      align-items: center;
+      block-size: 2.25rem;
+      display: flex;
+      gap: 0.5rem;
+      inset-inline-start: auto;
+      justify-content: center;
+      left: auto;
+      margin: 0 auto;
+      position: relative;
+      padding-block-start: 0;
+      padding-inline: 1.5rem;
+      top: 0;
+      box-sizing: border-box;
+      text-align: center;
+      width: 100%;
+    }
+  }
+}
+
+.app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .flatpickr-day {
+  max-inline-size: 2.125rem;
+}
+
+.app-inline-picker-layout .flatpickr-calendar .flatpickr-current-month {
+  .flatpickr-monthDropdown-months,
+  .numInputWrapper {
+    background-color: #fff;
+    border: 1px solid #E7E7E7;
+    border-radius: 8px;
+    color: #5D5D5D;
+    font-size: 16px;
+    font-weight: 400;
+    height: 2.25rem;
+    line-height: 100%;
+    margin: 0;
+    padding-inline: 0.75rem;
+  }
+
+  .flatpickr-monthDropdown-months {
+    appearance: none;
+    background-image: url('@/assets/images/iconify-svg/chevron-down-timer.svg');
+    background-position: calc(100% - 10px) 50%;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+    min-inline-size: 5.5rem;
+    padding-inline-end: 1.7rem;
+    text-transform: capitalize;
+  }
+
+  .numInputWrapper {
+    min-inline-size: 4.25rem;
+    padding-inline: 0.6rem;
+
+    .arrowUp,
+    .arrowDown {
+      display: none;
+    }
+
+    .numInput.cur-year {
+      appearance: textfield;
+      background: transparent;
+      border: 0;
+      color: #5D5D5D;
+      font-size: 16px;
+      font-weight: 400;
+      inline-size: 100%;
+      min-block-size: 2rem;
+      padding: 0;
+      text-align: start;
+    }
+
+    .numInput.cur-year::-webkit-inner-spin-button,
+    .numInput.cur-year::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+  }
+
+  .cur-month {
+    color: #5D5D5D;
+    font-size: 1rem;
+    font-weight: 500;
   }
 }
 
@@ -951,38 +1129,74 @@ input[altinputclass="inlinePicker"] {
 }
 
 .flatpickr-months {
-  padding-block: 0.75rem;
-  padding-inline: 1rem;
+  padding-block: 8px;
+  padding-inline: 0.5rem;
+  position: relative;
 
   .flatpickr-prev-month,
   .flatpickr-next-month {
-    background: rgba(var(--v-theme-surface-variant), var(--v-selected-opacity));
-    block-size: 1.75rem;
-    border-radius: 5rem;
-    inline-size: 1.75rem;
-    inset-block-start: 0.75rem !important;
-    padding-block: 0.25rem;
-    padding-inline: 0.4375rem;
+    align-items: center;
+    background: transparent;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    block-size: 2.5rem;
+    border-radius: 0;
+    color: transparent;
+    display: inline-flex;
+    inline-size: 2rem;
+    inset-block-start: 0.4rem !important;
+    justify-content: center;
+    padding: 0;
+
+    &:hover i,
+    &:hover svg {
+      fill: transparent;
+    }
   }
 
-  .flatpickr-next-month {
-    inset-inline-end: 1.05rem !important;
+  .flatpickr-prev-month svg,
+  .flatpickr-next-month svg {
+    display: none;
   }
 
   .flatpickr-prev-month {
-    /* stylelint-disable-next-line liberty/use-logical-spec */
-    right: 3.5rem;
-    left: unset !important;
+    background-image: url('@/assets/images/iconify-svg/chevron-left-timer.svg');
+    inset-inline-start: 0.5rem !important;
+    inset-inline-end: auto !important;
+    left: 0 !important;
+    right: auto !important;
+  }
+
+  .flatpickr-next-month {
+    background-image: url('@/assets/images/iconify-svg/chevron-right-timer.svg');
+    inset-inline-end: 0.5rem !important;
+    inset-inline-start: auto !important;
+    left: auto !important;
+    right: 0 !important;
   }
 
   .flatpickr-month {
-    block-size: 1.75rem;
+    block-size: 2.25rem;
+    overflow: visible;
+    position: relative;
 
     .flatpickr-current-month {
-      block-size: 1.75rem;
-      inset-inline-start: 0;
-      padding-block-start: 0.2rem;
-      text-align: start;
+      align-items: center;
+      block-size: 2.25rem;
+      box-sizing: border-box;
+      display: flex;
+      gap: 0.5rem;
+      inset-inline-start: auto;
+      justify-content: center;
+      left: auto;
+      margin: 0 auto;
+      padding-block-start: 0;
+      padding-inline: 1.5rem;
+      position: relative;
+      text-align: center;
+      top: 0;
+      width: 100%;
     }
   }
 }
@@ -1035,7 +1249,7 @@ input[altinputclass="inlinePicker"] {
     min-inline-size: 0;
     padding-block-end: 8px;
     padding-inline-end: 0;
-    gap: 4px;
+    gap: 2px;
   }
 
   .app-inline-picker-layout .flatpickr-calendar.inline {
@@ -1066,22 +1280,16 @@ input[altinputclass="inlinePicker"] {
     margin-inline: auto;
     padding-inline: 1rem;
     position: relative;
+  }
 
-    .flatpickr-prev-month,
-    .flatpickr-next-month {
-      inset-block-start: 0.75rem !important;
-      left: unset !important;
-    }
-
-    .flatpickr-next-month {
-      position: absolute !important;
-      right: 1rem !important;
-    }
-
-    .flatpickr-prev-month {
-      position: absolute !important;
-      right: 3.5rem !important;
-    }
+  .app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .flatpickr-innerContainer,
+  .app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .flatpickr-rContainer,
+  .app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .flatpickr-weekdays,
+  .app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .flatpickr-days,
+  .app-inline-picker-layout.is-single-inline .flatpickr-calendar.inline .dayContainer {
+    inline-size: min(100%, 16.625rem);
+    max-inline-size: min(100%, 16.625rem);
+    margin-inline: auto;
   }
 
   .flatpickr-calendar.arrowTop::before,
