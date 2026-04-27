@@ -253,8 +253,6 @@
                                     <div style="text-align: right;" class="mt-5 number-invoice">
                                         <span class="number-invoice" style="line-height: 100%">
                                             <p class="m-0">Org.nr. {{ $billing->client->organization_number }}</p>
-                                            <p class="m-0">{{ $billing->client->phone }}</p>
-                                            <p class="m-0">{{ $billing->client->email }}</p>
                                             <p class="m-0">{{ $billing->client->address }}</p>
                                             <p class="m-0">{{ $billing->client->postal_code }}, {{ $billing->client->street }}</p>
                                         </span>

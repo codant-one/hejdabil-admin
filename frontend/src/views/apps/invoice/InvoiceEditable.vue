@@ -766,8 +766,6 @@ const handleFocus = (element, fieldId) => {
           </h3>
           <span class="d-flex flex-column w-100"  v-if="client">
             <span>Org.nr. {{ client.organization_number }}</span>
-            <span>{{ client.phone }}</span>
-            <span>{{ client.email }}</span>
           </span>
           <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
@@ -1326,8 +1324,6 @@ const handleFocus = (element, fieldId) => {
                 </h3>
                 <span class="d-flex flex-column w-100"  v-if="client">
                   <span>Org.nr. {{ client.organization_number }}</span>
-                  <span>{{ client.phone }}</span>
-                  <span>{{ client.email }}</span>
                 </span>
                 <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
