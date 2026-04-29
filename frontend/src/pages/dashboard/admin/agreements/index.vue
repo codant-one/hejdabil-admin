@@ -993,12 +993,32 @@ const getAgreementClientName = (agreement) => {
   return resolveAgreementClient(agreement)?.fullname ?? ''
 }
 
+const deletedAgreementClientLabel = '(Borttagen)'
+const agreementClientMaxLength = 16
+
 const getAgreementClientDisplayText = (agreement) => {
   const clientName = getAgreementClientName(agreement)
 
   return isAgreementClientDeleted(agreement)
-    ? `${clientName} (Borttagen)`.trim()
+    ? `${clientName} ${deletedAgreementClientLabel}`.trim()
     : clientName
+}
+
+const getAgreementClientTruncatedName = (agreement, maxLength = agreementClientMaxLength) => {
+  const clientName = getAgreementClientName(agreement)
+
+  if (!isAgreementClientDeleted(agreement))
+    return truncateText(clientName, maxLength)
+
+  const availableLength = maxLength - deletedAgreementClientLabel.length - 1
+
+  if (clientName.length <= availableLength)
+    return clientName
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0))
+
+  return `${clientName.substring(0, availableLength - 3)}...`
 }
 
 const isAgreementClientDeleted = (agreement) => {
@@ -1290,17 +1310,20 @@ onBeforeUnmount(() => {
             </td>      
             <td v-if="isColVisible('customer')">
               <VTooltip 
-                v-if="getAgreementClientDisplayText(agreement).length > 18"
+                v-if="getAgreementClientDisplayText(agreement).length > agreementClientMaxLength"
                 location="bottom">
                 <template #activator="{ props }">
                   <span v-bind="props" class="cursor-pointer d-flex gap-1 align-center font-weight-medium text-neutral-3">
-                    {{ truncateText(getAgreementClientDisplayText(agreement), 18) }}
+                    <span>{{ getAgreementClientTruncatedName(agreement) }}</span>
+                    <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
+                      {{ deletedAgreementClientLabel }}
+                    </span>
                   </span>
                 </template>
                 <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
                     {{ getAgreementClientName(agreement) }}
                     <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
-                      (Borttagen)
+                      {{ deletedAgreementClientLabel }}
                     </span>
                 </span>
               </VTooltip>
@@ -1308,7 +1331,7 @@ onBeforeUnmount(() => {
                 <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
                     {{ getAgreementClientName(agreement) }}
                     <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
-                      (Borttagen)
+                      {{ deletedAgreementClientLabel }}
                     </span>
                 </span>
               </span>
