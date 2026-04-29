@@ -1290,11 +1290,11 @@ onBeforeUnmount(() => {
             </td>      
             <td v-if="isColVisible('customer')">
               <VTooltip 
-                v-if="getAgreementClientDisplayText(agreement).length > 20"
+                v-if="getAgreementClientDisplayText(agreement).length > 18"
                 location="bottom">
                 <template #activator="{ props }">
                   <span v-bind="props" class="cursor-pointer d-flex gap-1 align-center font-weight-medium text-neutral-3">
-                    {{ truncateText(getAgreementClientDisplayText(agreement), 20) }}
+                    {{ truncateText(getAgreementClientDisplayText(agreement), 18) }}
                   </span>
                 </template>
                 <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
