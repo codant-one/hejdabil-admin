@@ -994,7 +994,7 @@ const getAgreementClientName = (agreement) => {
 }
 
 const deletedAgreementClientLabel = '(Borttagen)'
-const agreementClientMaxLength = 18
+const agreementClientMaxLength = 17
 
 const getAgreementClientDisplayText = (agreement) => {
   const clientName = getAgreementClientName(agreement)
