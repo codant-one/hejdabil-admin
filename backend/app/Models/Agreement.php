@@ -842,6 +842,15 @@ class Agreement extends Model
                 'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
             ]);
 
+        if ($request->has("type"))
+            $request->merge([
+                "type" => '2'
+            ]);
+        else
+            $request->request->add([
+                'type' => '2'
+            ]);
+
         if ($request->vehicle_id === 'null') {//no existe
 
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -871,11 +880,9 @@ class Agreement extends Model
                 'vehicle_id' => $vehicle->id
             ]);
 
-        VehicleClient::createClient($request);
-        
-        $vehicle = Vehicle::with(['client_purchase'])->find($vehicle->id);
         $request->request->add(['state_id' => 10]);
         $vehicle->updateVehicle($request, $vehicle);
+        $vehicle = Vehicle::with(['client_purchase'])->find($vehicle->id);
 
         //Set VehicleClient ID
         if ($request->has("client_id"))

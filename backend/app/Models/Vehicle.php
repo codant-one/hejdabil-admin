@@ -645,10 +645,10 @@ class Vehicle extends Model
             'registration_fee' => null
         ]);
 
-        VehicleClient::where([
+        /*VehicleClient::where([
             ['vehicle_id', $vehicle->id],
             ['type', 1]
-        ])->delete(); // eliminar el cliente de la venta
+        ])->delete(); */// eliminar el cliente de la venta
 
         return $vehicle;
     }
