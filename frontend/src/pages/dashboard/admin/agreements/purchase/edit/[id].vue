@@ -1183,6 +1183,7 @@ const onSubmit = async (forceSave = false) => {
                 formData.append('description', description.value)
 
                 //client
+                formData.append('type', 2)
                 formData.append('client_id', client_id.value)
                 formData.append('client_type_id', client_type_id.value)
                 formData.append('country_id', country_id.value)

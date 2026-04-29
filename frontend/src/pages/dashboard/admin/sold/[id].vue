@@ -58,6 +58,7 @@ const color = ref(null)
 const fuel_id = ref(null)
 const gearbox_id = ref(null)
 const purchase_price = ref(null)
+const chassis = ref(null)
 const iva_purchase_id = ref(null)
 const sale_price = ref(null)
 const sale_date = ref(null)
@@ -224,6 +225,7 @@ async function fetchData() {
         fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
         purchase_price.value = vehicle.value.purchase_price
+        chassis.value = vehicle.value.chassis ?? chassis.value
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         purchase_date.value = vehicle.value.purchase_date
         currency_id.value = vehicle.value.currency_purchase_id ?? 1
@@ -685,6 +687,8 @@ const onSubmit = async () => {
                 formData.append('iva_sale_id', iva_sale_id.value);
                 formData.append('sale_comments', sale_comments.value);
                 formData.append('save_client', save_client.value);
+                formData.append('purchase_price', purchase_price.value)
+                formData.append('chassis', chassis.value)
 
                 formData.append('client_type_id', client_type_id.value);
                 formData.append('country_id', country_id.value)

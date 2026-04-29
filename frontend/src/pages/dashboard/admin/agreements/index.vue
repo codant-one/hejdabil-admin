@@ -983,6 +983,7 @@ const resolveAgreementClient = (agreement) => {
     return null
 
   return agreement.agreement_client?.client
+    ?? agreement.agreement_client
     ?? agreement.vehicle_client?.client
     ?? agreement.agreement_client
     ?? agreement.vehicle_client
