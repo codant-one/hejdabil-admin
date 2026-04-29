@@ -993,6 +993,14 @@ const getAgreementClientName = (agreement) => {
   return resolveAgreementClient(agreement)?.fullname ?? ''
 }
 
+const getAgreementClientDisplayText = (agreement) => {
+  const clientName = getAgreementClientName(agreement)
+
+  return isAgreementClientDeleted(agreement)
+    ? `${clientName} (Borttagen)`.trim()
+    : clientName
+}
+
 const isAgreementClientDeleted = (agreement) => {
   return !!(
     agreement?.agreement_client?.client_id
@@ -1281,13 +1289,27 @@ onBeforeUnmount(() => {
               </span>
             </td>      
             <td v-if="isColVisible('customer')">
-              <span
-                class="d-flex gap-1 align-center font-weight-medium text-neutral-3"
-              >
-              {{ getAgreementClientName(agreement) }}
-
-              <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
-                  (Borttagen)
+              <VTooltip 
+                v-if="getAgreementClientDisplayText(agreement).length > 20"
+                location="bottom">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    {{ truncateText(getAgreementClientDisplayText(agreement), 20) }}
+                  </span>
+                </template>
+                <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    {{ getAgreementClientName(agreement) }}
+                    <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
+                      (Borttagen)
+                    </span>
+                </span>
+              </VTooltip>
+              <span class="text-disabled"v-else>
+                <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    {{ getAgreementClientName(agreement) }}
+                    <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
+                      (Borttagen)
+                    </span>
                 </span>
               </span>
             </td>   
