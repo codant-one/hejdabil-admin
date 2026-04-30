@@ -67,6 +67,19 @@ const pendingValue = ref(props.modelValue)
 const validationError = ref('')
 const singleDateTimeMenuWidth = 332
 
+const formatSingleDateTimePart = value => `${value}`.padStart(2, '0')
+
+const getDefaultSingleDateTimeValue = () => {
+  const currentDate = new Date()
+  const year = currentDate.getFullYear()
+  const month = formatSingleDateTimePart(currentDate.getMonth() + 1)
+  const day = formatSingleDateTimePart(currentDate.getDate())
+  const hour = formatSingleDateTimePart(currentDate.getHours())
+  const minute = formatSingleDateTimePart(currentDate.getMinutes())
+
+  return `${year}-${month}-${day} ${hour}:${minute}`
+}
+
 const toDateString = value => {
   if (!value)
     return ''
@@ -118,6 +131,15 @@ const normalizeRangeValue = value => {
 const isRangePickerMode = computed(() => (props.pickerConfig?.mode ?? 'range') === 'range')
 const isSingleDateTimePickerMode = computed(() => !isRangePickerMode.value && Boolean(props.pickerConfig?.enableTime))
 
+const getPendingValueOnOpen = () => {
+  const nextValue = props.resetOnOpen ? null : props.modelValue
+
+  if (!nextValue && isSingleDateTimePickerMode.value)
+    return getDefaultSingleDateTimeValue()
+
+  return nextValue
+}
+
 const resolveModelValue = value => {
   if (!isRangePickerMode.value)
     return value
@@ -165,7 +187,7 @@ watch(resolvedMenuVisible, isVisible => {
   }
 
   pickerKey.value += 1
-  pendingValue.value = props.resetOnOpen ? null : props.modelValue
+  pendingValue.value = getPendingValueOnOpen()
   validationError.value = ''
 })
 
