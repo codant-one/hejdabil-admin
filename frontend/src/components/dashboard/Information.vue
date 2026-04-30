@@ -41,11 +41,21 @@
       is_done: 0,
    })
 
+   const getTodayPickerDate = () => {
+      const today = new Date()
+      const year = today.getFullYear()
+      const month = `${today.getMonth() + 1}`.padStart(2, '0')
+      const day = `${today.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+   }
+
    const startDateTimePickerConfig = computed(() => ({
       inline: true,
       mode: 'single',
       enableTime: true, 
       dateFormat: 'Y-m-d H:i',
+      minDate: getTodayPickerDate(),
       position: 'auto right',
       time_24hr: true,
       monthSelectorType: 'dropdown',
