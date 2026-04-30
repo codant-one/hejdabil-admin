@@ -53,11 +53,16 @@ class RefreshVehicles extends Command
 
         foreach ($agreements as $agreement) {
             
-            $this->info(
+            $vehicle = Vehicle::where('reg_num', $agreement->vehicle_client->vehicle->reg_num)->first();
+
+            if (is_null($vehicle->purchase_price)) {
+               $this->info(
                 'Agreement: ' . $agreement->id . ' - ' .
                 'Vehicle: ' . $agreement->vehicle_client->vehicle->reg_num. ' - ' . 
                 'Price: ' . $agreement->price
-            );
+                );
+            }
+            
         }
 
     }
