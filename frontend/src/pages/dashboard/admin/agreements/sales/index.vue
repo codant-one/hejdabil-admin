@@ -64,6 +64,7 @@ const reg_num = ref(null)
 const agreement_id = ref(null)
 const currencies = ref([])
 const currency_id = ref(1)
+const purchase_price = ref(null)
 
 //const tab 1
 const brand_id = ref(null)
@@ -434,6 +435,7 @@ const selectVehicle = vehicle => {
         selectBrand(_vehicle.model?.brand.id)
 
         reg_num.value = _vehicle.reg_num
+        purchase_price.value = _vehicle.purchase_price
         brand_id.value = _vehicle.model?.brand.id
         model_id.value = _vehicle.model?.id
         year.value = _vehicle.year
@@ -462,6 +464,7 @@ const selectVehicle = vehicle => {
 
 const clearVehicle = () => {
     reg_num.value = null
+    purchase_price.value = null
     brand_id.value = null
     model_id.value = null
     year.value = null
@@ -1354,6 +1357,7 @@ const onSubmit = async () => {
                 formData.append('mileage', mileage.value)
                 formData.append('sale_date', sale_date.value)
                 formData.append('vehicle_id', vehicle_id.value)
+                formData.append('purchase_price', purchase_price.value)
 
                 formData.append('gearbox_id', gearbox_id.value)
                 formData.append('number_keys', number_keys.value)
