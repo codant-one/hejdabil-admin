@@ -616,4 +616,45 @@ class VehicleController extends Controller
             ], 500);
         }
     }
+
+    public function getAgreements($id): JsonResponse
+    {
+        try {
+            $vehicle = Vehicle::query()
+                ->with('client_purchase.agreement', 'client_sale.agreement')
+                ->withExists([
+                    'client_purchase as has_purchase_agreement' => fn ($query) => $query->whereHas('agreement'),
+                    'client_sale as has_sale_agreement' => fn ($query) => $query->whereHas('agreement'),
+                ])
+                ->find($id);
+        
+            if (!$vehicle)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fordon hittades inte'
+                ], 404);
+
+            $purchaseAgreement = $vehicle->client_purchase?->agreement;
+            $saleAgreement = $vehicle->client_sale?->agreement;
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'purchase_agreement' => $purchaseAgreement,
+                    'sale_agreement' => $saleAgreement,
+                    'has_purchase_agreement' => (bool) $vehicle->has_purchase_agreement,
+                    'has_sale_agreement' => (bool) $vehicle->has_sale_agreement,
+                    'has_agreement' => (bool) ($vehicle->has_purchase_agreement || $vehicle->has_sale_agreement)
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }
