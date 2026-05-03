@@ -158,6 +158,18 @@ export const useVehiclesStores = defineStore('vehicles', {
                     this.setLoading(false)
                 })
          
-        }
+        },
+        getAgreements(id) {
+            this.setLoading(true)
+
+            return Vehicles.getAgreements(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
     }
 })

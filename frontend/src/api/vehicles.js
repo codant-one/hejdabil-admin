@@ -33,6 +33,10 @@ class Vehicles {
     findByRegNum(data) {
         return axios.post('/vehicles/findByRegNum', data)
     }
+
+    getAgreements(id){
+        return axios.get(`/vehicles/agreements/${id}`)
+    }
     
 }
 

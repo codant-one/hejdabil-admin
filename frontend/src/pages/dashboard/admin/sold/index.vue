@@ -44,6 +44,7 @@ const totalPages = ref(1)
 const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmWarningDeleteDialogVisible = ref(false)
 const isVehicleDetailDialog = ref(false)
 const isConfirmCancelSendVisible = ref(false)
 const isMobile = ref(false)
@@ -390,8 +391,21 @@ const selectBrand = brand => {
     }
 }
 
+const reviewAgreements = async () => {
+  isConfirmDeleteDialogVisible.value = false
+
+  let res = await vehiclesStores.getAgreements(selectedVehicle.value.id)
+
+  isConfirmWarningDeleteDialogVisible.value = res.data.data.has_agreement
+
+  if (!res.data.data.has_agreement) {
+    removeVehicle()
+  }
+}
+
 const removeVehicle = async () => {
   isConfirmDeleteDialogVisible.value = false
+   isConfirmWarningDeleteDialogVisible.value = false
   let res = await vehiclesStores.deleteVehicle(selectedVehicle.value.id)
   selectedVehicle.value = {}
 
@@ -1313,7 +1327,52 @@ onBeforeUnmount(() => {
           <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="removeVehicle"> Ja, radera posten</VBtn>
+          <VBtn class="btn-gradient" @click="reviewAgreements"> Ja, radera posten</VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Agreements -->
+    <VDialog
+      v-model="isConfirmWarningDeleteDialogVisible"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmWarningDeleteDialogVisible = !isConfirmWarningDeleteDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-vehicle-exist" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title text-center">Varning: Detta kan inte ångras</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Bilen du försöker ta bort har aktiva eller sparade avtal kopplade till sig. 
+          Om du fortsätter kommer både bilen och alla relaterade avtal att tas bort permanent.
+        </VCardText>
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn 
+            class="btn-light"  
+            @click="isConfirmWarningDeleteDialogVisible = false"
+          >
+            Avbryt
+          </VBtn>
+          <VBtn 
+            class="btn-gradient" 
+            @click="removeVehicle(selectedVehicle)"
+          >
+            Fortsätt ändå
+          </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
