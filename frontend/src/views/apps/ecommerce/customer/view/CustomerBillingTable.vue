@@ -4,6 +4,7 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
+import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -370,6 +371,19 @@ const addTag = (event) => {
   }
 };
 
+const getResendRecipientEmail = (agreement) => {
+  return agreement?.token?.recipient_email || agreement?.agreement_client?.email || ''
+}
+
+const resetResendSignatureState = () => {
+  resendSignatureEmail.value = ''
+}
+
+const closeResendSignatureDialog = () => {
+  isConfirmResendSignatureVisible.value = false
+  resetResendSignatureState()
+}
+
 const sendMails = async () => {
   if (!isValid.value) {
     isConfirmSendMailVisible.value = false;
@@ -568,6 +582,9 @@ const trackerPreviewError = ref('')
 const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')
 const refSignatureForm = ref()
+const refResendSignatureForm = ref()
+const resendSignatureEmail = ref('')
+const isConfirmResendSignatureVisible = ref(false)
 const isStaticSignatureFlow = ref(false)
 const selectedAgreement = ref({})
 const isConfirmDeleteDialogVisible = ref(false)
@@ -629,6 +646,53 @@ const openStaticSignatureDialog = (agreementData) => {
   
   signatureEmail.value = email
   isSignatureDialogVisible.value = true
+}
+
+const openResendSignature = async (agreementData) => {
+  if (!agreementData?.id) return
+
+  selectedAgreement.value = { ...agreementData }
+  resendSignatureEmail.value = getResendRecipientEmail(agreementData)
+  isConfirmResendSignatureVisible.value = true
+}
+
+const submitResendSignature = async () => {
+  const { valid } = await refResendSignatureForm.value?.validate();
+  if (!valid) return;
+
+  const trimmedEmail = resendSignatureEmail.value.trim()
+
+  isConfirmResendSignatureVisible.value = false
+
+  try {
+    emit("loading", true)
+    const response = await agreementsStores.resendSignature({
+      id: selectedAgreement.value.id,
+      emailDefault: false,
+      emails: [trimmedEmail],
+    })
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'E-postmeddelandet har skickats igen.',
+      show: true,
+    }
+    emit("alert", advisor)
+    await fetchData()
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.',
+      show: true,
+    }
+    emit("alert", advisor)
+  } finally {
+    emit("loading", false)
+    resetResendSignatureState()
+    setTimeout(() => {
+      advisor.value = { show: false }
+      emit("alert", advisor)
+    }, 3000)
+  }
 }
 
 const submitStaticSignatureRequest = async () => {
@@ -1621,6 +1685,15 @@ onBeforeUnmount(() => {
                           </template>
                           <VListItemTitle>Signera</VListItemTitle>
                         </VListItem>
+                        <VListItem 
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues')"
+                          @click="openResendSignature(agreement)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-forward" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Vidarebefordra</VListItemTitle>
+                        </VListItem>
                         <VListItem
                           v-if="$can('view', 'agreements')"
                           @click="openLink(agreement)">
@@ -1743,7 +1816,7 @@ onBeforeUnmount(() => {
                           Se detaljer
                         </VBtn>
                         
-                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
+                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
                           <VIcon icon="custom-dots-vertical" size="24" />
                         </VBtn>
                       </div>
@@ -2013,6 +2086,22 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <VList>
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
+            @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-signature" class="mr-2" />
+            </template>
+            <VListItemTitle>Signera</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues')" 
+            @click="openResendSignature(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-forward" class="mr-2" />
+            </template>
+            <VListItemTitle>Vidarebefordra</VListItemTitle>
+          </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"
               @click="openLink(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
@@ -2159,11 +2248,63 @@ onBeforeUnmount(() => {
       </VForm>
     </VDialog>
 
+     <VDialog
+      v-model="isConfirmResendSignatureVisible"
+      persistent
+      class="action-dialog" >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeResendSignatureDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VForm
+        ref="refResendSignatureForm"
+        @submit.prevent="submitResendSignature"
+      >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="30" icon="custom-forward" class="action-icon" />
+            <div class="dialog-title">Vidarebefordra signeringsförfrågan</div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill att länken för att vidarebefordra avtalet ska skickas.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
+            <VTextField
+              v-model="resendSignatureEmail"
+              placeholder="kund@exempel.com"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="closeResendSignatureDialog">
+                Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+                Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
+    </VDialog>
+
     <!-- 👉 Tracker Dialog -->
     <VDialog
       v-model="isTrackerDialogVisible"
+      :fullscreen="windowWidth < 1024"
       persistent
-      class="action-dialog" >
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    >
       <!-- Dialog close btn -->
       <VBtn
         icon
@@ -2173,7 +2314,7 @@ onBeforeUnmount(() => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
+      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
         <VCardText class="dialog-title-box">
           <div class="dialog-title">
             Signaturprocess
@@ -2693,6 +2834,8 @@ onBeforeUnmount(() => {
    /* ===== RESPONSIVE ===== */
   @media (max-width: 480px) {
     .tracker-body {
+      max-height: none; /* Reset max-height */
+      min-height: 85vh;
       padding: 16px 12px 24px !important;
     }
 

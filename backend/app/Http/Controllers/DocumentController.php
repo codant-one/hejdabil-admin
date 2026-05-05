@@ -543,7 +543,7 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid sändning av e-post',
+                description: 'Fel vid sändning av e-post till ' . ($validated['email'] ?? 'ingen angiven e-post'),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
@@ -578,19 +578,63 @@ class DocumentController extends Controller
             ], 422);
         }
 
+        $validator = Validator::make($request->all(), [
+            'emailDefault' => ['nullable', 'boolean'],
+            'emails' => ['nullable', 'array'],
+            'emails.*' => ['nullable', 'email'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrollera e-postadressen och försök igen.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $useDefaultRecipient = $request->boolean('emailDefault', true);
+        $newRecipientEmail = collect($request->input('emails', []))
+            ->map(fn ($email) => is_string($email) ? trim($email) : null)
+            ->first(fn ($email) => !empty($email));
+
+        $recipientEmail = null;
+
         // Re-send the original email to the same recipient with the SAME token/url
         try {
+            $recipientEmail = $useDefaultRecipient ? $token->recipient_email : $newRecipientEmail;
+
+            if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                $token->update(['signature_status' => 'delivery_issues']);
+
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: 'Ogiltig e-postadress vid vidarebefordran till ' . ($recipientEmail ?: 'ingen angiven e-post'),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                );
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Det finns ingen giltig mottagare för vidarebefordran.'
+                ], 422);
+            }
+
             // Update status to 'sent' before attempting to resend
-            $token->update(['signature_status' => 'sent']);
+            $token->update([
+                'recipient_email' => $recipientEmail,
+                'signature_status' => 'sent'
+            ]);
             
             // Register 'sent' event for the resend
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_SENT,
-                description: 'Vidarebefordran av signaturpost påbörjad',
+                description: 'Vidarebefordran av signaturpost påbörjad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+                metadata: ['recipient' => $recipientEmail, 'resend' => true]
             );
 
             if($document->supplier_id === null) {
@@ -637,7 +681,6 @@ class DocumentController extends Controller
             }
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
-            $clientEmail = $token->recipient_email;
             $subject = 'Dokument för digital signering från ' . $company->company;
             
             $data = [
@@ -653,7 +696,7 @@ class DocumentController extends Controller
             SendEmailJob::dispatch(
                 'emails.documents.signature_request',
                 $data,
-                $clientEmail,
+                $recipientEmail,
                 $subject
             );
             
@@ -664,10 +707,10 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
-                description: 'E-post vidarebefordrad',
+                description: 'E-post vidarebefordrad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+                metadata: ['recipient' => $recipientEmail, 'resend' => true]
             );
 
             SupplierActivity::createActivity([
@@ -682,7 +725,7 @@ class DocumentController extends Controller
                     'document_id' => $document->id,
                     'title' => $document->title,
                     'token_id' => $token->id,
-                    'recipient_email' => $token->recipient_email,
+                    'recipient_email' => $recipientEmail,
                     'signature_status' => $token->signature_status,
                     'placement_x' => $token->placement_x,
                     'placement_y' => $token->placement_y,
@@ -701,7 +744,7 @@ class DocumentController extends Controller
                 'exception' => $e,
                 'document_id' => $document->id,
                 'token_id' => $token->id,
-                'email' => $token->recipient_email
+                'email' => $recipientEmail ?: $token->recipient_email
             ]);
             
             // If resend fails, change to delivery_issues
@@ -711,13 +754,13 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid vidarebefordran av e-post',
+                description: 'Fel vid vidarebefordran av e-post till ' . ($recipientEmail ?: $token->recipient_email),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
                     'error' => $e->getMessage(),
                     'error_type' => get_class($e),
-                    'recipient' => $token->recipient_email,
+                    'recipient' => $recipientEmail ?: $token->recipient_email,
                     'resend' => true
                 ]
             );

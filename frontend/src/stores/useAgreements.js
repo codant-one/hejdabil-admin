@@ -195,9 +195,9 @@ export const useAgreementsStores = defineStore('agreements', {
             })
         },
 
-        resendSignature(agreementId) {
+        resendSignature(payload) {
             return new Promise((resolve, reject) => {
-                Agreements.resendSignatureRequest(agreementId)
+                Agreements.resendSignatureRequest(payload)
                     .then(response => resolve(response))
                     .catch(error => reject(error))
             })

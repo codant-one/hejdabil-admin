@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 use App\Mail\SignedDocumentMail;
 use App\Jobs\SendEmailJob;
@@ -495,10 +496,33 @@ class SignatureController extends Controller
             ], 422);
         }
 
+        $validator = Validator::make($request->all(), [
+            'emailDefault' => ['nullable', 'boolean'],
+            'emails' => ['nullable', 'array'],
+            'emails.*' => ['nullable', 'email'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrollera e-postadressen och försök igen.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $useDefaultRecipient = $request->boolean('emailDefault', true);
+        $newRecipientEmail = collect($request->input('emails', []))
+            ->map(fn ($email) => is_string($email) ? trim($email) : null)
+            ->first(fn ($email) => !empty($email));
+
+        $recipientEmail = null;
+
         try {
             $agreement->loadMissing(['agreement_client', 'agreement_type']);
 
-            $recipientEmail = $token->recipient_email ?: $agreement->agreement_client?->email;
+            $recipientEmail = $useDefaultRecipient
+                ? ($token->recipient_email ?: $agreement->agreement_client?->email)
+                : $newRecipientEmail;
 
             if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
                 $token->update(['signature_status' => 'delivery_issues']);
@@ -506,7 +530,7 @@ class SignatureController extends Controller
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid vidarebefordran',
+                    description: 'Ogiltig e-postadress vid vidarebefordran till ' . ($recipientEmail ?: 'ingen angiven e-post'),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
                     metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -527,7 +551,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Vidarebefordran av signaturpost påbörjad',
+                description: 'Vidarebefordran av signaturpost påbörjad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -625,7 +649,7 @@ class SignatureController extends Controller
                 'exception' => $e,
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
-                'email' => $token->recipient_email,
+                'email' => $recipientEmail ?: $token->recipient_email,
             ]);
 
             $token->update(['signature_status' => 'delivery_issues']);
@@ -633,13 +657,13 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid vidarebefordran av e-post',
+                description: 'Fel vid vidarebefordran av e-post till ' . ($recipientEmail ?: $token->recipient_email),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
                     'error' => $e->getMessage(),
                     'error_type' => get_class($e),
-                    'recipient' => $token->recipient_email,
+                    'recipient' => $recipientEmail ?: $token->recipient_email,
                     'resend' => true,
                 ]
             );
