@@ -101,6 +101,9 @@ const brandColorOptions = [
   '#E7E7E7',
 ]
 
+const themeColorOptions = ['#454545', '#FFFFFF']
+const defaultThemeColor = '#FFFFFF'
+
 const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
 const defaultBrandColorIndex = 4
 const presetBrandColorCount = brandColorOptions.length - 1
@@ -109,6 +112,7 @@ const savedBrandColor = ref(null)
 const manualHexInput = ref('')
 
 const selectedBrandColor = ref(brandColorOptions[defaultBrandColorIndex])
+const selectedThemeColor = ref(defaultThemeColor)
 
 // ── Hue bar helpers ──
 
@@ -309,6 +313,21 @@ const getSettingColorIdFromOption = color => {
   return index + 1
 }
 
+const getThemeValueFromColor = color => {
+  if (color === '#454545')
+    return 1
+
+  if (color === '#FFFFFF')
+    return 0
+
+  return null
+}
+
+const getThemeSwatchStyle = color => ({
+  backgroundColor: color,
+  borderColor: color === '#FFFFFF' ? '#E7E7E7' : 'transparent',
+})
+
 const resolveLoggedUserId = () => {
   if (role.value === 'User')
     return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
@@ -407,6 +426,14 @@ const applyBrandColorFromSettings = () => {
   savedBrandColor.value = null
 }
 
+const applyThemeFromSettings = () => {
+  const colorSource = isAdminRole.value
+    ? configsStores.getFeaturedConfig('color') ?? {}
+    : settingsData.value ?? {}
+
+  selectedThemeColor.value = Number(colorSource?.theme) === 1 ? '#454545' : defaultThemeColor
+}
+
 const selectBrandColor = async color => {
   if (role.value === 'User')
     return
@@ -428,6 +455,22 @@ const selectBrandColor = async color => {
 
   await persistBrandColorSettings({
     setting_color_id: settingColorId,
+  })
+}
+
+const selectThemeColor = async color => {
+  if (role.value === 'User')
+    return
+
+  const themeValue = getThemeValueFromColor(color)
+
+  if (themeValue === null)
+    return
+
+  selectedThemeColor.value = color
+
+  await persistBrandColorSettings({
+    theme: themeValue,
   })
 }
 
@@ -591,10 +634,12 @@ async function fetchData() {
     }
 
     applyBrandColorFromSettings()
+    applyThemeFromSettings()
     isBrandPaletteReady.value = true
     syncInitialFormSnapshot()
   } catch {
     applyBrandColorFromSettings()
+    applyThemeFromSettings()
     isBrandPaletteReady.value = true
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
     clearAdvisorLater(5000)
@@ -1168,6 +1213,28 @@ onBeforeUnmount(() => {
                 </div>
                 <span class="avatar-text text-neutral-3">
                   Välj en färg som representerar ditt varumärke. Den används i dina dokument.
+                </span>             
+                <span class="avatar-text">
+                  Färg i texter
+                </span>
+                <div class="brand-color-grid brand-color-grid--theme">
+                  <button
+                    v-for="color in themeColorOptions"
+                    :key="color"
+                    type="button"
+                    class="brand-color-grid__item"
+                    :disabled="role === 'User'"
+                    :class="{
+                      'brand-color-grid__item--selected': isBrandPaletteReady && selectedThemeColor === color,
+                    }"
+                    :style="getThemeSwatchStyle(color)"
+                    :aria-label="`Färg ${color}`"
+                    @click="selectThemeColor(color)"
+                  >
+                  </button>
+                </div>
+                <span class="avatar-text text-neutral-3">
+                  Den här färgen används i texterna i dina dokument.
                 </span>
               </div>
             </div>
@@ -1848,6 +1915,12 @@ onBeforeUnmount(() => {
   max-width: 224px;
 }
 
+.brand-color-grid--theme {
+  grid-template-columns: repeat(2, minmax(0, 32px));
+  grid-template-rows: 1fr;
+  max-width: 80px;
+}
+
 .brand-color-grid__item {
   display: inline-flex;
   align-items: center;
@@ -2056,6 +2129,12 @@ onBeforeUnmount(() => {
 
   .brand-color-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .brand-color-grid--theme {
+    grid-template-columns: repeat(2, minmax(0, 32px));
+    grid-template-rows: 1fr;
+    max-width: 80px;
   }
 
   .signature-preview-box,

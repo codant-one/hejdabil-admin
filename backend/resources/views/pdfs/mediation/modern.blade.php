@@ -114,12 +114,12 @@
         .header-title-cell h1, .header-logo-cell h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
-            color: #FFFFFF;
+            color: {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
         }
 
         .header-title-cell .contract-details, .header-logo-cell .contract-details {
             font-size: 10px;
-            color: #FFFFFF;
+            color: {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
             line-height: 1;
         }
 

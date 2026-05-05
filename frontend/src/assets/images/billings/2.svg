@@ -7,6 +7,9 @@
 <rect x="6" y="75" width="32" height="4" rx="2" fill="#BFBFBF"/>
 <rect x="6" y="133" width="32" height="4" rx="2" fill="#BFBFBF"/>
 <rect x="42" y="69" width="32" height="4" rx="2" fill="#BFBFBF"/>
+<rect x="16" y="16" width="84" height="4" rx="2" fill="white"/>
+<rect x="16" y="24" width="84" height="4" rx="2" fill="white"/>
+<rect x="16" y="32" width="84" height="4" rx="2" fill="white"/>
 <rect x="42" y="127" width="32" height="4" rx="2" fill="#BFBFBF"/>
 <rect x="42" y="75" width="32" height="4" rx="2" fill="#BFBFBF"/>
 <rect x="42" y="133" width="32" height="4" rx="2" fill="#BFBFBF"/>

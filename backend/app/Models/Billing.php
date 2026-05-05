@@ -234,6 +234,7 @@ class Billing extends Model
             $company->type = $billingsObj->type ?? 1;
 
             $colorSettingId = $colorObj->setting_color_id ?? null;
+            $company->theme = $colorObj->theme ?? 0;
 
             if($colorSettingId) {//existe un id de color
                 $color = SettingColor::find($colorSettingId);
@@ -253,6 +254,7 @@ class Billing extends Model
             $company->last_name = $user->user->last_name;
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+            $company->theme = $setting->theme ?? 0;
 
             if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
@@ -397,6 +399,7 @@ class Billing extends Model
             $company->type = $billingsObj->type ?? 1;
 
             $colorSettingId = $colorObj->setting_color_id ?? null;
+            $company->theme = $colorObj->theme ?? 0;
 
             if($colorSettingId) {//existe un id de color
                 $color = SettingColor::find($colorSettingId);
@@ -415,6 +418,7 @@ class Billing extends Model
             $company->last_name = $user->user->last_name;
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+            $company->theme = $setting->theme ?? 0;
 
             if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
@@ -557,6 +561,7 @@ class Billing extends Model
             $company->type = $billingsObj->type ?? 1;
 
             $colorSettingId = $colorObj->setting_color_id ?? null;
+            $company->theme = $colorObj->theme ?? 0;
 
             if($colorSettingId) {//existe un id de color
                 $color = SettingColor::find($colorSettingId);
@@ -576,6 +581,7 @@ class Billing extends Model
             $company->last_name = $user->user->last_name;
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+            $company->theme = $setting->theme ?? 0;
 
             if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
@@ -605,19 +611,19 @@ class Billing extends Model
 
         switch ($company->type) {
             case 1:
-                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
                 break;
             case 2:
-                PDF::loadView('pdfs.invoices.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                PDF::loadView('pdfs.invoices.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
                 break;
             case 3:
-                PDF::loadView('pdfs.invoices.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                PDF::loadView('pdfs.invoices.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
                 break;
             case 4:
-                PDF::loadView('pdfs.invoices.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                PDF::loadView('pdfs.invoices.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
                 break;
             default:
-                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
         }
 
         $billing->file = 'pdfs/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
@@ -674,6 +680,7 @@ class Billing extends Model
             $company->type = $billingsObj->type ?? 1;
 
             $colorSettingId = $colorObj->setting_color_id ?? null;
+            $company->theme = $colorObj->theme ?? 0;
 
             if($colorSettingId) {//existe un id de color
                 $color = SettingColor::find($colorSettingId);
@@ -692,6 +699,7 @@ class Billing extends Model
             $company->last_name = $user->user->last_name;
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+            $company->theme = $setting->theme ?? 0;
 
             if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);

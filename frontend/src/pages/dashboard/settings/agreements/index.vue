@@ -10,6 +10,9 @@ import agreement3 from '@images/agreements/3.svg'
 
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const DEFAULT_THEME = 0
+const LIGHT_THEME_TEXT_COLOR = '#FFFFFF'
+const DARK_THEME_TEXT_COLOR = '#454545'
 const DEFAULT_AGREEMENT_DUE_DATES = 7
 const DEFAULT_TERMS_AND_CONDITIONS_PURCHASE = 'Fordonet säljs i befintligt skick om inget annat avtalats. Säljaren intygar att denne är rättmätig ägare och att fordonet är fritt från skulder och andra belastningar, om inget annat anges. Köparen har haft möjlighet att undersöka fordonet och godkänner dess skick. Äganderätten övergår först när full betalning har erlagts.'
 const DEFAULT_TERMS_AND_CONDITIONS_SALES = 'Fordonet säljs i befintligt skick med eventuella garantier enligt avtalet. Köparen ansvarar för att kontrollera fordonet vid leverans. Reklamation ska ske inom skälig tid. Vid försenad betalning kan avgifter tillkomma. Äganderätten kvarstår hos säljaren tills full betalning skett.'
@@ -110,10 +113,28 @@ const resolveLoggedUserId = () => {
   return userData.value?.id ?? userData.value?.user?.id ?? null
 }
 
+const resolveAgreementColorSource = () => {
+  const adminColorConfig = configsStores.getFeaturedConfig('color')
+  const sources = [
+    isAdminRole.value ? adminColorConfig : settingsData.value,
+    adminColorConfig,
+    settingsData.value,
+    adminColorConfig?.color,
+    adminColorConfig?.settings,
+    settingsData.value?.color,
+    settingsData.value?.settings,
+  ]
+
+  return sources.find(source => source && (
+    source.setting_color_id !== undefined
+    || source.primary_color !== undefined
+    || source.secondary_color !== undefined
+    || source.theme !== undefined
+  )) ?? {}
+}
+
 const resolveAgreementPreviewColors = () => {
-  const colorSource = isAdminRole.value
-    ? configsStores.getFeaturedConfig('color') ?? {}
-    : settingsData.value ?? {}
+  const colorSource = resolveAgreementColorSource()
 
   const settingColorId = Number(colorSource?.setting_color_id)
 
@@ -142,18 +163,31 @@ const resolveAgreementPreviewColors = () => {
   }
 }
 
-const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) => {
+const resolveAgreementPreviewTheme = () => {
+  const colorSource = resolveAgreementColorSource()
+
+  return Number(colorSource?.theme) === 1 ? 1 : DEFAULT_THEME
+}
+
+const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor, textColor = null) => {
   const response = await fetch(assetUrl)
   const svgMarkup = await response.text()
-  const updatedSvgMarkup = svgMarkup
+  let updatedSvgMarkup = svgMarkup
     .replace(/#29ABE2/gi, primaryColor)
     .replace(/#E2F2FC/gi, secondaryColor)
+
+  if (textColor) {
+    updatedSvgMarkup = updatedSvgMarkup
+      .replace(/fill="white"/gi, `fill="${textColor}"`)
+      .replace(/fill="#FFFFFF"/gi, `fill="${textColor}"`)
+  }
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvgMarkup)}`
 }
 
 const loadAgreementPreviewSources = async () => {
   const { primaryColor, secondaryColor } = resolveAgreementPreviewColors()
+  const previewTextColor = resolveAgreementPreviewTheme() === 1 ? DARK_THEME_TEXT_COLOR : LIGHT_THEME_TEXT_COLOR
   isAgreementPreviewReady.value = false
 
   try {
@@ -161,7 +195,7 @@ const loadAgreementPreviewSources = async () => {
 
     const [classic, modern, compact] = await Promise.all([
       buildRecoloredSvgDataUrl(agreement1, primaryColor, secondaryColor),
-      buildRecoloredSvgDataUrl(agreement2, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(agreement2, primaryColor, secondaryColor, previewTextColor),
       buildRecoloredSvgDataUrl(agreement3, primaryColor, secondaryColor),
     ])
 
