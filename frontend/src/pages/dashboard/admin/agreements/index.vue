@@ -667,7 +667,7 @@ const submitResendSignature = async () => {
   } catch (error) {
     advisor.value = {
       type: 'error',
-      message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.',
+      message: error.response?.data?.message || 'Det gick inte att skicka om e-postmeddelandet.',
       show: true,
     }
   } finally {
@@ -1469,7 +1469,7 @@ onBeforeUnmount(() => {
                     <template #prepend>
                       <VIcon icon="custom-forward" class="mr-2" />
                     </template>
-                    <VListItemTitle>Vidarebefordra</VListItemTitle>
+                    <VListItemTitle>Skicka om</VListItemTitle>
                   </VListItem>
                   <VListItem
                      v-if="$can('view', 'agreements')"
@@ -1882,10 +1882,10 @@ onBeforeUnmount(() => {
         <VCard flat class="card-form">
           <VCardText class="dialog-title-box">
             <VIcon size="30" icon="custom-forward" class="action-icon" />
-            <div class="dialog-title">Vidarebefordra signeringsförfrågan</div>
+            <div class="dialog-title">Skicka om signeringsförfrågan</div>
           </VCardText>
           <VCardText class="dialog-text">
-            Ange den e-postadress till vilken du vill att länken för att vidarebefordra avtalet ska skickas.
+            Ange den e-postadress till vilken du vill att länken för att skicka om avtalet ska skickas.
           </VCardText>
           <VCardText class="dialog-text pt-2">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
@@ -2208,7 +2208,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-forward" class="mr-2" />
             </template>
-            <VListItemTitle>Vidarebefordra</VListItemTitle>
+            <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"

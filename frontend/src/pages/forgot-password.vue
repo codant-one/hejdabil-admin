@@ -136,13 +136,6 @@ const onSubmit = () => {
             <VIcon icon="custom-arrow-left" />
             <span>Återgå till inloggningen</span>
           </RouterLink>
-
-          <RouterLink
-            class="d-none align-center justify-center green-link"
-            :to="{ name: 'login' }"
-          >
-            <span>Vidarebefordra</span>
-          </RouterLink>
         </div>
       </VForm>
     </div>

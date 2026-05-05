@@ -530,7 +530,7 @@ class SignatureController extends Controller
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid vidarebefordran till ' . ($recipientEmail ?: 'ingen angiven e-post'),
+                    description: 'Ogiltig e-postadress vid skicka om till ' . ($recipientEmail ?: 'ingen angiven e-post'),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
                     metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -538,7 +538,7 @@ class SignatureController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Det finns ingen giltig mottagare för vidarebefordran.'
+                    'message' => 'Det finns ingen giltig mottagare för att skicka om.'
                 ], 422);
             }
 
@@ -551,7 +551,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Vidarebefordran av signaturpost påbörjad till ' . $recipientEmail,
+                description: 'Skicka om signaturpost påbörjad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -632,7 +632,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'E-post vidarebefordrad',
+                description: 'E-post skickad om',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -642,7 +642,7 @@ class SignatureController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
+                'message' => 'Återutsändningsmeddelandet har skickats om.'
             ]);
         } catch (\Throwable $e) {
             Log::error('Error resending signature email for agreement: ' . $e->getMessage(), [
@@ -657,7 +657,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid vidarebefordran av e-post till ' . ($recipientEmail ?: $token->recipient_email),
+                description: 'Fel vid skicka om e-post till ' . ($recipientEmail ?: $token->recipient_email),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
