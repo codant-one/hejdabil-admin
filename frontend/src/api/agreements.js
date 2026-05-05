@@ -30,8 +30,11 @@ class Agreements {
         return axios.post(`/agreements/sendMails/${data.id}`, data)
     }
 
-    resendSignatureRequest(agreementId) {
-        return axios.post(`/agreements/${agreementId}/resend-signature-request`)
+    resendSignatureRequest(data) {
+        const agreementId = typeof data === 'object' && data !== null ? data.id : data
+        const payload = typeof data === 'object' && data !== null ? data : {}
+
+        return axios.post(`/agreements/${agreementId}/resend-signature-request`, payload)
     }
 
     getAdminPreviewPdf(id) {

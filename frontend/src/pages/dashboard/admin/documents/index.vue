@@ -50,6 +50,9 @@ const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')              
 const textEmail = ref(null)
 const refSignatureForm = ref()
+const refResendSignatureForm = ref()
+const isConfirmResendSignatureVisible = ref(false)
+const resendSignatureEmail = ref('')
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -899,17 +902,49 @@ const openSignatureDialog = () => {
   isSignatureDialogVisible.value = true
 }
 
-// Re-send signature request using existing token (same URL)
+const getResendRecipientEmail = (document) => {
+  return document?.token?.recipient_email || ''
+}
+
+const resetResendSignatureState = () => {
+  resendSignatureEmail.value = ''
+}
+
+const closeResendSignatureDialog = () => {
+  isConfirmResendSignatureVisible.value = false
+  resetResendSignatureState()
+}
+
 const openResendSignature = async (documentData) => {
+  if (!documentData?.id) return
+
+  selectedDocument.value = { ...documentData }
+  resendSignatureEmail.value = getResendRecipientEmail(documentData)
+  isConfirmResendSignatureVisible.value = true
+}
+
+const submitResendSignature = async () => {
+  const { valid } = await refResendSignatureForm.value?.validate()
+  if (!valid) return
+
+  const trimmedEmail = resendSignatureEmail.value.trim()
+
+  isConfirmResendSignatureVisible.value = false
+
   try {
     isRequestOngoing.value = true
-    const response = await documentsStores.resendSignature(documentData.id)
+    const response = await documentsStores.resendSignature({
+      id: selectedDocument.value.id,
+      emailDefault: false,
+      emails: [trimmedEmail],
+    })
     advisor.value = { type: 'success', message: response.data.message || 'E-postmeddelandet har skickats igen.', show: true }
     await fetchData()
   } catch (error) {
     advisor.value = { type: 'error', message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.', show: true }
   } finally {
     isRequestOngoing.value = false
+    resetResendSignatureState()
     setTimeout(() => { advisor.value = { show: false } }, 3000)
   }
 }
@@ -1540,7 +1575,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && document.token?.signature_status === 'delivered'"
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues')"
                     @click="openResendSignature(document)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" class="mr-2" />
@@ -1729,6 +1764,52 @@ onBeforeUnmount(() => {
           <VBtn class="btn-gradient" @click="removeDocument"> Ja, radera </VBtn>
         </VCardText>
       </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="isConfirmResendSignatureVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeResendSignatureDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VForm
+        ref="refResendSignatureForm"
+        @submit.prevent="submitResendSignature"
+      >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="30" icon="custom-forward" class="action-icon" />
+            <div class="dialog-title">Vidarebefordra signeringsförfrågan</div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill att länken för att vidarebefordra dokumentet ska skickas.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
+            <VTextField
+              v-model="resendSignatureEmail"
+              placeholder="kund@exempel.com"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="closeResendSignatureDialog">
+                Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+                Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- 👉 Send Document Dialog -->
@@ -2084,8 +2165,14 @@ onBeforeUnmount(() => {
     <!-- 👉 Tracker Dialog -->
     <VDialog 
       v-model="isTrackerDialogVisible"
+      :fullscreen="windowWidth < 1024"
       persistent
-      class="action-dialog" >
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    >
       <!-- Dialog close btn -->
       <VBtn
         icon
@@ -2095,7 +2182,7 @@ onBeforeUnmount(() => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
+      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
         <VCardText class="dialog-title-box">
           <div class="dialog-title">
             Signaturprocess
@@ -2260,7 +2347,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'delivered'"
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues')"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -3055,6 +3142,8 @@ onBeforeUnmount(() => {
   /* ===== RESPONSIVE ===== */
   @media (max-width: 480px) {
     .tracker-body {
+      max-height: none; /* Reset max-height */
+      min-height: 85vh;
       padding: 16px 12px 24px !important;
     }
 

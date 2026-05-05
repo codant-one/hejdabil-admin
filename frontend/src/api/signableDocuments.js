@@ -40,8 +40,11 @@ class SignableDocuments {
         return axios.post(`/signable-documents/${documentId}/send-signature-request`, payload)
     }
 
-    resendSignatureRequest(documentId) {
-        return axios.post(`/signable-documents/${documentId}/resend-signature-request`)
+    resendSignatureRequest(data) {
+        const documentId = typeof data === 'object' && data !== null ? data.id : data
+        const payload = typeof data === 'object' && data !== null ? data : {}
+
+        return axios.post(`/signable-documents/${documentId}/resend-signature-request`, payload)
     }
 
     send(data) {
