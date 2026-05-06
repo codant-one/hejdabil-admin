@@ -364,6 +364,15 @@ const checkTokenStatus = async () => {
       }
 
       return false
+    } else if (response.data.status === 'cancelled') {
+      finalState.value = {
+        type: 'error',
+        title: 'Signering annullerat',
+        message: response.data.message || 'Detta dokument eller avtal har annullerats och kan inte längre signeras.',
+        showRetry: false,
+      }
+
+      return false
     } else if (response.data.status === 'delivery_issues') {
       finalState.value = {
         type: 'warning',
@@ -956,7 +965,7 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
-    <div v-if="!isRequestOngoing && finalState && finalState.type === 'error' && !isAlreadySigned">
+    <div v-if="!isRequestOngoing && finalState && !isAlreadySigned">
       <VCard class="signing-card pa-4 d-flex flex-column" style="min-height: 100vh;">
         <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
           <img :src="logo" width="121" height="40" alt="Billogg" />
@@ -976,6 +985,7 @@ onMounted(loadSignatureData);
             </div>
           </div>
           <VBtn
+            v-if="finalState.showRetry !== false"
             class="btn-ghost"
             @click="reloadPage"
           >

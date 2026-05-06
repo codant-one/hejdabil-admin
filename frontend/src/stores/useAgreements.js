@@ -203,6 +203,14 @@ export const useAgreementsStores = defineStore('agreements', {
             })
         },
 
+        cancelSignature(payload) {
+            return new Promise((resolve, reject) => {
+                Agreements.cancelSignatureRequest(payload)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
+
         getAdminPreviewPdf(id) {
             this.setLoading(true)
 

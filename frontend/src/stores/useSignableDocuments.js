@@ -120,6 +120,13 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
                     .catch(error => reject(error))
             })
         },
+        cancelSignature(payload) {
+            return new Promise((resolve, reject) => {
+                SignableDocuments.cancelSignatureRequest(payload)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
         sendDocument(data) {
             this.setLoading(true)
 

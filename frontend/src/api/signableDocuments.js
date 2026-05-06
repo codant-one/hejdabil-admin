@@ -47,6 +47,12 @@ class SignableDocuments {
         return axios.post(`/signable-documents/${documentId}/resend-signature-request`, payload)
     }
 
+    cancelSignatureRequest(data) {
+        const documentId = typeof data === 'object' && data !== null ? data.id : data
+
+        return axios.post(`/signable-documents/${documentId}/cancel-signature-request`)
+    }
+
     send(data) {
         return axios.post('/signable-documents/send', data)
     }

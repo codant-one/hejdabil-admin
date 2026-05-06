@@ -46,6 +46,7 @@ const totalPages = ref(1)
 const totalDocuments = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmCancelSignatureDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
 const textEmail = ref(null)
@@ -737,6 +738,13 @@ const getEventConfig = (eventType, event) => {
       color: '#FF4D4F',
       bgClass: 'status-error',
       icon: 'custom-close'
+    },
+    'cancelled': {
+      title: 'Signering annullerad',
+      text: 'Signeringslänken har återkallats och kan inte längre användas',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-unavailable'
     }
   }
   return configs[eventType] || null
@@ -921,6 +929,29 @@ const openResendSignature = async (documentData) => {
   selectedDocument.value = { ...documentData }
   resendSignatureEmail.value = getResendRecipientEmail(documentData)
   isConfirmResendSignatureVisible.value = true
+}
+
+const openCancelSignatureDialog = (documentData) => {
+  if (!documentData?.id) return
+
+  selectedDocument.value = { ...documentData }
+  isConfirmCancelSignatureDialogVisible.value = true
+}
+
+const revokeSignature = async () => {
+  isConfirmCancelSignatureDialogVisible.value = false
+
+  try {
+    isRequestOngoing.value = true
+    const response = await documentsStores.cancelSignature({ id: selectedDocument.value.id })
+    advisor.value = { type: 'success', message: response.data.message || 'Signeringsförfrågan har återkallats.', show: true }
+    await fetchData()
+  } catch (error) {
+    advisor.value = { type: 'error', message: error.response?.data?.message || 'Det gick inte att återkalla signeringsförfrågan.', show: true }
+  } finally {
+    isRequestOngoing.value = false
+    setTimeout(() => { advisor.value = { show: false } }, 3000)
+  }
 }
 
 const submitResendSignature = async () => {
@@ -1172,6 +1203,12 @@ const resolveStatus = state => {
       name: 'Misslyckades',
       class: 'error',
       icon: 'custom-close'
+    }
+  if (state === 'cancelled')
+    return {
+      name: 'Annullerad',
+      class: 'error',
+      icon: 'custom-unavailable'
     }
 }
 
@@ -1432,6 +1469,19 @@ onBeforeUnmount(() => {
               </template>
               <VListItemTitle>Signerad</VListItemTitle>
             </VListItem>
+
+            <VListItem @click="updateStatus('cancelled')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'cancelled'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Annullerad</VListItemTitle>
+            </VListItem>
           </VList>
         </VMenu>
 
@@ -1574,6 +1624,14 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
+                  <VListItem
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues')"
+                    @click="openCancelSignatureDialog(document)">
+                    <template #prepend>
+                      <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Återkalla signering</VListItemTitle>
+                  </VListItem>
                   <VListItem
                     v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues')"
                     @click="openResendSignature(document)">
@@ -1810,6 +1868,38 @@ onBeforeUnmount(() => {
           </VCardText>
         </VCard>
       </VForm>
+    </VDialog>
+
+    <VDialog
+      v-model="isConfirmCancelSignatureDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmCancelSignatureDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
+          <div class="dialog-title">Återkalla signering</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill annullera signeringsförfrågan för dokumentet
+          <strong>{{ selectedDocument.title }}</strong>?
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmCancelSignatureDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="revokeSignature">
+            Acceptera
+          </VBtn>
+        </VCardText>
+      </VCard>
     </VDialog>
 
     <!-- 👉 Send Document Dialog -->
@@ -2348,6 +2438,15 @@ onBeforeUnmount(() => {
           </VListItem>
           <VListItem
             v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues')"
+            @click="openCancelSignatureDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-unavailable" size="24" />
+            </template>
+            <VListItemTitle>Återkalla signering</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues')"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2466,6 +2565,19 @@ onBeforeUnmount(() => {
               /></VListItemAction>
             </template>
             <VListItemTitle>Signerad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('cancelled')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'cancelled'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Annullerad</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

@@ -219,6 +219,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
         Route::get('/{document}/get-admin-preview-pdf', [DocumentController::class, 'getAdminPreviewPdf'])->name('documents.getAdminPreviewPdf');
         Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
+        Route::post('/{document}/cancel-signature-request', [DocumentController::class, 'cancelSignatureRequest'])->name('documents.cancelSignatureRequest');
         Route::post('/{document}/resend-signature-request', [DocumentController::class, 'resendSignatureRequest'])->name('documents.resendSignatureRequest');
     });
 
@@ -246,6 +247,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
         Route::get('/{agreement}/get-admin-preview-pdf', [AgreementController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
+        Route::post('/{agreement}/cancel-signature-request', [SignatureController::class, 'cancelSignatureRequest'])->name('agreements.cancelSignatureRequest');
         Route::post('/{agreement}/resend-signature-request', [SignatureController::class, 'resendSignatureRequest'])->name('agreements.resendSignatureRequest');
         Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
