@@ -184,17 +184,19 @@ class Vehicle extends Model
 
         if ($filters->get('date_from') && $filters->get('date_to')) {
             $filter = [
-                [Carbon::parse($filters->get('date_from'))->format('Y-m-d').' 00:00:00'],
-                [Carbon::parse($filters->get('date_to'))->format('Y-m-d').' 23:59:59']
+                Carbon::parse($filters->get('date_from'))->format('Y-m-d') . ' 00:00:00',
+                Carbon::parse($filters->get('date_to'))->format('Y-m-d') . ' 23:59:59',
             ];
-            
 
-            if ($filters->get('state_id') === null) {
-                $query->whereBetween('purchase_date', $filter) 
-                      ->where('state_id', '<>', 12);
-            } else {   
-                $query->whereBetween('sale_date', $filter) 
-                      ->where('state_id', 12);
+            if ((int) $filters->get('state_id') === 12) {
+                $query->whereBetween('sale_date', $filter)
+                    ->where('state_id', 12);
+            } else {
+                $query->whereBetween('purchase_date', $filter);
+
+                if ($filters->get('state_id') === null) {
+                    $query->where('state_id', '<>', 12);
+                }
             }
         }
 
