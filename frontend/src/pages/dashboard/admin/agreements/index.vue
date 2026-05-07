@@ -607,7 +607,7 @@ const resolveStatus = state => {
     return {
       name: 'Annullerad',
       class: 'error',
-      icon: 'custom-unavailable'
+      icon: 'custom-signature-off'
     }
 }
 
@@ -1012,7 +1012,7 @@ const getEventConfig = (eventType, event) => {
       text: 'Signeringslänken har återkallats och kan inte längre användas',
       color: '#FF4D4F',
       bgClass: 'status-error',
-      icon: 'custom-unavailable'
+      icon: 'custom-signature-off'
     }
   }
   return configs[eventType] || null
@@ -1511,16 +1511,16 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues')"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
                     @click="openCancelSignatureDialog(agreement)"
                    >
                     <template #prepend>
-                      <VIcon icon="custom-unavailable" class="mr-2" />
+                      <VIcon icon="custom-signature-off" class="mr-2" />
                     </template>
                     <VListItemTitle>Återkalla signering</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues')"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
                     @click="openResendSignature(agreement)"
                    >
                     <template #prepend>
@@ -1769,7 +1769,7 @@ onBeforeUnmount(() => {
 
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
+          <VIcon size="32" icon="custom-signature-off" class="action-icon" />
           <div class="dialog-title">
             Återkalla signering
           </div>
@@ -2313,15 +2313,15 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues')" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
             @click="openCancelSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <VIcon icon="custom-unavailable" class="mr-2" />
+              <VIcon icon="custom-signature-off" class="mr-2" />
             </template>
             <VListItemTitle>Återkalla signering</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues')" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
             @click="openResendSignature(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-forward" class="mr-2" />

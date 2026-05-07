@@ -744,7 +744,7 @@ const getEventConfig = (eventType, event) => {
       text: 'Signeringslänken har återkallats och kan inte längre användas',
       color: '#FF4D4F',
       bgClass: 'status-error',
-      icon: 'custom-unavailable'
+      icon: 'custom-signature-off'
     }
   }
   return configs[eventType] || null
@@ -1208,7 +1208,7 @@ const resolveStatus = state => {
     return {
       name: 'Annullerad',
       class: 'error',
-      icon: 'custom-unavailable'
+      icon: 'custom-signature-off'
     }
 }
 
@@ -1625,15 +1625,15 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues')"
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues' || document.token?.signature_status === 'reviewed')"
                     @click="openCancelSignatureDialog(document)">
                     <template #prepend>
-                      <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+                      <VIcon icon="custom-signature-off" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Återkalla signering</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues')"
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues' || document.token?.signature_status === 'reviewed')"
                     @click="openResendSignature(document)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" class="mr-2" />
@@ -1884,7 +1884,7 @@ onBeforeUnmount(() => {
       </VBtn>
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
+          <VIcon size="32" icon="custom-signature-off" class="action-icon" />
           <div class="dialog-title">Återkalla signering</div>
         </VCardText>
         <VCardText class="dialog-text">
@@ -2437,16 +2437,16 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues')"
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues' || selectedDocumentForAction.token?.signature_status === 'reviewed')"
             @click="openCancelSignatureDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
-              <VIcon icon="custom-unavailable" size="24" />
+              <VIcon icon="custom-signature-off" size="24" />
             </template>
             <VListItemTitle>Återkalla signering</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues')"
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues' || selectedDocumentForAction.token?.signature_status === 'reviewed')"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
