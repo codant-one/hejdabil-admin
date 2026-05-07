@@ -47,7 +47,8 @@ class Setting extends Model
         ], [
             'setting_color_id' => self::resolveOptionalField($request, 'setting_color_id', $settings->setting_color_id ?? null),
             'primary_color' => self::resolveOptionalField($request, 'primary_color', $settings->primary_color ?? null),
-            'secondary_color' => self::resolveOptionalField($request, 'secondary_color', $settings->secondary_color ?? null)
+            'secondary_color' => self::resolveOptionalField($request, 'secondary_color', $settings->secondary_color ?? null),
+            'theme' => self::resolveOptionalField($request, 'theme', $settings->theme ?? 0),
         ]);
 
         return $settings;

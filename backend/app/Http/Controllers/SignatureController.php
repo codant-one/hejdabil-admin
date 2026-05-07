@@ -530,7 +530,7 @@ class SignatureController extends Controller
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid vidarebefordran till ' . ($recipientEmail ?: 'ingen angiven e-post'),
+                    description: 'Ogiltig e-postadress vid skicka om till ' . ($recipientEmail ?: 'ingen angiven e-post'),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
                     metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -538,7 +538,7 @@ class SignatureController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Det finns ingen giltig mottagare för vidarebefordran.'
+                    'message' => 'Det finns ingen giltig mottagare för att skicka om.'
                 ], 422);
             }
 
@@ -551,7 +551,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Vidarebefordran av signaturpost påbörjad till ' . $recipientEmail,
+                description: 'Skicka om signaturpost påbörjad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -632,7 +632,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'E-post vidarebefordrad',
+                description: 'E-post skickad om',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -642,7 +642,7 @@ class SignatureController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
+                'message' => 'Återutsändningsmeddelandet har skickats om.'
             ]);
         } catch (\Throwable $e) {
             Log::error('Error resending signature email for agreement: ' . $e->getMessage(), [
@@ -657,7 +657,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid vidarebefordran av e-post till ' . ($recipientEmail ?: $token->recipient_email),
+                description: 'Fel vid skicka om e-post till ' . ($recipientEmail ?: $token->recipient_email),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
@@ -673,6 +673,48 @@ class SignatureController extends Controller
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Cancel the latest active signature request so the public token link becomes unusable.
+     * URL: POST /api/agreements/{agreement}/cancel-signature-request
+     */
+    public function cancelSignatureRequest(Agreement $agreement, Request $request)
+    {
+        $token = $agreement->token()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att återkalla.'
+            ], 422);
+        }
+
+        $token->update([
+            'signature_status' => 'cancelled',
+        ]);
+
+        TokenHistory::logEvent(
+            tokenId: $token->id,
+            eventType: TokenHistory::EVENT_CANCELLED,
+            description: 'Signeringsförfrågan återkallades',
+            ipAddress: $request->ip(),
+            userAgent: $request->userAgent(),
+            metadata: [
+                'agreement_id' => $agreement->id,
+                'recipient' => $token->recipient_email,
+            ]
+        );
+
+        $this->createAgreementSignatureCancelledActivity($agreement, $token);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Signeringsförfrågan har återkallats.'
+        ]);
     }
 
     /**
@@ -692,6 +734,10 @@ class SignatureController extends Controller
 
         // Check if the token has already been used to sign
         if ($token->signature_status === 'signed') {
+            return view('welcome');
+        }
+
+        if ($token->signature_status === 'cancelled') {
             return view('welcome');
         }
 
@@ -762,6 +808,15 @@ class SignatureController extends Controller
             ], 410);
         }
 
+        if ($token->signature_status === 'cancelled') {
+            return response()->json([
+                'status' => 'cancelled',
+                'message' => $token->agreement_id
+                    ? 'Detta avtal har annullerats och kan inte längre signeras.'
+                    : 'Detta dokument har annullerats och kan inte längre signeras.'
+            ]);
+        }
+
         if ($token->agreement_id) {
             $agreement = $token->agreement;
 
@@ -830,6 +885,13 @@ class SignatureController extends Controller
                 'status' => 'invalid',
                 'message' => 'Ogiltig token'
             ], 404);
+        }
+
+        if ($token->signature_status === 'cancelled') {
+            return response()->json([
+                'status' => 'cancelled',
+                'message' => 'Signeringslänken har återkallats.'
+            ], 410);
         }
 
         // Register the event in the history
@@ -1420,6 +1482,27 @@ class SignatureController extends Controller
         ]);
     }
 
+    private function createAgreementSignatureCancelledActivity(Agreement $agreement, Token $token): void
+    {
+        SupplierActivity::createActivity([
+            'entity_id' => $agreement->id,
+            'entity_type' => 'agreements',
+            'action_type' => 'cancel_signature_agreement',
+            'title' => $this->agreementActivityTitle($agreement, ' - signering återkallad'),
+            'description' => 'Signeringsförfrågan återkallades.',
+            'icon' => 'custom-signature',
+            'route' => $this->agreementActivityRoute($agreement->id),
+            'metadata' => json_encode([
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'recipient_email' => $token->recipient_email,
+                'signature_status' => $token->signature_status,
+                'cancelled' => true,
+                'static_signature' => is_null($token->placement_x) && is_null($token->placement_y),
+            ])
+        ]);
+    }
+
     private function agreementActivityRoute(int $agreementId): string
     {
         return '/dashboard/admin/agreements?file_id=' . $agreementId;
@@ -1458,6 +1541,13 @@ class SignatureController extends Controller
     public function getUnsignedPdf($tokenString)
     {
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
+
+        if ($token->signature_status === 'cancelled') {
+            return response()->json([
+                'status' => 'cancelled',
+                'message' => 'Signeringslänken har återkallats.'
+            ], 410);
+        }
 
         // Mark view if not already recorded
         if (is_null($token->viewed_at)) {
@@ -1509,6 +1599,13 @@ class SignatureController extends Controller
     public function getSignatureDetails($tokenString)
     {
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
+
+        if ($token->signature_status === 'cancelled') {
+            return response()->json([
+                'status' => 'cancelled',
+                'message' => 'Signeringslänken har återkallats.'
+            ], 410);
+        }
 
         // Logic to determine the signature alignment
         $alignment = $token->signature_alignment ?? 'left'; // Use the saved value or 'left' by default

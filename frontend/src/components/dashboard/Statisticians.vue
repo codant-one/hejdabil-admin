@@ -490,7 +490,7 @@ import Dashboard from '@/api/dashboard'
   const monthCategories = computed(() => {
     const categories = chartMonthlyStats.value.map((item, index) => {
       if (item?.month_label)
-        return item.month_label
+        return String(item.month_label).split(' ')[0]
 
       if (item?.month)
         return item.month
@@ -555,7 +555,7 @@ import Dashboard from '@/api/dashboard'
     const labelColor = `rgba(${ hexToRgb(currentTheme['on-surface']) },${ variableTheme['disabled-opacity'] })`
     const months = monthCategories.value
     const isMobile = windowWidth.value < 590
-    const xAxisOffsetY = isMobile && months.length > 9 ? 16 : 0
+    const xAxisOffsetY = isMobile ? 1 : 0
     const xAxisFontSize = isMobile ? '9px' : '13px'
 
     const makeColors = (activeColor, inactiveColor) => chartMonthlyStats.value.map(item => {
@@ -584,7 +584,7 @@ import Dashboard from '@/api/dashboard'
       },
       grid: {
         show: false,
-        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+        padding: { top: 0, bottom: isMobile ? 12 : 0, left: 0, right: 0 },
       },
       colors,
       dataLabels: {
@@ -604,11 +604,18 @@ import Dashboard from '@/api/dashboard'
       tooltip: { enabled: false },
       xaxis: {
         categories: months,
+        tickAmount: months.length,
         axisBorder: { show: true, color: borderColor },
         axisTicks: { show: false },
         labels: {
+          show: true,
+          trim: false,
+          showDuplicates: true,
+          rotate: 0,
           hideOverlappingLabels: false,
           offsetY: xAxisOffsetY,
+          minHeight: isMobile ? 24 : undefined,
+          maxHeight: isMobile ? 24 : undefined,
           style: { colors: labelColor, fontSize: xAxisFontSize, fontFamily: 'Public Sans' },
         },
       },
@@ -796,7 +803,7 @@ import Dashboard from '@/api/dashboard'
           :key="chartRenderKey"
           :options="chartConfigs[activeChartTab].chartOptions"
           :series="chartConfigs[activeChartTab].series"
-          :height="windowWidth < 1024 ? 210 : 280"
+          :height="windowWidth < 1024 ? 240 : 280"
           :class="hasEmptyStatisticsState ? 'statistics-chart-empty' : ''"
         />
 

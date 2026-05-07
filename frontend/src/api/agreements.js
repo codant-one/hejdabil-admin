@@ -37,6 +37,12 @@ class Agreements {
         return axios.post(`/agreements/${agreementId}/resend-signature-request`, payload)
     }
 
+    cancelSignatureRequest(data) {
+        const agreementId = typeof data === 'object' && data !== null ? data.id : data
+
+        return axios.post(`/agreements/${agreementId}/cancel-signature-request`)
+    }
+
     getAdminPreviewPdf(id) {
         return axios.get(`/agreements/${id}/get-admin-preview-pdf`, {
             responseType: 'blob'

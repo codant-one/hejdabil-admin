@@ -143,7 +143,7 @@ class DashboardController extends Controller
             $soldIndicator = $this->buildIndicatorSummary(
                 $soldVehiclesBaseQuery,
                 'sale_date',
-                'sale_price',
+                'total_sale',
                 $comparisonMonth,
                 $filterStart,
                 $filterEnd,
@@ -190,9 +190,10 @@ class DashboardController extends Controller
             $supplierId = $this->getCurrentSupplierId();
             $comparisonMonth = Carbon::today()->copy()->startOfMonth();
 
-            $stockVehiclesBaseQuery = Vehicle::query()
+            $purchasedVehiclesBaseQuery = Vehicle::query()
                 ->where('supplier_id', $supplierId)
-                ->where('state_id', 10);
+                ->whereNotNull('purchase_price')
+                ->whereNotNull('purchase_date');
             $soldVehiclesBaseQuery = Vehicle::query()
                 ->where('supplier_id', $supplierId)
                 ->where('state_id', 12)
@@ -207,12 +208,12 @@ class DashboardController extends Controller
             $totalSale = $this->getFilteredQuerySum(
                 $soldVehiclesBaseQuery,
                 'sale_date',
-                'sale_price',
+                'total_sale',
                 null,
                 null,
             );
             $totalPurchase = $this->getFilteredQuerySum(
-                $stockVehiclesBaseQuery,
+                $purchasedVehiclesBaseQuery,
                 'purchase_date',
                 'purchase_price',
                 null,
@@ -230,12 +231,12 @@ class DashboardController extends Controller
             $saleMonthlyVariation = $this->getMonthlySumVariationForQuery(
                 $soldVehiclesBaseQuery,
                 'sale_date',
-                'sale_price',
+                'total_sale',
                 $comparisonMonth,
             );
             $profitMonthlyVariation = $this->getProfitMonthlyVariation(
                 $soldVehiclesBaseQuery,
-                $stockVehiclesBaseQuery,
+                $purchasedVehiclesBaseQuery,
                 $taskCostBaseQuery,
                 $comparisonMonth,
             );
@@ -555,7 +556,7 @@ class DashboardController extends Controller
             'purchase_date',
             'purchase_price',
             'total_purchase_price',
-            10,
+            null,
             $supplierId,
             $filterStart,
             $filterEnd,
@@ -563,7 +564,7 @@ class DashboardController extends Controller
 
         $salePriceByMonth = $this->getMonthlyVehicleTotals(
             'sale_date',
-            'sale_price',
+            'total_sale',
             'total_sale_price',
             12,
             $supplierId,
@@ -638,12 +639,12 @@ class DashboardController extends Controller
         string $dateField,
         string $priceField,
         string $totalAlias,
-        int $stateId,
+        ?int $stateId,
         int $supplierId,
         Carbon $filterStart,
         Carbon $filterEnd,
     ) {
-        return Vehicle::query()
+        $query = Vehicle::query()
             ->selectRaw("DATE_FORMAT($dateField, '%Y-%m') as month")
             ->selectRaw("SUM($priceField) as $totalAlias")
             ->whereNotNull($dateField)
@@ -652,8 +653,13 @@ class DashboardController extends Controller
                 $filterStart->toDateString(),
                 $filterEnd->toDateString(),
             ])
-            ->where('supplier_id', $supplierId)
-            ->where('state_id', $stateId)
+            ->where('supplier_id', $supplierId);
+
+        if ($stateId !== null) {
+            $query->where('state_id', $stateId);
+        }
+
+        return $query
             ->groupBy(DB::raw("DATE_FORMAT($dateField, '%Y-%m')"))
             ->orderBy('month')
             ->get();
@@ -910,7 +916,7 @@ class DashboardController extends Controller
 
     private function calculateProfitForDateRange(
         $soldVehiclesBaseQuery,
-        $stockVehiclesBaseQuery,
+        $purchasedVehiclesBaseQuery,
         $taskCostBaseQuery,
         Carbon $startDate,
         Carbon $endDate,
@@ -918,12 +924,12 @@ class DashboardController extends Controller
         $totalSale = $this->getQuerySumByDateRange(
             $soldVehiclesBaseQuery,
             'sale_date',
-            'sale_price',
+            'total_sale',
             $startDate,
             $endDate,
         );
         $totalPurchase = $this->getQuerySumByDateRange(
-            $stockVehiclesBaseQuery,
+            $purchasedVehiclesBaseQuery,
             'purchase_date',
             'purchase_price',
             $startDate,

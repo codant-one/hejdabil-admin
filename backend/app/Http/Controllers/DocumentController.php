@@ -609,7 +609,7 @@ class DocumentController extends Controller
                 \App\Models\TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid vidarebefordran till ' . ($recipientEmail ?: 'ingen angiven e-post'),
+                    description: 'Ogiltig e-postadress vid skicka om till ' . ($recipientEmail ?: 'ingen angiven e-post'),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
                     metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -617,7 +617,7 @@ class DocumentController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Det finns ingen giltig mottagare för vidarebefordran.'
+                    'message' => 'Det finns ingen giltig mottagare för att skicka om.'
                 ], 422);
             }
 
@@ -631,7 +631,7 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_SENT,
-                description: 'Vidarebefordran av signaturpost påbörjad till ' . $recipientEmail,
+                description: 'Skicka om signaturpost påbörjad till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -707,7 +707,7 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
-                description: 'E-post vidarebefordrad till ' . $recipientEmail,
+                description: 'E-post skickad om till ' . $recipientEmail,
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $recipientEmail, 'resend' => true]
@@ -737,7 +737,7 @@ class DocumentController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
+                'message' => 'Återutsändningsmeddelandet har skickats om.'
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error resending signature email: ' . $e->getMessage(), [
@@ -754,7 +754,7 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid vidarebefordran av e-post till ' . ($recipientEmail ?: $token->recipient_email),
+                description: 'Fel vid skicka om e-post till ' . ($recipientEmail ?: $token->recipient_email),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
@@ -770,6 +770,67 @@ class DocumentController extends Controller
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Cancel the latest active signature request so the public token link becomes unusable.
+     */
+    public function cancelSignatureRequest(Document $document, Request $request)
+    {
+        $token = $document->token()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att återkalla.'
+            ], 422);
+        }
+
+        $token->update([
+            'signature_status' => 'cancelled',
+        ]);
+
+        \App\Models\TokenHistory::logEvent(
+            tokenId: $token->id,
+            eventType: \App\Models\TokenHistory::EVENT_CANCELLED,
+            description: 'Signeringsförfrågan återkallades',
+            ipAddress: $request->ip(),
+            userAgent: $request->userAgent(),
+            metadata: [
+                'document_id' => $document->id,
+                'recipient' => $token->recipient_email,
+            ]
+        );
+
+        SupplierActivity::createActivity([
+            'entity_id' => $document->id,
+            'entity_type' => 'documents',
+            'action_type' => 'cancel_signature_document',
+            'title' => $this->documentActivityTitle($document, ' - signering återkallad'),
+            'description' => 'Signeringsförfrågan återkallades.',
+            'icon' => 'custom-signature',
+            'route' => $this->documentActivityRoute($document->id),
+            'metadata' => json_encode([
+                'document_id' => $document->id,
+                'title' => $document->title,
+                'token_id' => $token->id,
+                'recipient_email' => $token->recipient_email,
+                'signature_status' => $token->signature_status,
+                'cancelled' => true,
+                'placement_x' => $token->placement_x,
+                'placement_y' => $token->placement_y,
+                'placement_page' => $token->placement_page,
+                'signature_alignment' => $token->signature_alignment,
+            ])
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Signeringsförfrågan har återkallats.'
+        ]);
     }
 
     private function documentActivityRoute(int $documentId): string

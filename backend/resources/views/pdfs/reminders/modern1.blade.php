@@ -29,11 +29,11 @@
 
         .faktura {
             font-family: 'DM Sans', Arial, sans-serif !important;
-            font-size: 36px;
+            font-size: 34px;
             font-weight: 600;
-            color: #FFFFFF;
-            border-top: 1px solid #FFFFFF;
-            border-bottom: 1px solid #FFFFFF;
+            color: {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
+            border-top: 1px solid {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
+            border-bottom: 1px solid {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
             padding: 8px 16px 4px 16px;
             line-height: 0.6;
             display: inline-block;
@@ -55,7 +55,7 @@
 
         .invoice-background {
             background-color: {{ $company->primary_color ?? '#E7E7E7' }};
-            color: #FFFFFF !important;
+            color: {{ $company->theme === 0 ? '#FFFFFF' : '#454545' }} !important;
         }
 
         .bg-items {

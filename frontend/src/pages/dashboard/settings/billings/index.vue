@@ -11,6 +11,9 @@ import billing4 from '@images/billings/4.svg'
 
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const DEFAULT_THEME = 0
+const LIGHT_THEME_TEXT_COLOR = '#FFFFFF'
+const DARK_THEME_TEXT_COLOR = '#454545'
 const DEFAULT_BILLING_DUE_DATES = 5
 const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen'
 const DEFAULT_BILLING_SEND_REMINDER = true
@@ -97,10 +100,28 @@ const resolveLoggedUserId = () => {
   return userData.value?.id ?? userData.value?.user?.id ?? null
 }
 
+const resolveBillingColorSource = () => {
+  const adminColorConfig = configsStores.getFeaturedConfig('color')
+  const sources = [
+    isAdminRole.value ? adminColorConfig : settingsData.value,
+    adminColorConfig,
+    settingsData.value,
+    adminColorConfig?.color,
+    adminColorConfig?.settings,
+    settingsData.value?.color,
+    settingsData.value?.settings,
+  ]
+
+  return sources.find(source => source && (
+    source.setting_color_id !== undefined
+    || source.primary_color !== undefined
+    || source.secondary_color !== undefined
+    || source.theme !== undefined
+  )) ?? {}
+}
+
 const resolveBillingPreviewColors = () => {
-  const colorSource = isAdminRole.value
-    ? configsStores.getFeaturedConfig('color') ?? {}
-    : settingsData.value ?? {}
+  const colorSource = resolveBillingColorSource()
 
   const settingColorId = Number(colorSource?.setting_color_id)
 
@@ -129,18 +150,31 @@ const resolveBillingPreviewColors = () => {
   }
 }
 
-const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) => {
+const resolveBillingPreviewTheme = () => {
+  const colorSource = resolveBillingColorSource()
+
+  return Number(colorSource?.theme) === 1 ? 1 : DEFAULT_THEME
+}
+
+const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor, textColor = null) => {
   const response = await fetch(assetUrl)
   const svgMarkup = await response.text()
-  const updatedSvgMarkup = svgMarkup
+  let updatedSvgMarkup = svgMarkup
     .replace(/#29ABE2/gi, primaryColor)
     .replace(/#E2F2FC/gi, secondaryColor)
+
+  if (textColor) {
+    updatedSvgMarkup = updatedSvgMarkup
+      .replace(/fill="white"/gi, `fill="${textColor}"`)
+      .replace(/fill="#FFFFFF"/gi, `fill="${textColor}"`)
+  }
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvgMarkup)}`
 }
 
 const loadBillingPreviewSources = async () => {
   const { primaryColor, secondaryColor } = resolveBillingPreviewColors()
+  const previewTextColor = resolveBillingPreviewTheme() === 1 ? DARK_THEME_TEXT_COLOR : LIGHT_THEME_TEXT_COLOR
   isBillingPreviewReady.value = false
 
   try {
@@ -148,8 +182,8 @@ const loadBillingPreviewSources = async () => {
 
     const [classic, modern1, modern2, compact] = await Promise.all([
       buildRecoloredSvgDataUrl(billing1, primaryColor, secondaryColor),
-      buildRecoloredSvgDataUrl(billing2, primaryColor, secondaryColor),
-      buildRecoloredSvgDataUrl(billing3, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(billing2, primaryColor, secondaryColor, previewTextColor),
+      buildRecoloredSvgDataUrl(billing3, primaryColor, secondaryColor, previewTextColor),
       buildRecoloredSvgDataUrl(billing4, primaryColor, secondaryColor),
     ])
 

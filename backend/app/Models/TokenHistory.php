@@ -42,6 +42,7 @@ class TokenHistory extends Model
     const EVENT_DELIVERY_ISSUES = 'delivery_issues';
     const EVENT_REVIEWED = 'reviewed';
     const EVENT_SIGNED = 'signed';
+    const EVENT_CANCELLED = 'cancelled';
     const EVENT_FAILED = 'failed';
 
     /**

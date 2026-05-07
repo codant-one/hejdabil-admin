@@ -465,6 +465,7 @@ class Agreement extends Model
             $company->type = $agreementsObj->type ?? 1;
 
             $colorSettingId = $colorObj->setting_color_id ?? null;
+            $company->theme = $colorObj->theme ?? 0;
 
             if($colorSettingId) {//existe un id de color
                 $color = SettingColor::find($colorSettingId);
@@ -483,6 +484,7 @@ class Agreement extends Model
             $company->last_name = $user->user->last_name;
 
             $setting = Setting::where('supplier_id', $agreement->supplier_id)->first();
+            $company->theme = $setting->theme ?? 0;
 
             if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);

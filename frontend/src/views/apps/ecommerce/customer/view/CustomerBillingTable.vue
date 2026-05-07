@@ -567,6 +567,12 @@ const resolveStatusAgreement = state => {
       class: 'error',
       icon: 'custom-close'
     }
+  if (state === 'cancelled')
+    return {
+      name: 'Annullerad',
+      class: 'error',
+      icon: 'custom-signature-off'
+    }
 }
 
 // ========================================
@@ -588,6 +594,7 @@ const isConfirmResendSignatureVisible = ref(false)
 const isStaticSignatureFlow = ref(false)
 const selectedAgreement = ref({})
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmCancelSignatureDialogVisible = ref(false)
 
 const goToTracker = (agreementData) => {
   openTracker(agreementData)
@@ -656,6 +663,39 @@ const openResendSignature = async (agreementData) => {
   isConfirmResendSignatureVisible.value = true
 }
 
+const openCancelSignatureDialog = (agreementData) => {
+  if (!agreementData?.id) return
+
+  selectedAgreement.value = { ...agreementData }
+  isConfirmCancelSignatureDialogVisible.value = true
+}
+
+const revokeSignature = async () => {
+  isConfirmCancelSignatureDialogVisible.value = false
+
+  try {
+    emit("loading", true)
+    const response = await agreementsStores.cancelSignature({ id: selectedAgreement.value.id })
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har återkallats.',
+      show: true,
+    }
+    await fetchData()
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Det gick inte att återkalla signeringsförfrågan.',
+      show: true,
+    }
+  } finally {
+    emit("loading", false)
+    setTimeout(() => {
+      advisor.value = { show: false }
+    }, 3000)
+  }
+}
+
 const submitResendSignature = async () => {
   const { valid } = await refResendSignatureForm.value?.validate();
   if (!valid) return;
@@ -681,7 +721,7 @@ const submitResendSignature = async () => {
   } catch (error) {
     advisor.value = {
       type: 'error',
-      message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.',
+      message: error.response?.data?.message || 'Det gick inte att skicka om e-postmeddelandet.',
       show: true,
     }
     emit("alert", advisor)
@@ -923,6 +963,13 @@ const getEventConfig = (eventType, event) => {
       color: '#FF4D4F',
       bgClass: 'status-error',
       icon: 'custom-close'
+    },
+    'cancelled': {
+      title: 'Signering annullerad',
+      text: 'Signeringslänken har återkallats och kan inte längre användas',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-signature-off'
     }
   }
   return configs[eventType] || null
@@ -1686,13 +1733,22 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Signera</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues')"
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
+                          @click="openCancelSignatureDialog(agreement)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-signature-off" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Återkalla signering</VListItemTitle>
+                        </VListItem>
+                        <VListItem 
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
                           @click="openResendSignature(agreement)"
                         >
                           <template #prepend>
                             <VIcon icon="custom-forward" class="mr-2" />
                           </template>
-                          <VListItemTitle>Vidarebefordra</VListItemTitle>
+                          <VListItemTitle>Skicka om</VListItemTitle>
                         </VListItem>
                         <VListItem
                           v-if="$can('view', 'agreements')"
@@ -1765,7 +1821,15 @@ onBeforeUnmount(() => {
                       expand-icon="custom-chevron-down"
                       style="height: 56px !important;"
                     >
-                      <span class="order-id">{{ agreement.id }}</span>
+                      <span class="order-id">
+                        {{ agreement.agreement_type_id === 4 ?
+                          agreement.offer.offer_id : 
+                          ( agreement.agreement_type_id === 3 ? 
+                            agreement.commission.commission_id : 
+                            agreement.agreement_id
+                          )                    
+                        }}
+                      </span>
                       <div class="order-title-box">
                         <span class="text-aqua">
                           Reg. nr. {{ agreement.agreement_type_id === 4 ?
@@ -2095,12 +2159,20 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues')" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
+            @click="openCancelSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-signature-off" class="mr-2" />
+            </template>
+            <VListItemTitle>Återkalla signering</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
             @click="openResendSignature(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-forward" class="mr-2" />
             </template>
-            <VListItemTitle>Vidarebefordra</VListItemTitle>
+            <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"
@@ -2188,6 +2260,51 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <VDialog
+      v-model="isConfirmCancelSignatureDialogVisible"
+      persistent
+      class="action-dialog" >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmCancelSignatureDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-signature-off" class="action-icon" />
+          <div class="dialog-title">
+            Återkalla signering
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill annullera signeringsförfrågan för fordonet
+          <strong>
+            #{{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+            }}
+          </strong>?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            @click="isConfirmCancelSignatureDialogVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="revokeSignature">
+              Acceptera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
     <!-- 👉 Signature Dialog -->
     <VDialog
       v-model="isSignatureDialogVisible"
@@ -2266,10 +2383,10 @@ onBeforeUnmount(() => {
         <VCard flat class="card-form">
           <VCardText class="dialog-title-box">
             <VIcon size="30" icon="custom-forward" class="action-icon" />
-            <div class="dialog-title">Vidarebefordra signeringsförfrågan</div>
+            <div class="dialog-title">Skicka om signeringsförfrågan</div>
           </VCardText>
           <VCardText class="dialog-text">
-            Ange den e-postadress till vilken du vill att länken för att vidarebefordra avtalet ska skickas.
+            Ange den e-postadress till vilken du vill att länken för att skicka om avtalet ska skickas.
           </VCardText>
           <VCardText class="dialog-text pt-2">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
