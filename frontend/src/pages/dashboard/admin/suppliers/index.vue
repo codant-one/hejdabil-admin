@@ -257,18 +257,9 @@ const removeSupplier = async () => {
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
-  const deletionMode = res.data?.data?.deletion_mode
-
-  let successMessage = 'Leverantör borttagen!'
-  if (deletionMode === 'force') {
-    successMessage = 'Leverantören och användarkontot raderades permanent.'
-  } else if (deletionMode === 'soft') {
-    successMessage = 'Leverantören inaktiverades eftersom associerade poster finns.'
-  }
-
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? (res.data.message ?? successMessage) : res.data.message,
+    message: res.data.success ? (res.data.message ?? 'Leverantör borttagen!') : res.data.message,
     show: true
   }
 
@@ -709,15 +700,10 @@ const downloadCSV = async () => {
         </VCardText>
 
         <VCardText class="pt-2">
-          <div v-if="deleteInfo.can_force_delete">
-            Inga associerade poster hittades. Leverantören och användarkontot kommer att raderas permanent.
-          </div>
-          <div v-else>
-            Associerade poster hittades. Leverantören kommer att inaktiveras för att bevara data.
-          </div>
+          Leverantören tas bort från aktiva register.
         </VCardText>
 
-        <VCardText v-if="!deleteInfo.can_force_delete" class="pt-0">
+        <VCardText v-if="deleteInfo.total_associations > 0" class="pt-0">
           <div>Associerade poster:</div>
           <div v-if="deleteInfo.associations?.clients">Kunder: {{ deleteInfo.associations.clients }}</div>
           <div v-if="deleteInfo.associations?.billings">Faktureringar: {{ deleteInfo.associations.billings }}</div>

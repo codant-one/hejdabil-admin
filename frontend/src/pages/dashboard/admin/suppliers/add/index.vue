@@ -15,6 +15,9 @@ const isFormValid = ref(false)
 const refForm = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
+const isReactivateSupplierDialog = ref(false)
+const isReactivatingSupplier = ref(false)
+const reactivationSupplierId = ref(null)
 
 const company = ref('')
 const organization_number = ref('')
@@ -29,6 +32,57 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
+
+const closeReactivateSupplierDialog = function() {
+    isReactivateSupplierDialog.value = false
+    reactivationSupplierId.value = null
+}
+
+const getEmailValidationMessage = function(error) {
+    if (error?.response?.data?.feedback !== 'params_validation_failed')
+        return ''
+
+    if (typeof error.response.data.message === 'string')
+        return error.response.data.message
+
+    return ''
+}
+
+const reactivateSupplierAccount = async function() {
+    if (!reactivationSupplierId.value) {
+        closeReactivateSupplierDialog()
+        return
+    }
+
+    isReactivatingSupplier.value = true
+    isRequestOngoing.value = true
+
+    try {
+        const response = await suppliersStores.activateSupplier(reactivationSupplierId.value)
+
+        closeReactivateSupplierDialog()
+
+        let data = {
+            message: response.data.message || 'Användaren har återaktiverats!',
+            error: false
+        }
+
+        router.push({ name : 'dashboard-admin-suppliers'})
+        emitter.emit('toast', data)
+    } catch (error) {
+        closeReactivateSupplierDialog()
+
+        let data = {
+            message: error?.response?.data?.message || error?.message || 'Ett serverfel uppstod. Försök igen.',
+            error: true
+        }
+
+        emitter.emit('toast', data)
+    } finally {
+        isReactivatingSupplier.value = false
+        isRequestOngoing.value = false
+    }
+}
 
 
 watchEffect(fetchData);
@@ -109,9 +163,43 @@ const onSubmit = () => {
                     isRequestOngoing.value = false
                 })
                 .catch((err) => {
+                    const emailValidationMessage = getEmailValidationMessage(err)
+
+                    if (emailValidationMessage.includes('En användare med den angivna e-postadressen finns redan')) {
+                        suppliersStores.getInactiveSupplierByEmail(email.value)
+                            .then((inactiveSupplier) => {
+                                if (inactiveSupplier?.supplier_id) {
+                                    reactivationSupplierId.value = inactiveSupplier.supplier_id
+                                    isReactivateSupplierDialog.value = true
+                                    isRequestOngoing.value = false
+                                    return
+                                }
+
+                                let data = {
+                                    message: emailValidationMessage,
+                                    error: true
+                                }
+
+                                router.push({ name : 'dashboard-admin-suppliers'})
+                                emitter.emit('toast', data)
+                                isRequestOngoing.value = false
+                            })
+                            .catch(() => {
+                                let data = {
+                                    message: emailValidationMessage,
+                                    error: true
+                                }
+
+                                router.push({ name : 'dashboard-admin-suppliers'})
+                                emitter.emit('toast', data)
+                                isRequestOngoing.value = false
+                            })
+
+                        return
+                    }
 
                     let data = {
-                        message: err.message,
+                        message: err?.response?.data?.message || err.message,
                         error: true
                     }
 
@@ -316,6 +404,36 @@ const onSubmit = () => {
             </VCol>
         </VRow>
     </section>
+
+    <VDialog
+        v-model="isReactivateSupplierDialog"
+        persistent
+        class="action-dialog"
+    >
+        <VCard title="Återaktivera konto">
+            <VDivider class="mt-4"/>
+            <VCardText>
+                Denna e-postadress är redan registrerad.<br>
+                Vill du återaktivera kontot?
+            </VCardText>
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                <VBtn
+                    color="secondary"
+                    variant="tonal"
+                    @click="closeReactivateSupplierDialog"
+                >
+                    Avbryt
+                </VBtn>
+                <VBtn
+                    :loading="isReactivatingSupplier"
+                    @click="reactivateSupplierAccount"
+                >
+                    Acceptera
+                </VBtn>
+            </VCardText>
+        </VCard>
+    </VDialog>
 </template>
 
 <style scoped>
