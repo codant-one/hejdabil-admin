@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->tinyInteger('theme')->default(0)->after('secondary_color');
+            $table->unsignedBigInteger('setting_notification_id')->nullable()->after('setting_agreement_id');
+
+            $table->foreign('setting_notification_id')->references('id')->on('setting_notifications')->onDelete('cascade');
         });
     }
 
@@ -22,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('theme');
+            $table->dropColumn('setting_notification_id');
         });
     }
 };

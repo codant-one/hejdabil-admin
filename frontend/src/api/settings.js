@@ -17,6 +17,10 @@ class Settings {
     agreements(data) {
         return axios.post(`/settings/agreements/${data.id}`, data.data)
     }
+
+    notifications(data) {
+        return axios.post(`/settings/notifications/${data.id}`, data.data)
+    }
     
 }
 
