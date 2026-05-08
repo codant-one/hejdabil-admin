@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 
 use App\Models\VehicleTask;
 use App\Models\Notification;
+use App\Models\Setting;
 use App\Events\UserNotificationEvent;
 
 class SendNotifications extends Command
@@ -60,6 +61,10 @@ class SendNotifications extends Command
                 ->get();
         
         foreach($tasks as $task){
+            if (!$this->shouldSendReminderNotification($task->user_id)) {
+                $this->info('Reminder notifications disabled for user_id: ' . ($task->user_id ?? 'N/A'));
+                continue;
+            }
             
             // Prepare data for notification
             $vehicle = $task->vehicle;
@@ -113,6 +118,24 @@ class SendNotifications extends Command
         }
         
         $this->info('Total overdue tasks: ' . $tasks->count());
+    }
+
+    private function shouldSendReminderNotification($userId): bool
+    {
+        // Default in notifications settings: reminders are disabled unless explicitly enabled.
+        if (!$userId) {
+            return false;
+        }
+
+        $settings = Setting::with('notification')
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$settings || !$settings->notification) {
+            return false;
+        }
+
+        return (int) $settings->notification->send_reminders === 1;
     }
 
 }
