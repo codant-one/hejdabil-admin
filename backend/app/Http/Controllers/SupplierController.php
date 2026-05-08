@@ -322,33 +322,17 @@ class SupplierController extends Controller
                 ], 404);
 
             $deletionSummary = $this->buildDeletionSummary($supplier);
-            $isForceDelete = $deletionSummary['can_force_delete'];
+            event(new ForceLogoutUserEvent($supplier->user_id));
+            $supplier->deleteSupplier($id);
 
-            if ($isForceDelete) {
-                DB::transaction(function () use ($supplier) {
-                    UserRegisterToken::where('user_id', $supplier->user_id)->delete();
-
-                    $user = User::withTrashed()->find($supplier->user_id);
-                    if ($user) {
-                        $user->forceDelete();
-                    } else {
-                        $supplier->forceDelete();
-                    }
-                });
-            } else {
-                $supplier->deleteSupplier($id);
-            }
-
-            $message = $isForceDelete
-                ? 'Leverantören och användarkontot har raderats permanent.'
-                : 'Leverantören inaktiverades eftersom associerade poster finns.';
+            $message = 'Leverantör borttagen!';
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'data' => [ 
                     'supplier' => $supplier,
-                    'deletion_mode' => $isForceDelete ? 'force' : 'soft',
+                    'deletion_mode' => 'soft',
                     'deletion_summary' => $deletionSummary
                 ]
             ], 200);
@@ -403,10 +387,67 @@ class SupplierController extends Controller
         $totalAssociations = array_sum($associations);
 
         return [
-            'can_force_delete' => $totalAssociations === 0,
+            'can_force_delete' => false,
             'total_associations' => $totalAssociations,
             'associations' => $associations,
         ];
+    }
+
+    public function inactiveSupplierByEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'params_validation_failed',
+                'message' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $inactiveSupplier = Supplier::withTrashed()
+                ->with(['user' => function ($query) {
+                    $query->withTrashed();
+                }])
+                ->whereNull('boss_id')
+                ->whereNotNull('deleted_at')
+                ->whereHas('user', function ($query) use ($request) {
+                    $query->withTrashed()
+                        ->where('email', strtolower($request->email))
+                        ->whereNotNull('deleted_at');
+                })
+                ->first();
+
+            if (!$inactiveSupplier || !$inactiveSupplier->user) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'inactive_supplier' => null
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'inactive_supplier' => [
+                        'supplier_id' => $inactiveSupplier->id,
+                        'user_id' => $inactiveSupplier->user->id,
+                        'email' => $inactiveSupplier->user->email
+                    ]
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     public function activate($id)

@@ -34,6 +34,10 @@ class Suppliers {
         return axios.post(`/suppliers/resend-invitation/${id}`)
     }
 
+    getInactiveSupplierByEmail(data) {
+        return axios.post('suppliers/inactive-supplier', data)
+    }
+
     getUsers(params) {
         return axios.get('suppliers/supplier/users', {params})
     }
