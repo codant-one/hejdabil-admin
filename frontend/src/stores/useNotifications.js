@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import Notifications from '@/api/notifications'
+import Settings from '@/api/settings'
+import Configs from '@/api/configs'
 import router from '@/router'
 
 // Callback global para notificaciones
 let globalNotificationCallback = null
 let notificationAudio = null
 const NOTIFICATION_SOUND_PATH = '/sounds/notification-2.wav'
+const DEFAULT_NOTIFY_VIA_SOUND = true
 
 const playNotificationSound = () => {
   if (typeof window === 'undefined') return
@@ -30,6 +33,7 @@ export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
     recentNotifications: [],
+    notificationSoundEnabled: DEFAULT_NOTIFY_VIA_SOUND,
     initialized: false,
     privateChannelSubscribed: false,
     privateChannelUserId: null,
@@ -103,8 +107,80 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
+    getStoredUserData() {
+      const userData = localStorage.getItem('user_data')
+
+      if (!userData)
+        return null
+
+      try {
+        return JSON.parse(userData)
+      } catch (error) {
+        return null
+      }
+    },
+
+    resolveSettingsUserId() {
+      const user = this.getStoredUserData()
+      const role = user?.roles?.[0]?.name ?? ''
+
+      if (role === 'User')
+        return user?.supplier?.boss?.user_id ?? user?.supplier?.boss?.user?.id ?? null
+
+      return user?.id ?? user?.user?.id ?? null
+    },
+
+    async loadNotificationSoundPreference() {
+      this.notificationSoundEnabled = DEFAULT_NOTIFY_VIA_SOUND
+
+      try {
+        const user = this.getStoredUserData()
+        const role = user?.roles?.[0]?.name ?? ''
+        const isAdminRole = role === 'SuperAdmin' || role === 'Administrator'
+
+        const settingsUserId = this.resolveSettingsUserId()
+
+        if (settingsUserId) {
+          const settingsResponse = await Settings.get(settingsUserId)
+          const settings = settingsResponse?.data?.data?.settings
+          const notification = settings?.notification ?? settings?.setting_notification ?? null
+
+          if (notification?.notify_via_sound !== undefined && notification?.notify_via_sound !== null) {
+            this.notificationSoundEnabled = Number(notification.notify_via_sound) === 1
+            return
+          }
+        }
+
+        if (isAdminRole) {
+          const response = await Configs.get('notifications')
+          const rawValue = response?.data?.config?.value
+          let config = null
+
+          if (typeof rawValue === 'string') {
+            try {
+              config = JSON.parse(rawValue)
+            } catch (error) {
+              config = null
+            }
+          } else if (rawValue && typeof rawValue === 'object') {
+            config = rawValue
+          }
+
+          if (config?.notify_via_sound !== undefined && config?.notify_via_sound !== null) {
+            this.notificationSoundEnabled = Number(config.notify_via_sound) === 1
+          }
+
+          return
+        }
+      } catch (error) {
+        this.notificationSoundEnabled = DEFAULT_NOTIFY_VIA_SOUND
+      }
+    },
+
     async init(userId = null) {
       const resolvedUserId = userId ?? this.getStoredUserId()
+
+      await this.loadNotificationSoundPreference()
 
       if (this.initialized) {
         if (
@@ -281,7 +357,8 @@ export const useNotificationsStore = defineStore('notifications', {
         this.recentNotifications = this.recentNotifications.slice(0, 4)
       }
 
-      playNotificationSound()
+      if (this.notificationSoundEnabled)
+        playNotificationSound()
       
       // Llamar al callback global si existe
       if (globalNotificationCallback) {
