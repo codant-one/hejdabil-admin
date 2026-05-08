@@ -5,10 +5,15 @@ import { useWindowSize } from '@vueuse/core'
 import { ref, onMounted, nextTick, computed, watchEffect, watch, onBeforeUnmount } from 'vue'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { useSignaturesStore } from '@/stores/useSignatures'
+import Settings from '@/api/settings'
+import Configs from '@/api/configs'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import logo from "@images/logos/billogg-logo.svg";
+
+const DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED = true
+const DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED = true
 
 const props = defineProps({
   token: {
@@ -19,6 +24,63 @@ const props = defineProps({
 
 const notificationsStore = useNotificationsStore()
 const signaturesStore = useSignaturesStore()
+
+const toEnabledFlag = (value, fallback) => {
+  if (value === undefined || value === null)
+    return fallback
+
+  if (typeof value === 'boolean')
+    return value
+
+  return Number(value) === 1
+}
+
+const parseConfigValue = config => {
+  const rawValue = config?.value
+
+  if (typeof rawValue === 'string') {
+    try {
+      return JSON.parse(rawValue)
+    } catch (error) {
+      return null
+    }
+  }
+
+  return rawValue && typeof rawValue === 'object' ? rawValue : null
+}
+
+const shouldSendSignedNotification = async ({ targetUserId, isAgreement }) => {
+  let notifyOnDocumentSigned = DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED
+  let notifyOnAgreementSigned = DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED
+
+  try {
+    if (targetUserId) {
+      const settingsResponse = await Settings.get(targetUserId)
+      const settings = settingsResponse?.data?.data?.settings
+      const notification = settings?.notification ?? settings?.setting_notification ?? null
+
+      if (notification) {
+        notifyOnDocumentSigned = toEnabledFlag(notification.notify_on_document_signed, DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED)
+        notifyOnAgreementSigned = toEnabledFlag(notification.notify_on_agreement_signed, DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED)
+
+        return isAgreement ? notifyOnAgreementSigned : notifyOnDocumentSigned
+      }
+    }
+
+    const configResponse = await Configs.get('notifications')
+    const config = parseConfigValue(configResponse?.data?.config)
+
+    if (config) {
+      notifyOnDocumentSigned = toEnabledFlag(config.notify_on_document_signed, DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED)
+      notifyOnAgreementSigned = toEnabledFlag(config.notify_on_agreement_signed, DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED)
+    }
+  } catch (error) {
+    notifyOnDocumentSigned = DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED
+    notifyOnAgreementSigned = DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED
+  }
+
+  return isAgreement ? notifyOnAgreementSigned : notifyOnDocumentSigned
+}
 
 const { width: windowWidth } = useWindowSize()
 
@@ -839,6 +901,14 @@ const submitFinalSignature = async (signatureImage) => {
     // Enviar notificación de firma completada
     try {
       const fileId = signedInfo.value?.file_id
+      const shouldSendNotification = await shouldSendSignedNotification({
+        targetUserId: response.data.user_id || null,
+        isAgreement: Boolean(response.data.is_agreement),
+      })
+
+      if (!shouldSendNotification)
+        return
+
       const route = response.data.is_agreement ?
         `/dashboard/admin/agreements?file_id=${fileId}` :
         `/dashboard/admin/documents?file_id=${fileId}`
