@@ -5,10 +5,12 @@ import { useThemeConfig } from '@core/composable/useThemeConfig'
 import { hexToRgb } from '@layouts/utils'
 import { useTheme } from 'vuetify'
 import { useAuthStores } from '@/stores/useAuth'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import GlobalEvents from "@/components/GlobalEvents.vue";
 
 const ability = useAppAbility()
 const authStores = useAuthStores()
+const notificationsStore = useNotificationsStore()
 
 const {
   syncInitialLoaderTheme,
@@ -29,16 +31,22 @@ syncConfigThemeWithVuetifyTheme()
 const me = async () => {
 
   if(localStorage.getItem('user_data')){
-    const userData = localStorage.getItem('user_data')
-    const userDataJ = JSON.parse(userData)
+    try {
+      const userData = localStorage.getItem('user_data')
+      const userDataJ = JSON.parse(userData)
 
-    const { user_data, userAbilities } = await authStores.me(userDataJ)
+      const { user_data, userAbilities } = await authStores.me(userDataJ)
 
-    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+      localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
 
-    ability.update(userAbilities)
+      ability.update(userAbilities)
 
-    localStorage.setItem('user_data', JSON.stringify(user_data))
+      localStorage.setItem('user_data', JSON.stringify(user_data))
+
+      await notificationsStore.init(user_data?.id ?? user_data?.user?.id ?? null)
+    } catch (error) {
+      console.error('Error refreshing authenticated user context:', error)
+    }
 
   }
 }

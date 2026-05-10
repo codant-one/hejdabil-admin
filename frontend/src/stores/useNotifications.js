@@ -4,6 +4,8 @@ import Settings from '@/api/settings'
 import Configs from '@/api/configs'
 import router from '@/router'
 
+const INACTIVE_USER_MESSAGE = 'Denna användare har inaktiverats. Kontakta administratören.'
+
 // Callback global para notificaciones
 let globalNotificationCallback = null
 let notificationAudio = null
@@ -101,7 +103,7 @@ export const useNotificationsStore = defineStore('notifications', {
       try {
         const user = JSON.parse(userData)
 
-        return user?.id ?? null
+        return user?.id ?? user?.user?.id ?? null
       } catch (error) {
         return null
       }
@@ -180,9 +182,9 @@ export const useNotificationsStore = defineStore('notifications', {
     async init(userId = null) {
       const resolvedUserId = userId ?? this.getStoredUserId()
 
-      await this.loadNotificationSoundPreference()
-
       if (this.initialized) {
+        await this.loadNotificationSoundPreference()
+
         if (
           resolvedUserId
           && (
@@ -195,26 +197,6 @@ export const useNotificationsStore = defineStore('notifications', {
         return
       }
       this.initialized = true
-
-      // Cargar notificaciones guardadas desde la base de datos
-      try {
-        const { data } = await Notifications.listRecent()
-        if (data.success && Array.isArray(data.data)) {
-          this.recentNotifications = data.data.map(notification => ({
-            id: notification.id,
-            title: notification.title,
-            subtitle: notification.subtitle,
-            time: this.formatTime(notification.created_at),
-            text: notification.text,
-            route: notification.route,
-            read: false,
-            color: notification.color ?? 'primary',
-            icon: notification.icon ?? 'tabler-bell',
-          }))
-        }
-      } catch (err) {
-        console.error('Error loading notifications from database:', err)
-      }
 
       // Suscribirse a eventos en tiempo real
       try {
@@ -242,6 +224,28 @@ export const useNotificationsStore = defineStore('notifications', {
         }
       } catch (err) {
         console.error('❌ Error subscribing to notifications:', err)
+      }
+
+      await this.loadNotificationSoundPreference()
+
+      // Cargar notificaciones guardadas desde la base de datos
+      try {
+        const { data } = await Notifications.listRecent()
+        if (data.success && Array.isArray(data.data)) {
+          this.recentNotifications = data.data.map(notification => ({
+            id: notification.id,
+            title: notification.title,
+            subtitle: notification.subtitle,
+            time: this.formatTime(notification.created_at),
+            text: notification.text,
+            route: notification.route,
+            read: false,
+            color: notification.color ?? 'primary',
+            icon: notification.icon ?? 'tabler-bell',
+          }))
+        }
+      } catch (err) {
+        console.error('Error loading notifications from database:', err)
       }
     },
 
@@ -273,8 +277,9 @@ export const useNotificationsStore = defineStore('notifications', {
 
       try {
         if (this.privateChannelUserId) {
-          window.Echo.leaveChannel(`private-notifications.${this.privateChannelUserId}`)
+          window.Echo.leave(`notifications.${this.privateChannelUserId}`)
           this.privateChannelSubscribed = false
+          this.privateChannelUserId = null
         }
 
         const token = localStorage.getItem('accessToken')
@@ -293,14 +298,32 @@ export const useNotificationsStore = defineStore('notifications', {
             this.forceLogout(data?.message)
           })
           .error(error => {
+            this.privateChannelSubscribed = false
+            if (this.privateChannelUserId === userId)
+              this.privateChannelUserId = null
+
+            const errorMessage = String(
+              error?.error?.data?.message
+              || error?.message
+              || ''
+            ).toLowerCase()
+
+            if (
+              errorMessage.includes('user is not logged in')
+              || errorMessage.includes('unauthenticated')
+              || errorMessage.includes('invalid token')
+              || errorMessage.includes('ogiltig token')
+            ) {
+              this.forceLogout(INACTIVE_USER_MESSAGE)
+              return
+            }
+
             console.error('❌ Error in private notification channel:', error)
           })
           .subscribed(() => {
-            //console.log('✅ Successfully subscribed to private channel:', `notifications.${userId}`)
+            this.privateChannelSubscribed = true
+            this.privateChannelUserId = userId
           })
-
-        this.privateChannelSubscribed = true
-        this.privateChannelUserId = userId
       } catch (err) {
         console.error('❌ Error subscribing to private notifications:', err)
       }
@@ -309,7 +332,7 @@ export const useNotificationsStore = defineStore('notifications', {
     forceLogout(message = 'Ditt konto har inaktiverats.') {
       if (window?.Echo && this.privateChannelUserId) {
         try {
-          window.Echo.leaveChannel(`private-notifications.${this.privateChannelUserId}`)
+          window.Echo.leave(`notifications.${this.privateChannelUserId}`)
         } catch (error) {
         }
       }

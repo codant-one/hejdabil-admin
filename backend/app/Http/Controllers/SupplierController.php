@@ -322,7 +322,6 @@ class SupplierController extends Controller
                 ], 404);
 
             $deletionSummary = $this->buildDeletionSummary($supplier);
-            event(new ForceLogoutUserEvent($supplier->user_id));
             $supplier->deleteSupplier($id);
 
             $message = 'Leverantör borttagen!';

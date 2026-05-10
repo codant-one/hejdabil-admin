@@ -18,7 +18,7 @@ onMounted(async () => {
   if (userData) {
     try {
       const user = JSON.parse(userData)
-      userId = user.id
+      userId = user?.id ?? user?.user?.id ?? null
     } catch (e) {
       console.error('❌ Error parsing user data:', e)
     }
