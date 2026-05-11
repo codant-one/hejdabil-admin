@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\User;;
@@ -17,8 +19,12 @@ class Document extends Model
     protected $guarded = [];
 
     /**** Relationships ****/
-    public function token(){
-        return $this->hasOne(Token::class, 'document_id', 'id');
+    public function token(): HasOne {
+        return $this->hasOne(Token::class, 'document_id', 'id')->latestOfMany('id');
+    }
+
+    public function tokens(): HasMany {
+        return $this->hasMany(Token::class, 'document_id', 'id');
     }
 
     public function user(){

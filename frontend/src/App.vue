@@ -29,6 +29,8 @@ syncInitialLoaderTheme()
 syncConfigThemeWithVuetifyTheme()
 
 const me = async () => {
+  if (route.path.startsWith('/sign/'))
+    return
 
   if(localStorage.getItem('user_data')){
     try {

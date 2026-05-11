@@ -67,7 +67,7 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'token' => function($query) {
-                            $query->select('id', 'agreement_id', 'signing_token', 'recipient_email', 'signature_status', 'token_expires_at')
+                            $query->select('tokens.id', 'tokens.agreement_id', 'tokens.signing_token', 'tokens.recipient_email', 'tokens.signature_status', 'tokens.token_expires_at')
                                   ->with(['histories' => function($q) {
                                       $q->select('id', 'token_id', 'event_type', 'description', 'created_at')
                                         ->orderBy('created_at', 'asc');
