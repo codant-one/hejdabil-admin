@@ -30,13 +30,6 @@ export default [
         to: 'dashboard-admin-countries', 
         action: 'view',
         subject: 'countries'
-      },
-      {
-        title: 'Twilio Test',
-        icon: { icon: 'tabler-message-2' },
-        to: 'dashboard-admin-twilio-test',
-        action: 'view',
-        subject: 'dashboard'
       }
     ]
   },
