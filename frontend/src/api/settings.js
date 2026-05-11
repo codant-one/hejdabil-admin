@@ -2,8 +2,8 @@ import axios from '@axios'
 
 class Settings {
 
-    get(id) {
-        return axios.get(`/settings/${id}`)
+    get(id, requestConfig = {}) {
+        return axios.get(`/settings/${id}`, requestConfig)
     }
     
     colors(data) {

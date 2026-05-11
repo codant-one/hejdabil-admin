@@ -53,9 +53,17 @@ const shouldSendSignedNotification = async ({ targetUserId, isAgreement }) => {
   let notifyOnDocumentSigned = DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED
   let notifyOnAgreementSigned = DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED
 
+  const accessToken = localStorage.getItem('accessToken')
+  if (!accessToken)
+    return isAgreement ? notifyOnAgreementSigned : notifyOnDocumentSigned
+
+  const safeAuthConfig = {
+    skipAuthRedirect: true,
+  }
+
   try {
     if (targetUserId) {
-      const settingsResponse = await Settings.get(targetUserId)
+      const settingsResponse = await Settings.get(targetUserId, safeAuthConfig)
       const settings = settingsResponse?.data?.data?.settings
       const notification = settings?.notification ?? settings?.setting_notification ?? null
 
@@ -67,7 +75,7 @@ const shouldSendSignedNotification = async ({ targetUserId, isAgreement }) => {
       }
     }
 
-    const configResponse = await Configs.get('notifications')
+    const configResponse = await Configs.get('notifications', safeAuthConfig)
     const config = parseConfigValue(configResponse?.data?.config)
 
     if (config) {

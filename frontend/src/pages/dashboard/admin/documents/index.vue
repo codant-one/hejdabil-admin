@@ -692,40 +692,38 @@ const trackerEvents = computed(() => {
 
   const items = []
   const latestToken = trackerDocument.value.token ?? null
+  const history = Array.isArray(latestToken?.histories)
+    ? [...latestToken.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -2370,12 +2368,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerDocument && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 

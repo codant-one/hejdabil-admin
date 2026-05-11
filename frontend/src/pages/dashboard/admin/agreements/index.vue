@@ -187,7 +187,9 @@ watchEffect(() => {
 
 // Computed para detectar si hay agreements activos esperando interacción
 const hasActiveAgreements = computed(() => {
-  return agreements.value.some(agr => 
+  const agreementItems = Array.isArray(agreements.value) ? agreements.value : []
+
+  return agreementItems.some(agr => 
     ['sent', 'delivered', 'reviewed'].includes(agr.token?.signature_status)
   )
 })
@@ -209,7 +211,9 @@ const checkForUpdates = async () => {
     // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
     await agreementsStores.fetchAgreements(data)
     
-    const newAgreements = agreementsStores.getAgreements
+    const newAgreements = Array.isArray(agreementsStores.getAgreements)
+      ? agreementsStores.getAgreements
+      : []
     
     // Solo comparar si hay cambios, NO actualizar aquí
     const hasChanges = JSON.stringify(agreements.value) !== JSON.stringify(newAgreements)
@@ -356,7 +360,9 @@ async function fetchData(cleanFilters = false) {
 
   await agreementsStores.fetchAgreements(data)
 
-  agreements.value = agreementsStores.getAgreements
+  agreements.value = Array.isArray(agreementsStores.getAgreements)
+    ? agreementsStores.getAgreements
+    : []
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount
   hasLoaded.value = true
@@ -904,50 +910,38 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  let tokens = []
-  if (Array.isArray(trackerAgreement.value.token)) {
-    tokens = trackerAgreement.value.token
-  } else if (trackerAgreement.value.token) {
-    tokens = [trackerAgreement.value.token]
-  }
-  
-  const latestToken = tokens.length > 0
-    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
+  const token = trackerAgreement.value.token
+  const history = Array.isArray(token?.histories)
+    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -1569,7 +1563,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                     @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-signature" class="mr-2" />
@@ -1616,7 +1610,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                     @click="editAgreement(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -2374,7 +2368,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -2419,7 +2413,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />

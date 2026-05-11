@@ -907,50 +907,39 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  let tokens = []
-  if (Array.isArray(trackerAgreement.value.token)) {
-    tokens = trackerAgreement.value.token
-  } else if (trackerAgreement.value.token) {
-    tokens = [trackerAgreement.value.token]
-  }
-  
-  const latestToken = tokens.length > 0
-    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
+  const token = trackerAgreement.value.token
+  const history = Array.isArray(token?.histories)
+    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -1813,7 +1802,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Spårare</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                           @click="openStaticSignatureDialog(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-signature" class="mr-2" />
@@ -1860,7 +1849,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Ladda ner</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                           @click="editAgreement(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-pencil" size="24" />
@@ -2242,7 +2231,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -2287,7 +2276,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
@@ -2550,12 +2539,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerAgreement && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 
