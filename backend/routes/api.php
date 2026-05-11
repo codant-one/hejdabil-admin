@@ -48,6 +48,7 @@ use App\Http\Controllers\Services\{
     SwishPayoutController,
     CompanyInfoController,
     PersonInfoController,
+    SmsTestController,
 };
 
 /*
@@ -322,3 +323,6 @@ Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'look
 
 // PERSON INFO (SPAR - Statens Personadressregister)
 Route::get('/persons/lookup/{personId}', [PersonInfoController::class, 'lookupByPersonId']);
+
+// TWILIO SMS TEST
+Route::post('/sms/test', [SmsTestController::class, 'sendTest']);
