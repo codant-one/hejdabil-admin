@@ -886,6 +886,16 @@ const onDatePickerUpdate = value => {
     exportPDFAndCloseMenu()
 }
 
+const deletedNoteActorLabel = '(Borttagen)'
+
+const isNoteActorDeleted = note => {
+  return !!note?.supplier?.deleted_at || !!note?.user?.deleted_at
+}
+
+const isNoteCommentActorDeleted = comment => {
+  return !!comment?.user?.deleted_at
+}
+
 // Intercept mobile dialog outside-click close
 const handleMobileDialogUpdate = (val) => {
   if (val === false && isNoteFormEdited.value) {
@@ -1180,7 +1190,10 @@ onBeforeUnmount(() => {
                               :avatar-id="note.user?.user_detail?.avatar_id"
                             />
                         </VAvatar>
-                        <span class="ms-2 text-comments text-neutral-3">{{ note.user.name }} {{ note.user.last_name }}</span>
+                        <span class="ms-2 text-comments text-neutral-3">
+                          {{ note.user.name }} {{ note.user.last_name }}
+                          <span v-if="isNoteActorDeleted(note)" class="text-neutral-25">{{ deletedNoteActorLabel }}</span>
+                        </span>
                     </div>
 
                     <VSpacer />
@@ -1536,6 +1549,7 @@ onBeforeUnmount(() => {
                       </VAvatar>
                       <span class="ms-2 user-comments">
                           {{ comment.user.name }} {{ comment.user.last_name }}
+                          <span v-if="isNoteCommentActorDeleted(comment)" class="text-neutral-25">{{ deletedNoteActorLabel }}</span>
 
                           <span class="date-comments">  
                               {{ formatCommentDate(comment.created_at) }}
@@ -1706,6 +1720,7 @@ onBeforeUnmount(() => {
                         </VAvatar>
                         <span class="ms-2 user-comments">
                             {{ comment.user.name }} {{ comment.user.last_name }}
+                          <span v-if="isNoteCommentActorDeleted(comment)" class="text-neutral-25">{{ deletedNoteActorLabel }}</span>
 
                             <span class="date-comments">  
                                 {{ formatCommentDate(comment.created_at) }}

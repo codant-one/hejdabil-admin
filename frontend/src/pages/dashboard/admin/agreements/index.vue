@@ -1114,6 +1114,52 @@ const isAgreementClientDeleted = (agreement) => {
   )
 }
 
+const deletedAgreementSupplierLabel = '(Borttagen)'
+const agreementSupplierMaxLength = agreementClientMaxLength
+
+const getAgreementSupplierName = (agreement) => {
+  return `${agreement?.supplier?.user?.name ?? ''} ${agreement?.supplier?.user?.last_name ?? ''}`.trim()
+}
+
+const getAgreementSupplierDisplayText = (agreement) => {
+  const supplierName = getAgreementSupplierName(agreement)
+
+  return isAgreementSupplierDeleted(agreement)
+    ? `${supplierName} ${deletedAgreementSupplierLabel}`.trim()
+    : supplierName
+}
+
+const getAgreementSupplierTruncatedName = (agreement, maxLength = agreementSupplierMaxLength) => {
+  const supplierName = getAgreementSupplierName(agreement)
+
+  if (!isAgreementSupplierDeleted(agreement))
+    return truncateText(supplierName, maxLength)
+
+  const availableLength = maxLength - deletedAgreementSupplierLabel.length - 1
+
+  if (supplierName.length <= availableLength)
+    return supplierName
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0))
+
+  return `${supplierName.substring(0, availableLength - 3)}...`
+}
+
+const isAgreementSupplierDeleted = (agreement) => {
+  return !!agreement?.supplier?.deleted_at || !!agreement?.supplier?.user?.deleted_at
+}
+
+const deletedAgreementCreatorLabel = '(Borttagen)'
+
+const getAgreementCreatorName = (agreement) => {
+  return `${agreement?.user?.name ?? ''} ${agreement?.user?.last_name ?? ''}`.trim()
+}
+
+const isAgreementCreatorDeleted = (agreement) => {
+  return !!agreement?.user?.deleted_at
+}
+
 // Watch for route changes to open tracker automatically
 watch(() => route.query.file_id, async (fileId) => {
   if (fileId && hasLoaded.value) {
@@ -1386,9 +1432,29 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('installment')"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
             <td class="text-center" v-if="isColVisible('type')"> {{ agreement.agreement_type.name  }}</td>
             <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
-              <span v-if="agreement.supplier">
-                {{ agreement.supplier.user.name }}
-                {{ agreement.supplier.user.last_name ?? "" }}
+              <VTooltip 
+                v-if="agreement.supplier && getAgreementSupplierDisplayText(agreement).length > agreementSupplierMaxLength"
+                location="bottom">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getAgreementSupplierTruncatedName(agreement) }}</span>
+                    <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                      {{ deletedAgreementSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getAgreementSupplierName(agreement) }}</span>
+                  <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                    {{ deletedAgreementSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="agreement.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getAgreementSupplierName(agreement) }}</span>
+                <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                  {{ deletedAgreementSupplierLabel }}
+                </span>
               </span>
             </td>      
             <td v-if="isColVisible('customer')">
@@ -1467,7 +1533,7 @@ onBeforeUnmount(() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ agreement.user.name }} {{ agreement.user.last_name ?? "" }}
+                    {{ getAgreementCreatorName(agreement) }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
@@ -1640,8 +1706,11 @@ onBeforeUnmount(() => {
               <VExpansionPanelText>
                 <div class="mb-6">
                   <div class="expansion-panel-item-label">Skapad av</div>
-                  <div class="expansion-panel-item-value">
-                    {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }}
+                  <div class="expansion-panel-item-value d-inline-flex gap-1 align-center flex-wrap">
+                    <span>{{ getAgreementCreatorName(agreement) }}</span>
+                    <span v-if="isAgreementCreatorDeleted(agreement)" class="text-neutral-25 font-12">
+                      {{ deletedAgreementCreatorLabel }}
+                    </span>
                   </div>
                 </div>
                 

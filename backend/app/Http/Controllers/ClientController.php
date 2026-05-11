@@ -42,8 +42,8 @@ class ClientController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Client::with([
-                        'supplier:id,user_id,boss_id',
-                        'supplier.user:id,name,last_name,email',
+                        'supplier' => fn($supplier) => $supplier->select('id', 'user_id', 'boss_id', 'deleted_at')->withTrashed(),
+                        'supplier.user:id,name,last_name,email,deleted_at',
                         'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
                         'user.userDetail:user_id,avatar_id,logo',
                         'state:id,name',
@@ -285,21 +285,15 @@ class ClientController extends Controller
                 ->applyFilters(['client_id' => $id])
                 ->exists();
 
-            $hasOpenAgreements = Agreement::where(function ($query) use ($id) {
-                $query->whereHas('agreement_client.client', function ($subQuery) use ($id) {
-                    $subQuery->where('id', $id);
+            $hasOpenAgreements = Agreement::query()
+                ->applyFilters(['client_id' => $id])
+                ->where(function ($query) {
+                    $query->doesntHave('token')
+                        ->orWhereHas('token', function ($tokenQuery) {
+                            $tokenQuery->whereRaw("LOWER(signature_status) NOT IN ('signed', 'cancelled')");
+                        });
                 })
-                ->orWhereHas('vehicle_client.client', function ($subQuery) use ($id) {
-                    $subQuery->where('id', $id);
-                });
-            })
-            ->where(function ($query) {
-                $query->doesntHave('token')
-                    ->orWhereHas('token', function ($tokenQuery) {
-                        $tokenQuery->whereRaw("LOWER(signature_status) != 'signed'");
-                    });
-            })
-            ->exists();
+                ->exists();
 
             if ($hasOpenAgreements || $hasPendingInvoices)
                 return response()->json([
@@ -406,18 +400,11 @@ class ClientController extends Controller
                     'commission:id,commission_id',
                     'token:id,agreement_id,signature_status'
                 ])
-                ->where(function ($query) use ($id) {
-                    $query->whereHas('agreement_client.client', function ($subQuery) use ($id) {
-                        $subQuery->where('id', $id);
-                    })
-                    ->orWhereHas('vehicle_client.client', function ($subQuery) use ($id) {
-                        $subQuery->where('id', $id);
-                    });
-                })
+                ->applyFilters(['client_id' => $id])
                 ->where(function ($query) {
                     $query->doesntHave('token')
                         ->orWhereHas('token', function ($tokenQuery) {
-                            $tokenQuery->whereRaw("LOWER(signature_status) != 'signed'");
+                            $tokenQuery->whereRaw("LOWER(signature_status) NOT IN ('signed', 'cancelled')");
                         });
                 })
                 ->select('id', 'agreement_id', 'agreement_type_id', 'offer_id', 'commission_id', 'file', 'created_at')

@@ -232,6 +232,59 @@ const truncateText = (text, length = 30) => {
   return text
 }
 
+const deletedSupplierLabel = '(Borttagen)'
+
+const getSupplierBaseName = supplier => {
+  return supplier?.full_name ?? [supplier?.user?.name, supplier?.user?.last_name].filter(Boolean).join(' ')
+}
+
+const getSupplierDisplayName = supplier => {
+  return supplier?.display_full_name ?? getSupplierBaseName(supplier)
+}
+
+const isSupplierInactive = supplier => {
+  return !!supplier?.deleted_at || !!supplier?.user?.deleted_at
+}
+
+const shouldStyleInactiveSupplier = supplier => {
+  return isEdit.value && isSupplierInactive(supplier)
+}
+
+const supplierOptions = computed(() => {
+  const activeSuppliers = Array.isArray(props.suppliers)
+    ? props.suppliers.filter(supplier => !isSupplierInactive(supplier))
+    : []
+
+  const mappedActiveSuppliers = activeSuppliers.map(supplier => ({
+    ...supplier,
+    display_full_name: supplier?.display_full_name ?? getSupplierBaseName(supplier),
+  }))
+
+  if (!isEdit.value)
+    return mappedActiveSuppliers
+
+  const currentSupplier = props.client?.supplier
+
+  if (!currentSupplier?.id || !isSupplierInactive(currentSupplier))
+    return mappedActiveSuppliers
+
+  const alreadyIncluded = mappedActiveSuppliers.some(item => String(item?.id) === String(currentSupplier.id))
+
+  if (alreadyIncluded)
+    return mappedActiveSuppliers
+
+  const supplierName = getSupplierBaseName(currentSupplier)
+
+  return [
+    {
+      ...currentSupplier,
+      full_name: supplierName,
+      display_full_name: `${String(supplierName ?? '').trim()} ${deletedSupplierLabel}`.trim(),
+    },
+    ...mappedActiveSuppliers,
+  ]
+})
+
 const isCompanyNumber = value => {
   const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
   return cleanNumber.startsWith('5')
@@ -537,14 +590,34 @@ const onCountryFlagError = country => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Leverantörer" />
                 <VSelect                 
                   v-model="supplier_id"
-                  :items="suppliers"
+                  :items="supplierOptions"
                   :item-title="(item) => item.full_name"
                   :item-value="(item) => item.id"
                   autocomplete="off"
                   clearable
                   clear-icon="tabler-x"
                   :menu-props="{ maxHeight: '300px' }"
-                />
+                >
+                  <template #item="{ props: itemProps, item }">
+                    <VListItem
+                      v-bind="itemProps"
+                      :class="{ 'deleted-supplier-option': shouldStyleInactiveSupplier(item?.raw) }"
+                    >
+                      <template #title>
+                        <span
+                          :class="{ 'deleted-supplier-text': shouldStyleInactiveSupplier(item?.raw) }"
+                        >
+                          {{ getSupplierDisplayName(item?.raw) }}
+                        </span>
+                      </template>
+                    </VListItem>
+                  </template>
+                  <template #selection="{ item }">
+                    <span :class="{ 'deleted-supplier-text': shouldStyleInactiveSupplier(item?.raw) }">
+                      {{ getSupplierDisplayName(item?.raw) }}
+                    </span>
+                  </template>
+                </VSelect>
               </VCol>               
               <VCol cols="12" md="6" class="pb-0">
                 <AppAutocomplete
@@ -842,6 +915,13 @@ const onCountryFlagError = country => {
     border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 6px;
   }
+
+  .deleted-supplier-option .deleted-supplier-text,
+  .deleted-supplier-text {
+    text-decoration: line-through;
+    opacity: 0.75;
+  }
+
   .border-img .v-img__img--contain {
     padding: 10px;
   }

@@ -404,6 +404,42 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedBillingSupplierLabel = '(Borttagen)';
+const billingSupplierMaxLength = 16;
+
+const getBillingSupplierName = billing => {
+  return `${billing?.supplier?.user?.name ?? ''} ${billing?.supplier?.user?.last_name ?? ''}`.trim();
+};
+
+const getBillingSupplierDisplayText = billing => {
+  const supplierName = getBillingSupplierName(billing);
+
+  return isBillingSupplierDeleted(billing)
+    ? `${supplierName} ${deletedBillingSupplierLabel}`.trim()
+    : supplierName;
+};
+
+const getBillingSupplierTruncatedName = (billing, maxLength = billingSupplierMaxLength) => {
+  const supplierName = getBillingSupplierName(billing);
+
+  if (!isBillingSupplierDeleted(billing))
+    return truncateText(supplierName, maxLength);
+
+  const availableLength = maxLength - deletedBillingSupplierLabel.length - 1;
+
+  if (supplierName.length <= availableLength)
+    return supplierName;
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0));
+
+  return `${supplierName.substring(0, availableLength - 3)}...`;
+};
+
+const isBillingSupplierDeleted = billing => {
+  return !!billing?.supplier?.deleted_at || !!billing?.supplier?.user?.deleted_at;
+};
+
 const openLink = function (billingData) {
   window.open(themeConfig.settings.urlStorage + billingData.file);
 };
@@ -1317,9 +1353,30 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-              <span v-if="billing.supplier">
-                {{ billing.supplier.user.name }}
-                {{ billing.supplier.user.last_name ?? "" }}
+              <VTooltip
+                v-if="billing.supplier && getBillingSupplierDisplayText(billing).length > billingSupplierMaxLength"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getBillingSupplierTruncatedName(billing) }}</span>
+                    <span v-if="isBillingSupplierDeleted(billing)" class="text-neutral-25">
+                      {{ deletedBillingSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getBillingSupplierName(billing) }}</span>
+                  <span v-if="isBillingSupplierDeleted(billing)" class="text-neutral-25">
+                    {{ deletedBillingSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="billing.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getBillingSupplierName(billing) }}</span>
+                <span v-if="isBillingSupplierDeleted(billing)" class="text-neutral-25">
+                  {{ deletedBillingSupplierLabel }}
+                </span>
               </span>
             </td>
             <td class="text-center">

@@ -346,6 +346,32 @@ const formatCommentDate = (dateString) => {
     return `${day} ${month} ${year}, ${hours}:${minutes}`
 }
 
+const deletedTaskCommentActorLabel = '(Borttagen)'
+
+const getTaskActorName = task => {
+    return [task?.user?.name, task?.user?.last_name].filter(Boolean).join(' ')
+}
+
+const isTaskActorDeleted = task => {
+    return !!task?.user?.deleted_at
+}
+
+const getTaskCommentActorName = comment => {
+    return [comment?.user?.name, comment?.user?.last_name].filter(Boolean).join(' ')
+}
+
+const isTaskCommentActorDeleted = comment => {
+    return !!comment?.user?.deleted_at
+}
+
+const getDocumentActorName = document => {
+    return [document?.user?.name, document?.user?.last_name].filter(Boolean).join(' ')
+}
+
+const isDocumentActorDeleted = document => {
+    return !!document?.user?.deleted_at
+}
+
 watchEffect(fetchData)
 
 async function fetchData() {
@@ -364,15 +390,17 @@ async function fetchData() {
         localStorage.setItem('user_data', JSON.stringify(user_data))
 
         if(role.value === 'Supplier') {
-            company.value = user_data.user_detail
-            company.value.email = user_data.email
-            company.value.name = user_data.name
-            company.value.last_name = user_data.last_name
+            company.value = { ...(user_data.user_detail ?? {}) }
+            company.value.email = user_data.email ?? ''
+            company.value.name = user_data.name ?? ''
+            company.value.last_name = user_data.last_name ?? ''
         } else if(role.value === 'User') {
-            company.value = user_data.supplier.boss.user.user_detail
-            company.value.email = user_data.supplier.boss.user.email
-            company.value.name = user_data.supplier.boss.user.name
-            company.value.last_name = user_data.supplier.boss.user.last_name
+            const supplierBossUser = user_data?.supplier?.boss?.user
+
+            company.value = { ...(supplierBossUser?.user_detail ?? {}) }
+            company.value.email = supplierBossUser?.email ?? ''
+            company.value.name = supplierBossUser?.name ?? ''
+            company.value.last_name = supplierBossUser?.last_name ?? ''
         } else {
             await configsStores.getFeature('company')
             await configsStores.getFeature('logo')
@@ -2616,16 +2644,19 @@ onBeforeRouteLeave((to, from, next) => {
                                                     size="40"
                                                 >
                                                     <VImg
-                                                        v-if="task.user.avatar"
+                                                        v-if="task.user?.avatar"
                                                         style="border-radius: 50%;"
-                                                        :src="themeConfig.settings.urlStorage + task.user.avatar"
+                                                        :src="themeConfig.settings.urlStorage + task.user?.avatar"
                                                     />
                                                     <PresetAvatarImage
                                                         v-else
-                                                        :avatar-id="task.user.user_detail.avatar_id"    
+                                                        :avatar-id="task.user?.user_detail?.avatar_id"    
                                                     />
                                                 </VAvatar>
-                                                <span class="ms-2 text-comments text-neutral-3">{{ task.user.name }} {{ task.user.last_name }}</span>
+                                                <span class="ms-2 text-comments text-neutral-3">
+                                                    {{ getTaskActorName(task) }}
+                                                    <span v-if="isTaskActorDeleted(task)" class="text-neutral-25 ms-1">{{ deletedTaskCommentActorLabel }}</span>
+                                                </span>
                                             </div>
 
                                             <VSpacer />
@@ -2770,7 +2801,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                     hour12: false
                                                 }) }} 
                                             </td>
-                                            <td> {{ document.user.name }} {{ document.user.last_name }}</td>
+                                            <td>
+                                                {{ getDocumentActorName(document) }}
+                                                <span v-if="isDocumentActorDeleted(document)" class="text-neutral-25 ms-1">{{ deletedTaskCommentActorLabel }}</span>
+                                            </td>
                                             <!-- 👉 Actions -->
                                             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                 <VMenu>
@@ -2844,7 +2878,8 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div class="mb-6">
                                         <div class="expansion-panel-item-label">Skapad av</div>
                                         <div class="expansion-panel-item-value">
-                                            {{ document.user.name }} {{ document.user.last_name }}
+                                            {{ getDocumentActorName(document) }}
+                                            <span v-if="isDocumentActorDeleted(document)" class="text-neutral-25 ms-1">{{ deletedTaskCommentActorLabel }}</span>
                                         </div>
                                         </div>
                                         <div class="mb-4 row-with-buttons">
@@ -3352,9 +3387,9 @@ onBeforeRouteLeave((to, from, next) => {
                                         size="40"
                                     >
                                         <VImg
-                                            v-if="comment.user.avatar"
+                                            v-if="comment.user?.avatar"
                                             style="border-radius: 50%;"
-                                            :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                                            :src="themeConfig.settings.urlStorage + comment.user?.avatar"
                                         />
                                         <PresetAvatarImage
                                             v-else
@@ -3362,7 +3397,8 @@ onBeforeRouteLeave((to, from, next) => {
                                         />
                                     </VAvatar>
                                     <span class="ms-2 user-comments">
-                                        {{ comment.user.name }} {{ comment.user.last_name }}
+                                        {{ getTaskCommentActorName(comment) }}
+                                        <span v-if="isTaskCommentActorDeleted(comment)" class="text-neutral-25 ms-1">{{ deletedTaskCommentActorLabel }}</span>
 
                                         <span class="date-comments">  
                                             {{ formatCommentDate(comment.created_at) }}
@@ -3531,9 +3567,9 @@ onBeforeRouteLeave((to, from, next) => {
                                     size="40"
                                 >
                                     <VImg
-                                        v-if="comment.user.avatar"
+                                        v-if="comment.user?.avatar"
                                         style="border-radius: 50%;"
-                                        :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                                        :src="themeConfig.settings.urlStorage + comment.user?.avatar"
                                     />
                                     <PresetAvatarImage
                                         v-else
@@ -3541,7 +3577,8 @@ onBeforeRouteLeave((to, from, next) => {
                                     />
                                 </VAvatar>
                                 <span class="ms-2 user-comments">
-                                    {{ comment.user.name }} {{ comment.user.last_name }}
+                                    {{ getTaskCommentActorName(comment) }}
+                                    <span v-if="isTaskCommentActorDeleted(comment)" class="text-neutral-25 ms-1">{{ deletedTaskCommentActorLabel }}</span>
 
                                     <span class="date-comments">  
                                         {{ formatCommentDate(comment.created_at) }}

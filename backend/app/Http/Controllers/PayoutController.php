@@ -42,13 +42,16 @@ class PayoutController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Payout::with([
-                            'state:id,name', 
-                            'supplier:id,user_id',
-                            'supplier.user:id,name,last_name,email,avatar',
-                            'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
-                            'user.userDetail:user_id,avatar_id,logo'
-                           ])
+                        $query = Payout::with([
+                                                        'state:id,name', 
+                                                        'supplier' => function ($q) {
+                                                                $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                                                                    ->withTrashed()
+                                                                    ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed()]);
+                                                        },
+                                                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                                                        'user.userDetail:user_id,avatar_id,logo'
+                                                     ])
                            ->applyFilters(
                                 $request->only([
                                     'search',

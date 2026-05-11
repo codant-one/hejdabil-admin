@@ -90,7 +90,7 @@ class AgreementController extends Controller
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
                         'user' => function ($q) {
-                                $q->select('id', 'name', 'last_name', 'email', 'avatar')
+                                                                $q->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')
                                     ->withTrashed();
                         },
                         'user.userDetail:user_id,avatar_id,logo'
