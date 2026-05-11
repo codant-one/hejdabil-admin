@@ -17,14 +17,33 @@ const getScrollableParent = element => {
   return document.scrollingElement || document.documentElement
 }
 
+const resolveScrollableElement = element => {
+  if (!element)
+    return null
+
+  if (typeof Element !== 'undefined' && element instanceof Element)
+    return element
+
+  const componentRoot = element?.$el ?? element?.$?.vnode?.el ?? null
+
+  if (typeof Element !== 'undefined' && componentRoot instanceof Element)
+    return componentRoot
+
+  return null
+}
+
 export const scrollElementIntoScrollableParent = ({ element, offset, behavior }) => {
-  const scrollParent = getScrollableParent(element)
+  const resolvedElement = resolveScrollableElement(element)
+  if (!resolvedElement)
+    return
+
+  const scrollParent = getScrollableParent(resolvedElement)
 
   if (!scrollParent)
     return
 
   if (scrollParent === document.scrollingElement || scrollParent === document.documentElement || scrollParent === document.body) {
-    const top = window.scrollY + element.getBoundingClientRect().top - offset
+    const top = window.scrollY + resolvedElement.getBoundingClientRect().top - offset
 
     window.scrollTo({
       top: Math.max(0, top),
@@ -35,7 +54,7 @@ export const scrollElementIntoScrollableParent = ({ element, offset, behavior })
   }
 
   const parentRect = scrollParent.getBoundingClientRect()
-  const elementRect = element.getBoundingClientRect()
+  const elementRect = resolvedElement.getBoundingClientRect()
   const top = scrollParent.scrollTop + elementRect.top - parentRect.top - offset
 
   scrollParent.scrollTo({

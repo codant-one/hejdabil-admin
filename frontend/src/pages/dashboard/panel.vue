@@ -1,7 +1,9 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
+import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import { useDashboardStores } from '@/stores/useDashboard'
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -25,6 +27,7 @@ const { width: windowWidth } = useWindowSize();
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const route = useRoute()
 
 const statisticians = ref(null)
 const indicators = ref({})
@@ -53,6 +56,7 @@ const advisor = ref({
 
 const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
+const remindersSectionEl = ref(null)
 
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
 
@@ -310,13 +314,64 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`
 }
 
+const shouldScrollToReminders = () => {
+  return route.hash === '#reminders' && (role.value === 'Supplier' || role.value === 'User')
+}
+
+const scrollToRemindersSection = async (behavior = 'smooth', attempts = 0) => {
+  if (!shouldScrollToReminders())
+    return
+
+  await nextTick()
+
+  const element = remindersSectionEl.value ?? document.getElementById('reminders')
+
+  if (!element) {
+    if (attempts < 6) {
+      setTimeout(() => {
+        scrollToRemindersSection(behavior, attempts + 1)
+      }, 120)
+    }
+
+    return
+  }
+
+  requestAnimationFrame(() => {
+    scrollElementIntoScrollableParent({
+      element,
+      offset: 24,
+      behavior,
+    })
+  })
+}
+
+watch(() => route.hash, () => {
+  scrollToRemindersSection('smooth')
+})
+
+watch(() => role.value, () => {
+  scrollToRemindersSection('auto')
+})
+
+watch(() => isRequestOngoing.value, isLoading => {
+  if (!isLoading)
+    scrollToRemindersSection('smooth')
+})
+
+const handleDashboardRemindersScrollEvent = () => {
+  scrollToRemindersSection('smooth')
+}
+
 onMounted(() => {
   resizeSectionToRemainingViewport()
   window.addEventListener('resize', resizeSectionToRemainingViewport)
+  window.addEventListener('dashboard-scroll-to-reminders', handleDashboardRemindersScrollEvent)
+  scrollToRemindersSection('auto')
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeSectionToRemainingViewport)
+  window.removeEventListener('dashboard-scroll-to-reminders', handleDashboardRemindersScrollEvent)
 })
 
 </script>
@@ -394,7 +449,12 @@ onBeforeUnmount(() => {
             <Profit :profit="profit" />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card" style="height: 480px !important;">
+          <div
+            id="reminders"
+            ref="remindersSectionEl"
+            class="dashboard-grid__item dashboard-grid__item--md-6 h-card"
+            style="height: 480px !important;"
+          >
             <Information
               :reminders="reminders?.reminders"
               @refresh="handleRemindersRefresh"

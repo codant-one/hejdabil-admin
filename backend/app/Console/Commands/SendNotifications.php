@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Event;
 use App\Models\VehicleTask;
 use App\Models\Notification;
 use App\Models\Setting;
+use App\Models\Reminder;
+
 use App\Events\UserNotificationEvent;
 
 class SendNotifications extends Command
@@ -44,6 +46,7 @@ class SendNotifications extends Command
     public function handle()
     {
         self::overdueTasks();
+        self::overdueReminders();
 
         return 0;
     }
@@ -118,6 +121,79 @@ class SendNotifications extends Command
         }
         
         $this->info('Total overdue tasks: ' . $tasks->count());
+    }
+
+    private function overdueReminders() {
+
+        $reminders = 
+            Reminder::with(['user'])
+                ->where('is_done', 0)
+                ->whereDate('date', '<=', now())
+                ->get();
+        
+        foreach($reminders as $reminder){
+            if (!$this->shouldSendReminderNotification($reminder->user_id)) {
+                $this->info('Reminder notifications disabled for user_id: ' . ($reminder->user_id ?? 'N/A'));
+                continue;
+            }
+            
+            // Prepare data for notification            
+            $title = 'Ånteckningar försenad';
+            $subtitle = $reminder->description;
+            $formattedReminderDate = $reminder->date;
+            if ($reminder->date) {
+                try {
+                    $formattedReminderDate = \Carbon\Carbon::parse($reminder->date)->format('Y/m/d H:i');
+                } catch (\Exception $e) {
+                    $formattedReminderDate = $reminder->date;
+                }
+            }
+            $text = 'Ånteckningar "' . $reminder->description . '" skulle ha slutförts ' . $formattedReminderDate;
+            $color = 'error';
+            $icon = 'custom-alarm';
+            $route = '/dashboard/panel#reminders';
+            
+            // Create notification directly in database
+            try {
+                $dbNotification = Notification::create([
+                    'user_id' => $reminder->user_id,
+                    'notification_id' => $reminder->id,
+                    'title' => $title,
+                    'subtitle' => $subtitle,
+                    'text' => $text,                
+                    'color' => $color,
+                    'icon' => $icon,
+                    'route' => $route,
+                    'read' => false,
+                ]);
+                
+                // Prepare message for WebSocket
+                $message = (object) [
+                    'id' => $dbNotification->id,
+                    'title' => $title,
+                    'subtitle' => $subtitle,
+                    'time' => now()->format('H:i:s'),
+                    'img' => null,
+                    'color' => $color,
+                    'icon' => $icon,
+                    'text' => $text,
+                    'route' => $route,
+                    'read' => false,
+                ];
+                
+                // Send WebSocket event
+                if ($reminder->user_id) {
+                    $evento = new UserNotificationEvent($message, $reminder->user_id);
+                    Event::dispatch($evento);
+                }
+                
+                $this->info('Notification sent successfully for: ' . $reminder->description);
+            } catch (\Exception $e) {
+                $this->error('Error creating notification: ' . $e->getMessage());
+            }
+        }
+        
+        $this->info('Total overdue reminders: ' . $reminders->count());
     }
 
     private function shouldSendReminderNotification($userId): bool
