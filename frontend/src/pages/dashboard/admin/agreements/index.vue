@@ -187,7 +187,9 @@ watchEffect(() => {
 
 // Computed para detectar si hay agreements activos esperando interacción
 const hasActiveAgreements = computed(() => {
-  return agreements.value.some(agr => 
+  const agreementItems = Array.isArray(agreements.value) ? agreements.value : []
+
+  return agreementItems.some(agr => 
     ['sent', 'delivered', 'reviewed'].includes(agr.token?.signature_status)
   )
 })
@@ -209,7 +211,9 @@ const checkForUpdates = async () => {
     // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
     await agreementsStores.fetchAgreements(data)
     
-    const newAgreements = agreementsStores.getAgreements
+    const newAgreements = Array.isArray(agreementsStores.getAgreements)
+      ? agreementsStores.getAgreements
+      : []
     
     // Solo comparar si hay cambios, NO actualizar aquí
     const hasChanges = JSON.stringify(agreements.value) !== JSON.stringify(newAgreements)
@@ -356,7 +360,9 @@ async function fetchData(cleanFilters = false) {
 
   await agreementsStores.fetchAgreements(data)
 
-  agreements.value = agreementsStores.getAgreements
+  agreements.value = Array.isArray(agreementsStores.getAgreements)
+    ? agreementsStores.getAgreements
+    : []
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount
   hasLoaded.value = true
@@ -904,50 +910,38 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  let tokens = []
-  if (Array.isArray(trackerAgreement.value.token)) {
-    tokens = trackerAgreement.value.token
-  } else if (trackerAgreement.value.token) {
-    tokens = [trackerAgreement.value.token]
-  }
-  
-  const latestToken = tokens.length > 0
-    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
+  const token = trackerAgreement.value.token
+  const history = Array.isArray(token?.histories)
+    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -1112,6 +1106,52 @@ const isAgreementClientDeleted = (agreement) => {
     agreement?.vehicle_client?.client_id
     && agreement?.vehicle_client?.client?.deleted_at
   )
+}
+
+const deletedAgreementSupplierLabel = '(Borttagen)'
+const agreementSupplierMaxLength = agreementClientMaxLength
+
+const getAgreementSupplierName = (agreement) => {
+  return `${agreement?.supplier?.user?.name ?? ''} ${agreement?.supplier?.user?.last_name ?? ''}`.trim()
+}
+
+const getAgreementSupplierDisplayText = (agreement) => {
+  const supplierName = getAgreementSupplierName(agreement)
+
+  return isAgreementSupplierDeleted(agreement)
+    ? `${supplierName} ${deletedAgreementSupplierLabel}`.trim()
+    : supplierName
+}
+
+const getAgreementSupplierTruncatedName = (agreement, maxLength = agreementSupplierMaxLength) => {
+  const supplierName = getAgreementSupplierName(agreement)
+
+  if (!isAgreementSupplierDeleted(agreement))
+    return truncateText(supplierName, maxLength)
+
+  const availableLength = maxLength - deletedAgreementSupplierLabel.length - 1
+
+  if (supplierName.length <= availableLength)
+    return supplierName
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0))
+
+  return `${supplierName.substring(0, availableLength - 3)}...`
+}
+
+const isAgreementSupplierDeleted = (agreement) => {
+  return !!agreement?.supplier?.deleted_at || !!agreement?.supplier?.user?.deleted_at
+}
+
+const deletedAgreementCreatorLabel = '(Borttagen)'
+
+const getAgreementCreatorName = (agreement) => {
+  return `${agreement?.user?.name ?? ''} ${agreement?.user?.last_name ?? ''}`.trim()
+}
+
+const isAgreementCreatorDeleted = (agreement) => {
+  return !!agreement?.user?.deleted_at
 }
 
 // Watch for route changes to open tracker automatically
@@ -1386,9 +1426,29 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('installment')"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
             <td class="text-center" v-if="isColVisible('type')"> {{ agreement.agreement_type.name  }}</td>
             <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
-              <span v-if="agreement.supplier">
-                {{ agreement.supplier.user.name }}
-                {{ agreement.supplier.user.last_name ?? "" }}
+              <VTooltip 
+                v-if="agreement.supplier && getAgreementSupplierDisplayText(agreement).length > agreementSupplierMaxLength"
+                location="bottom">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getAgreementSupplierTruncatedName(agreement) }}</span>
+                    <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                      {{ deletedAgreementSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getAgreementSupplierName(agreement) }}</span>
+                  <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                    {{ deletedAgreementSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="agreement.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getAgreementSupplierName(agreement) }}</span>
+                <span v-if="isAgreementSupplierDeleted(agreement)" class="text-neutral-25">
+                  {{ deletedAgreementSupplierLabel }}
+                </span>
               </span>
             </td>      
             <td v-if="isColVisible('customer')">
@@ -1467,7 +1527,7 @@ onBeforeUnmount(() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ agreement.user.name }} {{ agreement.user.last_name ?? "" }}
+                    {{ getAgreementCreatorName(agreement) }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
@@ -1503,7 +1563,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                     @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-signature" class="mr-2" />
@@ -1550,7 +1610,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                     @click="editAgreement(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -1640,8 +1700,11 @@ onBeforeUnmount(() => {
               <VExpansionPanelText>
                 <div class="mb-6">
                   <div class="expansion-panel-item-label">Skapad av</div>
-                  <div class="expansion-panel-item-value">
-                    {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }}
+                  <div class="expansion-panel-item-value d-inline-flex gap-1 align-center flex-wrap">
+                    <span>{{ getAgreementCreatorName(agreement) }}</span>
+                    <span v-if="isAgreementCreatorDeleted(agreement)" class="text-neutral-25 font-12">
+                      {{ deletedAgreementCreatorLabel }}
+                    </span>
                   </div>
                 </div>
                 
@@ -2305,7 +2368,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -2350,7 +2413,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />

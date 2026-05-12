@@ -271,6 +271,7 @@ onBeforeUnmount(() => {
             class="btn-white-3"
             height="48"
             width="48"
+            :to="{ name: 'dashboard-settings' }"
           >
             <VIcon icon="custom-settings" size="24" />
           </VBtn>

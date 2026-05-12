@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Models\SettingBilling;
 use App\Models\SettingAgreement;
+use App\Models\SettingNotification;
 
 class Setting extends Model
 {
@@ -34,6 +35,10 @@ class Setting extends Model
 
     public function agreement() {
         return $this->belongsTo(SettingAgreement::class, 'setting_agreement_id', 'id');
+    }
+
+    public function notification() {
+        return $this->belongsTo(SettingNotification::class, 'setting_notification_id', 'id');
     }
 
     /**** Public methods ****/
@@ -106,6 +111,33 @@ class Setting extends Model
             'supplier_id' => $supplier_id,
         ], [
             'setting_agreement_id' => $settingAgreement->id,
+        ]);
+
+        return $settings;
+    }
+
+    public static function notifications($request, $settings) {
+
+        $supplier_id = self::resolveSupplierId($request);
+
+        $currentSettingNotification = $settings?->notification;
+        $notificationId = self::resolveOptionalField($request, 'notification_id', $settings->setting_notification_id ?? null);
+
+        $settingNotification = SettingNotification::query()->updateOrCreate([
+            'id' => $notificationId,
+        ], [
+            'notify_via_sound' => self::resolveOptionalField($request, 'notify_via_sound', $currentSettingNotification->notify_via_sound ?? 1),
+            'notify_via_email' => self::resolveOptionalField($request, 'notify_via_email', $currentSettingNotification->notify_via_email ?? 1),
+            'send_reminders' => self::resolveOptionalField($request, 'send_reminders', $currentSettingNotification->send_reminders ?? 0),
+            'notify_on_document_signed' => self::resolveOptionalField($request, 'notify_on_document_signed', $currentSettingNotification->notify_on_document_signed ?? 1),
+            'notify_on_agreement_signed' => self::resolveOptionalField($request, 'notify_on_agreement_signed', $currentSettingNotification->notify_on_agreement_signed ?? 1),
+        ]);
+
+        $settings = self::query()->updateOrCreate([
+            'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
+        ], [
+            'setting_notification_id' => $settingNotification->id,
         ]);
 
         return $settings;

@@ -41,7 +41,8 @@ class SettingController extends Controller
                 'supplier',
                 'color',
                 'billing',
-                'agreement'
+                'agreement',
+                'notification'
             ])->where('user_id', $id)->first();
 
             return response()->json([
@@ -128,6 +129,29 @@ class SettingController extends Controller
 
             $settings = Setting::where('supplier_id', $id)->first();
             $settings = Setting::agreements($request, $settings);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'settings' => $settings
+                ]
+            ], 200);
+
+        } catch(\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function notifications(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $settings = Setting::where('supplier_id', $id)->first();
+            $settings = Setting::notifications($request, $settings);
 
             return response()->json([
                 'success' => true,

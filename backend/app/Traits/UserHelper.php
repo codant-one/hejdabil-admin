@@ -89,12 +89,22 @@ trait UserHelper
     }
 
     public static function deleteUser($id) {
-        $user = self::find($id);
+        $user = self::withTrashed()->find($id);
+
+        if (!$user || $user->trashed()) {
+            return;
+        }
+
         $user->delete();
     }
 
     public static function activateUser($id) {
         $user = self::onlyTrashed()->where('id', $id)->first();
+
+        if (!$user) {
+            return;
+        }
+
         $user->restore();
     }
 

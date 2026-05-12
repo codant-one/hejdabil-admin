@@ -8,6 +8,13 @@ import Notifications from '@core/components/Notifications.vue'
 const notificationsStore = useNotificationsStore()
 const router = useRouter()
 
+const emitDashboardRemindersScroll = () => {
+  if (typeof window === 'undefined')
+    return
+
+  window.dispatchEvent(new CustomEvent('dashboard-scroll-to-reminders'))
+}
+
 onMounted(async () => {
   // Obtener el usuario actual y su ID
   let userId = null
@@ -18,7 +25,7 @@ onMounted(async () => {
   if (userData) {
     try {
       const user = JSON.parse(userData)
-      userId = user.id
+      userId = user?.id ?? user?.user?.id ?? null
     } catch (e) {
       console.error('❌ Error parsing user data:', e)
     }
@@ -41,7 +48,16 @@ const onNotificationClick = async (notification) => {
   
   // Navegar a la ruta si existe
   if (notification.route) {
-    router.push(notification.route)
+    const targetRoute = router.resolve(notification.route)
+    const isRemindersTarget = targetRoute.hash === '#reminders'
+    const isAlreadyOnTarget = router.currentRoute.value.fullPath === targetRoute.fullPath
+
+    if (isRemindersTarget && isAlreadyOnTarget) {
+      emitDashboardRemindersScroll()
+      return
+    }
+
+    await router.push(notification.route)
   }
 }
 </script>

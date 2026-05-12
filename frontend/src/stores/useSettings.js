@@ -71,6 +71,20 @@ export const useSettingsStore = defineStore('settings', {
                     this.setLoading(false)
                 })
             
+        },
+        notifications(data) {
+            this.setLoading(true)
+
+            return Settings.notifications(data)
+                .then((response) => {
+                    this.settings = response.data.data.settings
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
         }
     }
 })

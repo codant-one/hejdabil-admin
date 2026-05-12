@@ -143,11 +143,6 @@ onMounted(async () => {
 
     if (!role.value) return;
 
-    if (role.value === "SuperAdmin" || role.value === "Administrator") {
-      await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
-      suppliers.value = toRaw(suppliersStores.getSuppliers);
-    }
-
     if (role.value !== "Supplier" && role.value !== "User") {
       await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
       suppliers.value = toRaw(suppliersStores.getSuppliers);
@@ -242,7 +237,7 @@ const updateStateId = (newStateId) => {
   if (state_id.value === newStateId) {
     newStateId = null;
   }
-  console.log("Updating state_id to:", newStateId);
+  
   state_id.value = newStateId;
   filtreraMobile.value = false;
 };
@@ -473,6 +468,12 @@ const resolveStatus = state => {
       name: 'Misslyckades',
       class: 'error',
       icon: 'custom-close'
+    }
+  if (state === 'cancelled')
+    return {
+      name: 'Annullerad',
+      class: 'error',
+      icon: 'custom-signature-off'
     }
 }
 
@@ -789,6 +790,42 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedClientSupplierLabel = '(Borttagen)'
+const clientSupplierMaxLength = 16
+
+const getClientSupplierName = client => {
+  return `${client?.supplier?.user?.name ?? ''} ${client?.supplier?.user?.last_name ?? ''}`.trim()
+}
+
+const getClientSupplierDisplayText = client => {
+  const supplierName = getClientSupplierName(client)
+
+  return isClientSupplierDeleted(client)
+    ? `${supplierName} ${deletedClientSupplierLabel}`.trim()
+    : supplierName
+}
+
+const getClientSupplierTruncatedName = (client, maxLength = clientSupplierMaxLength) => {
+  const supplierName = getClientSupplierName(client)
+
+  if (!isClientSupplierDeleted(client))
+    return truncateText(supplierName, maxLength)
+
+  const availableLength = maxLength - deletedClientSupplierLabel.length - 1
+
+  if (supplierName.length <= availableLength)
+    return supplierName
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0))
+
+  return `${supplierName.substring(0, availableLength - 3)}...`
+}
+
+const isClientSupplierDeleted = client => {
+  return !!client?.supplier?.deleted_at || !!client?.supplier?.user?.deleted_at
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -1053,9 +1090,30 @@ onBeforeUnmount(() => {
               <span v-else>{{ client.address }}</span>
             </td>
             <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-              <span v-if="client.supplier">
-                {{ client.supplier.user.name }}
-                {{ client.supplier.user.last_name ?? "" }}
+              <VTooltip
+                v-if="client.supplier && getClientSupplierDisplayText(client).length > clientSupplierMaxLength"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getClientSupplierTruncatedName(client) }}</span>
+                    <span v-if="isClientSupplierDeleted(client)" class="text-neutral-25">
+                      {{ deletedClientSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  {{ getClientSupplierName(client) }}
+                  <span v-if="isClientSupplierDeleted(client)" class="text-neutral-25">
+                    {{ deletedClientSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="client.supplier" class="d-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getClientSupplierName(client) }}</span>
+                <span v-if="isClientSupplierDeleted(client)" class="text-neutral-25">
+                  {{ deletedClientSupplierLabel }}
+                </span>
               </span>
             </td>
             <td style="width: 1%; white-space: nowrap">

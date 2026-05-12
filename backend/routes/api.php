@@ -48,6 +48,7 @@ use App\Http\Controllers\Services\{
     SwishPayoutController,
     CompanyInfoController,
     PersonInfoController,
+    SmsTestController,
 };
 
 /*
@@ -274,6 +275,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('colors/{id}', [SettingController::class, 'colors'])->name('settings.colors');
         Route::post('billings/{id}', [SettingController::class, 'billings'])->name('settings.billings');
         Route::post('agreements/{id}', [SettingController::class, 'agreements'])->name('settings.agreements');
+        Route::post('notifications/{id}', [SettingController::class, 'notifications'])->name('settings.notifications');
     });
 
     //Configs
@@ -321,3 +323,6 @@ Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'look
 
 // PERSON INFO (SPAR - Statens Personadressregister)
 Route::get('/persons/lookup/{personId}', [PersonInfoController::class, 'lookupByPersonId']);
+
+// TWILIO SMS TEST
+Route::post('/sms/test', [SmsTestController::class, 'sendTest']);

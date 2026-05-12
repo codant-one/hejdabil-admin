@@ -79,19 +79,14 @@ class SignatureController extends Controller
             ], 422);
         }
 
-        // 3. Get or create token for this agreement
-        // First check for token with 'created' or 'delivery_issues' status
-        $token = $agreement->token()
-            ->whereIn('signature_status', ['created', 'delivery_issues'])
-            ->latest()
-            ->first();
+        // 3. Reuse latest token if it is in restartable state; otherwise create first cycle token.
+        $token = $agreement->tokens()->latest('id')->first();
+        $canReuseToken = $token && in_array($token->signature_status, ['created', 'delivery_issues', 'cancelled'], true);
 
-        if (!$token) {
-            // If no 'created' or 'delivery_issues' token exists, create a new one
+        if (!$canReuseToken) {
             $signingToken = Str::uuid()->toString();
-            
-            // 4. Create the record in the 'token' table.
-            $token = $agreement->token()->create([
+
+            $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
@@ -101,7 +96,6 @@ class SignatureController extends Controller
                 'placement_page'=> $validated['page'],
             ]);
 
-            // Register 'created' event
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_CREATED,
@@ -114,13 +108,12 @@ class SignatureController extends Controller
                 ]
             );
         } else {
-            // Update existing token with new signature details
             $token->update([
-                'recipient_email'     => $validated['email'],
-                'token_expires_at'    => now()->addDays(7),
-                'placement_x'   => $validated['x'],
-                'placement_y'   => $validated['y'],
-                'placement_page'=> $validated['page'],
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'placement_x' => $validated['x'],
+                'placement_y' => $validated['y'],
+                'placement_page' => $validated['page'],
             ]);
         }
 
@@ -290,29 +283,25 @@ class SignatureController extends Controller
             ], 422);
         }
 
-        // 3. Get or create token for this agreement
-        // First check for token with 'created' or 'delivery_issues' status
-        $token = $agreement->token()
-            ->whereIn('signature_status', ['created', 'delivery_issues'])
-            ->latest()
-            ->first();
+        $defaultPlacement = $this->resolveAgreementDefaultPlacement($agreement);
 
-        if (!$token) {
-            // If no 'created' or 'delivery_issues' token exists, create a new one
+        // 3. Reuse latest token if it is in restartable state; otherwise create first cycle token.
+        $token = $agreement->tokens()->latest('id')->first();
+        $canReuseToken = $token && in_array($token->signature_status, ['created', 'delivery_issues', 'cancelled'], true);
+
+        if (!$canReuseToken) {
             $signingToken = Str::uuid()->toString();
-            
-            // 4. Create the record in 'token' WITHOUT coordinates.
-            $token = $agreement->token()->create([
+
+            $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
-                'placement_x'   => null, // Save null to identify static signature
-                'placement_y'   => null,
-                'placement_page'=> 1,    // Default to page 1
+                'placement_x'   => $defaultPlacement['x'],
+                'placement_y'   => $defaultPlacement['y'],
+                'placement_page'=> 1,
             ]);
 
-            // Log 'created' event when token is created
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_CREATED,
@@ -326,11 +315,12 @@ class SignatureController extends Controller
                 ]
             );
         } else {
-            // Update existing token with new signature details
             $token->update([
-                'recipient_email'     => $validated['email'],
-                'token_expires_at'    => now()->addDays(7),
-                'placement_page'=> 1,
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'placement_x' => $token->placement_x ?? $defaultPlacement['x'],
+                'placement_y' => $token->placement_y ?? $defaultPlacement['y'],
+                'placement_page' => $token->placement_page ?? 1,
             ]);
         }
 
@@ -354,9 +344,6 @@ class SignatureController extends Controller
                     'message' => 'Ogiltig e-postadress.'
                 ], 422);
             }
-
-            // Update status to 'sent'
-            $token->update(['signature_status' => 'sent']);
 
             // Update status to 'sent' before attempting to send
             $token->update(['signature_status' => 'sent']);
@@ -484,12 +471,12 @@ class SignatureController extends Controller
      */
     public function resendSignatureRequest(Agreement $agreement, Request $request)
     {
-        $token = $agreement->token()
+        $sourceToken = $agreement->tokens()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
             ->latest()
             ->first();
 
-        if (!$token) {
+        if (!$sourceToken) {
             return response()->json([
                 'success' => false,
                 'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om.'
@@ -521,27 +508,17 @@ class SignatureController extends Controller
             $agreement->loadMissing(['agreement_client', 'agreement_type']);
 
             $recipientEmail = $useDefaultRecipient
-                ? ($token->recipient_email ?: $agreement->agreement_client?->email)
+                ? ($sourceToken->recipient_email ?: $agreement->agreement_client?->email)
                 : $newRecipientEmail;
 
             if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-
-                TokenHistory::logEvent(
-                    tokenId: $token->id,
-                    eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid skicka om till ' . ($recipientEmail ?: 'ingen angiven e-post'),
-                    ipAddress: $request->ip(),
-                    userAgent: $request->userAgent(),
-                    metadata: ['recipient' => $recipientEmail, 'resend' => true]
-                );
-
                 return response()->json([
                     'success' => false,
                     'message' => 'Det finns ingen giltig mottagare för att skicka om.'
                 ], 422);
             }
 
+            $token = $sourceToken;
             $token->update([
                 'recipient_email' => $recipientEmail,
                 'token_expires_at' => now()->addDays(7),
@@ -649,7 +626,7 @@ class SignatureController extends Controller
                 'exception' => $e,
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
-                'email' => $recipientEmail ?: $token->recipient_email,
+                'email' => $recipientEmail ?: $sourceToken->recipient_email,
             ]);
 
             $token->update(['signature_status' => 'delivery_issues']);
@@ -663,7 +640,7 @@ class SignatureController extends Controller
                 metadata: [
                     'error' => $e->getMessage(),
                     'error_type' => get_class($e),
-                    'recipient' => $recipientEmail ?: $token->recipient_email,
+                    'recipient' => $recipientEmail ?: $sourceToken->recipient_email,
                     'resend' => true,
                 ]
             );
@@ -681,7 +658,7 @@ class SignatureController extends Controller
      */
     public function cancelSignatureRequest(Agreement $agreement, Request $request)
     {
-        $token = $agreement->token()
+        $token = $agreement->tokens()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
             ->latest()
             ->first();
@@ -1469,7 +1446,7 @@ class SignatureController extends Controller
             'action_type' => 'resend_signature_agreement',
             'title' => $this->agreementActivityTitle($agreement, ' - skickat igen för signering'),
             'description' => 'Skickades igen för signering.',
-            'icon' => 'custom-signature',
+            'icon' => 'custom-contract',
             'route' => $this->agreementActivityRoute($agreement->id),
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
@@ -1490,7 +1467,7 @@ class SignatureController extends Controller
             'action_type' => 'cancel_signature_agreement',
             'title' => $this->agreementActivityTitle($agreement, ' - signering återkallad'),
             'description' => 'Signeringsförfrågan återkallades.',
-            'icon' => 'custom-signature',
+            'icon' => 'custom-contract',
             'route' => $this->agreementActivityRoute($agreement->id),
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
@@ -1536,6 +1513,20 @@ class SignatureController extends Controller
             3 => $agreement->commission?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
             default => $agreement->vehicle_client?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
         };
+    }
+
+    private function resolveAgreementDefaultPlacement(Agreement $agreement): array
+    {
+        $latestTokenWithPlacement = $agreement->tokens()
+            ->whereNotNull('placement_x')
+            ->whereNotNull('placement_y')
+            ->latest('id')
+            ->first();
+
+        return [
+            'x' => $latestTokenWithPlacement?->placement_x ?? Agreement::coordinates($agreement, 'x'),
+            'y' => $latestTokenWithPlacement?->placement_y ?? Agreement::coordinates($agreement, 'y'),
+        ];
     }
 
     public function getUnsignedPdf($tokenString)

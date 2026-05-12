@@ -99,7 +99,7 @@ const route = useRoute();
 
 const clients = ref(props.clients);
 const client = ref(null);
-const suppliers = ref(props.suppliers);
+const suppliers = computed(() => Array.isArray(props.suppliers) ? props.suppliers : []);
 const company = ref(props.company);
 const subtotal = ref(props.total);
 const total = ref("0.00");
@@ -125,6 +125,73 @@ const canEditInvoiceId = computed(() => {
 const isMobile = ref(false);
 const controlledTab = ref("redigera");
 const actionDialog = ref(false);
+
+const deletedSupplierLabel = '(Borttagen)'
+
+const getSupplierBaseName = supplier => {
+  const fromFullName = typeof supplier?.full_name === 'string' ? supplier.full_name.trim() : ''
+  const fromDirectUser = [supplier?.name, supplier?.last_name].filter(Boolean).join(' ').trim()
+  const fromRelatedUser = [supplier?.user?.name, supplier?.user?.last_name].filter(Boolean).join(' ').trim()
+  const fromCompany = String(supplier?.user?.user_detail?.company ?? supplier?.user?.userDetail?.company ?? supplier?.company ?? '').trim()
+  const fromId = supplier?.id != null ? `Leverantor #${supplier.id}` : ''
+
+  return fromFullName || fromDirectUser || fromRelatedUser || fromCompany || fromId
+}
+
+const getSupplierDisplayName = supplier => {
+  const explicitDisplayName = String(supplier?.display_full_name ?? '').trim()
+
+  return explicitDisplayName || getSupplierBaseName(supplier)
+}
+
+const getSupplierOptionSource = supplierOption => {
+  return supplierOption?.raw ?? supplierOption
+}
+
+const isSupplierInactive = supplier => {
+  return !!supplier?.deleted_at || !!supplier?.user?.deleted_at
+}
+
+const shouldStyleInactiveSupplier = supplier => {
+  return !!props.billing && isSupplierInactive(supplier)
+}
+
+const supplierOptions = computed(() => {
+  const activeSuppliers = suppliers.value.filter(supplier => !isSupplierInactive(supplier))
+
+  const mappedActiveSuppliers = activeSuppliers.map(supplier => ({
+    ...supplier,
+    display_full_name: getSupplierDisplayName(supplier),
+  }))
+
+  if (!props.billing)
+    return mappedActiveSuppliers
+
+  const currentSupplier = props.billing?.supplier
+
+  if (!currentSupplier?.id)
+    return mappedActiveSuppliers
+
+  const alreadyIncluded = mappedActiveSuppliers.some(item => String(item?.id) === String(currentSupplier.id))
+
+  if (alreadyIncluded)
+    return mappedActiveSuppliers
+
+  const supplierName = getSupplierBaseName(currentSupplier)
+  const shouldMarkDeleted = isSupplierInactive(currentSupplier)
+  const displayName = shouldMarkDeleted
+    ? `${String(supplierName ?? '').trim()} ${deletedSupplierLabel}`.trim()
+    : getSupplierDisplayName(currentSupplier)
+
+  return [
+    {
+      ...currentSupplier,
+      full_name: supplierName,
+      display_full_name: displayName,
+    },
+    ...mappedActiveSuppliers,
+  ]
+})
 
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
@@ -182,6 +249,42 @@ const invoice = ref({
   reference: null,
   details: structuredClone(toRaw(props.data)),
 });
+
+const selectedSupplierOption = computed(() => {
+  const matchedSupplier = supplierOptions.value.find(option => String(option?.id) === String(invoice.value.supplier_id))
+
+  if (matchedSupplier)
+    return matchedSupplier
+
+  if (props.billing?.supplier && String(props.billing?.supplier_id) === String(invoice.value.supplier_id))
+    return props.billing.supplier
+
+  return null
+})
+
+const compareSupplierIds = (a, b) => {
+  if (a == null || b == null)
+    return a === b
+
+  return String(a) === String(b)
+}
+
+watch(
+  [supplierOptions, () => invoice.value.supplier_id],
+  ([options, supplierId]) => {
+    if (supplierId == null || !options.length)
+      return
+
+    const matchedSupplier = options.find(option => String(option?.id) === String(supplierId))
+
+    if (!matchedSupplier)
+      return
+
+    if (invoice.value.supplier_id !== matchedSupplier.id)
+      invoice.value.supplier_id = matchedSupplier.id
+  },
+  { immediate: true }
+)
 
 const extractDaysFromNetTermSplit = (term) => {
   const parts = term.split(/\s+/);
@@ -414,9 +517,9 @@ const startDateTimePickerConfig = computed(() => {
 });
 
 const selectSupplier = async () => {
-  var selected = suppliers.value.filter(
-    (element) => element.id === invoice.value.supplier_id
-  )[0];
+  const selected = supplierOptions.value.find(
+    element => String(element?.id) === String(invoice.value.supplier_id)
+  );
 
   if (selected) {
     company.value = selected.user.user_detail;
@@ -424,7 +527,7 @@ const selectSupplier = async () => {
     company.value.billings = selected.billings;
     invoice.value.id = getNextInvoiceId(selected.billings, props.invoice_id);
     clients.value = props.clients.filter(
-      (item) => item.supplier_id === invoice.value.supplier_id
+      item => String(item?.supplier_id) === String(invoice.value.supplier_id)
     );
   } else {
     company.value = props.company;
@@ -797,16 +900,31 @@ const handleFocus = (element, fieldId) => {
           <AppAutocomplete
             v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'"
             v-model="invoice.supplier_id"
-            :items="suppliers"
-            :item-title="(item) => item.full_name"
+            :items="supplierOptions"
+            item-title="display_full_name"
             :item-value="(item) => item.id"
+            :value-comparator="compareSupplierIds"
             :disabled="props.isCredit"
             placeholder="Leverantörer"
             class="mb-4 w-100"
+            :class="{ 'deleted-supplier-selection': shouldStyleInactiveSupplier(selectedSupplierOption) }"
             @update:modelValue="selectSupplier"
             clearable
             menu-icon="custom-chevron-down"
-          />
+          >
+            <template #item="{ props: itemProps, item }">
+              <VListItem
+                v-bind="itemProps"
+                :class="{ 'deleted-supplier-option': shouldStyleInactiveSupplier(getSupplierOptionSource(item)) }"
+              >
+                <template #title>
+                  <span :class="{ 'deleted-supplier-text': shouldStyleInactiveSupplier(getSupplierOptionSource(item)) }">
+                    {{ getSupplierDisplayName(getSupplierOptionSource(item)) }}
+                  </span>
+                </template>
+              </VListItem>
+            </template>
+          </AppAutocomplete>
         </div>
         <div class="rouded-select">
           <AppAutocomplete
@@ -1356,16 +1474,31 @@ const handleFocus = (element, fieldId) => {
             >
               <AppAutocomplete
                 v-model="invoice.supplier_id"
-                :items="suppliers"
-                :item-title="(item) => item.full_name"
+                :items="supplierOptions"
+                item-title="display_full_name"
                 :item-value="(item) => item.id"
+                :value-comparator="compareSupplierIds"
                 :disabled="props.isCredit"
                 placeholder="Leverantörer"
                 class="w-100"
+                :class="{ 'deleted-supplier-selection': shouldStyleInactiveSupplier(selectedSupplierOption) }"
                 @update:modelValue="selectSupplier"
                 clearable
                 menu-icon="custom-chevron-down"
-              />
+              >
+                <template #item="{ props: itemProps, item }">
+                  <VListItem
+                    v-bind="itemProps"
+                    :class="{ 'deleted-supplier-option': shouldStyleInactiveSupplier(getSupplierOptionSource(item)) }"
+                  >
+                    <template #title>
+                      <span :class="{ 'deleted-supplier-text': shouldStyleInactiveSupplier(getSupplierOptionSource(item)) }">
+                        {{ getSupplierDisplayName(getSupplierOptionSource(item)) }}
+                      </span>
+                    </template>
+                  </VListItem>
+                </template>
+              </AppAutocomplete>
             </div>
             <div class="rouded-select">
               <AppAutocomplete
@@ -1930,6 +2063,17 @@ const handleFocus = (element, fieldId) => {
 </template>
 
 <style lang="scss" scoped>
+
+:deep(.deleted-supplier-option .deleted-supplier-text),
+.deleted-supplier-text {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+:deep(.deleted-supplier-selection .v-autocomplete__selection-text) {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
 
 .draggable-item {
   margin-top: 5px;

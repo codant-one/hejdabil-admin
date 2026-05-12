@@ -80,6 +80,13 @@ export default [
     to: 'dashboard-admin-notes',  
     action: 'view', 
     subject: 'notes'
-  }
+  },
+  /*{
+    title: 'Twilio Test',
+    icon: { icon: 'tabler-message-2' },
+    to: 'dashboard-admin-twilio-test',
+    action: 'view',
+    subject: 'dashboard'
+  }*/
 ]
   

@@ -12,6 +12,11 @@ import pluginSvgVue from '@vuetter/vite-plugin-vue-svg';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    watch: {
+      ignored: ['**/dist/**'],
+    },
+  },
   css: {
     preprocessorOptions: {
       scss: {

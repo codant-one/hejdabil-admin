@@ -630,6 +630,52 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedDocumentSupplierLabel = '(Borttagen)';
+const documentSupplierMaxLength = 16;
+
+const getDocumentSupplierName = document => {
+  return `${document?.supplier?.user?.name ?? ''} ${document?.supplier?.user?.last_name ?? ''}`.trim();
+};
+
+const getDocumentSupplierDisplayText = document => {
+  const supplierName = getDocumentSupplierName(document);
+
+  return isDocumentSupplierDeleted(document)
+    ? `${supplierName} ${deletedDocumentSupplierLabel}`.trim()
+    : supplierName;
+};
+
+const getDocumentSupplierTruncatedName = (document, maxLength = documentSupplierMaxLength) => {
+  const supplierName = getDocumentSupplierName(document);
+
+  if (!isDocumentSupplierDeleted(document))
+    return truncateText(supplierName, maxLength);
+
+  const availableLength = maxLength - deletedDocumentSupplierLabel.length - 1;
+
+  if (supplierName.length <= availableLength)
+    return supplierName;
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0));
+
+  return `${supplierName.substring(0, availableLength - 3)}...`;
+};
+
+const isDocumentSupplierDeleted = document => {
+  return !!document?.supplier?.deleted_at || !!document?.supplier?.user?.deleted_at;
+};
+
+const deletedDocumentCreatorLabel = '(Borttagen)';
+
+const getDocumentCreatorName = document => {
+  return `${document?.user?.name ?? ''} ${document?.user?.last_name ?? ''}`.trim();
+};
+
+const isDocumentCreatorDeleted = document => {
+  return !!document?.user?.deleted_at;
+};
+
 const goToTracker = (documentData) => {
   openTracker(documentData)
 }
@@ -646,40 +692,38 @@ const trackerEvents = computed(() => {
 
   const items = []
   const latestToken = trackerDocument.value.token ?? null
+  const history = Array.isArray(latestToken?.histories)
+    ? [...latestToken.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -1529,9 +1573,30 @@ onBeforeUnmount(() => {
               {{ formatDateTime(document.created_at) }}
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
-               <span v-if="document.supplier">
-                {{ document.supplier.user.name }}
-                {{ document.supplier.user.last_name ?? "" }}
+              <VTooltip
+                v-if="document.supplier && getDocumentSupplierDisplayText(document).length > documentSupplierMaxLength"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getDocumentSupplierTruncatedName(document) }}</span>
+                    <span v-if="isDocumentSupplierDeleted(document)" class="text-neutral-25">
+                      {{ deletedDocumentSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getDocumentSupplierName(document) }}</span>
+                  <span v-if="isDocumentSupplierDeleted(document)" class="text-neutral-25">
+                    {{ deletedDocumentSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="document.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getDocumentSupplierName(document) }}</span>
+                <span v-if="isDocumentSupplierDeleted(document)" class="text-neutral-25">
+                  {{ deletedDocumentSupplierLabel }}
+                </span>
               </span>
             </td>
             <td class="text-center text-wrap d-flex justify-center align-center" style="width: 180px;">
@@ -1729,8 +1794,11 @@ onBeforeUnmount(() => {
           <VExpansionPanelText>
             <div class="mb-6">
               <div class="expansion-panel-item-label">Skapad av:</div>
-              <div class="expansion-panel-item-value">
-                {{ document.user.name }} {{ document.user.last_name ?? "" }}
+              <div class="expansion-panel-item-value d-inline-flex gap-1 align-center flex-wrap">
+                <span>{{ getDocumentCreatorName(document) }}</span>
+                <span v-if="isDocumentCreatorDeleted(document)" class="text-neutral-25 font-12">
+                  {{ deletedDocumentCreatorLabel }}
+                </span>
               </div>
             </div>
             <div class="mb-6">
@@ -2300,12 +2368,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerDocument && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 

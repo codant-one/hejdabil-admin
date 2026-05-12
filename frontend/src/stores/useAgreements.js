@@ -3,7 +3,7 @@ import Agreements from '@/api/agreements'
 
 export const useAgreementsStores = defineStore('agreements', {
     state: () => ({
-        agreements: {},
+        agreements: [],
         brands: {},
         models: {},
         gearboxes: {},
@@ -29,7 +29,7 @@ export const useAgreementsStores = defineStore('agreements', {
         loading: false,
         last_page: 1,
         agreementsTotalCount: 6,
-        suppliers: {},
+        suppliers: [],
         status: null
     }),
     getters:{
@@ -58,8 +58,12 @@ export const useAgreementsStores = defineStore('agreements', {
             
             return Agreements.get(params)
                 .then((response) => {
-                    this.agreements = response.data.data.agreements.data
-                    this.suppliers = response.data.data.suppliers
+                    this.agreements = Array.isArray(response?.data?.data?.agreements?.data)
+                        ? response.data.data.agreements.data
+                        : []
+                    this.suppliers = Array.isArray(response?.data?.data?.suppliers)
+                        ? response.data.data.suppliers
+                        : []
                     this.last_page = response.data.data.agreements.last_page
                     this.agreementsTotalCount = response.data.data.agreementsTotalCount
                 })

@@ -458,6 +458,42 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedSoldSupplierLabel = '(Borttagen)';
+const soldSupplierMaxLength = 16;
+
+const getSoldSupplierName = vehicle => {
+  return `${vehicle?.supplier?.user?.name ?? ''} ${vehicle?.supplier?.user?.last_name ?? ''}`.trim();
+};
+
+const getSoldSupplierDisplayText = vehicle => {
+  const supplierName = getSoldSupplierName(vehicle);
+
+  return isSoldSupplierDeleted(vehicle)
+    ? `${supplierName} ${deletedSoldSupplierLabel}`.trim()
+    : supplierName;
+};
+
+const getSoldSupplierTruncatedName = (vehicle, maxLength = soldSupplierMaxLength) => {
+  const supplierName = getSoldSupplierName(vehicle);
+
+  if (!isSoldSupplierDeleted(vehicle))
+    return truncateText(supplierName, maxLength);
+
+  const availableLength = maxLength - deletedSoldSupplierLabel.length - 1;
+
+  if (supplierName.length <= availableLength)
+    return supplierName;
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0));
+
+  return `${supplierName.substring(0, availableLength - 3)}...`;
+};
+
+const isSoldSupplierDeleted = vehicle => {
+  return !!vehicle?.supplier?.deleted_at || !!vehicle?.supplier?.user?.deleted_at;
+};
+
 const downloadCSV = async () => {
   exporteraMobile.value = false
   isRequestOngoing.value = true
@@ -1091,9 +1127,30 @@ onBeforeUnmount(() => {
               <span v-else class="text-sm text-disabled">—</span>
             </td> 
             <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
-              <span v-if="vehicle.supplier">
-                {{ vehicle.supplier?.user?.name ?? '' }}
-                {{ vehicle.supplier?.user?.last_name ?? "" }}
+              <VTooltip
+                v-if="vehicle.supplier && getSoldSupplierDisplayText(vehicle).length > soldSupplierMaxLength"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getSoldSupplierTruncatedName(vehicle) }}</span>
+                    <span v-if="isSoldSupplierDeleted(vehicle)" class="text-neutral-25">
+                      {{ deletedSoldSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getSoldSupplierName(vehicle) }}</span>
+                  <span v-if="isSoldSupplierDeleted(vehicle)" class="text-neutral-25">
+                    {{ deletedSoldSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="vehicle.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getSoldSupplierName(vehicle) }}</span>
+                <span v-if="isSoldSupplierDeleted(vehicle)" class="text-neutral-25">
+                  {{ deletedSoldSupplierLabel }}
+                </span>
               </span>
             </td>            
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('created_by')">

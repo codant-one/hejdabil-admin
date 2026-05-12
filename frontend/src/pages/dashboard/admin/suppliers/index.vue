@@ -254,9 +254,11 @@ const seeSupplier = supplierData => {
 
 const removeSupplier = async () => {
   isConfirmDeleteDialogVisible.value = false
+  isRequestOngoing.value = true
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
+  isRequestOngoing.value = false
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
     message: res.data.success ? (res.data.message ?? 'Leverantör borttagen!') : res.data.message,

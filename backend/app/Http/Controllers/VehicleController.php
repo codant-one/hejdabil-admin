@@ -215,8 +215,10 @@ class VehicleController extends Controller
         try {
 
             $vehicle = Vehicle::with([
-                'tasks.user.userDetail', 
-                'tasks.comments.user.userDetail', 
+                'tasks.user.userDetail',
+                'tasks.comments:id,vehicle_task_id,user_id,comment,created_at',
+                'tasks.comments.user' => fn($u) => $u->select('id', 'name', 'last_name', 'avatar', 'deleted_at')->withTrashed(),
+                'tasks.comments.user.userDetail:user_id,avatar_id,logo',
                 'tasks.histories.user.userDetail',
                 'documents.user.userDetail',
                 'documents.type',

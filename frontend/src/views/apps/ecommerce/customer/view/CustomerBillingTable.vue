@@ -518,6 +518,52 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedSupplierLabel = '(Borttagen)';
+const supplierMaxLength = 16;
+
+const getSupplierName = entry => {
+  return `${entry?.supplier?.user?.name ?? ''} ${entry?.supplier?.user?.last_name ?? ''}`.trim();
+};
+
+const getSupplierDisplayText = entry => {
+  const supplierName = getSupplierName(entry);
+
+  return isSupplierDeleted(entry)
+    ? `${supplierName} ${deletedSupplierLabel}`.trim()
+    : supplierName;
+};
+
+const getSupplierTruncatedName = (entry, maxLength = supplierMaxLength) => {
+  const supplierName = getSupplierName(entry);
+
+  if (!isSupplierDeleted(entry))
+    return truncateText(supplierName, maxLength);
+
+  const availableLength = maxLength - deletedSupplierLabel.length - 1;
+
+  if (supplierName.length <= availableLength)
+    return supplierName;
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0));
+
+  return `${supplierName.substring(0, availableLength - 3)}...`;
+};
+
+const isSupplierDeleted = entry => {
+  return !!entry?.supplier?.deleted_at || !!entry?.supplier?.user?.deleted_at;
+};
+
+const deletedAgreementCreatorLabel = '(Borttagen)';
+
+const getAgreementCreatorName = agreement => {
+  return `${agreement?.user?.name ?? ''} ${agreement?.user?.last_name ?? ''}`.trim();
+};
+
+const isAgreementCreatorDeleted = agreement => {
+  return !!agreement?.user?.deleted_at;
+};
+
 const resolveStatusAgreement = state => {
   if (state === 'created')
     return { 
@@ -861,50 +907,39 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  let tokens = []
-  if (Array.isArray(trackerAgreement.value.token)) {
-    tokens = trackerAgreement.value.token
-  } else if (trackerAgreement.value.token) {
-    tokens = [trackerAgreement.value.token]
-  }
-  
-  const latestToken = tokens.length > 0
-    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
+  const token = trackerAgreement.value.token
+  const history = Array.isArray(token?.histories)
+    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    : []
 
-  // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
-    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
-    
-    // Check if there's a 'signed' event in the history
-    const hasSignedEvent = history.some(event => event.event_type === 'signed')
-    
-    history.forEach(event => {
-      const eventConfig = getEventConfig(event.event_type, event)
-      if (eventConfig) {
-        items.push({
-          key: event.event_type,
-          title: eventConfig.title,
-          meta: new Date(event.created_at).toLocaleString('en-GB', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit', 
-            hour12: false 
-          }),
-          text: event.description || eventConfig.text,
-          color: eventConfig.color,
-          bgClass: eventConfig.bgClass,
-          icon: eventConfig.icon,
-          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
-          ipAddress: event.ip_address,
-          userAgent: event.user_agent
-        })
-      }
-    })
-  }
+  const hasSignedEvent = history.some(event => event.event_type === 'signed')
+
+  history.forEach((event, index) => {
+    const eventConfig = getEventConfig(event.event_type, event)
+    if (eventConfig) {
+      items.push({
+        key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
+        title: eventConfig.title,
+        meta: new Date(event.created_at).toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        text: event.description || eventConfig.text,
+        color: eventConfig.color,
+        bgClass: eventConfig.bgClass,
+        icon: eventConfig.icon,
+        showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+        ipAddress: event.ip_address,
+        userAgent: event.user_agent
+      })
+    }
+  })
   
   // Assign sides strictly alternating
   return items.map((item, index) => ({
@@ -1250,9 +1285,30 @@ onBeforeUnmount(() => {
                 >
                   <td>{{ billing.invoice_id }}</td>
                   <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-                    <span v-if="billing.supplier">
-                      {{ billing.supplier.user.name }}
-                      {{ billing.supplier.user.last_name ?? "" }}
+                    <VTooltip
+                      v-if="billing.supplier && getSupplierDisplayText(billing).length > supplierMaxLength"
+                      location="bottom"
+                    >
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                          <span>{{ getSupplierTruncatedName(billing) }}</span>
+                          <span v-if="isSupplierDeleted(billing)" class="text-neutral-25">
+                            {{ deletedSupplierLabel }}
+                          </span>
+                        </span>
+                      </template>
+                      <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                        <span>{{ getSupplierName(billing) }}</span>
+                        <span v-if="isSupplierDeleted(billing)" class="text-neutral-25">
+                          {{ deletedSupplierLabel }}
+                        </span>
+                      </span>
+                    </VTooltip>
+                    <span v-else-if="billing.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                      <span>{{ getSupplierName(billing) }}</span>
+                      <span v-if="isSupplierDeleted(billing)" class="text-neutral-25">
+                        {{ deletedSupplierLabel }}
+                      </span>
                     </span>
                   </td>
                   <td class="text-center">
@@ -1636,9 +1692,30 @@ onBeforeUnmount(() => {
                   <td class="text-center"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
                   <td class="text-center"> {{ agreement.agreement_type.name  }}</td> 
                   <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-                    <span v-if="agreement.supplier">
-                      {{ agreement.supplier.user.name }}
-                      {{ agreement.supplier.user.last_name ?? "" }}
+                    <VTooltip
+                      v-if="agreement.supplier && getSupplierDisplayText(agreement).length > supplierMaxLength"
+                      location="bottom"
+                    >
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                          <span>{{ getSupplierTruncatedName(agreement) }}</span>
+                          <span v-if="isSupplierDeleted(agreement)" class="text-neutral-25">
+                            {{ deletedSupplierLabel }}
+                          </span>
+                        </span>
+                      </template>
+                      <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                        <span>{{ getSupplierName(agreement) }}</span>
+                        <span v-if="isSupplierDeleted(agreement)" class="text-neutral-25">
+                          {{ deletedSupplierLabel }}
+                        </span>
+                      </span>
+                    </VTooltip>
+                    <span v-else-if="agreement.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                      <span>{{ getSupplierName(agreement) }}</span>
+                      <span v-if="isSupplierDeleted(agreement)" class="text-neutral-25">
+                        {{ deletedSupplierLabel }}
+                      </span>
                     </span>
                   </td>         
                   <td class="text-center">  
@@ -1725,7 +1802,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Spårare</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                           @click="openStaticSignatureDialog(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-signature" class="mr-2" />
@@ -1772,7 +1849,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Ladda ner</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'created' || agreement.token?.signature_status === 'cancelled')"
                           @click="editAgreement(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-pencil" size="24" />
@@ -1845,8 +1922,11 @@ onBeforeUnmount(() => {
                     <VExpansionPanelText>
                       <div class="mb-6">
                         <div class="expansion-panel-item-label">Skapad av</div>
-                        <div class="expansion-panel-item-value">
-                          {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }}
+                        <div class="expansion-panel-item-value d-inline-flex gap-1 align-center flex-wrap">
+                          <span>{{ getAgreementCreatorName(agreement) }}</span>
+                          <span v-if="isAgreementCreatorDeleted(agreement)" class="text-neutral-25 font-12">
+                            {{ deletedAgreementCreatorLabel }}
+                          </span>
                         </div>
                       </div>
                       
@@ -2151,7 +2231,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -2196,7 +2276,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'created' || selectedAgreementForAction.token?.signature_status === 'cancelled')"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
@@ -2459,12 +2539,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerAgreement && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 

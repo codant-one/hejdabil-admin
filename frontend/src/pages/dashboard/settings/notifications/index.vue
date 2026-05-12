@@ -1,11 +1,153 @@
 <script setup>
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { useSettingsStore } from '@/stores/useSettings'
+import { useConfigsStores } from '@/stores/useConfigs'
+
+const DEFAULT_NOTIFY_VIA_SOUND = true
+const DEFAULT_NOTIFY_VIA_EMAIL = true
+const DEFAULT_SEND_REMINDERS = false
+const DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED = true
+const DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED = true
 
 const { width: windowWidth } = useWindowSize()
+const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 const sectionEl = ref(null)
+const settingsStore = useSettingsStore()
+const configsStores = useConfigsStores()
+const userData = ref(null)
+const settingsData = ref(null)
+const role = ref('')
+const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
+
+const notifyViaSound = ref(DEFAULT_NOTIFY_VIA_SOUND)
+const notifyViaEmail = ref(DEFAULT_NOTIFY_VIA_EMAIL)
+const sendReminders = ref(DEFAULT_SEND_REMINDERS)
+const notifyOnDocumentSigned = ref(DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED)
+const notifyOnAgreementSigned = ref(DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED)
+
+const advisor = ref({
+  message: '',
+  show: false,
+  type: '',
+})
 
 const isRequestOngoing = ref(false);
+
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const syncNotificationSettingsLocalState = (settings, notificationPayload = null) => {
+  settingsData.value = {
+    ...(settingsData.value || {}),
+    ...(settings || {}),
+    notification: notificationPayload || settingsData.value?.notification || settingsData.value?.setting_notification || null,
+  }
+}
+
+const getStoredNotificationSettings = () => {
+  if (isAdminRole.value)
+    return configsStores.getFeaturedConfig('notifications') ?? null
+
+  return settingsData.value?.notification || settingsData.value?.setting_notification || null
+}
+
+const hydrateNotificationForm = () => {
+  const notificationSettings = getStoredNotificationSettings()
+
+  notifyViaSound.value = notificationSettings?.notify_via_sound !== undefined && notificationSettings?.notify_via_sound !== null
+    ? Number(notificationSettings.notify_via_sound) === 1
+    : DEFAULT_NOTIFY_VIA_SOUND
+
+  notifyViaEmail.value = notificationSettings?.notify_via_email !== undefined && notificationSettings?.notify_via_email !== null
+    ? Number(notificationSettings.notify_via_email) === 1
+    : DEFAULT_NOTIFY_VIA_EMAIL
+
+  sendReminders.value = notificationSettings?.send_reminders !== undefined && notificationSettings?.send_reminders !== null
+    ? Number(notificationSettings.send_reminders) === 1
+    : DEFAULT_SEND_REMINDERS
+
+  notifyOnDocumentSigned.value = notificationSettings?.notify_on_document_signed !== undefined && notificationSettings?.notify_on_document_signed !== null
+    ? Number(notificationSettings.notify_on_document_signed) === 1
+    : DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED
+
+  notifyOnAgreementSigned.value = notificationSettings?.notify_on_agreement_signed !== undefined && notificationSettings?.notify_on_agreement_signed !== null
+    ? Number(notificationSettings.notify_on_agreement_signed) === 1
+    : DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED
+}
+
+const onSubmit = async () => {
+  if (role.value === 'User')
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const payload = {
+      notify_via_sound: notifyViaSound.value ? 1 : 0,
+      notify_via_email: notifyViaEmail.value ? 1 : 0,
+      send_reminders: sendReminders.value ? 1 : 0,
+      notify_on_document_signed: notifyOnDocumentSigned.value ? 1 : 0,
+      notify_on_agreement_signed: notifyOnAgreementSigned.value ? 1 : 0,
+    }
+
+    if (isAdminRole.value) {
+      await configsStores.postFeature({
+        key: 'notifications',
+        params: { value: payload },
+      })
+
+      configsStores.configs['notifications'] = payload
+
+      advisor.value = { type: 'success', message: 'Uppdaterad konfiguration!', show: true }
+    } else {
+      const supplierId = resolveSettingsSupplierId()
+
+      if (!supplierId)
+        return
+
+      const response = await settingsStore.notifications({
+        id: supplierId,
+        data: {
+          ...payload,
+          notification_id: settingsData.value?.setting_notification_id
+            ?? settingsData.value?.notification?.id
+            ?? settingsData.value?.setting_notification?.id
+            ?? null,
+        },
+      })
+
+      const settingNotificationId = response?.data?.data?.settings?.setting_notification_id
+        ?? settingsData.value?.setting_notification_id
+        ?? null
+
+      const persistedNotification = { ...payload, id: settingNotificationId }
+
+      advisor.value = {
+        type: response.data.success ? 'success' : 'error',
+        message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+        show: true,
+      }
+
+      syncNotificationSettingsLocalState(response?.data?.data?.settings, persistedNotification)
+    }
+
+    setTimeout(() => { advisor.value = { type: '', message: '', show: false } }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -16,7 +158,28 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
-onMounted(() => {
+onMounted(async () => {
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? ''
+  isRequestOngoing.value = true
+
+  try {
+    if (isAdminRole.value) {
+      await configsStores.getFeature('notifications')
+    } else {
+      const loggedUserId = resolveLoggedUserId()
+
+      settingsData.value = loggedUserId
+        ? await settingsStore.showSettings(loggedUserId)
+        : null
+    }
+  } catch {
+    settingsData.value = null
+  } finally {
+    isRequestOngoing.value = false
+  }
+
+  hydrateNotificationForm()
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -29,6 +192,15 @@ onBeforeUnmount(() => {
 <template>
     <section class="page-section bg-white" ref="sectionEl">
       <LoadingOverlay :is-loading="isRequestOngoing" />
+      <VSnackbar
+        v-model="advisor.show"
+        transition="scroll-y-reverse-transition"
+        :location="snackbarLocation"
+        :color="advisor.type"
+        class="snackbar-alert snackbar-dashboard"
+      >
+        {{ advisor.message }}
+      </VSnackbar>
       <VCard class="card-fill">
         <VCardText class="pb-0" v-if="windowWidth < 1024">
           <div class="d-flex flex-column gap-4 flex-1">
@@ -60,9 +232,11 @@ onBeforeUnmount(() => {
             <div class="settings-layout__content d-flex flex-column gap-6">
               <div class="d-flex gap-4 align-start">
                 <VSwitch
+                  v-model="notifyViaSound"
                   class="reminders-switch"
                   hide-details
                   inset
+                  :readonly="role === 'User'"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -77,9 +251,11 @@ onBeforeUnmount(() => {
 
               <div class="d-flex gap-4 align-start">
                 <VSwitch
+                  v-model="notifyViaEmail"
                   class="reminders-switch"
                   hide-details
                   inset
+                  :readonly="role === 'User'"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -94,9 +270,11 @@ onBeforeUnmount(() => {
 
               <div class="d-flex gap-4 align-start">
                 <VSwitch
+                  v-model="sendReminders"
                   class="reminders-switch"
                   hide-details
                   inset
+                  :readonly="role === 'User'"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -125,9 +303,11 @@ onBeforeUnmount(() => {
             <div class="settings-layout__content d-flex flex-column gap-6">
               <div class="d-flex gap-4 align-start">
                 <VSwitch
+                  v-model="notifyOnDocumentSigned"
                   class="reminders-switch"
                   hide-details
                   inset
+                  :readonly="role === 'User'"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -142,9 +322,11 @@ onBeforeUnmount(() => {
 
               <div class="d-flex gap-4 align-start">
                 <VSwitch
+                  v-model="notifyOnAgreementSigned"
                   class="reminders-switch"
                   hide-details
                   inset
+                  :readonly="role === 'User'"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -159,14 +341,16 @@ onBeforeUnmount(() => {
 
               <!-- 👉 Form Actions -->
               <div 
+                v-if="role !== 'User'"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
-              >
-              
+              >              
                 <VBtn 
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
+                  :disabled="role === 'User'"
+                  @click="onSubmit"
                 >
                   Spara
                 </VBtn>
@@ -179,7 +363,39 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
-  
+  .reminders-title {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .reminders-description {
+    margin-top: 4px;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .reminders-switch {
+    width: 100%;
+  }
+
+  .reminders-switch .v-label {
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  @media (max-width: 1023px) {
+    .reminders-switch .v-label {
+      max-width: 100%;
+    }
+  }
 </style>
 
 <route lang="yaml">

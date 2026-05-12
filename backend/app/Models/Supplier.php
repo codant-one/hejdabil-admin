@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+use App\Events\ForceLogoutUserEvent;
 use App\Services\OpenSslService;
 
 class Supplier extends Model
@@ -65,6 +67,10 @@ class Supplier extends Model
 
     public function notes() {
         return $this->hasMany(Note::class, 'supplier_id', 'id');
+    }
+
+    public function children() {
+        return $this->hasMany(Supplier::class, 'boss_id', 'id');
     }
 
     /**** Scopes ****/
@@ -185,31 +191,96 @@ class Supplier extends Model
     }
 
     public static function deleteSuppliers($ids) {
-        foreach ($ids as $id) {
-            $supplier = self::find($id);
-            $supplier->state_id = 1;
-            $supplier->save();
+        $ids = self::collectBranchIds($ids);
 
-            $user = User::find($supplier->user_id);
+        DB::transaction(function () use ($ids) {
+            $suppliers = self::withTrashed()
+                ->with(['user' => function ($query) {
+                    $query->withTrashed();
+                }])
+                ->whereIn('id', $ids)
+                ->get()
+                ->keyBy('id');
 
-            if($supplier->logo)
-                deleteFile($supplier->logo);
-            
-            $supplier->delete();
-            
-            User::deleteUser($user->id);
-        }
+            foreach ($ids as $id) {
+                $supplier = $suppliers->get($id);
+
+                if (!$supplier) {
+                    continue;
+                }
+
+                $supplier->state_id = 1;
+                $supplier->save();
+
+                if ($supplier->logo) {
+                    deleteFile($supplier->logo);
+                }
+
+                $supplier->delete();
+
+                if ($supplier->user) {
+                    event(new ForceLogoutUserEvent($supplier->user->id));
+                    User::deleteUser($supplier->user->id);
+                }
+            }
+        });
     }
 
     public static function activateSupplier($id) {
-        $supplier = self::onlyTrashed()->where('id', $id)->first();
-        $supplier->restore();
-        $supplier->state_id = 2;
-        $supplier->save();
+        $ids = self::collectBranchIds([$id]);
 
-        $user = User::onlyTrashed()->where('id', $supplier->user_id)->first();
-        $user->restore();
-        $user->assignRole($supplier->boss_id === null ? 'Supplier' : 'User');
+        $suppliers = self::withTrashed()
+            ->with(['user' => function ($query) {
+                $query->withTrashed();
+            }])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($ids as $supplierId) {
+            $supplier = $suppliers->get($supplierId);
+
+            if (!$supplier) {
+                continue;
+            }
+
+            $supplier->restore();
+            $supplier->state_id = 2;
+            $supplier->save();
+
+            if ($supplier->user) {
+                $supplier->user->restore();
+                $supplier->user->assignRole($supplier->boss_id === null ? 'Supplier' : 'User');
+            }
+        }
+    }
+
+    private static function collectBranchIds(array $ids): array {
+        $pendingIds = array_values(array_unique(array_filter($ids)));
+        $collectedIds = [];
+
+        while (!empty($pendingIds)) {
+            $currentId = array_pop($pendingIds);
+
+            if (in_array($currentId, $collectedIds, true)) {
+                continue;
+            }
+
+            $collectedIds[] = $currentId;
+
+            $childIds = self::withTrashed()
+                ->where('boss_id', $currentId)
+                ->pluck('id')
+                ->all();
+
+            foreach ($childIds as $childId) {
+                if (!in_array($childId, $collectedIds, true)) {
+                    $pendingIds[] = $childId;
+                }
+            }
+        }
+
+        return $collectedIds;
     }
 
     public static function swish($request, $id) {

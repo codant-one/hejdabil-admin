@@ -2,8 +2,8 @@ import axios from '@axios'
 
 class Configs {
 
-    get(key) {
-        return axios.get(`featured/${key}`)
+    get(key, requestConfig = {}) {
+        return axios.get(`featured/${key}`, requestConfig)
     }
 
     post(data) {

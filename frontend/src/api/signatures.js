@@ -2,6 +2,13 @@ import axios from '@axios'
 
 class Signatures {
 
+    static get publicRequestConfig() {
+        return {
+            skipAuthHeader: true,
+            skipAuthRedirect: true,
+        }
+    }
+
     get(params) {
         return axios.get('signatures', {params})
     }
@@ -31,31 +38,33 @@ class Signatures {
     }
 
     logView(token) {
-        return axios.post(`/signatures/${token}/log-view`)
+        return axios.post(`/signatures/${token}/log-view`, {}, Signatures.publicRequestConfig)
     }
 
     checkStatus(token) {
-        return axios.get(`/signatures/${token}/status`)
+        return axios.get(`/signatures/${token}/status`, Signatures.publicRequestConfig)
     }
 
     getDetails(token) {
-        return axios.get(`/signatures/${token}/details`)
+        return axios.get(`/signatures/${token}/details`, Signatures.publicRequestConfig)
     }
 
     getSignedPdf(token) {
         return axios.get(`/signatures/${token}/get-signed-pdf`, {
-            responseType: 'blob'
+            responseType: 'blob',
+            ...Signatures.publicRequestConfig,
         })
     }
 
     getUnsignedPdf(token) {
         return axios.get(`/signatures/${token}/get-unsigned-pdf`, {
-            responseType: 'blob'
+            responseType: 'blob',
+            ...Signatures.publicRequestConfig,
         })
     }
 
     submitSignature(token, payload) {
-        return axios.post(`/signatures/submit/${token}`, payload)
+        return axios.post(`/signatures/submit/${token}`, payload, Signatures.publicRequestConfig)
     }
     
 }

@@ -501,6 +501,42 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const deletedPayoutSupplierLabel = '(Borttagen)';
+const payoutSupplierMaxLength = 16;
+
+const getPayoutSupplierName = payout => {
+  return `${payout?.supplier?.user?.name ?? ''} ${payout?.supplier?.user?.last_name ?? ''}`.trim();
+};
+
+const getPayoutSupplierDisplayText = payout => {
+  const supplierName = getPayoutSupplierName(payout);
+
+  return isPayoutSupplierDeleted(payout)
+    ? `${supplierName} ${deletedPayoutSupplierLabel}`.trim()
+    : supplierName;
+};
+
+const getPayoutSupplierTruncatedName = (payout, maxLength = payoutSupplierMaxLength) => {
+  const supplierName = getPayoutSupplierName(payout);
+
+  if (!isPayoutSupplierDeleted(payout))
+    return truncateText(supplierName, maxLength);
+
+  const availableLength = maxLength - deletedPayoutSupplierLabel.length - 1;
+
+  if (supplierName.length <= availableLength)
+    return supplierName;
+
+  if (availableLength <= 3)
+    return '.'.repeat(Math.max(availableLength, 0));
+
+  return `${supplierName.substring(0, availableLength - 3)}...`;
+};
+
+const isPayoutSupplierDeleted = payout => {
+  return !!payout?.supplier?.deleted_at || !!payout?.supplier?.user?.deleted_at;
+};
+
 const updateStateId = (newStateId) => {
   // Si ya está seleccionado, desmarcarlo (poner null)
   if (state_id.value === newStateId) {
@@ -1300,9 +1336,30 @@ const onDatePickerUpdate = value => {
             <td class="text-center"> +{{ payout.payee_alias ?? ''}} </td>
             <td class="text-center"> {{ formatNumber(payout.amount ?? 0) }} kr</td>
             <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator')">
-              <span v-if="payout.supplier">
-                {{ payout.supplier.user.name }}
-                {{ payout.supplier.user.last_name ?? "" }}
+              <VTooltip
+                v-if="payout.supplier && getPayoutSupplierDisplayText(payout).length > payoutSupplierMaxLength"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                    <span>{{ getPayoutSupplierTruncatedName(payout) }}</span>
+                    <span v-if="isPayoutSupplierDeleted(payout)" class="text-neutral-25">
+                      {{ deletedPayoutSupplierLabel }}
+                    </span>
+                  </span>
+                </template>
+                <span class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                  <span>{{ getPayoutSupplierName(payout) }}</span>
+                  <span v-if="isPayoutSupplierDeleted(payout)" class="text-neutral-25">
+                    {{ deletedPayoutSupplierLabel }}
+                  </span>
+                </span>
+              </VTooltip>
+              <span v-else-if="payout.supplier" class="d-inline-flex gap-1 align-center font-weight-medium text-neutral-3">
+                <span>{{ getPayoutSupplierName(payout) }}</span>
+                <span v-if="isPayoutSupplierDeleted(payout)" class="text-neutral-25">
+                  {{ deletedPayoutSupplierLabel }}
+                </span>
               </span>
             </td>
             <!-- 😵 Statuses -->
