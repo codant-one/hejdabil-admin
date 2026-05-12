@@ -157,7 +157,7 @@
         .info-table .value2-text {
             font-size: 10px;
             line-height: 10px;
-            color: #878787;
+            color: #5D5D5D;
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
