@@ -20,13 +20,13 @@ export default [
     action: 'view' , 
     subject: 'dashboard'
   },
-  /*{ 
+  { 
     title: 'Meddelanden', 
     icon: { icon: 'custom-alarm' },
     to: 'dashboard-settings-notifications', 
     action: 'view', 
     subject: 'dashboard'
-  },*/
+  },
   { 
     title: 'Fakturor', 
     icon: { icon: 'custom-facture' },

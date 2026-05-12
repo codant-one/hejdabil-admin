@@ -150,7 +150,7 @@ class SendNotifications extends Command
             }
             $text = 'Ånteckningar "' . $reminder->description . '" skulle ha slutförts ' . $formattedReminderDate;
             $color = 'error';
-            $icon = 'custom-alarm';
+            $icon = 'custom-coffee-2';
             $route = '/dashboard/panel#reminders';
             
             // Create notification directly in database
