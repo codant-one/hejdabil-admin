@@ -8,14 +8,20 @@ use App\Http\Requests\NotificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\Supplier;
 use App\Models\Notification;
+use App\Models\Setting;
+use App\Models\User;
 
 class NotificationController extends Controller
 {
+    private const DEFAULT_NOTIFY_VIA_EMAIL = true;
+
      /**
      * Display a listing of the resource.
      */
@@ -296,6 +302,17 @@ class NotificationController extends Controller
                 Event::dispatch($evento);
             }
 
+            if ($userId && $this->shouldSendNotificationEmail((int) $userId)) {
+                $notificationUser = User::withTrashed()->find($userId);
+
+                $this->sendNotificationInfoEmail($notificationUser, [
+                    'title' => $title,
+                    'subtitle' => $subtitle,
+                    'text' => $text,
+                    'route' => $route,
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Meddelande skickat korrekt',
@@ -314,5 +331,85 @@ class NotificationController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function shouldSendNotificationEmail(int $userId): bool
+    {
+        $settings = Setting::query()
+            ->with('notification')
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$settings || !$settings->notification) {
+            return self::DEFAULT_NOTIFY_VIA_EMAIL;
+        }
+
+        return (int) ($settings->notification->notify_via_email ?? (self::DEFAULT_NOTIFY_VIA_EMAIL ? 1 : 0)) === 1;
+    }
+
+    private function sendNotificationInfoEmail($user, array $notificationData): void
+    {
+        if (!$user) {
+            return;
+        }
+
+        $email = $user->email ?? null;
+
+        if (!$email) {
+            return;
+        }
+
+        $fullName = trim(($user->name ?? '') . ' ' . ($user->last_name ?? ''));
+        $recipientName = $fullName !== '' ? $fullName : ($user->name ?? $email);
+
+        $subject = trim(($notificationData['title'] ?? 'Ny notis') . (!empty($notificationData['subtitle']) ? ' - ' . $notificationData['subtitle'] : ''));
+
+        $viewData = [
+            'title' => 'Ny notis',
+            'user' => $recipientName,
+            'notificationTitle' => $notificationData['title'] ?? 'Ny notis',
+            'notificationSubtitle' => $notificationData['subtitle'] ?? null,
+            'notificationText' => $notificationData['text'] ?? '',
+            'notificationRoute' => $this->resolveNotificationRoute($notificationData['route'] ?? null),
+            'notificationDate' => now()->format('Y/m/d H:i'),
+        ];
+
+        $fromAddress = config('mail.from.address');
+        $fromName = config('mail.from.name');
+
+        try {
+            Mail::send('emails.notifications.info', $viewData, function ($message) use ($email, $subject, $fromAddress, $fromName) {
+                if (!empty($fromAddress)) {
+                    $message->from($fromAddress, $fromName);
+                }
+
+                $message->to($email)->subject($subject);
+            });
+        } catch (\Exception $exception) {
+            Log::error('Error sending notification email from NotificationController', [
+                'to' => $email,
+                'subject' => $subject,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function resolveNotificationRoute(?string $route): ?string
+    {
+        if (!$route) {
+            return null;
+        }
+
+        if (str_starts_with($route, 'http://') || str_starts_with($route, 'https://')) {
+            return $route;
+        }
+
+        $appDomain = rtrim((string) config('app.domain', config('app.url')), '/');
+
+        if ($appDomain === '') {
+            return $route;
+        }
+
+        return $appDomain . '/' . ltrim($route, '/');
     }
 }
