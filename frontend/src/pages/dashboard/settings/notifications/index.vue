@@ -5,8 +5,8 @@ import { useSettingsStore } from '@/stores/useSettings'
 import { useConfigsStores } from '@/stores/useConfigs'
 
 const DEFAULT_NOTIFY_VIA_SOUND = true
-const DEFAULT_NOTIFY_VIA_EMAIL = true
-const DEFAULT_SEND_REMINDERS = false
+const DEFAULT_NOTIFY_VIA_EMAIL = false
+const DEFAULT_SEND_REMINDERS = true
 const DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED = true
 const DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED = true
 

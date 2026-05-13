@@ -4,7 +4,7 @@ import Settings from '@/api/settings'
 import Configs from '@/api/configs'
 import router from '@/router'
 
-const INACTIVE_USER_MESSAGE = 'Denna användare har inaktiverats. Kontakta administratören.'
+const SESSION_ENDED_MESSAGE = 'Din session har avslutats. Logga in igen för att fortsätta.'
 
 // Callback global para notificaciones
 let globalNotificationCallback = null
@@ -380,7 +380,7 @@ export const useNotificationsStore = defineStore('notifications', {
               || errorMessage.includes('invalid token')
               || errorMessage.includes('ogiltig token')
             ) {
-              this.forceLogout(INACTIVE_USER_MESSAGE)
+              this.forceLogout(SESSION_ENDED_MESSAGE)
               return
             }
 
@@ -424,6 +424,9 @@ export const useNotificationsStore = defineStore('notifications', {
       this.privateChannelSubscribing = false
       this.privateChannelUserId = null
       this.initialized = false
+
+      if (router.currentRoute.value?.name === 'login')
+        return
 
       const loginRoute = { name: 'login' }
       const query = { reason: 'force_logout', message }

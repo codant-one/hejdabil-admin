@@ -10,21 +10,25 @@ const axiosIns = axios.create({
 const INACTIVE_USER_MESSAGE = 'Denna användare har inaktiverats. Kontakta administratören.'
 const DEFAULT_AUTH_LOGOUT_MESSAGE = 'Din session har avslutats. Logga in igen för att fortsätta.'
 
-const resolveAuthFailureMessage = rawMessage => {
+const isInactiveUserError = (rawMessage, rawErrors) => {
   const normalizedMessage = String(rawMessage || '').toLowerCase()
+  const normalizedErrors = String(rawErrors || '').toLowerCase()
 
-  if (
-    normalizedMessage.includes('user is not logged in')
-    || normalizedMessage.includes('unauthenticated')
-    || normalizedMessage.includes('invalid token')
-    || normalizedMessage.includes('ogiltig token')
-    || normalizedMessage.includes('utgången token')
-    || normalizedMessage.includes('token för fel')
-  ) {
+  return (
+    normalizedMessage.includes('user_inactive')
+    || normalizedMessage.includes('user inactive')
+    || normalizedErrors.includes('inaktiverats')
+    || normalizedErrors.includes('inaktiverad')
+    || normalizedErrors.includes('deactivated')
+  )
+}
+
+const resolveAuthFailureMessage = (rawMessage, rawErrors) => {
+  if (isInactiveUserError(rawMessage, rawErrors)) {
     return INACTIVE_USER_MESSAGE
   }
 
-  return rawMessage || DEFAULT_AUTH_LOGOUT_MESSAGE
+  return DEFAULT_AUTH_LOGOUT_MESSAGE
 }
 
 axiosIns.interceptors.request.use(
@@ -50,6 +54,9 @@ axiosIns.interceptors.response.use(response => {
   const config = error?.config
   const status = error?.response?.status
   const data = error?.response?.data
+  const rawErrors = typeof data?.errors === 'string'
+    ? data.errors
+    : ''
   const rawMessage = typeof data?.message === 'string'
     ? data.message
     : typeof error?.message === 'string'
@@ -86,9 +93,11 @@ axiosIns.interceptors.response.use(response => {
       }
     }
 
-    if (!isRedirectingToLogin) {
+    const isAlreadyOnLogin = router.currentRoute.value?.name === 'login'
+
+    if (!isRedirectingToLogin && !isAlreadyOnLogin) {
       isRedirectingToLogin = true
-      const message = resolveAuthFailureMessage(rawMessage)
+      const message = resolveAuthFailureMessage(rawMessage, rawErrors)
       alertStore.setAlert(message, 'error')
       router.push({
         name: 'login',

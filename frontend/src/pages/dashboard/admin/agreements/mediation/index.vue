@@ -88,7 +88,7 @@ const car_body_id = ref(null)
 const control_inspection = ref(null)
 const last_service = ref(null)
 const last_service_date = ref(null)
-const dist_belt = ref(0)
+const dist_belt = ref(3)
 const last_dist_belt = ref(null)
 const last_dist_belt_date = ref(null)
 

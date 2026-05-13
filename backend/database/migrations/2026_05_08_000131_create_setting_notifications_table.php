@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('setting_notifications', function (Blueprint $table) {
             $table->id();
             $table->tinyInteger('notify_via_sound')->default(1);
-            $table->tinyInteger('notify_via_email')->default(1);
-            $table->tinyInteger('send_reminders')->default(0);
+            $table->tinyInteger('notify_via_email')->default(0);
+            $table->tinyInteger('send_reminders')->default(1);
             $table->tinyInteger('notify_on_document_signed')->default(1);
             $table->tinyInteger('notify_on_agreement_signed')->default(1);
             $table->timestamps();
