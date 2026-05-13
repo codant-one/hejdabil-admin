@@ -40,6 +40,13 @@ export default [
     to: 'dashboard-settings-agreements', 
     action: 'view', 
     subject: 'dashboard'
+  },
+  { 
+    title: 'Dokument', 
+    icon: { icon: 'custom-signature' },
+    to: 'dashboard-settings-documents', 
+    action: 'view', 
+    subject: 'dashboard'
   }
 ]
   
