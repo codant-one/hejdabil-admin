@@ -21,8 +21,7 @@ class Kernel extends ConsoleKernel
                  ->at('00:00');
 
         $schedule->command('notifications:send')
-                 ->daily()
-                 ->at('00:00');
+                 ->hourly();
 
         $schedule->command('reminders:delete --hours=24')
                  ->hourly();

@@ -127,10 +127,11 @@ class Setting extends Model
             'id' => $notificationId,
         ], [
             'notify_via_sound' => self::resolveOptionalField($request, 'notify_via_sound', $currentSettingNotification->notify_via_sound ?? 1),
-            'notify_via_email' => self::resolveOptionalField($request, 'notify_via_email', $currentSettingNotification->notify_via_email ?? 1),
-            'send_reminders' => self::resolveOptionalField($request, 'send_reminders', $currentSettingNotification->send_reminders ?? 0),
+            'notify_via_email' => self::resolveOptionalField($request, 'notify_via_email', $currentSettingNotification->notify_via_email ?? 0),
+            'send_reminders' => self::resolveOptionalField($request, 'send_reminders', $currentSettingNotification->send_reminders ?? 1),
             'notify_on_document_signed' => self::resolveOptionalField($request, 'notify_on_document_signed', $currentSettingNotification->notify_on_document_signed ?? 1),
             'notify_on_agreement_signed' => self::resolveOptionalField($request, 'notify_on_agreement_signed', $currentSettingNotification->notify_on_agreement_signed ?? 1),
+            'hours' => self::resolveOptionalField($request, 'hours', $currentSettingNotification->hours ?? 24)
         ]);
 
         $settings = self::query()->updateOrCreate([
