@@ -20,7 +20,7 @@ use App\Models\User;
 
 class NotificationController extends Controller
 {
-    private const DEFAULT_NOTIFY_VIA_EMAIL = true;
+    private const DEFAULT_NOTIFY_VIA_EMAIL = false;
 
      /**
      * Display a listing of the resource.

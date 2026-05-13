@@ -17,8 +17,8 @@ use App\Events\UserNotificationEvent;
 
 class SendNotifications extends Command
 {
-    private const DEFAULT_SEND_REMINDERS = false;
-    private const DEFAULT_NOTIFY_VIA_EMAIL = true;
+    private const DEFAULT_SEND_REMINDERS = true;
+    private const DEFAULT_NOTIFY_VIA_EMAIL = false;
 
     /**
      * The name and signature of the console command.
