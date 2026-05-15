@@ -293,20 +293,20 @@ onBeforeUnmount(() => {
                   :readonly="role === 'User'"
                 >
                   <template v-slot:label>
-                    <div class="d-flex flex-column card-form">
+                    <div class="d-flex flex-column card-form gap-2">
                       <span class="reminders-title">Uppgifter och påminnelser</span>
                       <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <AppAutocomplete
-                        v-model="hours"
-                        :items="hoursOptions"
-                        :item-title="item => item.name"
-                        :item-value="item => item.id"
-                        :rules="[requiredValidator]"
-                        :disabled="role === 'User'"
-                        autocomplete="off"
-                        clearable
-                        clear-icon="tabler-x"
-                      />
+                        <AppAutocomplete
+                          v-model="hours"
+                          :items="hoursOptions"
+                          :item-title="item => item.name"
+                          :item-value="item => item.id"
+                          :rules="[requiredValidator]"
+                          :disabled="role === 'User'"
+                          autocomplete="off"
+                          clearable
+                          clear-icon="tabler-x"
+                        />
                       </div>
                       <span class="reminders-description">
                        Få påminnelser om aktiviteter som behöver göras.
