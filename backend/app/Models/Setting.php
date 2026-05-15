@@ -74,6 +74,7 @@ class Setting extends Model
             'terms_and_conditions' => self::resolveOptionalField($request, 'terms_and_conditions', $currentSettingBilling->terms_and_conditions ?? ''),
             'send_reminder' => self::resolveOptionalField($request, 'send_reminder', $currentSettingBilling->send_reminder ?? 1),
             'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingBilling->send_notifications ?? 1),
+            'invoice_id' => self::resolveOptionalField($request, 'invoice_id', $currentSettingBilling->invoice_id ?? 1),
         ]);
 
         $settings = self::query()->updateOrCreate([

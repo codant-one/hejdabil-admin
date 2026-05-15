@@ -14,6 +14,7 @@ const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
 const DEFAULT_THEME = 0
 const LIGHT_THEME_TEXT_COLOR = '#FFFFFF'
 const DARK_THEME_TEXT_COLOR = '#454545'
+const DEFAULT_INVOICE_ID = 1
 const DEFAULT_BILLING_DUE_DATES = 5
 const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen'
 const DEFAULT_BILLING_SEND_REMINDER = true
@@ -52,6 +53,7 @@ const advisor = ref({
   type: '',
 })
 
+const invoice_id = ref(DEFAULT_INVOICE_ID)
 const due_date = ref(null)
 const terms_and_conditions = ref('')
 const isTermsDialogVisible = ref(false)
@@ -245,6 +247,10 @@ const hydrateBillingForm = () => {
 
   selectedBillingTemplate.value = getBillingTemplateByType(billingSettings?.type ?? 1)
 
+  invoice_id.value = billingSettings?.invoice_id !== undefined && billingSettings?.invoice_id !== null
+    ? Number(billingSettings.invoice_id) || DEFAULT_INVOICE_ID
+    : DEFAULT_INVOICE_ID
+
   due_date.value = billingSettings?.due_dates !== undefined && billingSettings?.due_dates !== null
     ? Number(billingSettings.due_dates) || DEFAULT_BILLING_DUE_DATES
     : DEFAULT_BILLING_DUE_DATES
@@ -271,6 +277,7 @@ const onSubmit = async () => {
   try {
     const payload = {
       type: getSelectedBillingType(),
+      invoice_id: Number(invoice_id.value) || DEFAULT_INVOICE_ID,
       due_dates: Number(due_date.value) || 1,
       terms_and_conditions: terms_and_conditions.value,
       send_reminder: automaticRemindersEnabled.value ? 1 : 0,
@@ -478,6 +485,33 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <div v-else class="mt-2" style="min-height: 180px;" />
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-6">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Nästa fakturanummer</span>
+                <span class="text-settings">
+                  Ange vilket nummer din nästa faktura ska börja på. Numret ökar sedan automatiskt för varje ny faktura.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 me-2 text-high-emphasis" text="Fakturanummer*" />
+                    <VTextField
+                      type="number"
+                      v-model="invoice_id"
+                      :disabled="role === 'User'"
+                      min="1"
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+              </div>
             </div>
           </div>
         </VCardText>
