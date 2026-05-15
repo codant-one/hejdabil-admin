@@ -116,12 +116,12 @@ const canEditInvoiceId = computed(() => {
   if (props.role !== "Supplier") return false;
   if (props.billing) return false;
 
-  const billingsCount = Array.isArray(company.value?.billings)
-    ? company.value.billings.length
-    : 0;
+  // Prevent transient true while billings are still loading.
+  if (!Array.isArray(company.value?.billings)) return false;
 
-  return billingsCount === 0;
+  return company.value.billings.length === 0;
 });
+const isInvoiceIdAlertVisible = ref(false);
 const isMobile = ref(false);
 const controlledTab = ref("redigera");
 const actionDialog = ref(false);
@@ -223,6 +223,33 @@ const handleTabChange = (newTab) => {
 watch(controlledTab, (newVal) => {
   handleTabChange(newVal);
 });
+
+const isAddBillingRoute = computed(() => {
+  const routeName = String(route.name ?? '');
+
+  if (routeName.includes('billings-add'))
+    return true;
+
+  return /\/billings\/add(?:\/|$)/.test(String(route.path ?? ''));
+});
+
+watch(
+  canEditInvoiceId,
+  (isEditable, wasEditable) => {
+    if (!isEditable) {
+      isInvoiceIdAlertVisible.value = false;
+      return;
+    }
+
+    const isInitialEvaluation = wasEditable === undefined;
+    const becameEditable = wasEditable === false;
+    const shouldShowOnAddEntry = isInitialEvaluation && isAddBillingRoute.value;
+
+    if (becameEditable || shouldShowOnAddEntry)
+      isInvoiceIdAlertVisible.value = true;
+  },
+  { immediate: true }
+);
 
 const setPreviewTab = () => {
   pdfCacheKey.value = Date.now(); // Force PDF refresh
@@ -1952,6 +1979,40 @@ const handleFocus = (element, fieldId) => {
     </section>
   </VCard>
 
+  <VDialog
+    v-if="canEditInvoiceId"
+    v-model="isInvoiceIdAlertVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isInvoiceIdAlertVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-alarm" class="action-icon" />
+        <div class="dialog-title">
+          Fakturanummer kan redigeras
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Du kan själv välja startnummer för dina fakturor. 
+        Om inget nummer anges börjar numreringen från 01. Detta kan ändras i inställningarna.
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-gradient" @click="isInvoiceIdAlertVisible = false">
+          Okej
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
   <!-- 👉 Alert: Must save before preview -->
   <VDialog 
     v-model="isAlertPreviewVisible" 
@@ -1979,7 +2040,7 @@ const handleFocus = (element, fieldId) => {
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
         <VBtn class="btn-gradient" @click="isAlertPreviewVisible = false">
-          OK
+          Okej
         </VBtn>
       </VCardText>
     </VCard>

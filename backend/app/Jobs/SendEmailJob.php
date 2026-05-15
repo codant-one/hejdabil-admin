@@ -45,7 +45,10 @@ class SendEmailJob implements ShouldQueue
                 $this->view,
                 $this->data,
                 function ($message) use ($from, $fromName, $attachments) {
-                    $message->from($from, $fromName);
+                    if (!empty($from)) {
+                        $message->from($from, $fromName);
+                    }
+
                     $message->to($this->to)->subject($this->subject);
                     
                     // Adjuntar archivos si existen

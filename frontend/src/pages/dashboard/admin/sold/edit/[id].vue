@@ -172,7 +172,7 @@ const calculate = () => {
     const value = (sale + fee) - disc 
 
     if(iva_sale_id.value === 2)
-        iva_sale_amount.value = ((Number(value) || 0) * 0.25)
+        iva_sale_amount.value = ((Number(value) || 0) * 0.20)
     else
         iva_sale_amount.value = 0
 

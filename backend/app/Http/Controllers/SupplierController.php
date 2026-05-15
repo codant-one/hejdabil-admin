@@ -7,6 +7,7 @@ use App\Http\Requests\SupplierSwishRequest;
 use App\Http\Requests\UserRequest;
 
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -25,8 +26,8 @@ use App\Models\Billing;
 use App\Models\Payout;
 use App\Models\Supplier;
 use App\Models\UserDetails;
-use App\Jobs\SendEmailJob;
 use App\Events\ForceLogoutUserEvent;
+use Throwable;
 
 class SupplierController extends Controller
 {
@@ -312,7 +313,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::find($id);
+            $supplier = Supplier::with(['user'])->find($id);
         
             if (!$supplier)
                 return response()->json([
@@ -322,7 +323,10 @@ class SupplierController extends Controller
                 ], 404);
 
             $deletionSummary = $this->buildDeletionSummary($supplier);
+            $supplierNotificationRecipient = $supplier->user;
+
             $supplier->deleteSupplier($id);
+            $this->sendSupplierDeactivationEmail($supplierNotificationRecipient);
 
             $message = 'Leverantör borttagen!';
 
@@ -390,6 +394,43 @@ class SupplierController extends Controller
             'total_associations' => $totalAssociations,
             'associations' => $associations,
         ];
+    }
+
+    private function sendSupplierDeactivationEmail(?User $user): void
+    {
+        if (!$user || empty($user->email)) {
+            return;
+        }
+
+        $subject = 'Ditt Billogg-konto har avaktiverats';
+
+        $data = [
+            'title' => 'Kontot har avaktiverats',
+            'icon' => asset('/images/user-close.svg'),
+        ];
+
+        $fromAddress = config('mail.from.address');
+        $fromName = config('mail.from.name');
+
+        try {
+            Mail::send(
+                'emails.auth.supplier_deactivated',
+                $data,
+                function ($message) use ($user, $subject, $fromAddress, $fromName) {
+                    if (!empty($fromAddress)) {
+                        $message->from($fromAddress, $fromName);
+                    }
+
+                    $message->to($user->email)->subject($subject);
+                }
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Failed to send supplier deactivation email.', [
+                'supplier_user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     public function inactiveSupplierByEmail(Request $request): JsonResponse
