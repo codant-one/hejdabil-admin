@@ -1,12 +1,14 @@
 <script setup>
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
 import { useConfigsStores } from '@/stores/useConfigs'
 
 const DEFAULT_NOTIFY_VIA_SOUND = true
 const DEFAULT_NOTIFY_VIA_EMAIL = false
 const DEFAULT_SEND_REMINDERS = true
+const DEFAULT_REMINDER_HOURS = 24
 const DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED = true
 const DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED = true
 
@@ -25,6 +27,14 @@ const notifyViaEmail = ref(DEFAULT_NOTIFY_VIA_EMAIL)
 const sendReminders = ref(DEFAULT_SEND_REMINDERS)
 const notifyOnDocumentSigned = ref(DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED)
 const notifyOnAgreementSigned = ref(DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED)
+
+
+const hoursOptions = ref ([
+  { id: 1, name: "1 timme före" },
+  { id: 3, name: "3 timmar före" },
+  { id: 24, name: "24 timmar före" }
+])
+const hours = ref(DEFAULT_REMINDER_HOURS)
 
 const advisor = ref({
   message: '',
@@ -78,6 +88,10 @@ const hydrateNotificationForm = () => {
     ? Number(notificationSettings.send_reminders) === 1
     : DEFAULT_SEND_REMINDERS
 
+  hours.value = notificationSettings?.hours !== undefined && notificationSettings?.hours !== null
+    ? Number(notificationSettings.hours)
+    : DEFAULT_REMINDER_HOURS
+
   notifyOnDocumentSigned.value = notificationSettings?.notify_on_document_signed !== undefined && notificationSettings?.notify_on_document_signed !== null
     ? Number(notificationSettings.notify_on_document_signed) === 1
     : DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED
@@ -98,6 +112,7 @@ const onSubmit = async () => {
       notify_via_sound: notifyViaSound.value ? 1 : 0,
       notify_via_email: notifyViaEmail.value ? 1 : 0,
       send_reminders: sendReminders.value ? 1 : 0,
+      hours: hours.value ?? DEFAULT_REMINDER_HOURS,
       notify_on_document_signed: notifyOnDocumentSigned.value ? 1 : 0,
       notify_on_agreement_signed: notifyOnAgreementSigned.value ? 1 : 0,
     }
@@ -230,7 +245,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="settings-layout__content d-flex flex-column gap-6">
-              <div class="d-flex gap-4 align-start">
+              <div class="d-flex gap-4 align-start card-form">
                 <VSwitch
                   v-model="notifyViaSound"
                   class="reminders-switch"
@@ -269,6 +284,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="d-flex gap-4 align-start">
+                
                 <VSwitch
                   v-model="sendReminders"
                   class="reminders-switch"
@@ -277,14 +293,27 @@ onBeforeUnmount(() => {
                   :readonly="role === 'User'"
                 >
                   <template v-slot:label>
-                    <div class="d-flex flex-column">
+                    <div class="d-flex flex-column card-form">
                       <span class="reminders-title">Uppgifter och påminnelser</span>
+                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <AppAutocomplete
+                        v-model="hours"
+                        :items="hoursOptions"
+                        :item-title="item => item.name"
+                        :item-value="item => item.id"
+                        :rules="[requiredValidator]"
+                        :disabled="role === 'User'"
+                        autocomplete="off"
+                        clearable
+                        clear-icon="tabler-x"
+                      />
+                      </div>
                       <span class="reminders-description">
                        Få påminnelser om aktiviteter som behöver göras.
                       </span>
                     </div>
                   </template>
-                </VSwitch>             
+                </VSwitch>        
               </div>
             </div>
           </div>
