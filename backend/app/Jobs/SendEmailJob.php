@@ -37,15 +37,18 @@ class SendEmailJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $from = $this->from ?? env('MAIL_FROM_ADDRESS');
-            $fromName = $this->fromName ?? env('MAIL_FROM_NAME');
+            $from = $this->from ?? config('mail.from.address');
+            $fromName = $this->fromName ?? config('mail.from.name');
             $attachments = $this->attachments;
 
             Mail::send(
                 $this->view,
                 $this->data,
                 function ($message) use ($from, $fromName, $attachments) {
-                    $message->from($from, $fromName);
+                    if (!empty($from)) {
+                        $message->from($from, $fromName);
+                    }
+
                     $message->to($this->to)->subject($this->subject);
                     
                     // Adjuntar archivos si existen
