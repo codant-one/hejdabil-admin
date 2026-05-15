@@ -37,8 +37,8 @@ class SendEmailJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $from = $this->from ?? config('mail.from.address');
-            $fromName = $this->fromName ?? config('mail.from.name');
+            $from = $this->from ?? env('MAIL_FROM_ADDRESS');
+            $fromName = $this->fromName ?? env('MAIL_FROM_NAME');
             $attachments = $this->attachments;
 
             Mail::send(
