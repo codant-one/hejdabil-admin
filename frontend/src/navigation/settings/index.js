@@ -42,7 +42,7 @@ export default [
     subject: 'dashboard'
   },
   { 
-    title: 'Dokument', 
+    title: 'E-signering', 
     icon: { icon: 'custom-signature' },
     to: 'dashboard-settings-documents', 
     action: 'view', 
