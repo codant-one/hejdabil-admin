@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('setting_billings', function (Blueprint $table) {
+        Schema::create('setting_documents', function (Blueprint $table) {
             $table->id();
-            $table->tinyInteger('type')->default(1);
-            $table->integer('due_dates');
-            $table->longText('terms_and_conditions');
-            $table->tinyInteger('send_reminder')->default(1);
+            $table->string('sms_message')->nullable();
             $table->tinyInteger('send_notifications')->default(0);
             $table->timestamps();
         });
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('setting_billings');
+        Schema::dropIfExists('setting_documents');
     }
 };

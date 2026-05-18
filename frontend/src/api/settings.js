@@ -21,6 +21,10 @@ class Settings {
     notifications(data) {
         return axios.post(`/settings/notifications/${data.id}`, data.data)
     }
+
+    documents(data) {
+        return axios.post(`/settings/documents/${data.id}`, data.data)
+    }
     
 }
 

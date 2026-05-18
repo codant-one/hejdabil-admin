@@ -1,16 +1,21 @@
 <script setup>
 
 import { requiredValidator } from '@/@core/utils/validators'
+import { useSettingsStore } from '@/stores/useSettings'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+
+const DEFAULT_DOCUMENT_SMS_MESSAGE = 'Du har fått ett dokument från {Företagsnamn} för digital signering.'
+const DEFAULT_DOCUMENT_DELIVERY_METHOD = 'email'
 
 const { width: windowWidth } = useWindowSize()
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
 const sectionEl = ref(null)
+const settingsStore = useSettingsStore()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
-const deliveryMethod = ref('email')
+const deliveryMethod = ref(DEFAULT_DOCUMENT_DELIVERY_METHOD)
 
 const isRequestOngoing = ref(false);
 
@@ -20,7 +25,91 @@ const advisor = ref({
   type: '',
 })
 
-const sms_signing_message = ref('Du har fått ett dokument från {Företagsnamn} för digital signering.');
+const sms_signing_message = ref(DEFAULT_DOCUMENT_SMS_MESSAGE)
+
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const syncDocumentSettingsLocalState = (settings, documentPayload = null) => {
+  settingsData.value = {
+    ...(settingsData.value || {}),
+    ...(settings || {}),
+    document: documentPayload || settingsData.value?.document || settingsData.value?.setting_document || null,
+  }
+}
+
+const getStoredDocumentSettings = () => settingsData.value?.document || settingsData.value?.setting_document || null
+
+const hydrateDocumentForm = () => {
+  const documentSettings = getStoredDocumentSettings()
+
+  sms_signing_message.value = typeof documentSettings?.sms_message === 'string' && documentSettings.sms_message.trim()
+    ? documentSettings.sms_message
+    : DEFAULT_DOCUMENT_SMS_MESSAGE
+
+  deliveryMethod.value = documentSettings?.send_notifications !== undefined && documentSettings?.send_notifications !== null
+    ? (Number(documentSettings.send_notifications) === 1 ? 'email-sms' : 'email')
+    : DEFAULT_DOCUMENT_DELIVERY_METHOD
+}
+
+const onSubmit = async () => {
+  if (role.value === 'User')
+    return
+
+  const supplierId = resolveSettingsSupplierId()
+
+  if (!supplierId)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const payload = {
+      sms_message: sms_signing_message.value || DEFAULT_DOCUMENT_SMS_MESSAGE,
+      send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
+    }
+
+    const response = await settingsStore.documents({
+      id: supplierId,
+      data: {
+        ...payload,
+        document_id: settingsData.value?.setting_document_id
+          ?? settingsData.value?.document?.id
+          ?? settingsData.value?.setting_document?.id
+          ?? null,
+      },
+    })
+
+    const settingDocumentId = response?.data?.data?.settings?.setting_document_id
+      ?? settingsData.value?.setting_document_id
+      ?? null
+
+    const persistedDocument = { ...payload, id: settingDocumentId }
+
+    advisor.value = {
+      type: response.data.success ? 'success' : 'error',
+      message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+      show: true,
+    }
+
+    syncDocumentSettingsLocalState(response?.data?.data?.settings, persistedDocument)
+
+    setTimeout(() => { advisor.value = { type: '', message: '', show: false } }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -34,7 +123,21 @@ function resizeSectionToRemainingViewport() {
 onMounted(async () => {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value?.roles?.[0]?.name ?? ''
+  isRequestOngoing.value = true
 
+  try {
+    const loggedUserId = resolveLoggedUserId()
+
+    settingsData.value = loggedUserId
+      ? await settingsStore.showSettings(loggedUserId)
+      : null
+  } catch {
+    settingsData.value = null
+  } finally {
+    isRequestOngoing.value = false
+  }
+
+  hydrateDocumentForm()
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -69,7 +172,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <span class="title-settings pb-4 border-bottom-settings">
-              Avtal
+              Dokument
             </span>
           </div>
         </VCardText>
@@ -121,6 +224,7 @@ onBeforeUnmount(() => {
               <VRadioGroup
                 v-model="deliveryMethod"
                 hide-details
+                :disabled="role === 'User'"
                 false-icon="custom-settings-checkbox-false"
                 true-icon="custom-settings-checkbox-true"
                 class="delivery-method-group"
@@ -136,7 +240,7 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
 
-                <VRadio value="email-sms" class="delivery-method-option" disabled>
+                <VRadio value="email-sms" class="delivery-method-option">
                   <template #label>
                     <div class="delivery-method-content">
                       <span class="delivery-method-title">E-post + SMS</span>
@@ -158,6 +262,8 @@ onBeforeUnmount(() => {
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
+                  :disabled="role === 'User'"
+                  @click="onSubmit"
                 >
                   Spara
                 </VBtn>

@@ -276,6 +276,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('billings/{id}', [SettingController::class, 'billings'])->name('settings.billings');
         Route::post('agreements/{id}', [SettingController::class, 'agreements'])->name('settings.agreements');
         Route::post('notifications/{id}', [SettingController::class, 'notifications'])->name('settings.notifications');
+        Route::post('documents/{id}', [SettingController::class, 'documents'])->name('settings.documents');
     });
 
     //Configs

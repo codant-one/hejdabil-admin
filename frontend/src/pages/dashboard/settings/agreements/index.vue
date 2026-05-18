@@ -676,7 +676,7 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
 
-                <VRadio value="email-sms" class="delivery-method-option" disabled>
+                <VRadio value="email-sms" class="delivery-method-option">
                   <template #label>
                     <div class="delivery-method-content">
                       <span class="delivery-method-title">E-post + SMS</span>

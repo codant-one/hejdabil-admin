@@ -85,6 +85,20 @@ export const useSettingsStore = defineStore('settings', {
                     this.setLoading(false)
                 })
             
+        },
+        documents(data) {
+            this.setLoading(true)
+
+            return Settings.documents(data)
+                .then((response) => {
+                    this.settings = response.data.data.settings
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
         }
     }
 })

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->longText('terms_and_conditions_business');
             $table->integer('due_dates');
             $table->tinyInteger('send_reminder')->default(1);
-            $table->tinyInteger('send_notifications')->default(1);
+            $table->tinyInteger('send_notifications')->default(0);
             $table->timestamps();
         });
     }

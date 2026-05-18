@@ -41,6 +41,10 @@ class Setting extends Model
         return $this->belongsTo(SettingNotification::class, 'setting_notification_id', 'id');
     }
 
+    public function document() {
+        return $this->belongsTo(SettingDocument::class, 'setting_document_id', 'id');
+    }
+
     /**** Public methods ****/
     public static function colors($request, $settings) {
 
@@ -72,8 +76,9 @@ class Setting extends Model
             'type' => self::resolveOptionalField($request, 'type', $currentSettingBilling->type ?? 1),
             'due_dates' => self::resolveOptionalField($request, 'due_dates', $currentSettingBilling->due_dates ?? 5),
             'terms_and_conditions' => self::resolveOptionalField($request, 'terms_and_conditions', $currentSettingBilling->terms_and_conditions ?? ''),
+            'sms_message' => self::resolveOptionalField($request, 'sms_message', $currentSettingBilling->sms_message ?? ''),
             'send_reminder' => self::resolveOptionalField($request, 'send_reminder', $currentSettingBilling->send_reminder ?? 1),
-            'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingBilling->send_notifications ?? 1),
+            'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingBilling->send_notifications ?? 0),
             'invoice_id' => self::resolveOptionalField($request, 'invoice_id', $currentSettingBilling->invoice_id ?? 1),
         ]);
 
@@ -102,9 +107,10 @@ class Setting extends Model
             'terms_and_conditions_sales' => self::resolveOptionalField($request, 'terms_and_conditions_sales', $currentSettingAgreement->terms_and_conditions_sales ?? ''),
             'terms_and_conditions_mediation' => self::resolveOptionalField($request, 'terms_and_conditions_mediation', $currentSettingAgreement->terms_and_conditions_mediation ?? ''),
             'terms_and_conditions_business' => self::resolveOptionalField($request, 'terms_and_conditions_business', $currentSettingAgreement->terms_and_conditions_business ?? ''),
+            'sms_message' => self::resolveOptionalField($request, 'sms_message', $currentSettingAgreement->sms_message ?? ''),
             'due_dates' => self::resolveOptionalField($request, 'due_dates', $currentSettingAgreement->due_dates ?? 5),
             'send_reminder' => self::resolveOptionalField($request, 'send_reminder', $currentSettingAgreement->send_reminder ?? 1),
-            'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingAgreement->send_notifications ?? 1),
+            'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingAgreement->send_notifications ?? 0),
         ]);
 
         $settings = self::query()->updateOrCreate([
@@ -140,6 +146,30 @@ class Setting extends Model
             'supplier_id' => $supplier_id,
         ], [
             'setting_notification_id' => $settingNotification->id,
+        ]);
+
+        return $settings;
+    }
+
+     public static function documents($request, $settings) {
+
+        $supplier_id = self::resolveSupplierId($request);
+
+        $currentSettingDocument = $settings?->document;
+        $documentId = self::resolveOptionalField($request, 'document_id', $settings->setting_document_id ?? null);
+
+        $settingDocument = SettingDocument::query()->updateOrCreate([
+            'id' => $documentId,
+        ], [
+            'sms_message' => self::resolveOptionalField($request, 'sms_message', $currentSettingDocument->sms_message ?? ''),
+            'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingDocument->send_notifications ?? 0),
+        ]);
+
+        $settings = self::query()->updateOrCreate([
+            'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
+        ], [
+            'setting_document_id' => $settingDocument->id,
         ]);
 
         return $settings;
