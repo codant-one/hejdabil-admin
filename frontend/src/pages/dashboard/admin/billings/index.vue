@@ -11,6 +11,7 @@ import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
 import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { getBillingSmsVisibilityCacheKey, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
 import Toaster from "@/components/common/Toaster.vue";
@@ -96,6 +97,18 @@ const readCachedCompany = () => {
 };
 
 const company = ref(readCachedCompany())
+const canShowBillingSmsAction = ref(false)
+const isBillingSmsActionVisibilityLoading = ref(true)
+
+const loadBillingSmsActionVisibility = async currentUserData => {
+  isBillingSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowBillingSmsAction.value = await loadBillingSmsActionPreference(currentUserData ?? userData.value)
+  } finally {
+    isBillingSmsActionVisibilityLoading.value = false
+  }
+}
 
 const setCompany = (value) => {
   const normalized = value && typeof value === 'object' ? { ...value } : {};
@@ -147,15 +160,21 @@ watchEffect(() => {
 
 onMounted(async () => {
   try {
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+    role.value = userData.value?.roles?.[0]?.name ?? null;
+
+    const initialBillingSmsVisibilityKey = getBillingSmsVisibilityCacheKey(userData.value)
+    const initialBillingSmsVisibilityPromise = loadBillingSmsActionVisibility(userData.value)
+
+    if (!role.value) {
+      await initialBillingSmsVisibilityPromise
+      return
+    }
+
     state_id.value = billingsStores.getStateId ?? state_id.value;
     updateStateId(state_id.value);
 
     await loadData();
-
-    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-    role.value = userData.value.roles[0].name;
-
-    if (!role.value) return;
 
     if (role.value === "SuperAdmin" || role.value === "Administrator") {
       suppliers.value = billingsStores.suppliers;
@@ -168,6 +187,15 @@ onMounted(async () => {
     ability.update(userAbilities)
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data ?? userData.value
+    role.value = userData.value?.roles?.[0]?.name ?? role.value
+
+    const updatedBillingSmsVisibilityKey = getBillingSmsVisibilityCacheKey(userData.value)
+
+    if (updatedBillingSmsVisibilityKey === initialBillingSmsVisibilityKey)
+      await initialBillingSmsVisibilityPromise
+    else
+      await loadBillingSmsActionVisibility(userData.value)
 
     if (role.value === 'Supplier') {
       setCompany({
@@ -200,6 +228,8 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('Failed to load company data:', error);
+    canShowBillingSmsAction.value = false
+    isBillingSmsActionVisibilityLoading.value = false
   }
 });
 
@@ -1596,7 +1626,7 @@ onBeforeUnmount(() => {
             >
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isBillingSmsActionVisibilityLoading">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -1688,7 +1718,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('view', 'billings')"
+                    v-if="$can('view', 'billings') && canShowBillingSmsAction"
                     @click="sendSmsDialog(billing)"
                   >
                     <template #prepend>
@@ -1807,7 +1837,7 @@ onBeforeUnmount(() => {
                 Se detaljer
               </VBtn>
 
-              <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
+              <VBtn class="btn-light" icon :disabled="isBillingSmsActionVisibilityLoading" @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
                 <VIcon icon="custom-dots-vertical" size="24" />
               </VBtn>
             </div>
@@ -2273,7 +2303,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('view', 'billings') && canShowBillingSmsAction"
             @click="sendSmsDialog(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

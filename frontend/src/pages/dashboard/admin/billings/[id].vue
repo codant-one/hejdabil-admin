@@ -4,6 +4,7 @@ import { useDisplay } from "vuetify";
 import { themeConfig } from "@themeConfig";
 import { useBillingsStores } from "@/stores/useBillings";
 import { phoneValidator } from '@/@core/utils/validators'
+import { loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
@@ -13,6 +14,7 @@ import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
 const billingsStores = useBillingsStores();
 const route = useRoute();
 const emitter = inject("emitter");
+const userData = ref(null);
 
 const types = ref([]);
 const invoices = ref([]);
@@ -47,6 +49,9 @@ const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
+const role = computed(() => userData.value?.roles?.[0]?.name ?? '');
+const canShowBillingSmsAction = ref(false)
+
 const pdfScale = computed(() => {
   const dpr = window.devicePixelRatio || 1;
   return Math.max(dpr, 2.5);
@@ -57,6 +62,8 @@ watchEffect(fetchData);
 async function fetchData() {
   if (Number(route.params.id) && route.name === "dashboard-admin-billings-id") {
     isRequestOngoing.value = true;
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    canShowBillingSmsAction.value = await loadBillingSmsActionPreference(userData.value)
 
     let response = await billingsStores.all();
     types.value = response.data.data.invoices;
@@ -570,7 +577,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('view', 'billings')"
+              v-if="$can('view', 'billings') && canShowBillingSmsAction"
               class="btn-light w-100 mb-4"
               @click="sendSmsDialog"
             >
@@ -664,7 +671,7 @@ onBeforeUnmount(() => {
           </VListItem>
 
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('view', 'billings') && canShowBillingSmsAction"
             @click="sendSmsDialog(); isMobileActionDialogVisible = false"
           >
             <template #prepend>

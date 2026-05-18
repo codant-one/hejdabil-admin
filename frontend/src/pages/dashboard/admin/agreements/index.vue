@@ -6,6 +6,7 @@ import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginatio
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { getAgreementSmsVisibilityCacheKey, loadAgreementSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -59,6 +60,28 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const canShowAgreementSmsAction = ref(false)
+const isAgreementSmsActionVisibilityLoading = ref(true)
+const agreementSmsVisibilityCacheKey = ref('')
+
+const loadAgreementSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getAgreementSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && agreementSmsVisibilityCacheKey.value === nextCacheKey) {
+    isAgreementSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isAgreementSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowAgreementSmsAction.value = await loadAgreementSmsActionPreference(resolvedUserData)
+    agreementSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isAgreementSmsActionVisibilityLoading.value = false
+  }
+}
 
 // 👉 Column visibility state
 const isColumnsDialogVisible = ref(false)
@@ -363,6 +386,10 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
   isFilterDialogVisible.value = false;
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? null
+  const agreementSmsVisibilityPromise = loadAgreementSmsActionVisibility(userData.value)
+
   await agreementsStores.fetchAgreements(data)
 
   agreements.value = Array.isArray(agreementsStores.getAgreements)
@@ -372,12 +399,11 @@ async function fetchData(cleanFilters = false) {
   totalAgreements.value = agreementsStores.agreementsTotalCount
   hasLoaded.value = true
 
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = agreementsStores.getSuppliers
   }
+
+  await agreementSmsVisibilityPromise
   
   isRequestOngoing.value = false
 
@@ -1620,7 +1646,7 @@ onBeforeUnmount(() => {
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')">      
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isAgreementSmsActionVisibilityLoading">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -1660,7 +1686,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Skicka om</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
+                    v-if="$can('edit','agreements') && canShowAgreementSmsAction && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
                     @click="sendSmsDialog(agreement)"
                    >
                     <template #prepend>
@@ -1818,7 +1844,7 @@ onBeforeUnmount(() => {
                     Se detaljer
                   </VBtn>
                   
-                  <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
+                  <VBtn class="btn-light" icon :disabled="isAgreementSmsActionVisibilityLoading" @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
                     <VIcon icon="custom-dots-vertical" size="24" />
                   </VBtn>
                 </div>
@@ -2530,7 +2556,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
+            v-if="$can('edit','agreements') && canShowAgreementSmsAction && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
             @click="sendSmsDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="mdi-message-text" class="mr-2" />

@@ -5,6 +5,7 @@ import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
 import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { getAgreementSmsVisibilityCacheKey, getBillingSmsVisibilityCacheKey, loadAgreementSmsActionPreference, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -67,6 +68,41 @@ const advisor = ref({
   message: "",
   show: false,
 });
+const canShowBillingSmsAction = ref(false)
+const canShowAgreementSmsAction = ref(false)
+const billingSmsVisibilityCacheKey = ref('')
+const agreementSmsVisibilityCacheKey = ref('')
+const isAgreementSmsActionVisibilityLoading = ref(true)
+
+const loadBillingSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getBillingSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && billingSmsVisibilityCacheKey.value === nextCacheKey)
+    return
+
+  canShowBillingSmsAction.value = await loadBillingSmsActionPreference(resolvedUserData)
+  billingSmsVisibilityCacheKey.value = nextCacheKey
+}
+
+const loadAgreementSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getAgreementSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && agreementSmsVisibilityCacheKey.value === nextCacheKey) {
+    isAgreementSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isAgreementSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowAgreementSmsAction.value = await loadAgreementSmsActionPreference(resolvedUserData)
+    agreementSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isAgreementSmsActionVisibilityLoading.value = false
+  }
+}
 
 const paginationData = computed(() => {
   const firstIndex = billings.value.length
@@ -135,6 +171,8 @@ async function fetchData() {
   // Obtener datos de usuario
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
+  const billingSmsVisibilityPromise = loadBillingSmsActionVisibility(userData.value)
+  const agreementSmsVisibilityPromise = loadAgreementSmsActionVisibility(userData.value)
 
   // Solo buscar en la pestaña activa
   if (tabBilling.value === "fakturor") {
@@ -166,6 +204,8 @@ async function fetchData() {
     totalPagesAgreements.value = agreementsStores.last_page
     totalAgreements.value = agreementsStores.agreementsTotalCount
   }
+
+  await Promise.all([billingSmsVisibilityPromise, agreementSmsVisibilityPromise])
   
   emit("loading", false);
 }
@@ -1523,7 +1563,7 @@ onBeforeUnmount(() => {
                   >
                     <VMenu>
                       <template #activator="{ props }">
-                        <VBtn v-bind="props" icon variant="text" class="btn-white">
+                        <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isAgreementSmsActionVisibilityLoading">
                           <VIcon icon="custom-dots-vertical" size="22" />
                         </VBtn>
                       </template>
@@ -1613,7 +1653,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Skicka</VListItemTitle>
                         </VListItem>
                         <VListItem
-                          v-if="$can('view', 'billings')"
+                          v-if="$can('view', 'billings') && canShowBillingSmsAction"
                           @click="sendSmsDialog(billing)"
                         >
                           <template #prepend>
@@ -1934,7 +1974,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Skicka om</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
+                          v-if="$can('edit','agreements') && canShowAgreementSmsAction && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
                           @click="sendSmsDialog(agreement)"
                         >
                           <template #prepend>
@@ -2075,7 +2115,7 @@ onBeforeUnmount(() => {
                           Se detaljer
                         </VBtn>
                         
-                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
+                        <VBtn class="btn-light" icon :disabled="isAgreementSmsActionVisibilityLoading" @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
                           <VIcon icon="custom-dots-vertical" size="24" />
                         </VBtn>
                       </div>
@@ -2318,6 +2358,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"\
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2380,7 +2421,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('view', 'billings') && canShowBillingSmsAction"
             @click="sendSmsDialog(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2434,7 +2475,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
+            v-if="$can('edit','agreements') && canShowAgreementSmsAction && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
             @click="sendSmsDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="mdi-message-text" class="mr-2" />

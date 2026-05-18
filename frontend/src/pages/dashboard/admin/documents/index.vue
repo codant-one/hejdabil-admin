@@ -7,6 +7,7 @@ import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { getDocumentSmsVisibilityCacheKey, loadDocumentSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -37,6 +38,28 @@ const status = ref(null);
 const clients = ref([])
 const isFilterDialogVisible = ref(false);
 const filtreraMobile = ref(false);
+const canShowDocumentSmsAction = ref(false)
+const isDocumentSmsActionVisibilityLoading = ref(true)
+const documentSmsVisibilityCacheKey = ref('')
+
+const loadDocumentSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getDocumentSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && documentSmsVisibilityCacheKey.value === nextCacheKey) {
+    isDocumentSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isDocumentSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowDocumentSmsAction.value = await loadDocumentSmsActionPreference(resolvedUserData)
+    documentSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isDocumentSmsActionVisibilityLoading.value = false
+  }
+}
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -451,14 +474,15 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
   isFilterDialogVisible.value = false;
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? null
+  const documentSmsVisibilityPromise = loadDocumentSmsActionVisibility(userData.value)
+
   await documentsStores.fetchDocuments(data)
 
   documents.value = documentsStores.getDocuments
   totalPages.value = documentsStores.last_page
   totalDocuments.value = documentsStores.documentsTotalCount
-  
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value?.roles?.[0]?.name ?? null
 
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = documentsStores.getSuppliers
@@ -467,6 +491,8 @@ async function fetchData(cleanFilters = false) {
   // Fetch clients for send document dialog
   await clientsStores.fetchClients({ limit: -1 })
   clients.value = clientsStores.getClients
+
+  await documentSmsVisibilityPromise
 
   hasLoaded.value = true
   isRequestOngoing.value = false
@@ -1711,7 +1737,7 @@ onBeforeUnmount(() => {
             >
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isDocumentSmsActionVisibilityLoading">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -1755,7 +1781,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Skicka om</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues' || document.token?.signature_status === 'reviewed')"
+                    v-if="$can('edit','signed-documents') && canShowDocumentSmsAction && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues' || document.token?.signature_status === 'reviewed')"
                     @click="openResendSignatureSms(document)">
                     <template #prepend>
                       <VIcon icon="mdi-message-text" size="24" class="mr-2" />
@@ -1883,6 +1909,7 @@ onBeforeUnmount(() => {
             <div class="mb-4 row-with-buttons">
               <VBtn
                 class="btn-light"
+                :disabled="isDocumentSmsActionVisibilityLoading"
                 @click="selectedDocumentForAction = document; isMobileActionDialogVisible = true"
               >
                 Åtgärder
@@ -2261,7 +2288,7 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-          <VCardText class="dialog-text mt-4">
+          <VCardText class="dialog-text mt-4" v-if="canShowDocumentSmsAction">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefonnummer" />
             <VTextField
               v-model="signaturePhone"
@@ -2634,7 +2661,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues' || selectedDocumentForAction.token?.signature_status === 'reviewed')"
+            v-if="$can('edit', 'signed-documents') && canShowDocumentSmsAction && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues' || selectedDocumentForAction.token?.signature_status === 'reviewed')"
             @click="openResendSignatureSms(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
