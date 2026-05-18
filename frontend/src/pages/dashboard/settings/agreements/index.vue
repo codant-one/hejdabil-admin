@@ -330,7 +330,7 @@ const onSubmit = async () => {
       terms_and_conditions_sales: terms_and_conditions_sales.value,
       terms_and_conditions_mediation: terms_and_conditions_mediation.value,
       terms_and_conditions_business: terms_and_conditions_business.value,
-      sms_message: agreementSmsMessageTemplate.value || DEFAULT_AGREEMENT_SMS_MESSAGE,
+      sms_message: smsSigningMessage.value || replaceCompanyPlaceholder(DEFAULT_AGREEMENT_SMS_MESSAGE, companyName.value),
       send_reminder: automaticRemindersEnabled.value ? 1 : 0,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }

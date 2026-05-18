@@ -105,7 +105,7 @@ const onSubmit = async () => {
 
   try {
     const payload = {
-      sms_message: documentSmsMessageTemplate.value || DEFAULT_DOCUMENT_SMS_MESSAGE,
+      sms_message: smsSigningMessage.value || replaceCompanyPlaceholder(DEFAULT_DOCUMENT_SMS_MESSAGE, companyName.value),
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
 

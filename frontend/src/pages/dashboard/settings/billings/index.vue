@@ -312,7 +312,7 @@ const onSubmit = async () => {
       invoice_id: Number(invoice_id.value) || DEFAULT_INVOICE_ID,
       due_dates: Number(due_date.value) || 1,
       terms_and_conditions: terms_and_conditions.value,
-      sms_message: billingSmsMessageTemplate.value || DEFAULT_BILLING_SMS_MESSAGE,
+      sms_message: smsSigningMessage.value || replaceCompanyPlaceholder(DEFAULT_BILLING_SMS_MESSAGE, companyName.value),
       send_reminder: automaticRemindersEnabled.value ? 1 : 0,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
