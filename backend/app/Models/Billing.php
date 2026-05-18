@@ -303,6 +303,8 @@ class Billing extends Model
         $billing->file = 'pdfs/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
+        self::syncNextInvoiceIdSetting($supplier_id, (int) $billing->invoice_id);
+
         return $billing;
     }
 
@@ -862,5 +864,55 @@ class Billing extends Model
         }
         
          
+    }
+
+    
+    private static function decodeConfigValue($rawValue): array
+    {
+        $decoded = is_string($rawValue) ? json_decode($rawValue, true) : $rawValue;
+
+        if (is_string($decoded))
+            $decoded = json_decode($decoded, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private static function syncNextInvoiceIdSetting($supplierId, int $currentInvoiceId): void
+    {
+        $nextInvoiceId = max(1, $currentInvoiceId + 1);
+
+        if (is_null($supplierId)) {
+            $config = Config::firstOrNew([
+                'key' => 'featured_billings',
+            ]);
+
+            $configValue = self::decodeConfigValue($config->value ?? '[]');
+            $configValue['invoice_id'] = $nextInvoiceId;
+            $config->value = json_encode($configValue);
+            $config->save();
+
+            return;
+        }
+
+        $setting = Setting::where('supplier_id', $supplierId)->first();
+
+        if ($setting && $setting->setting_billing_id) {
+            SettingBilling::query()->whereKey($setting->setting_billing_id)->update([
+                'invoice_id' => $nextInvoiceId,
+            ]);
+
+            return;
+        }
+
+        $settingBilling = SettingBilling::create([
+            'invoice_id' => $nextInvoiceId,
+        ]);
+
+        Setting::query()->updateOrCreate([
+            'supplier_id' => $supplierId,
+        ], [
+            'user_id' => Auth::id(),
+            'setting_billing_id' => $settingBilling->id,
+        ]);
     }
 }

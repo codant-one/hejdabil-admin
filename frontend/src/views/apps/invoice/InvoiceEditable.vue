@@ -319,7 +319,7 @@ const extractDaysFromNetTermSplit = (term) => {
   return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 };
 
-const getNextInvoiceId = (billings = [], fallbackId = 0) => {
+const getInitialInvoiceId = (billings = [], configuredInvoiceId = 0) => {
   const maxFromBillings = Array.isArray(billings)
     ? billings.reduce((maxValue, billingItem) => {
         const currentId = Number(billingItem?.invoice_id);
@@ -329,28 +329,29 @@ const getNextInvoiceId = (billings = [], fallbackId = 0) => {
       }, 0)
     : 0;
 
-  const baseId = Math.max(maxFromBillings, Number(fallbackId) || 0);
+  const nextAvailableId = maxFromBillings + 1;
+  const configuredId = Number(configuredInvoiceId);
 
-  return baseId + 1;
+  if (Number.isFinite(configuredId) && configuredId > 0)
+    return Math.max(nextAvailableId, configuredId);
+
+  return nextAvailableId;
 };
 
 watch(
-  () => props.company,
-  (val) => {
-    company.value = val;
+  [() => props.company, () => props.invoice_id],
+  ([companyValue]) => {
+    company.value = companyValue;
 
     if (props.billing) {
       invoice.value.id = route.path.includes("/duplicate/")
-        ? getNextInvoiceId(company.value?.billings, props.invoice_id)
+        ? getInitialInvoiceId(company.value?.billings, props.invoice_id)
         : props.billing.invoice_id;
-    } else if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
-    } else if (props.role === "User" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
     } else {
-      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
+      invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
@@ -463,7 +464,7 @@ const checkIfMobile = () => {
 async function fetchData() {
   if (props.billing) {
     invoice.value.id = route.path.includes("/duplicate/")
-      ? getNextInvoiceId(company.value?.billings, props.invoice_id)
+      ? getInitialInvoiceId(company.value?.billings, props.invoice_id)
       : props.billing.invoice_id;
     invoice.value.reference = props.billing.reference;
     invoice.value.invoice_date = route.path.includes("/duplicate/") ? new Date().toLocaleDateString('sv-SE') : props.billing.invoice_date;
@@ -490,11 +491,7 @@ async function fetchData() {
 
     invoice.value.invoice_date = `${year}-${month}-${day}`;
 
-    if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
-    } else {
-      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
-    }
+    invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
   }
 }
 
@@ -552,13 +549,13 @@ const selectSupplier = async () => {
     company.value = selected.user.user_detail;
     company.value.email = selected.user.email;
     company.value.billings = selected.billings;
-    invoice.value.id = getNextInvoiceId(selected.billings, props.invoice_id);
+    invoice.value.id = getInitialInvoiceId(selected.billings, props.invoice_id);
     clients.value = props.clients.filter(
       item => String(item?.supplier_id) === String(invoice.value.supplier_id)
     );
   } else {
     company.value = props.company;
-    invoice.value.id = getNextInvoiceId(props.company?.billings, props.invoice_id);
+    invoice.value.id = getInitialInvoiceId(props.company?.billings, props.invoice_id);
     clients.value = props.clients;
   }
 
