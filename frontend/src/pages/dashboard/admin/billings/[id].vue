@@ -53,11 +53,52 @@ const role = computed(() => userData.value?.roles?.[0]?.name ?? '');
 const canShowBillingSmsAction = ref(false)
 
 const pdfScale = computed(() => {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.max(dpr, 2.5);
+  const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
+  return Math.min(2.25, Math.max(1.75, dpr * 1.05));
+});
+const pdfViewportEl = ref(null);
+const pdfViewportWidth = ref(0);
+let pdfResizeObserver;
+
+const pdfWidth = computed(() => {
+  if (pdfViewportWidth.value > 0)
+    return Math.max(280, Math.round(pdfViewportWidth.value));
+
+  if (windowWidth.value < 1024)
+    return Math.max(280, windowWidth.value - 32);
+
+  return 700;
 });
 
+const updatePdfViewportWidth = () => {
+  const el = pdfViewportEl.value;
+  if (!el)
+    return;
+
+  pdfViewportWidth.value = el.clientWidth;
+};
+
+const initPdfResizeObserver = () => {
+  const el = pdfViewportEl.value;
+  if (!el || typeof ResizeObserver === "undefined")
+    return;
+
+  if (pdfResizeObserver)
+    pdfResizeObserver.disconnect();
+
+  pdfResizeObserver = new ResizeObserver(() => updatePdfViewportWidth());
+  pdfResizeObserver.observe(el);
+  updatePdfViewportWidth();
+};
+
 watchEffect(fetchData);
+watchEffect(async () => {
+  if (!invoice.value)
+    return;
+
+  await nextTick();
+  initPdfResizeObserver();
+});
 
 async function fetchData() {
   if (Number(route.params.id) && route.name === "dashboard-admin-billings-id") {
@@ -412,6 +453,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+
+  if (pdfResizeObserver)
+    pdfResizeObserver.disconnect();
 });
 </script>
 
@@ -495,18 +539,21 @@ onBeforeUnmount(() => {
 
           <VDivider class="mt-2 mx-4" />
 
-          <div class="invoice-panel">
-            <VuePdfEmbed
-              text-layer
-              :scale="pdfScale"
-              :source="
-                themeConfig.settings.urlbase +
-                'proxy-image?url=' +
-                themeConfig.settings.urlStorage +
-                invoice.file
-              "
-              class="d-flex justify-content-center w-auto m-auto"
-            />
+          <div ref="pdfViewportEl" class="invoice-panel">
+            <div class="pdf-host" :style="{ width: `${pdfWidth}px` }">
+              <VuePdfEmbed
+                text-layer
+                :width="pdfWidth"
+                :scale="pdfScale"
+                :source="
+                  themeConfig.settings.urlbase +
+                  'proxy-image?url=' +
+                  themeConfig.settings.urlStorage +
+                  invoice.file
+                "
+                class="d-flex justify-content-center w-100 m-auto"
+              />
+            </div>
           </div>
         </VCard>
       </VCol>
@@ -1101,19 +1148,22 @@ onBeforeUnmount(() => {
   opacity: 1;
   border: solid 1px #e7e7e7;
   overflow: hidden;
+  background-color: #fff;
+
+  .pdf-host {
+    max-width: 100%;
+  }
   
   .vue-pdf-embed {
-    border-radius: 8px;
+    display: block;
     width: 100%;
+    max-width: 100%;
   }
   
   canvas {
-    border-radius: 8px;
     display: block;
     width: 100% !important;
     height: auto !important;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
   }
 }
 
