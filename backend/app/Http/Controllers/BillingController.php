@@ -19,10 +19,12 @@ use App\Models\Invoice;
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Models\Setting;
 use App\Models\SupplierActivity;
 
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
+use App\Services\TwilioSms;
 
 class BillingController extends Controller
 {
@@ -73,7 +75,7 @@ class BillingController extends Controller
                       ->withTrashed()
                       ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                 },
-                'client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
+                                'client' => fn($q) => $q->select('id', 'fullname', 'email', 'phone', 'deleted_at')->withTrashed(),
                 'state:id,name',
                 'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
                 'user.userDetail:user_id,avatar_id,logo'
@@ -667,6 +669,161 @@ class BillingController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    public function sendSms(Request $request, $id, TwilioSms $twilioSms)
+    {
+        $validator = Validator::make($request->all(), [
+            'phoneDefault' => ['nullable', 'boolean'],
+            'phones' => ['nullable', 'array'],
+            'phones.*' => ['required', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $billing = Billing::with(['client', 'supplier.user.userDetail'])->find($id);
+
+            if (!$billing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fakturan kunde inte hittas.',
+                ], 404);
+            }
+
+            $phoneNumbers = collect($request->input('phones', []))
+                ->filter(fn ($phone) => is_string($phone) && trim($phone) !== '')
+                ->map(fn ($phone) => trim($phone));
+
+            if ($request->boolean('phoneDefault') && !empty($billing->client?->phone))
+                $phoneNumbers->prepend(trim($billing->client->phone));
+
+            $phoneNumbers = $phoneNumbers->unique()->values();
+
+            if ($phoneNumbers->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ange minst ett telefonnummer för att skicka SMS.',
+                ], 422);
+            }
+
+            $message = $this->resolveBillingSmsMessage($billing);
+            $failedRecipients = [];
+            $sentRecipients = [];
+
+            foreach ($phoneNumbers as $phoneNumber) {
+                $result = $twilioSms->sendMessage($phoneNumber, $message);
+
+                if ($result === true) {
+                    $sentRecipients[] = $phoneNumber;
+                    continue;
+                }
+
+                $failedRecipients[] = [
+                    'phone' => $phoneNumber,
+                    'error' => $result,
+                ];
+            }
+
+            if (empty($sentRecipients)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => collect($failedRecipients)->map(fn ($item) => $item['phone'].': '.$item['error'])->implode(' | '),
+                ], 500);
+            }
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'send_billing_sms',
+                'title' => 'Faktura #'.$billing->invoice_id.' - SMS skickat',
+                'description' => 'Fakturan skickades via SMS.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'phones' => $sentRecipients,
+                    'phone_default' => $request->boolean('phoneDefault'),
+                    'failed' => $failedRecipients,
+                ])
+            ]);
+
+            $messageText = empty($failedRecipients)
+                ? 'SMS skickat!'
+                : 'SMS skickat till '.count($sentRecipients).' nummer. Vissa mottagare misslyckades.';
+
+            return response()->json([
+                'success' => true,
+                'message' => $messageText,
+                'data' => [
+                    'sent' => $sentRecipients,
+                    'failed' => $failedRecipients,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    private function resolveBillingSmsMessage(Billing $billing): string
+    {
+        $companyName = $this->resolveBillingCompanyName($billing);
+
+        if ($billing->supplier_id === null) {
+            $billingConfig = Config::getByKey('billings') ?? ['value' => '[]'];
+            $rawValue = is_array($billingConfig) ? ($billingConfig['value'] ?? '[]') : ($billingConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
+
+            return $this->finalizeBillingSmsMessage($smsMessage, $companyName);
+        }
+
+        $setting = Setting::with('billing')->where('supplier_id', $billing->supplier_id)->first();
+        $smsMessage = $setting?->billing?->sms_message ?? '';
+
+        return $this->finalizeBillingSmsMessage($smsMessage, $companyName);
+    }
+
+    private function resolveBillingCompanyName(Billing $billing): string
+    {
+        if ($billing->supplier_id === null) {
+            $companyConfig = Config::getByKey('company') ?? ['value' => '[]'];
+            $rawValue = is_array($companyConfig) ? ($companyConfig['value'] ?? '[]') : ($companyConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+        }
+
+        return trim((string) ($billing->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function finalizeBillingSmsMessage(?string $message, string $companyName): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $fallbackMessage = 'Du har fått en faktura från '.$resolvedCompanyName.'.';
+        $normalizedMessage = trim((string) $message);
+
+        if ($normalizedMessage === '')
+            return $fallbackMessage;
+
+        return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
     }
 
     public function info() {

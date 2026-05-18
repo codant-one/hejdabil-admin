@@ -47,6 +47,13 @@ class SignableDocuments {
         return axios.post(`/signable-documents/${documentId}/resend-signature-request`, payload)
     }
 
+    resendSignatureSms(data) {
+        const documentId = typeof data === 'object' && data !== null ? data.id : data
+        const payload = typeof data === 'object' && data !== null ? data : {}
+
+        return axios.post(`/signable-documents/${documentId}/resend-signature-sms`, payload)
+    }
+
     cancelSignatureRequest(data) {
         const documentId = typeof data === 'object' && data !== null ? data.id : data
 

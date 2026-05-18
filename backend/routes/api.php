@@ -47,8 +47,7 @@ use App\Http\Controllers\Services\{
     CarInfoController,
     SwishPayoutController,
     CompanyInfoController,
-    PersonInfoController,
-    SmsTestController,
+    PersonInfoController
 };
 
 /*
@@ -161,6 +160,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::group(['prefix' => 'billings'], function () {
         Route::get('/updateState/{id}', [BillingController::class, 'updateState']);
         Route::post('/sendMails/{id}', [BillingController::class, 'sendMails']);
+        Route::post('/sendSms/{id}', [BillingController::class, 'sendSms']);
         Route::get('/data/all', [BillingController::class, 'all']);
         Route::get('/credit/{id}', [BillingController::class, 'credit']);
         Route::get('/reminder/{id}', [BillingController::class, 'reminder']);
@@ -223,6 +223,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
         Route::post('/{document}/cancel-signature-request', [DocumentController::class, 'cancelSignatureRequest'])->name('documents.cancelSignatureRequest');
         Route::post('/{document}/resend-signature-request', [DocumentController::class, 'resendSignatureRequest'])->name('documents.resendSignatureRequest');
+        Route::post('/{document}/resend-signature-sms', [DocumentController::class, 'resendSignatureSms'])->name('documents.resendSignatureSms');
     });
 
     //Vehicles
@@ -247,6 +248,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::group(['prefix' => 'agreements'], function () {
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
+        Route::post('/sendSms/{id}', [AgreementController::class, 'sendSms']);
         Route::get('/{agreement}/get-admin-preview-pdf', [AgreementController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
         Route::post('/{agreement}/cancel-signature-request', [SignatureController::class, 'cancelSignatureRequest'])->name('agreements.cancelSignatureRequest');
@@ -324,6 +326,3 @@ Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'look
 
 // PERSON INFO (SPAR - Statens Personadressregister)
 Route::get('/persons/lookup/{personId}', [PersonInfoController::class, 'lookupByPersonId']);
-
-// TWILIO SMS TEST
-Route::post('/sms/test', [SmsTestController::class, 'sendTest']);

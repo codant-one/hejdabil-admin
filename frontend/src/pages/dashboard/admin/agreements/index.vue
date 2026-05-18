@@ -5,7 +5,7 @@ import { useDisplay } from "vuetify";
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -38,11 +38,16 @@ const signatureEmail = ref('')
 const refSignatureForm = ref()              
 const refResendSignatureForm = ref()
 const isConfirmSendMailVisible = ref(false)
+const isConfirmSendSmsVisible = ref(false)
 const isConfirmResendSignatureVisible = ref(false)
 const emailDefault = ref(true)
+const phoneDefault = ref(true)
 const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
+const selectedPhoneTags = ref([])
+const existingPhoneTags = ref([])
+const isPhoneValid = ref(false)
 const resendSignatureEmail = ref('')
 const selectedAgreement = ref({})
 const isStaticSignatureFlow = ref(false)
@@ -429,9 +434,35 @@ const addTag = (event) => {
   }
 };
 
+const addPhoneTag = (event) => {
+  const newTag = event.target.value.trim()
+
+  if (!newTag)
+    return
+
+  const validationResult = phoneValidator(newTag)
+
+  if (validationResult !== true) {
+    isPhoneValid.value = true
+    selectedPhoneTags.value.pop()
+    return
+  }
+
+  isPhoneValid.value = false
+}
+
 const send = agreementData => {
   isConfirmSendMailVisible.value = true
   selectedAgreement.value = { ...agreementData }
+}
+
+const sendSmsDialog = agreementData => {
+  isConfirmSendSmsVisible.value = true
+  selectedAgreement.value = { ...agreementData }
+  phoneDefault.value = Boolean(agreementData?.agreement_client?.phone)
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  isPhoneValid.value = false
 }
 
 const getResendRecipientEmail = (agreement) => {
@@ -482,6 +513,46 @@ const sendMails = async () => {
     }, 3000)
 
     return true
+  }
+}
+
+const sendSms = async () => {
+  if (isPhoneValid.value)
+    return
+
+  isConfirmSendSmsVisible.value = false
+  isRequestOngoing.value = true
+
+  try {
+    const data = {
+      id: selectedAgreement.value.id,
+      phoneDefault: phoneDefault.value,
+      phones: selectedPhoneTags.value,
+    }
+
+    const res = await agreementsStores.sendSms(data)
+
+    advisor.value = {
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.success ? (res.data.message || 'SMS skickat!') : res.data.message,
+      show: true,
+    }
+
+    setTimeout(() => {
+      selectedPhoneTags.value = []
+      existingPhoneTags.value = []
+      phoneDefault.value = true
+
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+
+    return true
+  } finally {
+    isRequestOngoing.value = false
   }
 }
 
@@ -1588,6 +1659,15 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Skicka om</VListItemTitle>
                   </VListItem>
+                  <VListItem 
+                    v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
+                    @click="sendSmsDialog(agreement)"
+                   >
+                    <template #prepend>
+                      <VIcon icon="mdi-message-text" class="mr-2" />
+                    </template>
+                    <VListItemTitle>SMS</VListItemTitle>
+                  </VListItem>
                   <VListItem
                      v-if="$can('view', 'agreements')"
                      @click="openLink(agreement)">
@@ -2038,6 +2118,64 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <VDialog
+      v-model="isConfirmSendSmsVisible"
+      persistent
+      class="action-dialog" >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendSmsVisible = !isConfirmSendSmsVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="mdi-message-text" class="action-icon" />
+          <div class="dialog-title">Skicka avtal via SMS</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill skicka avtal via SMS till följande telefonnummer?
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+          <VCheckbox
+            v-model="phoneDefault"
+            :label="selectedAgreement.agreement_client?.phone || 'Kunden saknar telefonnummer'"
+            :disabled="!selectedAgreement.agreement_client?.phone"
+            class="ml-2"
+          />
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange telefonnummer för att skicka avtal" />
+          <VCombobox
+            v-model="selectedPhoneTags"
+            :items="existingPhoneTags"
+            multiple
+            chips
+            deletable-chips
+            clearable
+            @blur="addPhoneTag"
+            @keydown.enter.prevent="addPhoneTag"
+            @input="isPhoneValid = false"
+          />
+          <span
+            class="text-xs text-error"
+            v-if="isPhoneValid">
+            Telefonnummer måste vara giltigt
+          </span>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn
+            class="btn-light"
+            @click="isConfirmSendSmsVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="sendSms">
+              Skicka
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
       v-model="isConfirmResendSignatureVisible"
       persistent
       class="action-dialog" >
@@ -2390,6 +2528,14 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-forward" class="mr-2" />
             </template>
             <VListItemTitle>Skicka om</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
+            @click="sendSmsDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="mdi-message-text" class="mr-2" />
+            </template>
+            <VListItemTitle>SMS</VListItemTitle>
           </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"

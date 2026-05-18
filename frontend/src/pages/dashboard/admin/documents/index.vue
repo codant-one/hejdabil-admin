@@ -6,7 +6,7 @@ import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginatio
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -49,11 +49,15 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCancelSignatureDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
+const signaturePhone = ref('')
 const textEmail = ref(null)
 const refSignatureForm = ref()
 const refResendSignatureForm = ref()
+const refResendSignatureSmsForm = ref()
 const isConfirmResendSignatureVisible = ref(false)
+const isConfirmResendSignatureSmsVisible = ref(false)
 const resendSignatureEmail = ref('')
+const resendSignaturePhone = ref('')
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -950,6 +954,7 @@ const handleAdminPdfClick = (event) => {
 
 const openSignatureDialog = () => {
   signatureEmail.value = ''
+  signaturePhone.value = ''
   textEmail.value = null
   isSignatureDialogVisible.value = true
 }
@@ -962,9 +967,18 @@ const resetResendSignatureState = () => {
   resendSignatureEmail.value = ''
 }
 
+const resetResendSignatureSmsState = () => {
+  resendSignaturePhone.value = ''
+}
+
 const closeResendSignatureDialog = () => {
   isConfirmResendSignatureVisible.value = false
   resetResendSignatureState()
+}
+
+const closeResendSignatureSmsDialog = () => {
+  isConfirmResendSignatureSmsVisible.value = false
+  resetResendSignatureSmsState()
 }
 
 const openResendSignature = async (documentData) => {
@@ -973,6 +987,14 @@ const openResendSignature = async (documentData) => {
   selectedDocument.value = { ...documentData }
   resendSignatureEmail.value = getResendRecipientEmail(documentData)
   isConfirmResendSignatureVisible.value = true
+}
+
+const openResendSignatureSms = async (documentData) => {
+  if (!documentData?.id) return
+
+  selectedDocument.value = { ...documentData }
+  resendSignaturePhone.value = documentData?.token?.recipient_phone || ''
+  isConfirmResendSignatureSmsVisible.value = true
 }
 
 const openCancelSignatureDialog = (documentData) => {
@@ -1024,6 +1046,31 @@ const submitResendSignature = async () => {
   }
 }
 
+const submitResendSignatureSms = async () => {
+  const { valid } = await refResendSignatureSmsForm.value?.validate()
+  if (!valid) return
+
+  const trimmedPhone = resendSignaturePhone.value.trim()
+
+  isConfirmResendSignatureSmsVisible.value = false
+
+  try {
+    isRequestOngoing.value = true
+    const response = await documentsStores.resendSignatureSms({
+      id: selectedDocument.value.id,
+      phone: trimmedPhone,
+    })
+    advisor.value = { type: 'success', message: response.data.message || 'SMS-meddelandet har skickats igen.', show: true }
+    await fetchData()
+  } catch (error) {
+    advisor.value = { type: 'error', message: error.response?.data?.message || 'Det gick inte att skicka om SMS-meddelandet.', show: true }
+  } finally {
+    isRequestOngoing.value = false
+    resetResendSignatureSmsState()
+    setTimeout(() => { advisor.value = { show: false } }, 3000)
+  }
+}
+
 const handleSignatureSubmit = async () => {
   const { valid } = await refSignatureForm.value?.validate()
 
@@ -1049,6 +1096,7 @@ const handleSignatureSubmit = async () => {
     const payload = {
       documentId: selectedDocument.value.id,
       email: signatureEmail.value,
+      phone: signaturePhone.value,
       x: x_percent.toFixed(4),
       y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
@@ -1075,6 +1123,7 @@ const handleSignatureSubmit = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
+    signaturePhone.value = ''
     textEmail.value = null
     setTimeout(() => {
       advisor.value = { show: false } 
@@ -1706,6 +1755,14 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Skicka om</VListItemTitle>
                   </VListItem>
                   <VListItem
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'delivered' || document.token?.signature_status === 'delivery_issues' || document.token?.signature_status === 'reviewed')"
+                    @click="openResendSignatureSms(document)">
+                    <template #prepend>
+                      <VIcon icon="mdi-message-text" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>SMS</VListItemTitle>
+                  </VListItem>
+                  <VListItem
                     v-if="$can('view', 'signed-documents')"
                     @click="openLink(document)">
                     <template #prepend>
@@ -1939,6 +1996,52 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <VDialog
+      v-model="isConfirmResendSignatureSmsVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeResendSignatureSmsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VForm
+        ref="refResendSignatureSmsForm"
+        @submit.prevent="submitResendSignatureSms"
+      >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="30" icon="mdi-message-text" class="action-icon" />
+            <div class="dialog-title">Skicka om signeringsförfrågan via SMS</div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange det telefonnummer till vilket du vill att länken för att skicka om dokumentet ska skickas.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefonnummer*" />
+            <VTextField
+              v-model="resendSignaturePhone"
+              placeholder="0701234567"
+              :rules="[requiredValidator, phoneValidator]"
+            />
+          </VCardText>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="closeResendSignatureSmsDialog">
+                Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+                Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
+    </VDialog>
+
+    <VDialog
       v-model="isConfirmCancelSignatureDialogVisible"
       persistent
       class="action-dialog"
@@ -2156,6 +2259,14 @@ onBeforeUnmount(() => {
             <VTextField
               v-model="signatureEmail"
               :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefonnummer" />
+            <VTextField
+              v-model="signaturePhone"
+              placeholder="Ange telefonnummer för SMS"
+              :rules="[phoneValidator]"
             />
           </VCardText>
           <VCardText class="dialog-text mt-4">
@@ -2521,6 +2632,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-forward" size="24" />
             </template>
             <VListItemTitle>Skicka om</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.token?.signature_status === 'delivered' || selectedDocumentForAction.token?.signature_status === 'delivery_issues' || selectedDocumentForAction.token?.signature_status === 'reviewed')"
+            @click="openResendSignatureSms(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="mdi-message-text" size="24" />
+            </template>
+            <VListItemTitle>SMS</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('view', 'signed-documents')"

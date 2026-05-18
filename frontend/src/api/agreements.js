@@ -30,6 +30,10 @@ class Agreements {
         return axios.post(`/agreements/sendMails/${data.id}`, data)
     }
 
+    sendSms(data) {
+        return axios.post(`/agreements/sendSms/${data.id}`, data)
+    }
+
     resendSignatureRequest(data) {
         const agreementId = typeof data === 'object' && data !== null ? data.id : data
         const payload = typeof data === 'object' && data !== null ? data : {}

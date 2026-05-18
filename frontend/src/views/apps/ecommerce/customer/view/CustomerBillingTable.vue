@@ -4,7 +4,7 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -37,13 +37,18 @@ const totalPagesAgreements = ref(1);
 const totalBillings = ref(0);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
+const isConfirmSendSmsVisible = ref(false);
 const isConfirmKreditera = ref(false)
 const isConfirmSendMailReminder = ref(false);
 const emailDefault = ref(true);
+const phoneDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
+const selectedPhoneTags = ref([]);
+const existingPhoneTags = ref([]);
 const selectedBilling = ref({});
 const isValid = ref(false);
+const isPhoneValid = ref(false);
 const userData = ref(null);
 const role = ref(null);
 const tabBilling = ref("fakturor");
@@ -359,6 +364,22 @@ const send = (billingData) => {
   }
 };
 
+const sendSmsDialog = billingData => {
+  isConfirmSendSmsVisible.value = true
+  if (billingData?.agreement_type_id) {
+    selectedAgreement.value = { ...billingData }
+    selectedBilling.value = {}
+    phoneDefault.value = Boolean(billingData?.agreement_client?.phone)
+  } else {
+    selectedBilling.value = { ...billingData }
+    selectedAgreement.value = {}
+    phoneDefault.value = Boolean(billingData?.client?.phone)
+  }
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  isPhoneValid.value = false
+}
+
 const addTag = (event) => {
   const newTag = event.target.value.trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -370,6 +391,23 @@ const addTag = (event) => {
     selectedTags.value.pop();
   }
 };
+
+const addPhoneTag = event => {
+  const newTag = event.target.value.trim()
+
+  if (!newTag)
+    return
+
+  const validationResult = phoneValidator(newTag)
+
+  if (validationResult !== true) {
+    isPhoneValid.value = true
+    selectedPhoneTags.value.pop()
+    return
+  }
+
+  isPhoneValid.value = false
+}
 
 const getResendRecipientEmail = (agreement) => {
   return agreement?.token?.recipient_email || agreement?.agreement_client?.email || ''
@@ -440,6 +478,65 @@ const sendMails = async () => {
     return true;
   }
 };
+
+const sendSms = async () => {
+  if (isPhoneValid.value)
+    return
+
+  isConfirmSendSmsVisible.value = false
+  emit("loading", true)
+
+  try {
+    let data, res
+
+    if (selectedAgreement.value.id) {
+      data = {
+        id: selectedAgreement.value.id,
+        phoneDefault: phoneDefault.value,
+        phones: selectedPhoneTags.value,
+      }
+
+      res = await agreementsStores.sendSms(data)
+    } else {
+      data = {
+        id: selectedBilling.value.id,
+        phoneDefault: phoneDefault.value,
+        phones: selectedPhoneTags.value,
+      }
+
+      res = await billingsStores.sendSms(data)
+    }
+
+    advisor.value = {
+      type: res.data.success ? "success" : "error",
+      message: res.data.success ? (res.data.message || "SMS skickat!") : res.data.message,
+      show: true,
+    }
+
+    emit("alert", advisor)
+
+    setTimeout(() => {
+      selectedPhoneTags.value = []
+      existingPhoneTags.value = []
+      phoneDefault.value = true
+      selectedAgreement.value = {}
+
+      advisor.value = {
+        type: "",
+        message: "",
+        show: false,
+      }
+
+      emit("alert", advisor)
+    }, 3000)
+
+    await fetchData()
+
+    return true
+  } finally {
+    emit("loading", false)
+  }
+}
 
 const resolveStatus = state_id => {
   if (state_id === 4)
@@ -1515,6 +1612,15 @@ onBeforeUnmount(() => {
                           </template>
                           <VListItemTitle>Skicka</VListItemTitle>
                         </VListItem>
+                        <VListItem
+                          v-if="$can('view', 'billings')"
+                          @click="sendSmsDialog(billing)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="mdi-message-text" size="24" class="mr-2" />
+                          </template>
+                          <VListItemTitle>SMS</VListItemTitle>
+                        </VListItem>
 
                         <VListItem
                           v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.is_credit === 0"
@@ -1827,6 +1933,15 @@ onBeforeUnmount(() => {
                           </template>
                           <VListItemTitle>Skicka om</VListItemTitle>
                         </VListItem>
+                        <VListItem 
+                          v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
+                          @click="sendSmsDialog(agreement)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="mdi-message-text" class="mr-2" />
+                          </template>
+                          <VListItemTitle>SMS</VListItemTitle>
+                        </VListItem>
                         <VListItem
                           v-if="$can('view', 'agreements')"
                           @click="openLink(agreement)">
@@ -2052,6 +2167,62 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <VDialog
+      v-model="isConfirmSendSmsVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendSmsVisible = !isConfirmSendSmsVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="mdi-message-text" class="action-icon" />
+          <div class="dialog-title">
+            {{ selectedAgreement.id ? 'Skicka avtal via SMS' : 'Skicka fakturan via SMS' }}
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturan' }} via SMS till följande telefonnummer?
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+          <VCheckbox
+            v-model="phoneDefault"
+            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.phone || 'Kunden saknar telefonnummer') : (selectedBilling.client?.phone || 'Kunden saknar telefonnummer')"
+            :disabled="selectedAgreement.id ? !selectedAgreement.agreement_client?.phone : !selectedBilling.client?.phone"
+            class="ml-2"
+          />
+          <VLabel class="text-body-2 text-high-emphasis" :text="selectedAgreement.id ? 'Ange telefonnummer för att skicka avtal' : 'Ange telefonnummer för att skicka fakturan'" />
+          <VCombobox
+            v-model="selectedPhoneTags"
+            :items="existingPhoneTags"
+            multiple
+            chips
+            deletable-chips
+            clearable
+            @blur="addPhoneTag"
+            @keydown.enter.prevent="addPhoneTag"
+            @input="isPhoneValid = false"
+          />
+          <span class="text-xs text-error" v-if="isPhoneValid">
+            Telefonnummer måste vara giltigt
+          </span>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn class="btn-light" @click="isConfirmSendSmsVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="sendSms"> Skicka </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
     <!-- 👉 Confirm kreditera -->
     <VDialog 
       v-model="isConfirmKreditera" 
@@ -2147,7 +2318,6 @@ onBeforeUnmount(() => {
             <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2210,6 +2380,15 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
+            v-if="$can('view', 'billings')"
+            @click="sendSmsDialog(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="mdi-message-text" size="24" />
+            </template>
+            <VListItemTitle>SMS</VListItemTitle>
+          </VListItem>
+          <VListItem
             v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
@@ -2253,6 +2432,14 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-forward" class="mr-2" />
             </template>
             <VListItemTitle>Skicka om</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
+            @click="sendSmsDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="mdi-message-text" class="mr-2" />
+            </template>
+            <VListItemTitle>SMS</VListItemTitle>
           </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"

@@ -2,13 +2,14 @@
 
 import { useDisplay } from "vuetify";
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
+import { phoneValidator } from '@/@core/utils/validators'
 import { useBillingsStores } from "@/stores/useBillings";
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
 import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { formatNumber, formatNumberInteger, formatDateTime } from "@/@core/utils/formatters";
+import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
@@ -39,12 +40,17 @@ const isRequestOngoing = ref(true);
 const hasLoaded = ref(false);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
+const isConfirmSendSmsVisible = ref(false);
 const isConfirmSendMailReminder = ref(false);
 const isConfirmKreditera = ref(false)
 const emailDefault = ref(true);
+const phoneDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
 const isValid = ref(false);
+const selectedPhoneTags = ref([]);
+const existingPhoneTags = ref([]);
+const isPhoneValid = ref(false);
 const selectedBilling = ref({});
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -570,6 +576,15 @@ const send = (billingData) => {
   selectedBilling.value = { ...billingData };
 };
 
+const sendSmsDialog = (billingData) => {
+  isConfirmSendSmsVisible.value = true;
+  selectedBilling.value = { ...billingData };
+  phoneDefault.value = Boolean(billingData?.client?.phone);
+  selectedPhoneTags.value = [];
+  existingPhoneTags.value = [];
+  isPhoneValid.value = false;
+};
+
 const addTag = (event) => {
   const newTag = event.target.value.trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -580,6 +595,23 @@ const addTag = (event) => {
     isValid.value = true;
     selectedTags.value.pop();
   }
+};
+
+const addPhoneTag = (event) => {
+  const newTag = event.target.value.trim();
+
+  if (!newTag)
+    return;
+
+  const validationResult = phoneValidator(newTag);
+
+  if (validationResult !== true) {
+    isPhoneValid.value = true;
+    selectedPhoneTags.value.pop();
+    return;
+  }
+
+  isPhoneValid.value = false;
 };
 
 const sendMails = async () => {
@@ -617,6 +649,49 @@ const sendMails = async () => {
     await fetchData();
 
     return true;
+  }
+};
+
+const sendSms = async () => {
+  if (isPhoneValid.value)
+    return;
+
+  isConfirmSendSmsVisible.value = false;
+  isRequestOngoing.value = true;
+
+  try {
+    const data = {
+      id: selectedBilling.value.id,
+      phoneDefault: phoneDefault.value,
+      phones: selectedPhoneTags.value,
+    };
+
+    const res = await billingsStores.sendSms(data);
+
+    advisor.value = {
+      type: res.data.success ? "success" : "error",
+      message: res.data.success ? (res.data.message || "SMS skickat!") : res.data.message,
+      show: true,
+    };
+
+    setTimeout(() => {
+      selectedPhoneTags.value = [];
+      existingPhoneTags.value = [];
+      phoneDefault.value = true;
+
+      advisor.value = {
+        type: "",
+        message: "",
+        show: false,
+      };
+    }, 3000);
+
+    await loadData();
+    await fetchData();
+
+    return true;
+  } finally {
+    isRequestOngoing.value = false;
   }
 };
 
@@ -1613,6 +1688,16 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
+                    v-if="$can('view', 'billings')"
+                    @click="sendSmsDialog(billing)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="mdi-message-text" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>SMS</VListItemTitle>
+                  </VListItem>
+
+                  <VListItem
                     v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.client.deleted_at === null && billing.is_credit === 0" 
                     @click="credit(billing)"
                   >
@@ -1809,6 +1894,63 @@ onBeforeUnmount(() => {
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog 
+      v-model="isConfirmSendSmsVisible" 
+      persistent 
+      class="action-dialog">
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendSmsVisible = !isConfirmSendSmsVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="mdi-message-text" class="action-icon" />
+          <div class="dialog-title">
+            Skicka fakturan via SMS
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill skicka fakturan via SMS till följande telefonnummer?
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+          <VCheckbox
+            v-model="phoneDefault"
+            :label="selectedBilling.client?.phone || 'Kunden saknar telefonnummer'"
+            :disabled="!selectedBilling.client?.phone"
+            class="ml-2"
+          />
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange telefonnummer för att skicka fakturan" />
+          <VCombobox
+            v-model="selectedPhoneTags"
+            :items="existingPhoneTags"
+            multiple
+            chips
+            deletable-chips
+            clearable
+            @blur="addPhoneTag"
+            @keydown.enter.prevent="addPhoneTag"
+            @input="isPhoneValid = false"
+          />
+          <span 
+            class="text-xs text-error" 
+            v-if="isPhoneValid">
+            Telefonnummer måste vara giltigt
+          </span>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn class="btn-light" @click="isConfirmSendSmsVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="sendSms"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -2129,6 +2271,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-paper-plane" size="24" />
             </template>
             <VListItemTitle>Skicka</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'billings')"
+            @click="sendSmsDialog(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="mdi-message-text" size="24" />
+            </template>
+            <VListItemTitle>SMS</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.client.deleted_at === null && selectedBillingForAction.is_credit === 0"

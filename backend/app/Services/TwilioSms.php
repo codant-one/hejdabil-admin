@@ -5,7 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 use Twilio\Rest\Client;
 
-class TwilioSmsService
+class TwilioSms
 {
     protected $sid;
     protected $authToken;

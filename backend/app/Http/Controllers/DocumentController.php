@@ -19,11 +19,13 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\Setting;
 use App\Models\SupplierActivity;
 use App\Models\Notification;
 
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
+use App\Services\TwilioSms;
 
 class DocumentController extends Controller
 {
@@ -52,7 +54,7 @@ class DocumentController extends Controller
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
                         'token' => function($query) {
-                            $query->select('tokens.id', 'tokens.document_id', 'tokens.signing_token', 'tokens.recipient_email', 'tokens.signature_status', 'tokens.token_expires_at')
+                            $query->select('tokens.id', 'tokens.document_id', 'tokens.signing_token', 'tokens.recipient_email', 'tokens.recipient_phone', 'tokens.signature_status', 'tokens.token_expires_at')
                                 ->with(['histories' => function($q) {
                                     $q->select('id', 'token_id', 'event_type', 'description', 'created_at')
                                       ->orderBy('created_at', 'asc');
@@ -132,6 +134,7 @@ class DocumentController extends Controller
             $token = $document->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => null, // Will be set when signature is requested
+                'recipient_phone' => null,
                 'token_expires_at' => now()->addDays(30),
                 'signature_status' => 'created',
                 'placement_x' => 0,
@@ -358,10 +361,11 @@ class DocumentController extends Controller
     /**
      * Send signature request for a document
      */
-    public function sendSignatureRequest(Document $document, Request $request)
+    public function sendSignatureRequest(Document $document, Request $request, TwilioSms $twilioSms)
     {   
         $validated = $request->validate([
             'email' => 'required|email',
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
             'x' => 'required|numeric',
             'y' => 'required|numeric',
             'page' => 'required|integer'
@@ -386,6 +390,7 @@ class DocumentController extends Controller
             $token = $document->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'signature_status' => 'created',
                 'placement_x' => $validated['x'],
@@ -411,6 +416,7 @@ class DocumentController extends Controller
             // Update existing token with signature details
             $token->update([
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $validated['x'],
                 'placement_y' => $validated['y'],
@@ -501,6 +507,17 @@ class DocumentController extends Controller
                 $subject
             );
 
+            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsError = null;
+
+            if ($smsPhone !== '') {
+                $smsMessage = $this->buildDocumentSmsMessage($document, $token);
+                $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+
+                if ($smsResult !== true)
+                    $smsError = $smsResult;
+            }
+
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -526,16 +543,20 @@ class DocumentController extends Controller
                     'title' => $document->title,
                     'token_id' => $token->id,
                     'recipient_email' => $validated['email'],
+                    'recipient_phone' => $validated['phone'] ?? null,
                     'signature_status' => $token->signature_status,
                     'placement_x' => $token->placement_x,
                     'placement_y' => $token->placement_y,
                     'placement_page' => $token->placement_page,
                     'signature_alignment' => $token->signature_alignment,
+                    'sms_error' => $smsError,
                 ])
             ]);
             
             return response()->json([
-                'message' => 'Begäran om underskrift skickad med framgång.'
+                'message' => $smsError
+                    ? 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.'
+                    : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error sending signature email for document: ' . $e->getMessage(), [
@@ -780,6 +801,102 @@ class DocumentController extends Controller
         }
     }
 
+    public function resendSignatureSms(Document $document, Request $request, TwilioSms $twilioSms)
+    {
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues', 'cancelled'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om via SMS.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrollera telefonnumret och försök igen.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $recipientPhone = trim((string) ($request->input('phone') ?? $token->recipient_phone ?? ''));
+
+        if ($recipientPhone === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns inget giltigt telefonnummer för att skicka om SMS.'
+            ], 422);
+        }
+
+        try {
+            $token->update([
+                'recipient_phone' => $recipientPhone,
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'sent',
+            ]);
+
+            $smsMessage = $this->buildDocumentSmsMessage($document, $token);
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage);
+
+            if ($smsResult !== true) {
+                $token->update(['signature_status' => 'delivery_issues']);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Det gick inte att skicka om SMS: ' . $smsResult,
+                ], 500);
+            }
+
+            $token->update(['signature_status' => 'delivered']);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $document->id,
+                'entity_type' => 'documents',
+                'action_type' => 'resend_signature_document_sms',
+                'title' => $this->documentActivityTitle($document, ' - SMS skickat igen för signering'),
+                'description' => 'Skickades igen för signering via SMS.',
+                'icon' => 'custom-signature',
+                'route' => $this->documentActivityRoute($document->id),
+                'metadata' => json_encode([
+                    'document_id' => $document->id,
+                    'title' => $document->title,
+                    'token_id' => $token->id,
+                    'recipient_phone' => $recipientPhone,
+                    'recipient_email' => $token->recipient_email,
+                    'signature_status' => $token->signature_status,
+                    'resend_sms' => true,
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS-meddelandet har skickats om.'
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Error resending signature SMS: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'token_id' => $token->id,
+                'phone' => $recipientPhone,
+            ]);
+
+            $token->update(['signature_status' => 'delivery_issues']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Det gick inte att skicka om SMS-meddelandet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Cancel the latest active signature request so the public token link becomes unusable.
      */
@@ -844,6 +961,67 @@ class DocumentController extends Controller
     private function documentActivityRoute(int $documentId): string
     {
         return '/dashboard/admin/documents?file_id=' . $documentId;
+    }
+
+    private function buildDocumentSmsMessage(Document $document, \App\Models\Token $token): string
+    {
+        $baseMessage = $this->resolveDocumentSmsMessage($document);
+        $signingUrl = rtrim((string) env('APP_DOMAIN'), '/') . '/sign/' . $token->signing_token;
+
+        //return trim($baseMessage . ' ' . $signingUrl);
+
+        return $baseMessage;
+    }
+
+    private function resolveDocumentSmsMessage(Document $document): string
+    {
+        $companyName = $this->resolveDocumentCompanyName($document);
+
+        if ($document->supplier_id === null) {
+            $documentConfig = Config::getByKey('documents') ?? ['value' => '[]'];
+            $rawValue = is_array($documentConfig) ? ($documentConfig['value'] ?? '[]') : ($documentConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
+
+            return $this->finalizeDocumentSmsMessage($smsMessage, $companyName);
+        }
+
+        $setting = Setting::with('document')->where('supplier_id', $document->supplier_id)->first();
+        $smsMessage = $setting?->document?->sms_message ?? '';
+
+        return $this->finalizeDocumentSmsMessage($smsMessage, $companyName);
+    }
+
+    private function resolveDocumentCompanyName(Document $document): string
+    {
+        if ($document->supplier_id === null) {
+            $companyConfig = Config::getByKey('company') ?? ['value' => '[]'];
+            $rawValue = is_array($companyConfig) ? ($companyConfig['value'] ?? '[]') : ($companyConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+        }
+
+        return trim((string) ($document->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function finalizeDocumentSmsMessage(?string $message, string $companyName): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $fallbackMessage = 'Du har fått ett dokument från '.$resolvedCompanyName.' för digital signering.';
+        $normalizedMessage = trim((string) $message);
+
+        if ($normalizedMessage === '')
+            return $fallbackMessage;
+
+        return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
     }
 
     private function documentActivityTitle(Document $document, string $suffix): string

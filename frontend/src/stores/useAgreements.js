@@ -174,6 +174,19 @@ export const useAgreementsStores = defineStore('agreements', {
          
         },
 
+        sendSms(data) {
+            this.setLoading(true)
+            
+            return Agreements.sendSms(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+
         requestSignature(payload) {
             return new Promise((resolve, reject) => {
               // La URL sigue siendo la misma, pero ahora le añadimos un cuerpo (body) a la petición.

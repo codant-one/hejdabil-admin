@@ -149,6 +149,19 @@ export const useBillingsStores = defineStore('billings', {
                 })
          
         },
+        sendSms(data) {
+            this.setLoading(true)
+            
+            return Billings.sendSms(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
         credit(id) {
             this.setLoading(true)
 
