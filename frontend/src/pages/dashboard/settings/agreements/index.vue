@@ -8,6 +8,8 @@ import agreement1 from '@images/agreements/1.svg'
 import agreement2 from '@images/agreements/2.svg'
 import agreement3 from '@images/agreements/3.svg'
 
+const DEFAULT_AGREEMENT_SMS_MESSAGE = 'Du har fått ett avtal från {Företagsnamn} för digital signering.'
+const DEFAULT_AGREEMENT_COMPANY_NAME = 'Billogg Sverige AB'
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
 const DEFAULT_THEME = 0
@@ -43,6 +45,7 @@ const configsStores = useConfigsStores()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
+const companyName = ref('')
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const isAgreementPreviewReady = ref(false)
 
@@ -57,6 +60,7 @@ const terms_and_conditions_purchase = ref('')
 const terms_and_conditions_sales = ref('')
 const terms_and_conditions_mediation = ref('')
 const terms_and_conditions_business = ref('')
+const agreementSmsMessageTemplate = ref(DEFAULT_AGREEMENT_SMS_MESSAGE)
 const isTermsDialogVisible = ref(false)
 const termsDialogDraft = ref('')
 const activeTermsFieldKey = ref('terms_and_conditions_purchase')
@@ -105,6 +109,30 @@ const getSecondaryColorFromPrimary = primary => {
 
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
+
+const replaceCompanyPlaceholder = (message, company) => {
+  if (typeof message !== 'string')
+    return ''
+
+  const normalizedCompany = String(company || '').trim() || DEFAULT_AGREEMENT_COMPANY_NAME
+
+  return message.replaceAll('{Företagsnamn}', normalizedCompany)
+}
+
+const resolveCompanyName = () => {
+  if (isAdminRole.value) {
+    const companyConfig = configsStores.getFeaturedConfig('company') ?? {}
+
+    return String(companyConfig?.company ?? '').trim()
+  }
+
+  if (role.value === 'User')
+    return String(userData.value?.supplier?.boss?.user?.user_detail?.company ?? userData.value?.supplier?.boss?.user?.userDetail?.company ?? '').trim()
+
+  return String(userData.value?.user_detail?.company ?? userData.value?.userDetail?.company ?? '').trim()
+}
+
+const smsSigningMessage = computed(() => replaceCompanyPlaceholder(agreementSmsMessageTemplate.value, companyName.value))
 
 const resolveLoggedUserId = () => {
   if (role.value === 'User')
@@ -275,6 +303,10 @@ const hydrateAgreementForm = () => {
     ? agreementSettings.terms_and_conditions_business
     : DEFAULT_TERMS_AND_CONDITIONS_BUSINESS
 
+  agreementSmsMessageTemplate.value = typeof agreementSettings?.sms_message === 'string' && agreementSettings.sms_message.trim()
+    ? agreementSettings.sms_message
+    : DEFAULT_AGREEMENT_SMS_MESSAGE
+
   automaticRemindersEnabled.value = agreementSettings?.send_reminder !== undefined && agreementSettings?.send_reminder !== null
     ? Number(agreementSettings.send_reminder) === 1
     : DEFAULT_AGREEMENT_SEND_REMINDER
@@ -298,6 +330,7 @@ const onSubmit = async () => {
       terms_and_conditions_sales: terms_and_conditions_sales.value,
       terms_and_conditions_mediation: terms_and_conditions_mediation.value,
       terms_and_conditions_business: terms_and_conditions_business.value,
+      sms_message: agreementSmsMessageTemplate.value || DEFAULT_AGREEMENT_SMS_MESSAGE,
       send_reminder: automaticRemindersEnabled.value ? 1 : 0,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
@@ -394,6 +427,7 @@ onMounted(async () => {
     if (isAdminRole.value) {
       await Promise.all([
         configsStores.getFeature('agreements'),
+        configsStores.getFeature('company'),
         configsStores.getFeature('color'),
       ])
     } else {
@@ -407,6 +441,7 @@ onMounted(async () => {
     settingsData.value = null
   }
 
+  companyName.value = resolveCompanyName()
   hydrateAgreementForm()
   loadAgreementPreviewSources()
   resizeSectionToRemainingViewport();
@@ -647,6 +682,40 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-6">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">SMS för signering</span>
+                <span class="text-settings">
+                  Detta SMS skickas automatiskt till kunden när ett avtal skickas för digital signering via SMS.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 me-2 text-high-emphasis" text="SMS-meddelande" />
+                    <VTooltip location="bottom" max-width="200"> 
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          <VIcon icon="custom-circle-help" size="24" />
+                        </span>
+                      </template>
+                      Meddelandet används vid digital signering och kan inte ändras.
+                    </VTooltip>
+                    <VTextarea
+                      :model-value="smsSigningMessage"
+                      :rows="windowWidth < 1024 ? 2 : 1"
+                      readonly
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
           <div class="settings-layout pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
@@ -867,6 +936,10 @@ onBeforeUnmount(() => {
 
   .delivery-method-group {
     width: 100%;
+  }
+
+  .delivery-method-group .v-selection-control-group .v-radio {
+    margin-inline-end: 0.9rem !important;
   }
 
   .delivery-method-option {

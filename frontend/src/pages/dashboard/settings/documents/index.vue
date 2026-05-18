@@ -1,21 +1,26 @@
 <script setup>
 
 import { requiredValidator } from '@/@core/utils/validators'
+import { useConfigsStores } from '@/stores/useConfigs'
 import { useSettingsStore } from '@/stores/useSettings'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const DEFAULT_DOCUMENT_SMS_MESSAGE = 'Du har fått ett dokument från {Företagsnamn} för digital signering.'
+const DEFAULT_DOCUMENT_COMPANY_NAME = 'Billogg Sverige AB'
 const DEFAULT_DOCUMENT_DELIVERY_METHOD = 'email'
 
 const { width: windowWidth } = useWindowSize()
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
 const sectionEl = ref(null)
+const configsStores = useConfigsStores()
 const settingsStore = useSettingsStore()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
+const companyName = ref('')
 const deliveryMethod = ref(DEFAULT_DOCUMENT_DELIVERY_METHOD)
+const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 
 const isRequestOngoing = ref(false);
 
@@ -25,7 +30,31 @@ const advisor = ref({
   type: '',
 })
 
-const sms_signing_message = ref(DEFAULT_DOCUMENT_SMS_MESSAGE)
+const documentSmsMessageTemplate = ref(DEFAULT_DOCUMENT_SMS_MESSAGE)
+
+const replaceCompanyPlaceholder = (message, company) => {
+  if (typeof message !== 'string')
+    return ''
+
+  const normalizedCompany = String(company || '').trim() || DEFAULT_DOCUMENT_COMPANY_NAME
+
+  return message.replaceAll('{Företagsnamn}', normalizedCompany)
+}
+
+const resolveCompanyName = () => {
+  if (isAdminRole.value) {
+    const companyConfig = configsStores.getFeaturedConfig('company') ?? {}
+
+    return String(companyConfig?.company ?? '').trim()
+  }
+
+  if (role.value === 'User')
+    return String(userData.value?.supplier?.boss?.user?.user_detail?.company ?? userData.value?.supplier?.boss?.user?.userDetail?.company ?? '').trim()
+
+  return String(userData.value?.user_detail?.company ?? userData.value?.userDetail?.company ?? '').trim()
+}
+
+const smsSigningMessage = computed(() => replaceCompanyPlaceholder(documentSmsMessageTemplate.value, companyName.value))
 
 const resolveLoggedUserId = () => {
   if (role.value === 'User')
@@ -54,7 +83,7 @@ const getStoredDocumentSettings = () => settingsData.value?.document || settings
 const hydrateDocumentForm = () => {
   const documentSettings = getStoredDocumentSettings()
 
-  sms_signing_message.value = typeof documentSettings?.sms_message === 'string' && documentSettings.sms_message.trim()
+  documentSmsMessageTemplate.value = typeof documentSettings?.sms_message === 'string' && documentSettings.sms_message.trim()
     ? documentSettings.sms_message
     : DEFAULT_DOCUMENT_SMS_MESSAGE
 
@@ -76,7 +105,7 @@ const onSubmit = async () => {
 
   try {
     const payload = {
-      sms_message: sms_signing_message.value || DEFAULT_DOCUMENT_SMS_MESSAGE,
+      sms_message: documentSmsMessageTemplate.value || DEFAULT_DOCUMENT_SMS_MESSAGE,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
 
@@ -126,6 +155,9 @@ onMounted(async () => {
   isRequestOngoing.value = true
 
   try {
+    if (isAdminRole.value)
+      await configsStores.getFeature('company')
+
     const loggedUserId = resolveLoggedUserId()
 
     settingsData.value = loggedUserId
@@ -137,6 +169,7 @@ onMounted(async () => {
     isRequestOngoing.value = false
   }
 
+  companyName.value = resolveCompanyName()
   hydrateDocumentForm()
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
@@ -172,7 +205,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <span class="title-settings pb-4 border-bottom-settings">
-              Dokument
+              E-signering
             </span>
           </div>
         </VCardText>
@@ -199,8 +232,9 @@ onBeforeUnmount(() => {
                       </template>
                       Meddelandet används vid digital signering och kan inte ändras.
                     </VTooltip>
-                    <VTextField
-                      v-model="sms_signing_message"
+                    <VTextarea
+                      :model-value="smsSigningMessage"
+                      :rows="windowWidth < 1024 ? 2 : 1"
                       readonly
                       :rules="[requiredValidator]"
                     />
@@ -391,6 +425,10 @@ onBeforeUnmount(() => {
 
   .delivery-method-group {
     width: 100%;
+  }
+
+  .delivery-method-group .v-selection-control-group .v-radio {
+    margin-inline-end: 0.9rem !important;
   }
 
   .delivery-method-option {
