@@ -38,7 +38,7 @@ class CompanyInfo
             if (!$token) {
                 return [
                     'success' => false,
-                    'message' => 'No se pudo autenticar con Bolagsverket.',
+                    'message' => 'Det gick inte att verifiera identiteten hos Bolagsverket.',
                     'status' => 401
                 ];
             }
@@ -74,7 +74,7 @@ class CompanyInfo
                 } else {
                     return [
                         'success' => false,
-                        'message' => 'Empresa no encontrada.',
+                        'message' => 'Företag hittades inte.',
                         'status'  => 404
                     ];
                 }
@@ -93,7 +93,7 @@ class CompanyInfo
             Log::error("Error Bolagsverket API: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Error interno de conexión.',
+                'message' => 'Internt anslutningsfel.',
                 'status'  => 500
             ];
         }

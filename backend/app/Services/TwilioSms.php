@@ -26,7 +26,7 @@ class TwilioSms
     {
         try {
             if (!$this->client || !$this->phoneNumber) {
-                return 'Twilio no esta configurado correctamente.';
+                return 'Twilio är inte korrekt konfigurerat.';
             }
 
             $this->client->messages->create($to, [
