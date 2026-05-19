@@ -1019,6 +1019,7 @@ const trackerEvents = computed(() => {
     if (eventConfig) {
       items.push({
         key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
         title: eventConfig.title,
         meta: new Date(event.created_at).toLocaleString('en-GB', {
           year: 'numeric',
@@ -2650,12 +2651,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerAgreement && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 
