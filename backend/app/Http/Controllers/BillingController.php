@@ -789,13 +789,13 @@ class BillingController extends Controller
 
             $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
 
-            return $this->finalizeBillingSmsMessage($smsMessage, $companyName);
+            return $this->finalizeBillingSmsMessage($smsMessage, $companyName, $billing);
         }
 
         $setting = Setting::with('billing')->where('supplier_id', $billing->supplier_id)->first();
         $smsMessage = $setting?->billing?->sms_message ?? '';
 
-        return $this->finalizeBillingSmsMessage($smsMessage, $companyName);
+        return $this->finalizeBillingSmsMessage($smsMessage, $companyName, $billing);
     }
 
     private function resolveBillingCompanyName(Billing $billing): string
@@ -814,11 +814,11 @@ class BillingController extends Controller
         return trim((string) ($billing->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
     }
 
-    private function finalizeBillingSmsMessage(?string $message, string $companyName): string
+    private function finalizeBillingSmsMessage(?string $message, string $companyName, Billing $billing): string
     {
         $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
         $fallbackMessage = 'Du har fått en faktura från '.$resolvedCompanyName.'.';
-        $normalizedMessage = trim((string) $message);
+        $normalizedMessage = trim((string) $message) . ' ' . asset('storage/'.$billing->file) . '.';
 
         if ($normalizedMessage === '')
             return $fallbackMessage;

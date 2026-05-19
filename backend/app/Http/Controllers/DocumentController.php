@@ -968,9 +968,8 @@ class DocumentController extends Controller
         $baseMessage = $this->resolveDocumentSmsMessage($document);
         $signingUrl = rtrim((string) env('APP_DOMAIN'), '/') . '/sign/' . $token->signing_token;
 
-        //return trim($baseMessage . ' ' . $signingUrl);
+        return trim($baseMessage . ' ' . $signingUrl);
 
-        return $baseMessage;
     }
 
     private function resolveDocumentSmsMessage(Document $document): string

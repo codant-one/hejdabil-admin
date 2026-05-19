@@ -732,13 +732,13 @@ class AgreementController extends Controller
 
             $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
 
-            return $this->finalizeAgreementSmsMessage($smsMessage, $companyName);
+            return $this->finalizeAgreementSmsMessage($smsMessage, $companyName, $agreement);
         }
 
         $setting = Setting::with('agreement')->where('supplier_id', $agreement->supplier_id)->first();
         $smsMessage = $setting?->agreement?->sms_message ?? '';
 
-        return $this->finalizeAgreementSmsMessage($smsMessage, $companyName);
+        return $this->finalizeAgreementSmsMessage($smsMessage, $companyName, $agreement);
     }
 
     private function resolveAgreementCompanyName(Agreement $agreement): string
@@ -757,11 +757,11 @@ class AgreementController extends Controller
         return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
     }
 
-    private function finalizeAgreementSmsMessage(?string $message, string $companyName): string
+    private function finalizeAgreementSmsMessage(?string $message, string $companyName, Agreement $agreement): string
     {
         $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
         $fallbackMessage = 'Du har fått ett avtal från '.$resolvedCompanyName.' för digital signering.';
-        $normalizedMessage = trim((string) $message);
+        $normalizedMessage = trim((string) $message) . ' ' . env('APP_DOMAIN') . '/sign/' . $agreement->token->signing_token;
 
         if ($normalizedMessage === '')
             return $fallbackMessage;
