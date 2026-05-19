@@ -434,10 +434,16 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_SENT,
-                description: 'E-post skickad till ' . $validated['email'],
+                description: \App\Models\TokenHistory::buildChannelSentDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
             );
 
             $document->description = $request->text === 'null' ? null : $request->text;
@@ -507,28 +513,106 @@ class DocumentController extends Controller
                 $subject
             );
 
+            $token->update(['signature_status' => 'delivered']);
+            
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: \App\Models\TokenHistory::buildChannelDeliveredDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
+            );
+
             $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
             $smsError = null;
 
             if ($smsPhone !== '') {
-                $smsMessage = $this->buildDocumentSmsMessage($document, $token);
-                $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_SENT,
+                    description: \App\Models\TokenHistory::buildChannelSentDescription(
+                        \App\Models\TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                        \App\Models\TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    )
+                );
 
-                if ($smsResult !== true)
-                    $smsError = $smsResult;
+                try {
+                    $smsMessage = $this->buildDocumentSmsMessage($document, $token);
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+
+                    if ($smsResult !== true) {
+                        $smsError = $smsResult;
+
+                        \App\Models\TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                            description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                                \App\Models\TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                                \App\Models\TokenHistory::CHANNEL_SMS,
+                                $smsPhone,
+                                [
+                                    'error' => $smsResult,
+                                    'error_type' => 'sms_delivery_result',
+                                ]
+                            )
+                        );
+                    } else {
+                        \App\Models\TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                            description: \App\Models\TokenHistory::buildChannelDeliveredDescription(
+                                \App\Models\TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                                \App\Models\TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            )
+                        );
+                    }
+                } catch (\Throwable $smsException) {
+                    $smsError = $smsException->getMessage();
+
+                    \App\Models\TokenHistory::logEvent(
+                        tokenId: $token->id,
+                        eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                        description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                            \App\Models\TokenHistory::CHANNEL_SMS,
+                            $smsPhone
+                        ),
+                        ipAddress: $request->ip(),
+                        userAgent: $request->userAgent(),
+                        metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                            \App\Models\TokenHistory::CHANNEL_SMS,
+                            $smsPhone,
+                            [
+                                'error' => $smsException->getMessage(),
+                                'error_type' => get_class($smsException),
+                            ]
+                        )
+                    );
+                }
             }
-
-            $token->update(['signature_status' => 'delivered']);
-            
-            // Log 'delivered' event
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
-                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
-            );
 
             SupplierActivity::createActivity([
                 'entity_id' => $document->id,
@@ -571,14 +655,20 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid sändning av e-post till ' . ($validated['email'] ?? 'ingen angiven e-post'),
+                description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email'] ?? null
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: [
-                    'error' => $e->getMessage(),
-                    'error_type' => get_class($e),
-                    'recipient' => $validated['email']
-                ]
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $validated['email'] ?? null,
+                    [
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e),
+                    ]
+                )
             );
             
             return response()->json([
@@ -637,10 +727,18 @@ class DocumentController extends Controller
                 \App\Models\TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress vid skicka om till ' . ($recipientEmail ?: 'ingen angiven e-post'),
+                    description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                        \App\Models\TokenHistory::CHANNEL_EMAIL,
+                        $recipientEmail ?: null,
+                        true
+                    ),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
-                    metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                    metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                        \App\Models\TokenHistory::CHANNEL_EMAIL,
+                        $recipientEmail,
+                        ['resend' => true, 'error' => 'Invalid email format']
+                    )
                 );
 
                 return response()->json([
@@ -660,10 +758,18 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_SENT,
-                description: 'Skicka om signaturpost påbörjad till ' . $recipientEmail,
+                description: \App\Models\TokenHistory::buildChannelSentDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    ['resend' => true]
+                )
             );
 
             if($document->supplier_id === null) {
@@ -736,10 +842,18 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
-                description: 'E-post skickad om till ' . $recipientEmail,
+                description: \App\Models\TokenHistory::buildChannelDeliveredDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    ['resend' => true]
+                )
             );
 
             SupplierActivity::createActivity([
@@ -783,15 +897,22 @@ class DocumentController extends Controller
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid skicka om e-post till ' . ($recipientEmail ?: $token->recipient_email),
+                description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail ?: $token->recipient_email,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: [
-                    'error' => $e->getMessage(),
-                    'error_type' => get_class($e),
-                    'recipient' => $recipientEmail ?: $token->recipient_email,
-                    'resend' => true
-                ]
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail ?: $token->recipient_email,
+                    [
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e),
+                        'resend' => true,
+                    ]
+                )
             );
             
             return response()->json([
@@ -843,11 +964,49 @@ class DocumentController extends Controller
                 'signature_status' => 'sent',
             ]);
 
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: \App\Models\TokenHistory::buildChannelSentDescription(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    ['resend' => true]
+                )
+            );
+
             $smsMessage = $this->buildDocumentSmsMessage($document, $token);
             $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage);
 
             if ($smsResult !== true) {
                 $token->update(['signature_status' => 'delivery_issues']);
+
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                        \App\Models\TokenHistory::CHANNEL_SMS,
+                        $recipientPhone,
+                        true
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                        \App\Models\TokenHistory::CHANNEL_SMS,
+                        $recipientPhone,
+                        [
+                            'error' => $smsResult,
+                            'error_type' => 'sms_delivery_result',
+                            'resend' => true,
+                        ]
+                    )
+                );
 
                 return response()->json([
                     'success' => false,
@@ -856,6 +1015,23 @@ class DocumentController extends Controller
             }
 
             $token->update(['signature_status' => 'delivered']);
+
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: \App\Models\TokenHistory::buildChannelDeliveredDescription(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    ['resend' => true]
+                )
+            );
 
             SupplierActivity::createActivity([
                 'entity_id' => $document->id,
@@ -889,6 +1065,27 @@ class DocumentController extends Controller
             ]);
 
             $token->update(['signature_status' => 'delivery_issues']);
+
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: \App\Models\TokenHistory::buildChannelFailureDescription(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: \App\Models\TokenHistory::buildChannelMetadata(
+                    \App\Models\TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    [
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e),
+                        'resend' => true,
+                    ]
+                )
+            );
 
             return response()->json([
                 'success' => false,

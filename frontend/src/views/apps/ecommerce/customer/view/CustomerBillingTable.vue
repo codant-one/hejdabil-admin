@@ -1069,7 +1069,13 @@ const trackerEvents = computed(() => {
   const items = []
   const token = trackerAgreement.value.token
   const history = Array.isArray(token?.histories)
-    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    ? [...token.histories].sort((a, b) => {
+      const createdAtDiff = new Date(a.created_at) - new Date(b.created_at)
+
+      if (createdAtDiff !== 0) return createdAtDiff
+
+      return Number(a.id ?? 0) - Number(b.id ?? 0)
+    })
     : []
 
   const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -1108,7 +1114,15 @@ const trackerEvents = computed(() => {
   }))
 })
 
+const getEventChannel = event => event?.metadata?.channel === 'sms' ? 'sms' : 'email'
+
+const getEventRecipient = event => getEventChannel(event) === 'sms'
+  ? event?.metadata?.phone || event?.metadata?.recipient_phone || 'mottagare'
+  : event?.metadata?.email || event?.metadata?.recipient || 'mottagare'
+
 const getEventConfig = (eventType, event) => {
+  const isSms = getEventChannel(event) === 'sms'
+  const isResend = Boolean(event?.metadata?.resend)
   const configs = {
     'created': {
       title: 'Avtal skapad',
@@ -1118,22 +1132,30 @@ const getEventConfig = (eventType, event) => {
       icon: 'custom-star'
     },
     'sent': {
-      title: 'Signeringsförfrågan skickad',
-      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      title: isSms
+        ? (isResend ? 'SMS skickat igen' : 'SMS skickat')
+        : (isResend ? 'E-post skickad igen' : 'E-post skickad'),
+      text: `Skickad till ${getEventRecipient(event)}`,
       color: '#1890FF',
       bgClass: 'status-success',
       icon: 'custom-forward'
     },
     'delivered': {
-      title: 'E-post levererad',
-      text: 'E-postmeddelandet har levererats framgångsrikt',
+      title: isSms
+        ? (isResend ? 'SMS levererat igen' : 'SMS levererat')
+        : (isResend ? 'E-post levererad igen' : 'E-post levererad'),
+      text: isSms
+        ? 'SMS-meddelandet har levererats framgångsrikt'
+        : 'E-postmeddelandet har levererats framgångsrikt',
       color: '#52C41A',
       bgClass: 'status-success',
       icon: 'custom-check-mark-2'
     },
     'delivery_issues': {
-      title: 'Leveransproblem',
-      text: 'Det uppstod problem med e-postleveransen',
+      title: isSms ? 'SMS-leveransproblem' : 'E-postleveransproblem',
+      text: isSms
+        ? 'Det uppstod problem med SMS-leveransen'
+        : 'Det uppstod problem med e-postleveransen',
       color: '#FAAD14',
       bgClass: 'status-warning',
       icon: 'custom-risk'

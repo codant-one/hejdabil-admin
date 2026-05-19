@@ -45,6 +45,9 @@ class TokenHistory extends Model
     const EVENT_CANCELLED = 'cancelled';
     const EVENT_FAILED = 'failed';
 
+    const CHANNEL_EMAIL = 'email';
+    const CHANNEL_SMS = 'sms';
+
     /**
      * Helper to create a history event
      */
@@ -64,5 +67,62 @@ class TokenHistory extends Model
             'user_agent' => $userAgent ? mb_substr($userAgent, 0, 1000) : null,
             'metadata' => $metadata,
         ]);
+    }
+
+    public static function buildChannelMetadata(string $channel, ?string $recipient = null, array $extra = []): array
+    {
+        $metadata = array_merge($extra, [
+            'channel' => $channel,
+        ]);
+
+        if ($channel === self::CHANNEL_SMS) {
+            $metadata['phone'] = $recipient;
+            $metadata['recipient_phone'] = $recipient;
+        } else {
+            $metadata['email'] = $recipient;
+            $metadata['recipient'] = $recipient;
+        }
+
+        return array_filter($metadata, static fn ($value) => $value !== null && $value !== '');
+    }
+
+    public static function buildChannelSentDescription(string $channel, ?string $recipient = null, bool $resend = false): string
+    {
+        $channelLabel = $channel === self::CHANNEL_SMS ? 'SMS' : 'e-post';
+        $recipientText = $recipient ?: 'mottagare';
+
+        return $resend
+            ? 'Signeringsförfrågan skickad igen via ' . $channelLabel . ' till ' . $recipientText
+            : 'Signeringsförfrågan skickad via ' . $channelLabel . ' till ' . $recipientText;
+    }
+
+    public static function buildChannelDeliveredDescription(string $channel, ?string $recipient = null, bool $resend = false): string
+    {
+        $recipientText = $recipient ?: 'mottagare';
+
+        if ($channel === self::CHANNEL_SMS) {
+            return $resend
+                ? 'SMS levererat igen till ' . $recipientText
+                : 'SMS levererat till ' . $recipientText;
+        }
+
+        return $resend
+            ? 'E-post levererad igen till ' . $recipientText
+            : 'E-post levererad till ' . $recipientText;
+    }
+
+    public static function buildChannelFailureDescription(string $channel, ?string $recipient = null, bool $resend = false): string
+    {
+        $recipientText = $recipient ?: 'mottagare';
+
+        if ($channel === self::CHANNEL_SMS) {
+            return $resend
+                ? 'Fel vid skicka om SMS till ' . $recipientText
+                : 'Fel vid sändning av SMS till ' . $recipientText;
+        }
+
+        return $resend
+            ? 'Fel vid skicka om e-post till ' . $recipientText
+            : 'Fel vid sändning av e-post till ' . $recipientText;
     }
 }
