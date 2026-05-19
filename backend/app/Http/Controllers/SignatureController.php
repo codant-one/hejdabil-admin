@@ -31,6 +31,7 @@ use App\Models\TokenHistory;
 use App\Models\Setting;
 use App\Models\SettingColor;
 use App\Models\SettingAgreement;
+use App\Services\TwilioSms;
 
 class SignatureController extends Controller
 {
@@ -60,7 +61,7 @@ class SignatureController extends Controller
      * Method 1: Start the signing process (Triggered from your Vue Dashboard).
      * URL: POST /api/agreements/{agreement}/send-signature-request
      */
-    public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request)
+    public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
   
@@ -89,6 +90,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $validated['x'],
@@ -110,6 +112,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $validated['x'],
                 'placement_y' => $validated['y'],
@@ -219,6 +222,17 @@ class SignatureController extends Controller
                 $clientEmail,
                 $subject
             );
+
+            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsError = null;
+
+            if ($smsPhone !== '') {
+                $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+                $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+
+                if ($smsResult !== true)
+                    $smsError = $smsResult;
+            }
             
             // Update status to delivered if the sending was successful
             $token->update(['signature_status' => 'delivered']);
@@ -233,10 +247,12 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false);
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $validated['phone'] ?? null, $smsError);
             
             return response()->json([
-                'message' => 'Begäran om underskrift skickad med framgång.'
+                'message' => $smsError
+                    ? 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.'
+                    : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error sending signature email: ' . $e->getMessage(), [
@@ -264,7 +280,7 @@ class SignatureController extends Controller
     }
 
     // Sign with a fixed position.
-    public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request)
+    public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
 
@@ -295,6 +311,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $defaultPlacement['x'],
@@ -317,6 +334,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $token->placement_x ?? $defaultPlacement['x'],
                 'placement_y' => $token->placement_y ?? $defaultPlacement['y'],
@@ -427,6 +445,17 @@ class SignatureController extends Controller
                 $clientEmail,
                 $subject
             );
+
+            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsError = null;
+
+            if ($smsPhone !== '') {
+                $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+                $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+
+                if ($smsResult !== true)
+                    $smsError = $smsResult;
+            }
             
             // Update status to 'delivered' if the sending was successful
             $token->update(['signature_status' => 'delivered']);
@@ -441,9 +470,13 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true);
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $validated['phone'] ?? null, $smsError);
             
-            return response()->json(['message' => 'Begäran om underskrift skickad med framgång.']);
+            return response()->json([
+                'message' => $smsError
+                    ? 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.'
+                    : 'Begäran om underskrift skickad med framgång.'
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error sending static signature email for document: ' . $e->getMessage());
             $token->update(['signature_status' => 'delivery_issues']);
@@ -648,6 +681,116 @@ class SignatureController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function resendSignatureSms(Agreement $agreement, Request $request, TwilioSms $twilioSms)
+    {
+        $token = $agreement->tokens()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues', 'cancelled'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om via SMS.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrollera telefonnumret och försök igen.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $agreement->loadMissing(['agreement_type', 'agreement_client', 'supplier.user.userDetail']);
+
+        $recipientPhone = trim((string) ($request->input('phone') ?? $token->recipient_phone ?? $agreement->agreement_client?->phone ?? ''));
+
+        if ($recipientPhone === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns inget giltigt telefonnummer för att skicka om SMS.'
+            ], 422);
+        }
+
+        try {
+            $token->update([
+                'recipient_phone' => $recipientPhone,
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'sent',
+            ]);
+
+            $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage);
+
+            if ($smsResult !== true) {
+                $token->update(['signature_status' => 'delivery_issues']);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Det gick inte att skicka om SMS: ' . $smsResult,
+                ], 500);
+            }
+
+            $token->update(['signature_status' => 'delivered']);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_DELIVERED,
+                description: 'SMS skickat om för signeringsförfrågan',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'recipient_phone' => $recipientPhone,
+                    'resend' => true,
+                    'sms' => true,
+                ]
+            );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $agreement->id,
+                'entity_type' => 'agreements',
+                'action_type' => 'resend_signature_agreement_sms',
+                'title' => $this->agreementActivityTitle($agreement, ' - SMS skickat igen för signering'),
+                'description' => 'Skickades igen för signering via SMS.',
+                'icon' => 'custom-contract',
+                'route' => $this->agreementActivityRoute($agreement->id),
+                'metadata' => json_encode([
+                    'agreement_id' => $agreement->id,
+                    'token_id' => $token->id,
+                    'recipient_phone' => $recipientPhone,
+                    'signature_status' => $token->signature_status,
+                    'resend' => true,
+                    'sms' => true,
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS-meddelandet har skickats igen.'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error resending signature SMS for agreement: ' . $e->getMessage(), [
+                'exception' => $e,
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'phone' => $recipientPhone,
+            ]);
+
+            $token->update(['signature_status' => 'delivery_issues']);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Det gick inte att skicka om SMS-meddelandet: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1418,7 +1561,66 @@ class SignatureController extends Controller
         return $filePath;
     }
 
-    private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature): void
+    private function buildAgreementSignatureSmsMessage(Agreement $agreement, Token $token): string
+    {
+        $baseMessage = $this->resolveAgreementSignatureSmsMessage($agreement);
+        $signingUrl = rtrim((string) env('APP_DOMAIN'), '/') . '/sign/' . $token->signing_token;
+
+        return trim($baseMessage . ' ' . $signingUrl);
+    }
+
+    private function resolveAgreementSignatureSmsMessage(Agreement $agreement): string
+    {
+        $companyName = $this->resolveAgreementSignatureCompanyName($agreement);
+
+        if ($agreement->supplier_id === null) {
+            $agreementConfig = Config::getByKey('agreements') ?? ['value' => '[]'];
+            $rawValue = is_array($agreementConfig) ? ($agreementConfig['value'] ?? '[]') : ($agreementConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
+
+            return $this->finalizeAgreementSignatureSmsMessage($smsMessage, $companyName);
+        }
+
+        $setting = Setting::with('agreement')->where('supplier_id', $agreement->supplier_id)->first();
+        $smsMessage = $setting?->agreement?->sms_message ?? '';
+
+        return $this->finalizeAgreementSignatureSmsMessage($smsMessage, $companyName);
+    }
+
+    private function resolveAgreementSignatureCompanyName(Agreement $agreement): string
+    {
+        if ($agreement->supplier_id === null) {
+            $companyConfig = Config::getByKey('company') ?? ['value' => '[]'];
+            $rawValue = is_array($companyConfig) ? ($companyConfig['value'] ?? '[]') : ($companyConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+        }
+
+        return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function finalizeAgreementSignatureSmsMessage(?string $message, string $companyName): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $fallbackMessage = 'Du har fått ett avtal från ' . $resolvedCompanyName . ' för digital signering.';
+        $normalizedMessage = trim((string) $message);
+
+        if ($normalizedMessage === '')
+            return $fallbackMessage;
+
+        return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
+    }
+
+    private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature, ?string $recipientPhone = null, $smsError = null): void
     {
         SupplierActivity::createActivity([
             'entity_id' => $agreement->id,
@@ -1432,13 +1634,15 @@ class SignatureController extends Controller
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
                 'recipient_email' => $recipientEmail,
+                'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
                 'static_signature' => $isStaticSignature,
+                'sms_error' => $smsError,
             ])
         ]);
     }
 
-    private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail): void
+    private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail, ?string $recipientPhone = null, $smsError = null): void
     {
         SupplierActivity::createActivity([
             'entity_id' => $agreement->id,
@@ -1452,9 +1656,11 @@ class SignatureController extends Controller
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
                 'recipient_email' => $recipientEmail,
+                'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
                 'resend' => true,
                 'static_signature' => is_null($token->placement_x) && is_null($token->placement_y),
+                'sms_error' => $smsError,
             ])
         ]);
     }

@@ -450,11 +450,28 @@ const addPhoneTag = event => {
 }
 
 const getResendRecipientEmail = (agreement) => {
-  return agreement?.token?.recipient_email || agreement?.agreement_client?.email || ''
+  return agreement?.token?.recipient_email
+    || agreement?.agreement_client?.email
+    || agreement?.offer?.client?.email
+    || agreement?.commission?.client?.email
+    || agreement?.vehicle_client?.client?.email
+    || agreement?.vehicle_client?.email
+    || ''
+}
+
+const getAgreementRecipientPhone = (agreement) => {
+  return agreement?.token?.recipient_phone
+    || agreement?.agreement_client?.phone
+    || agreement?.offer?.client?.phone
+    || agreement?.commission?.client?.phone
+    || agreement?.vehicle_client?.client?.phone
+    || agreement?.vehicle_client?.phone
+    || ''
 }
 
 const resetResendSignatureState = () => {
   resendSignatureEmail.value = ''
+  resendSignaturePhone.value = ''
 }
 
 const closeResendSignatureDialog = () => {
@@ -770,9 +787,11 @@ const trackerPreviewError = ref('')
 
 const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')
+const signaturePhone = ref('')
 const refSignatureForm = ref()
 const refResendSignatureForm = ref()
 const resendSignatureEmail = ref('')
+const resendSignaturePhone = ref('')
 const isConfirmResendSignatureVisible = ref(false)
 const isStaticSignatureFlow = ref(false)
 const selectedAgreement = ref({})
@@ -821,20 +840,9 @@ watch(isTrackerPreviewVisible, val => {
 const openStaticSignatureDialog = (agreementData) => {
   selectedAgreement.value = { ...agreementData }
   isStaticSignatureFlow.value = true
-  
-  // Intentar obtener el email de diferentes fuentes según el tipo de agreement
-  let email = ''
-  if (agreementData.agreement_client?.email) {
-    email = agreementData.agreement_client.email
-  } else if (agreementData.offer?.client?.email) {
-    email = agreementData.offer.client.email
-  } else if (agreementData.commission?.client?.email) {
-    email = agreementData.commission.client.email
-  } else if (agreementData.vehicle_client?.client?.email) {
-    email = agreementData.vehicle_client.client.email
-  }
-  
-  signatureEmail.value = email
+
+  signatureEmail.value = getResendRecipientEmail(agreementData)
+  signaturePhone.value = getAgreementRecipientPhone(agreementData)
   isSignatureDialogVisible.value = true
 }
 
@@ -843,6 +851,7 @@ const openResendSignature = async (agreementData) => {
 
   selectedAgreement.value = { ...agreementData }
   resendSignatureEmail.value = getResendRecipientEmail(agreementData)
+  resendSignaturePhone.value = getAgreementRecipientPhone(agreementData)
   isConfirmResendSignatureVisible.value = true
 }
 
@@ -884,6 +893,7 @@ const submitResendSignature = async () => {
   if (!valid) return;
 
   const trimmedEmail = resendSignatureEmail.value.trim()
+  const trimmedPhone = resendSignaturePhone.value.trim()
 
   isConfirmResendSignatureVisible.value = false
 
@@ -894,9 +904,26 @@ const submitResendSignature = async () => {
       emailDefault: false,
       emails: [trimmedEmail],
     })
+
+    let advisorType = 'success'
+    let advisorMessage = response.data.message || 'E-postmeddelandet har skickats igen.'
+
+    if (canShowAgreementSmsAction.value && trimmedPhone) {
+      try {
+        await agreementsStores.resendSignatureSms({
+          id: selectedAgreement.value.id,
+          phone: trimmedPhone,
+        })
+        advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
+      } catch (smsError) {
+        advisorType = 'warning'
+        advisorMessage = `${advisorMessage} ${smsError.response?.data?.message || 'SMS-meddelandet kunde inte skickas igen.'}`
+      }
+    }
+
     advisor.value = {
-      type: 'success',
-      message: response.data.message || 'E-postmeddelandet har skickats igen.',
+      type: advisorType,
+      message: advisorMessage,
       show: true,
     }
     emit("alert", advisor)
@@ -928,7 +955,8 @@ const submitStaticSignatureRequest = async () => {
   try {
     const payload = {
       agreementId: selectedAgreement.value.id,
-      email: signatureEmail.value
+      email: signatureEmail.value,
+      phone: signaturePhone.value,
     }
 
     const response = await agreementsStores.requestStaticSignature(payload)
@@ -954,6 +982,7 @@ const submitStaticSignatureRequest = async () => {
   } finally {
     emit("loading", false)
     signatureEmail.value = ''
+    signaturePhone.value = ''
     setTimeout(() => {
       advisor.value = { show: false }
       emit("alert", advisor)
@@ -1973,15 +2002,6 @@ onBeforeUnmount(() => {
                           </template>
                           <VListItemTitle>Skicka om</VListItemTitle>
                         </VListItem>
-                        <VListItem 
-                          v-if="$can('edit','agreements') && canShowAgreementSmsAction && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
-                          @click="sendSmsDialog(agreement)"
-                        >
-                          <template #prepend>
-                            <VIcon icon="mdi-message-text" class="mr-2" />
-                          </template>
-                          <VListItemTitle>SMS</VListItemTitle>
-                        </VListItem>
                         <VListItem
                           v-if="$can('view', 'agreements')"
                           @click="openLink(agreement)">
@@ -2474,14 +2494,6 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Skicka om</VListItemTitle>
           </VListItem>
-          <VListItem 
-            v-if="$can('edit','agreements') && canShowAgreementSmsAction && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
-            @click="sendSmsDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
-            <template #prepend>
-              <VIcon icon="mdi-message-text" class="mr-2" />
-            </template>
-            <VListItemTitle>SMS</VListItemTitle>
-          </VListItem>
           <VListItem
               v-if="$can('view', 'agreements')"
               @click="openLink(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
@@ -2657,6 +2669,23 @@ onBeforeUnmount(() => {
             <VTextField
               v-model="signatureEmail"
               placeholder="kund@exempel.com"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="signaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -2702,6 +2731,22 @@ onBeforeUnmount(() => {
               v-model="resendSignatureEmail"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="resendSignaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
 
@@ -2895,14 +2940,6 @@ onBeforeUnmount(() => {
     width: 100%;
     border-collapse: collapse;
     font-size: 12px;
-  }
-
-  .billing-detail-table th,
-  .billing-detail-table td {
-    padding: 8px;
-    border-bottom: 1px solid #E7E7E7;
-    text-align: left;
-    vertical-align: top;
   } 
 
   .bottom-sheet-card {

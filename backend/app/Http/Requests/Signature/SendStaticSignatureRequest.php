@@ -26,7 +26,8 @@ class SendStaticSignatureRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'email' => ['required','email']
+            'email' => ['required','email'],
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/']
         ];
 
         return $rules;
@@ -36,7 +37,8 @@ class SendStaticSignatureRequest extends FormRequest
     {
         return [
             'email.required' => 'E-postadress är obligatorisk',
-            'email.email' => 'E-postadressen måste vara giltig'
+            'email.email' => 'E-postadressen måste vara giltig',
+            'phone.regex' => 'Telefonnumret måste vara giltigt'
         ];
     }
 

@@ -41,6 +41,13 @@ class Agreements {
         return axios.post(`/agreements/${agreementId}/resend-signature-request`, payload)
     }
 
+    resendSignatureSms(data) {
+        const agreementId = typeof data === 'object' && data !== null ? data.id : data
+        const payload = typeof data === 'object' && data !== null ? data : {}
+
+        return axios.post(`/agreements/${agreementId}/resend-signature-sms`, payload)
+    }
+
     cancelSignatureRequest(data) {
         const agreementId = typeof data === 'object' && data !== null ? data.id : data
 

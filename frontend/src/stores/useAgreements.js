@@ -194,6 +194,7 @@ export const useAgreementsStores = defineStore('agreements', {
               axios.post(
                 `/agreements/${payload.agreementId}/send-signature-request`, 
                 { email: payload.email,
+                          phone: payload.phone,
                     x: payload.x,
                     y: payload.y,
                     page: payload.page
@@ -215,6 +216,14 @@ export const useAgreementsStores = defineStore('agreements', {
         resendSignature(payload) {
             return new Promise((resolve, reject) => {
                 Agreements.resendSignatureRequest(payload)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
+
+        resendSignatureSms(payload) {
+            return new Promise((resolve, reject) => {
+                Agreements.resendSignatureSms(payload)
                     .then(response => resolve(response))
                     .catch(error => reject(error))
             })

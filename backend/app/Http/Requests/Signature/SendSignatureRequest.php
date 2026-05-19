@@ -27,6 +27,7 @@ class SendSignatureRequest extends FormRequest
     {
         $rules = [
             'email' => ['required','email'],
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
             'x' => ['required','numeric'],
             'y' => ['required','numeric'],
             'page' => ['required','integer'],
@@ -40,6 +41,7 @@ class SendSignatureRequest extends FormRequest
         return [
             'email.required' => 'E-postadress är obligatorisk',
             'email.email' => 'E-postadressen måste vara giltig',
+            'phone.regex' => 'Telefonnumret måste vara giltigt',
             'x.required' => 'Position X är obligatorisk',
             'x.numeric' => 'Position X måste vara ett tal',
             'y.required' => 'Position Y är obligatorisk',
