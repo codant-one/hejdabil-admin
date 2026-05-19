@@ -38,7 +38,6 @@ const totalPagesAgreements = ref(1);
 const totalBillings = ref(0);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
-const isConfirmSendSmsVisible = ref(false);
 const isConfirmKreditera = ref(false)
 const isConfirmSendMailReminder = ref(false);
 const emailDefault = ref(true);
@@ -397,24 +396,19 @@ const send = (billingData) => {
   if (billingData.agreement_type_id) {
     isConfirmSendMailVisible.value = true
     selectedAgreement.value = { ...billingData }
+    selectedBilling.value = {}
+    emailDefault.value = Boolean(billingData?.agreement_client?.email)
   } else {
     // Es un billing
     isConfirmSendMailVisible.value = true
     selectedBilling.value = { ...billingData }
-  }
-};
-
-const sendSmsDialog = billingData => {
-  isConfirmSendSmsVisible.value = true
-  if (billingData?.agreement_type_id) {
-    selectedAgreement.value = { ...billingData }
-    selectedBilling.value = {}
-    phoneDefault.value = Boolean(billingData?.agreement_client?.phone)
-  } else {
-    selectedBilling.value = { ...billingData }
     selectedAgreement.value = {}
+    emailDefault.value = Boolean(billingData?.client?.email)
     phoneDefault.value = Boolean(billingData?.client?.phone)
   }
+  selectedTags.value = []
+  existingTags.value = []
+  isValid.value = false
   selectedPhoneTags.value = []
   existingPhoneTags.value = []
   isPhoneValid.value = false
@@ -479,104 +473,86 @@ const closeResendSignatureDialog = () => {
   resetResendSignatureState()
 }
 
+const resetSendDialogState = () => {
+  selectedTags.value = []
+  existingTags.value = []
+  emailDefault.value = true
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  phoneDefault.value = true
+  isValid.value = false
+  isPhoneValid.value = false
+  selectedBilling.value = {}
+  selectedAgreement.value = {}
+}
+
+const closeSendDialog = () => {
+  isConfirmSendMailVisible.value = false
+  resetSendDialogState()
+}
+
 const sendMails = async () => {
-  if (!isValid.value) {
-    isConfirmSendMailVisible.value = false;
-    emit("loading", true);
-
-    // Determinar si es billing o agreement
-    let data, res;
-    
-    if (selectedAgreement.value.id) {
-      // Es un agreement
-      data = {
-        id: selectedAgreement.value.id,
-        emailDefault: emailDefault.value,
-        emails: selectedTags.value,
-      };
-      res = await agreementsStores.sendMails(data);
-    } else {
-      // Es un billing
-      data = {
-        id: selectedBilling.value.id,
-        emailDefault: emailDefault.value,
-        emails: selectedTags.value,
-      };
-      res = await billingsStores.sendMails(data);
-    }
-
-    emit("loading", false);
-
-    advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? (selectedAgreement.value.id ? "Avtalan är skickad!" : "Fakturan är skickad!") : res.data.message,
-      show: true,
-    };
-
-    emit("alert", advisor);
-
-    setTimeout(() => {
-      selectedTags.value = [];
-      existingTags.value = [];
-      emailDefault.value = true;
-      selectedAgreement.value = {};
-
-      advisor.value = {
-        type: "",
-        message: "",
-        show: false,
-      };
-
-      emit("alert", advisor);
-    }, 3000);
-
-    await fetchData();
-
-    return true;
-  }
-};
-
-const sendSms = async () => {
-  if (isPhoneValid.value)
+  if (isValid.value || isPhoneValid.value)
     return
 
-  isConfirmSendSmsVisible.value = false
+  isConfirmSendMailVisible.value = false
   emit("loading", true)
 
   try {
     let data, res
+    let advisorType = 'success'
+    let advisorMessage = ''
 
     if (selectedAgreement.value.id) {
       data = {
         id: selectedAgreement.value.id,
-        phoneDefault: phoneDefault.value,
-        phones: selectedPhoneTags.value,
+        emailDefault: emailDefault.value,
+        emails: selectedTags.value,
       }
 
-      res = await agreementsStores.sendSms(data)
+      res = await agreementsStores.sendMails(data)
+      advisorMessage = res.data.success ? 'Avtalet är skickat!' : res.data.message
     } else {
       data = {
         id: selectedBilling.value.id,
-        phoneDefault: phoneDefault.value,
-        phones: selectedPhoneTags.value,
+        emailDefault: emailDefault.value,
+        emails: selectedTags.value,
       }
 
-      res = await billingsStores.sendSms(data)
+      res = await billingsStores.sendMails(data)
+      advisorMessage = res.data.success ? 'Fakturan är skickad!' : res.data.message
+
+      const hasSmsTargets = Boolean(
+        (phoneDefault.value && selectedBilling.value?.client?.phone)
+        || selectedPhoneTags.value.length,
+      )
+
+      if (res.data.success && canShowBillingSmsAction.value && hasSmsTargets) {
+        const smsResponse = await billingsStores.sendSms({
+          id: selectedBilling.value.id,
+          phoneDefault: phoneDefault.value,
+          phones: selectedPhoneTags.value,
+        })
+
+        if (smsResponse.data.success) {
+          advisorMessage = 'Fakturan har skickats via e-post och SMS!'
+        } else {
+          advisorType = 'warning'
+          advisorMessage = `${advisorMessage} ${smsResponse.data.message || 'SMS kunde inte skickas.'}`
+        }
+      }
     }
 
     advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? (res.data.message || "SMS skickat!") : res.data.message,
+      type: res.data.success ? advisorType : 'error',
+      message: advisorMessage,
       show: true,
     }
 
     emit("alert", advisor)
 
     setTimeout(() => {
-      selectedPhoneTags.value = []
-      existingPhoneTags.value = []
-      phoneDefault.value = true
-      selectedAgreement.value = {}
+      resetSendDialogState()
 
       advisor.value = {
         type: "",
@@ -590,6 +566,24 @@ const sendSms = async () => {
     await fetchData()
 
     return true
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Det gick inte att skicka.',
+      show: true,
+    }
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+
+      emit('alert', advisor)
+    }, 3000)
   } finally {
     emit("loading", false)
   }
@@ -1592,7 +1586,7 @@ onBeforeUnmount(() => {
                   >
                     <VMenu>
                       <template #activator="{ props }">
-                        <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isAgreementSmsActionVisibilityLoading">
+                        <VBtn v-bind="props" icon variant="text" class="btn-white">
                           <VIcon icon="custom-dots-vertical" size="22" />
                         </VBtn>
                       </template>
@@ -1680,15 +1674,6 @@ onBeforeUnmount(() => {
                             <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
                           </template>
                           <VListItemTitle>Skicka</VListItemTitle>
-                        </VListItem>
-                        <VListItem
-                          v-if="$can('view', 'billings') && canShowBillingSmsAction"
-                          @click="sendSmsDialog(billing)"
-                        >
-                          <template #prepend>
-                            <VIcon icon="mdi-message-text" size="24" class="mr-2" />
-                          </template>
-                          <VListItemTitle>SMS</VListItemTitle>
                         </VListItem>
 
                         <VListItem
@@ -2171,34 +2156,47 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm send -->
     <VDialog 
       v-model="isConfirmSendMailVisible" 
-      persistent 
-      class="action-dialog">
+      :fullscreen="windowWidth < 1024"
+      persistent
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    >
       <!-- Dialog close btn -->
 
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+        @click="closeSendDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
       <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
+      <VCard 
+        :class="windowWidth < 1024 ? 'h-100 d-flex flex-column card-form' : 'card-form'"
+        :style="windowWidth < 1024 ? 'border-radius: 0 !important;' : ''"
+      >
+        <VCardText 
+          class="dialog-title-box"
+          :style="windowWidth < 1024 ? 'gap: 8px !important;' : ''"
+          :class="windowWidth < 1024 ? 'pb-0 d-flex flex-column flex-0' : ''">
           <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
-            {{ selectedAgreement.id ? 'Skicka avtal via e-post' : 'Skicka fakturan via e-post' }}
+            {{ selectedAgreement.id ? 'Skicka avtal via e-post' : 'Skicka fakturan' }}
           </div>
         </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturor' }} till följande
+        <VCardText class="dialog-text" :class="windowWidth < 1024 ? 'flex-0 mt-2' : ''">
+          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturan' }} till följande
           e-postadresser?
         </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
+        <VCardText class="d-flex flex-column gap-2" :class="windowWidth < 1024 ? 'flex-0' : ''">
           <VCheckbox
             v-model="emailDefault"
-            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.email || 'N/A') : (selectedBilling.client?.email || 'N/A')"
+            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.email || 'N/A') : (selectedBilling.client?.email || 'Kunden saknar e-postadress')"
+            :disabled="!selectedAgreement.id && !selectedBilling.client?.email"
             class="ml-2"
           />
           <VLabel class="text-body-2 text-high-emphasis" :text="selectedAgreement.id ? 'Ange e-postadresser för att skicka avtal' : 'Ange e-postadresser för att skicka fakturan'" />
@@ -2218,46 +2216,24 @@ onBeforeUnmount(() => {
           >
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
-          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
-
-    <VDialog
-      v-model="isConfirmSendSmsVisible"
-      persistent
-      class="action-dialog"
-    >
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmSendSmsVisible = !isConfirmSendSmsVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="mdi-message-text" class="action-icon" />
-          <div class="dialog-title">
-            {{ selectedAgreement.id ? 'Skicka avtal via SMS' : 'Skicka fakturan via SMS' }}
-          </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturan' }} via SMS till följande telefonnummer?
-        </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
+        <VCardText v-if="!selectedAgreement.id && canShowBillingSmsAction" class="d-flex flex-column gap-2 pt-0" :class="windowWidth < 1024 ? 'flex-0' : ''">
           <VCheckbox
             v-model="phoneDefault"
-            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.phone || 'Kunden saknar telefonnummer') : (selectedBilling.client?.phone || 'Kunden saknar telefonnummer')"
-            :disabled="selectedAgreement.id ? !selectedAgreement.agreement_client?.phone : !selectedBilling.client?.phone"
+            :label="selectedBilling.client?.phone || 'Kunden saknar telefonnummer'"
+            :disabled="!selectedBilling.client?.phone"
             class="ml-2"
           />
-          <VLabel class="text-body-2 text-high-emphasis" :text="selectedAgreement.id ? 'Ange telefonnummer för att skicka avtal' : 'Ange telefonnummer för att skicka fakturan'" />
+          <div class="d-flex gap-1">
+            <VLabel class="text-body-2 text-high-emphasis" text="Ange telefon för att skicka fakturan via SMS" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+          </div>
           <VCombobox
             v-model="selectedPhoneTags"
             :items="existingPhoneTags"
@@ -2275,10 +2251,10 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
-          <VBtn class="btn-light" @click="isConfirmSendSmsVisible = false">
+          <VBtn class="btn-light" @click="closeSendDialog">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="sendSms"> Skicka </VBtn>
+          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -2439,15 +2415,6 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-paper-plane" size="24" />
             </template>
             <VListItemTitle>Skicka</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="$can('view', 'billings') && canShowBillingSmsAction"
-            @click="sendSmsDialog(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="mdi-message-text" size="24" />
-            </template>
-            <VListItemTitle>SMS</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"

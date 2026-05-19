@@ -21,7 +21,6 @@ const invoices = ref([]);
 const invoice = ref(null);
 const isRequestOngoing = ref(true);
 const isConfirmSendMailVisible = ref(false);
-const isConfirmSendSmsVisible = ref(false);
 const emailDefault = ref(true);
 const phoneDefault = ref(true);
 const selectedTags = ref([]);
@@ -167,41 +166,76 @@ const goToBilling = () => {
 };
 
 const sendMails = async () => {
-  if (!isValid.value) {
-    isConfirmSendMailVisible.value = false;
-    isRequestOngoing.value = true;
+  if (isValid.value || isPhoneValid.value)
+    return
 
-    let data = {
-      id: invoice.value.id,
-      emailDefault: emailDefault.value,
-      emails: selectedTags.value,
-    };
+  isConfirmSendMailVisible.value = false;
+  isRequestOngoing.value = true;
 
-    try {
-      let res = await billingsStores.sendMails(data);
+  const data = {
+    id: invoice.value.id,
+    emailDefault: emailDefault.value,
+    emails: selectedTags.value,
+  };
 
-      if (res.data.success) {
-        skickaDialog.value = true;
-      } else {
-        inteSkapatsDialog.value = true;
-      }
+  try {
+    const res = await billingsStores.sendMails(data);
 
-      isRequestOngoing.value = false;
-
-      setTimeout(() => {
-        selectedTags.value = [];
-        existingTags.value = [];
-        emailDefault.value = true;
-      }, 3000);
-
-    } catch (error) {
-      console.error("Error sending emails:", error);
+    if (!res.data.success) {
       inteSkapatsDialog.value = true;
-      isRequestOngoing.value = false;
+      return true;
     }
 
-    return true;
+    const hasSmsTargets = Boolean(
+      (phoneDefault.value && invoice.value?.client?.phone)
+      || selectedPhoneTags.value.length,
+    )
+
+    if (canShowBillingSmsAction.value && hasSmsTargets) {
+      const smsResponse = await billingsStores.sendSms({
+        id: invoice.value.id,
+        phoneDefault: phoneDefault.value,
+        phones: selectedPhoneTags.value,
+      })
+
+      if (!smsResponse.data.success) {
+        advisor.value = {
+          type: 'warning',
+          message: smsResponse.data.message || 'SMS kunde inte skickas.',
+          show: true,
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+          }
+        }, 3000)
+      }
+    }
+
+    skickaDialog.value = true;
+
+    setTimeout(() => {
+      selectedTags.value = [];
+      existingTags.value = [];
+      emailDefault.value = true;
+      selectedPhoneTags.value = [];
+      existingPhoneTags.value = [];
+      phoneDefault.value = true;
+      isValid.value = false;
+      isPhoneValid.value = false;
+    }, 3000);
+
+  } catch (error) {
+    console.error("Error sending invoice:", error);
+    inteSkapatsDialog.value = true;
+  } finally {
+    isRequestOngoing.value = false;
   }
+
+  return true;
 };
 
 const credit = () => {
@@ -244,52 +278,26 @@ const kreditera = () => {
 
 const send = () => {
   isConfirmSendMailVisible.value = true;
-};
-
-const sendSmsDialog = () => {
-  isConfirmSendSmsVisible.value = true;
+  emailDefault.value = Boolean(invoice.value?.client?.email)
   phoneDefault.value = Boolean(invoice.value?.client?.phone);
+  selectedTags.value = [];
+  existingTags.value = [];
+  isValid.value = false;
   selectedPhoneTags.value = [];
   existingPhoneTags.value = [];
   isPhoneValid.value = false;
 };
 
-const sendSms = async () => {
-  if (isPhoneValid.value)
-    return
-
-  isConfirmSendSmsVisible.value = false
-  isRequestOngoing.value = true
-
-  try {
-    const data = {
-      id: invoice.value.id,
-      phoneDefault: phoneDefault.value,
-      phones: selectedPhoneTags.value,
-    }
-
-    const res = await billingsStores.sendSms(data)
-
-    advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? (res.data.message || "SMS skickat!") : res.data.message,
-      show: true,
-    }
-
-    setTimeout(() => {
-      selectedPhoneTags.value = []
-      existingPhoneTags.value = []
-      phoneDefault.value = true
-
-      advisor.value = {
-        type: "",
-        message: "",
-        show: false,
-      }
-    }, 3000)
-  } finally {
-    isRequestOngoing.value = false
-  }
+const closeSendDialog = () => {
+  isConfirmSendMailVisible.value = false
+  selectedTags.value = []
+  existingTags.value = []
+  emailDefault.value = true
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  phoneDefault.value = true
+  isValid.value = false
+  isPhoneValid.value = false
 }
 
 const sendReminder = () => {
@@ -623,17 +631,6 @@ onBeforeUnmount(() => {
               Skicka
             </VBtn>
 
-            <VBtn
-              v-if="$can('view', 'billings') && canShowBillingSmsAction"
-              class="btn-light w-100 mb-4"
-              @click="sendSmsDialog"
-            >
-              <template #prepend>
-                <VIcon icon="mdi-message-text" size="24" />
-              </template>
-              SMS
-            </VBtn>
-
             <VBtn 
               v-if="$can('view', 'billings')"
               class="btn-light w-100 mb-4"
@@ -718,16 +715,6 @@ onBeforeUnmount(() => {
           </VListItem>
 
           <VListItem
-            v-if="$can('view', 'billings') && canShowBillingSmsAction"
-            @click="sendSmsDialog(); isMobileActionDialogVisible = false"
-          >
-            <template #prepend>
-              <VIcon icon="mdi-message-text" size="24" />
-            </template>
-            <VListItemTitle>SMS</VListItemTitle>
-          </VListItem>
-
-          <VListItem
             v-if="$can('view', 'billings')"
             @click="printInvoice(); isMobileActionDialogVisible = false"
           >
@@ -779,34 +766,47 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm send -->
     <VDialog 
       v-model="isConfirmSendMailVisible" 
-      persistent 
-      class="action-dialog">
+      :fullscreen="windowWidth < 1024"
+      persistent
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    >
       <!-- Dialog close btn -->
 
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+        @click="closeSendDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
       <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
+      <VCard 
+        :class="windowWidth < 1024 ? 'h-100 d-flex flex-column card-form' : 'card-form'"
+        :style="windowWidth < 1024 ? 'border-radius: 0 !important;' : ''"
+      >
+        <VCardText 
+          class="dialog-title-box"
+          :style="windowWidth < 1024 ? 'gap: 8px !important;' : ''"
+          :class="windowWidth < 1024 ? 'pb-0 d-flex flex-column flex-0' : ''">
           <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
-            Skicka fakturan via e-post
+            Skicka fakturan
           </div>
         </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka fakturor till följande
+        <VCardText class="dialog-text" :class="windowWidth < 1024 ? 'flex-0 mt-2' : ''">
+          Är du säker på att du vill skicka fakturan till följande
           e-postadresser?
         </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
+        <VCardText class="d-flex flex-column gap-2" :class="windowWidth < 1024 ? 'flex-0' : ''">
           <VCheckbox
             v-model="emailDefault"
-            :label="invoice.client.email"
+            :label="invoice.client?.email || 'Kunden saknar e-postadress'"
+            :disabled="!invoice.client?.email"
             class="ml-2"
           />
           <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
@@ -826,46 +826,24 @@ onBeforeUnmount(() => {
           >
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
-
-    <VDialog
-      v-model="isConfirmSendSmsVisible"
-      persistent
-      class="action-dialog"
-    >
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmSendSmsVisible = !isConfirmSendSmsVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="mdi-message-text" class="action-icon" />
-          <div class="dialog-title">
-            Skicka fakturan via SMS
-          </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka fakturan via SMS till följande telefonnummer?
-        </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
+        <VCardText v-if="canShowBillingSmsAction" class="d-flex flex-column gap-2 pt-0" :class="windowWidth < 1024 ? 'flex-0' : ''">
           <VCheckbox
             v-model="phoneDefault"
-            :label="invoice?.client?.phone || 'Kunden saknar telefonnummer'"
-            :disabled="!invoice?.client?.phone"
+            :label="invoice.client?.phone || 'Kunden saknar telefonnummer'"
+            :disabled="!invoice.client?.phone"
             class="ml-2"
           />
-          <VLabel class="text-body-2 text-high-emphasis" text="Ange telefonnummer för att skicka fakturan" />
+          <div class="d-flex gap-1">
+            <VLabel class="text-body-2 text-high-emphasis" text="Ange telefon för att skicka fakturan via SMS" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+          </div>
           <VCombobox
             v-model="selectedPhoneTags"
             :items="existingPhoneTags"
@@ -882,11 +860,11 @@ onBeforeUnmount(() => {
           </span>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmSendSmsVisible = false">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn class="btn-light" @click="closeSendDialog">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="sendSms"> Skicka </VBtn>
+          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
