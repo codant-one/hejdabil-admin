@@ -822,7 +822,7 @@ const submitPlacementSignatureRequest  = async () => {
     
     // 6. Muestra el mensaje de éxito
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
@@ -871,7 +871,7 @@ const submitStaticSignatureRequest = async () => {
 
     // 5. Muestra mensaje de éxito
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     };

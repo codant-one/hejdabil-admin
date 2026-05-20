@@ -512,8 +512,6 @@ class DocumentController extends Controller
                 $clientEmail,
                 $subject
             );
-
-            $token->update(['signature_status' => 'delivered']);
             
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
@@ -614,6 +612,10 @@ class DocumentController extends Controller
                 }
             }
 
+            $token->update([
+                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
+            ]);
+
             SupplierActivity::createActivity([
                 'entity_id' => $document->id,
                 'entity_type' => 'documents',
@@ -638,10 +640,10 @@ class DocumentController extends Controller
             ]);
             
             return response()->json([
+                'success' => true,
+                'warning' => (bool) $smsError,
                 'message' => $smsError
-                    ? (TwilioSms::isInvalidRecipientMessage($smsError)
-                        ? 'Begäran om underskrift skickad med framgång. ' . $smsError
-                        : 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.')
+                    ? "Begäran om underskrift skickad med framgång.\n{$smsError}"
                     : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {

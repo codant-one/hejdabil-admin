@@ -1131,7 +1131,7 @@ const handleSignatureSubmit = async () => {
     const response = await documentsStores.requestSignature(payload)
     
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
@@ -1749,13 +1749,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="
-                      $can('edit','signed-documents') && (
-                        document.token?.signature_status !== 'sent' && 
-                        document.token?.signature_status !== 'signed' && 
-                        document.token?.signature_status !== 'delivered' &&
-                        document.token?.signature_status !== 'reviewed'
-                      )"
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'created' || document.token?.signature_status === 'cancelled')"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
                       <VIcon icon="custom-signature" size="24" class="mr-2" />
@@ -2608,13 +2602,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Spårare</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="
-              $can('edit', 'signed-documents') && (
-                selectedDocumentForAction.token?.signature_status !== 'sent' && 
-                selectedDocumentForAction.token?.signature_status !== 'signed' && 
-                selectedDocumentForAction.token?.signature_status !== 'delivered' &&
-                selectedDocumentForAction.token?.signature_status !== 'reviewed'
-              )"
+            v-if="$can('edit','signed-documents') && (selectedDocumentForAction.token?.signature_status === 'created' || selectedDocumentForAction.token?.signature_status === 'cancelled')"
             @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

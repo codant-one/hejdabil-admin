@@ -956,7 +956,7 @@ const submitStaticSignatureRequest = async () => {
     const response = await agreementsStores.requestStaticSignature(payload)
 
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
