@@ -56,6 +56,7 @@ class SendReminder extends Command
         // Facturas vencidas
         $billings = Billing::with(['supplier.settings.billing'])
             ->where('state_id', 8)
+            ->whereNull('reminder')
             ->get();
 
         foreach($billings as $billing){
@@ -102,6 +103,11 @@ class SendReminder extends Command
                         continue;
                     }
 
+                    if ($billingToSend->reminder !== null) {
+                        $this->info('Billing: #' . $billing->id . ' - Reminder already created, skipping.');
+                        continue;
+                    }
+
                     if ($delayCounter > 0) {
                         sleep($delayStep);
                     }
@@ -130,6 +136,7 @@ class SendReminder extends Command
             ->whereHas('token', function ($query) {
                 $query->where('signature_status', 'delivered');
             })
+            ->where('send_reminder', 0)
             ->get();
 
         foreach($agreements as $agreement){
@@ -176,6 +183,11 @@ class SendReminder extends Command
                         continue;
                     }
 
+                    if ($agreementToSend->send_reminder !== 0) {
+                        $this->info('Agreement: #' . $agreementToSend->id . ' - Reminder already created, skipping.');
+                        continue;
+                    }
+
                     if ($delayCounter > 0) {
                         sleep($delayStep);
                     }
@@ -183,9 +195,9 @@ class SendReminder extends Command
                     Agreement::createReminder($agreementToSend);
                     $delayCounter++;
 
-                    $this->info('Agreement: #' . $agreement->id . ' - Reminder sent (' . $delayCounter . ').');
+                    $this->info('Agreement: #' . $agreementToSend->id . ' - Reminder sent (' . $delayCounter . ').');
                 } catch (\Throwable $e) {
-                    $this->error('Error creating reminder for agreement ' . $agreement->id . ': ' . $e->getMessage());
+                    $this->error('Error creating reminder for agreement ' . $agreementToSend->id . ': ' . $e->getMessage());
                     continue;
                 }
             }
