@@ -566,12 +566,12 @@ const sendMails = async () => {
     await fetchData()
 
     return true
-  } catch (error) {
+  } catch (err) {
     advisor.value = {
-      type: 'error',
-      message: error.response?.data?.message || 'Det gick inte att skicka.',
+      type: "error",
+      message: err.response?.data?.message || err.message || "Det gick inte att skicka fakturan.",
       show: true,
-    }
+    };
 
     emit('alert', advisor)
 
@@ -911,7 +911,7 @@ const submitResendSignature = async () => {
         advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
       } catch (smsError) {
         advisorType = 'warning'
-        advisorMessage = `${advisorMessage} ${smsError.response?.data?.message || 'SMS-meddelandet kunde inte skickas igen.'}`
+        advisorMessage = `${advisorMessage}\n${smsError.response?.data?.message || 'SMS-kunde inte skickas. Kontrollera att telefonnumret är korrekt och försök igen.'}`
       }
     }
 

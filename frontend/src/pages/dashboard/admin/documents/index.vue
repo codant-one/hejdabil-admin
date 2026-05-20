@@ -1080,7 +1080,7 @@ const submitResendSignature = async () => {
         advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
       } catch (smsError) {
         advisorType = 'warning'
-        advisorMessage = `${advisorMessage} ${smsError.response?.data?.message || 'SMS-meddelandet kunde inte skickas igen.'}`
+        advisorMessage = `${advisorMessage}\n${smsError.response?.data?.message || 'SMS-kunde inte skickas. Kontrollera att telefonnumret är korrekt och försök igen.'}`
       }
     }
 
@@ -1427,7 +1427,7 @@ onBeforeUnmount(() => {
       :color="advisor.type"
       class="snackbar-alert snackbar-dashboard"
     >
-      {{ advisor.message }}
+      <span class="snackbar-message">{{ advisor.message }}</span>
     </VSnackbar>      
 
     <Toaster />
@@ -2863,6 +2863,10 @@ onBeforeUnmount(() => {
 </style>
 
 <style lang="scss" scoped>
+  .snackbar-message {
+    white-space: pre-line;
+  }
+
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

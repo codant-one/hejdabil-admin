@@ -731,10 +731,17 @@ class BillingController extends Controller
                 ];
             }
 
+            $failedMessage = collect($failedRecipients)
+                ->pluck('error')
+                ->filter(fn ($error) => is_string($error) && trim($error) !== '')
+                ->map(fn ($error) => trim($error))
+                ->unique()
+                ->implode(' | ');
+
             if (empty($sentRecipients)) {
                 return response()->json([
                     'success' => false,
-                    'message' => collect($failedRecipients)->map(fn ($item) => $item['phone'].': '.$item['error'])->implode(' | '),
+                    'message' => $failedMessage ?: 'SMS kunde inte skickas.',
                 ], 500);
             }
 

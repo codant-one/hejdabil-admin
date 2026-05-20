@@ -639,7 +639,9 @@ class DocumentController extends Controller
             
             return response()->json([
                 'message' => $smsError
-                    ? 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.'
+                    ? (TwilioSms::isInvalidRecipientMessage($smsError)
+                        ? 'Begäran om underskrift skickad med framgång. ' . $smsError
+                        : 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.')
                     : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {
@@ -1010,7 +1012,9 @@ class DocumentController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Det gick inte att skicka om SMS: ' . $smsResult,
+                    'message' => TwilioSms::isInvalidRecipientMessage($smsResult)
+                        ? $smsResult
+                        : 'Det gick inte att skicka om SMS: ' . $smsResult,
                 ], 500);
             }
 
