@@ -236,9 +236,6 @@ class SignatureController extends Controller
                 $subject
             );
             
-            // Update status to delivered if the sending was successful
-            $token->update(['signature_status' => 'delivered']);
-            
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
@@ -338,13 +335,17 @@ class SignatureController extends Controller
                 }
             }
 
+            $token->update([
+                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
+            ]);
+
             $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $validated['phone'] ?? null, $smsError);
             
             return response()->json([
+                'success' => true,
+                'warning' => (bool) $smsError,
                 'message' => $smsError
-                    ? (TwilioSms::isInvalidRecipientMessage($smsError)
-                        ? 'Begäran om underskrift skickad med framgång. ' . $smsError
-                        : 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.')
+                    ? "Begäran om underskrift skickad med framgång.\n{$smsError}"
                     : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {
@@ -559,9 +560,6 @@ class SignatureController extends Controller
                 $subject
             );
             
-            // Update status to 'delivered' if the sending was successful
-            $token->update(['signature_status' => 'delivered']);
-            
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
@@ -661,13 +659,17 @@ class SignatureController extends Controller
                 }
             }
 
+            $token->update([
+                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
+            ]);
+
             $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $validated['phone'] ?? null, $smsError);
             
             return response()->json([
+                'success' => true,
+                'warning' => (bool) $smsError,
                 'message' => $smsError
-                    ? (TwilioSms::isInvalidRecipientMessage($smsError)
-                        ? 'Begäran om underskrift skickad med framgång. ' . $smsError
-                        : 'Begäran om underskrift skickad med framgång. SMS kunde inte skickas.')
+                    ? "Begäran om underskrift skickad med framgång.\n{$smsError}"
                     : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Exception $e) {
