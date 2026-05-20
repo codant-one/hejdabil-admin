@@ -12,6 +12,7 @@ class TwilioSms
 
     protected $sid;
     protected $authToken;
+    protected $messagingServiceSid;
     protected $phoneNumber;
     protected $client;
 
@@ -19,6 +20,7 @@ class TwilioSms
     {
         $this->sid = env('TWILIO_SID');
         $this->authToken = env('TWILIO_AUTH_TOKEN');
+        $this->messagingServiceSid = env('TWILIO_MESSAGING_SERVICE_SID');
         $this->phoneNumber = env('TWILIO_PHONE_NUMBER');
         $this->client = $this->sid && $this->authToken
             ? new Client($this->sid, $this->authToken)
@@ -28,14 +30,21 @@ class TwilioSms
     public function sendMessage($to, $message)
     {
         try {
-            if (!$this->client || !$this->phoneNumber) {
+            if (!$this->client || (!$this->messagingServiceSid && !$this->phoneNumber)) {
                 return 'Twilio är inte korrekt konfigurerat.';
             }
 
-            $this->client->messages->create($to, [
-                'from' => $this->phoneNumber,
+            $payload = [
                 'body' => $message,
-            ]);
+            ];
+
+            if ($this->messagingServiceSid) {
+                $payload['messagingServiceSid'] = $this->messagingServiceSid;
+            } else {
+                $payload['from'] = $this->phoneNumber;
+            }
+
+            $this->client->messages->create($to, $payload);
 
             return true;
         } catch (\Throwable $exception) {
