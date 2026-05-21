@@ -1,11 +1,10 @@
 <script setup>
-
-import { PerfectScrollbar } from "vue3-perfect-scrollbar";
-import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators";
+import { PerfectScrollbar } from "vue3-perfect-scrollbar"
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators"
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { themeConfig } from '@themeConfig'
-import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -26,14 +25,14 @@ const props = defineProps({
   },
   countries: {
     type: Object,
-    required: false
+    required: false,
   },
   isDuplicate: {
     type: Boolean,
     required: false,
     default: false,
-  }
-});
+  },
+})
 
 const emit = defineEmits([
   "update:isDrawerOpen", 
@@ -41,15 +40,15 @@ const emit = defineEmits([
   "resetDuplicate",
   "edited",
   "alert",
-  "loading"
-]);
+  "loading",
+])
 
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
 
-const isFormValid = ref(false);
-const refForm = ref();
-const organizationNumberFieldRef = ref();
+const isFormValid = ref(false)
+const refForm = ref()
+const organizationNumberFieldRef = ref()
 
 const id = ref(0)
 const supplier_id = ref(null)
@@ -72,6 +71,7 @@ const isConfirmLeaveVisible = ref(false)
 const failedExternalFlags = ref({})
 
 const initialData = ref(null)
+
 const currentData = computed(() => ({
   supplier_id: supplier_id.value,
   organization_number: organization_number.value,
@@ -85,13 +85,13 @@ const currentData = computed(() => ({
   num_iva: num_iva.value,
   comments: comments.value,
   client_type_id: client_type_id.value,
-  country_id: country_id.value
+  country_id: country_id.value,
 }))
 
 const advisor = ref({
   type: '',
   message: '',
-  show: false
+  show: false,
 })
 
 const isDirty = computed(() => {
@@ -114,10 +114,82 @@ const organizationNumberForeignRules = computed(() => [
   duplicateOrganizationNumberValidator(props.isDuplicate),
 ])
 
+const defaultForeignCountryId = 205
+
+const normalizeText = value =>
+  String(value ?? '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+
+const resolveCountry = country => {
+  if (!country || !Array.isArray(props.countries)) return null
+
+  if (typeof country === 'object')
+    return props.countries.find(item => String(item.id) === String(country.id)) || null
+
+  return props.countries.find(item => String(item.id) === String(country))
+    || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+}
+
+const getPhoneConfig = country => {
+  const selectedCountry = resolveCountry(country)
+  const phonecode = String(selectedCountry?.phonecode ?? '').replace(/\D/g, '') || '46'
+  const parsedPhoneDigits = Number(selectedCountry?.phone_digits)
+
+  const phoneDigits = Number.isFinite(parsedPhoneDigits) && parsedPhoneDigits > 0
+    ? parsedPhoneDigits
+    : 9
+
+  return {
+    selectedCountry,
+    phonecode,
+    phoneDigits,
+  }
+}
+
+const phoneConfig = computed(() => {
+  if (client_type_id.value === 3)
+    return getPhoneConfig(country_id.value)
+
+  return getPhoneConfig(null)
+})
+
+const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
+const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
+
+const phoneRules = computed(() => [
+  requiredValidator,
+  minLengthDigitsValidator(phoneDigitsLimit.value),
+  phoneValidator,
+])
+
+const normalizePhoneForInput = (value, country = null) => {
+  const digits = String(value ?? '').replace(/\D/g, '')
+  const { phonecode, phoneDigits } = getPhoneConfig(country)
+  const digitsWithoutLeadingZero = digits.replace(/^0+/, '')
+
+  if (!digitsWithoutLeadingZero)
+    return ''
+
+  if (phonecode && digitsWithoutLeadingZero.startsWith(phonecode) && digitsWithoutLeadingZero.length - phonecode.length === phoneDigits)
+    return digitsWithoutLeadingZero.slice(phonecode.length)
+
+  return digitsWithoutLeadingZero.slice(0, phoneDigits)
+}
+
+const formatPhoneForPayload = (value, country = null) => {
+  const localNumber = normalizePhoneForInput(value, country)
+  const { phonecode } = getPhoneConfig(country)
+
+  return localNumber ? `+${phonecode}${localNumber}` : ''
+}
+
 watch(() => props.isDuplicate, async isDuplicate => {
   await nextTick()
   if (isDuplicate) {
     organizationNumberFieldRef.value?.validate?.()
+    
     return
   }
   organizationNumberFieldRef.value?.resetValidation?.()
@@ -128,40 +200,71 @@ watch(() => props.isDrawerOpen, async isOpen => {
     emit('resetDuplicate')
     await nextTick()
     organizationNumberFieldRef.value?.resetValidation?.()
+    
     return
   }
   emit('resetDuplicate')
 })
 
+watch(client_type_id, clientTypeId => {
+  if (clientTypeId === 3 && !country_id.value)
+    country_id.value = defaultForeignCountryId
+})
+
+watch(country_id, (newCountryId, previousCountryId) => {
+  if (client_type_id.value !== 3 || !phone.value)
+    return
+
+  if (!previousCountryId)
+    return
+
+  if (String(newCountryId ?? '') === String(previousCountryId ?? ''))
+    return
+
+  phone.value = ''
+})
+
+watch([client_type_id, country_id], () => {
+  if (!phone.value)
+    return
+
+  const selectedCountry = client_type_id.value === 3 ? country_id.value : null
+
+  phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+})
+
 const getTitle = computed(() => {
-  return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
-});
+  return isEdit.value ? "Uppdatera klient" : "Lägg till kund"
+})
 
 watchEffect(async () => {
   if (props.isDrawerOpen) {
-    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-    role.value = userData.value.roles[0].name;
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null")
+    role.value = userData.value.roles[0].name
 
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value.roles[0].name
 
     if (!(Object.entries(props.client).length === 0) && props.client.constructor === Object) {
+      const resolvedCountryId = props.client.client_type_id === 3
+        ? props.client.country_id ?? props.client.country?.id ?? props.client.country?.name ?? defaultForeignCountryId
+        : props.client.country_id ?? props.client.country?.id ?? props.client.country?.name ?? null
 
       isEdit.value = true
       id.value = props.client.id
       supplier_id.value = props.client.supplier_id
+      client_type_id.value = props.client.client_type_id 
       organization_number.value = props.client.organization_number
       address.value = props.client.address
       street.value = props.client.street
       postal_code.value = props.client.postal_code
-      phone.value = props.client.phone
+      phone.value = normalizePhoneForInput(props.client.phone, props.client.client_type_id === 3 ? resolvedCountryId : null)
       fullname.value = props.client.fullname 
       email.value = props.client.email
       reference.value = props.client.reference
       num_iva.value = props.client.num_iva
       comments.value = props.client.comments
-      client_type_id.value = props.client.client_type_id 
-      country_id.value = props.client.country_id ?? props.client.country?.id ?? props.client.country?.name ?? null
+      country_id.value = resolvedCountryId
     }
 
     // snapshot initial state after fields are populated
@@ -170,15 +273,15 @@ watchEffect(async () => {
       emit('edited', false)
     })
   }
-});
+})
 
 // 👉 drawer close
 const reallyCloseAndReset = () => {
-  emit("update:isDrawerOpen", false);
+  emit("update:isDrawerOpen", false)
   emit('resetDuplicate')
   nextTick(() => {
-    refForm.value?.reset();
-    refForm.value?.resetValidation();
+    refForm.value?.reset()
+    refForm.value?.resetValidation()
 
     organization_number.value = null
     address.value = null
@@ -207,22 +310,56 @@ defineExpose({
 const closeNavigationDrawer = () => {
   if (isDirty.value) {
     isConfirmLeaveVisible.value = true
+    
     return
   }
   reallyCloseAndReset()
 }
 
 const formatOrgNumber = () => {
-  let numbers = organization_number.value.replace(/\D/g, "");
+  let numbers = organization_number.value.replace(/\D/g, "")
   if (numbers.length > 4 && client_type_id.value !== 3) {
-    numbers = numbers.slice(0, -4) + "-" + numbers.slice(-4);
+    numbers = numbers.slice(0, -4) + "-" + numbers.slice(-4)
   }
-  organization_number.value = numbers;
-};
+  organization_number.value = numbers
+}
 
 const handleOrganizationNumberInput = () => {
   formatOrgNumber()
   emit('resetDuplicate')
+}
+
+const handlePhoneInput = () => {
+  const selectedCountry = client_type_id.value === 3 ? country_id.value : null
+
+  phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Enter',
+    'Escape',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key))
+    return
+
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+    return
+
+  if (/^\d$/.test(event.key))
+    return
+
+  event.preventDefault()
 }
 
 const truncateText = (text, length = 30) => {
@@ -287,6 +424,7 @@ const supplierOptions = computed(() => {
 
 const isCompanyNumber = value => {
   const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+  
   return cleanNumber.startsWith('5')
 }
 
@@ -296,76 +434,57 @@ const isCompanyNumber = value => {
  * Otherwise, searches in SPAR (Statens Personadressregister).
  */
 const searchEntity = async () => {
-    if (!organization_number.value) return
+  if (!organization_number.value) return
 
-    if (isCompanyNumber(organization_number.value)) {
-        await searchCompany()
-    } else {
-        await searchPerson()
-    }
+  if (isCompanyNumber(organization_number.value)) {
+    await searchCompany()
+  } else {
+    await searchPerson()
+  }
+}
+
+const applyCompanyData = response => {
+  const foretagType = props.client_types?.find(t => t.name === 'Företag')
+  const postAddress = response?.postadressOrganisation?.postadress
+
+  if (foretagType) {
+    client_type_id.value = foretagType.id
+  }
+
+  fullname.value = response?.organisationsnamn?.organisationsnamnLista?.[0]?.namn || ''
+  postal_code.value = postAddress?.postnummer || ''
+  address.value = postAddress?.utdelningsadress || ''
+  street.value = postAddress?.postort || ''
 }
 
 const searchCompany = async () => {
   try {
-    emit("loading", true);
+    emit("loading", true)
 
     const response = await companyInfoStores.getCompanyInfo(organization_number.value)
     
-    emit("loading", false);
+    emit("loading", false)
 
-    if (response) {
-          // Set Client Type to Företag
-        const foretagType = props.client_types?.find(t => t.name === 'Företag')
-        if (foretagType) {
-            client_type_id.value = foretagType.id
-        }
-
-        // Set Name
-        if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
-            fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
-        } else {
-            fullname.value = ''
-        }
-
-        // Set Postal Code
-        if (response.postadressOrganisation?.postadress?.postnummer) {
-            postal_code.value = response.postadressOrganisation.postadress.postnummer
-        } else {
-            postal_code.value = ''
-        }
-
-        // Set Address
-        if (response.postadressOrganisation?.postadress?.utdelningsadress) {
-            address.value = response.postadressOrganisation.postadress.utdelningsadress
-        } else {
-            address.value = ''
-        }
-
-        // Set Street/City (Postort)
-        if (response.postadressOrganisation?.postadress?.postort) {
-            street.value = response.postadressOrganisation.postadress.postort
-        } else {
-            street.value = ''
-        }
-    }
+    if (response)
+      applyCompanyData(response)
 
   } catch (error) {
-      emit("loading", false);
-      advisor.value = {
-          type: 'error',
-          message: 'Ingen företag hittades med det registreringsnumret',
-          show: true
-      }
-      emit('alert', advisor)
+    emit("loading", false)
+    advisor.value = {
+      type: 'error',
+      message: 'Ingen företag hittades med det registreringsnumret',
+      show: true,
+    }
+    emit('alert', advisor.value)
 
-      setTimeout(() => {
-        advisor.value = {
-            type: '',
-            message: '',
-            show: false
-        }
-        emit('alert', advisor)
-      }, 3000)
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+      emit('alert', advisor.value)
+    }, 3000)
   }
 }
 
@@ -374,52 +493,52 @@ const searchCompany = async () => {
  */
 const searchPerson = async () => {
   try {
-    emit("loading", true);
+    emit("loading", true)
 
     const response = await personInfoStores.getPersonInfo(organization_number.value)
 
-    emit("loading", false);
+    emit("loading", false)
 
     if (response?.success && response?.data) {
-        const personData = response.data
+      const personData = response.data
 
-        // Set Client Type to Privat
-        const privatType = props.client_types?.find(t => t.name === 'Privat')
-        if (privatType) {
-            client_type_id.value = privatType.id
-        }
+      // Set Client Type to Privat
+      const privatType = props.client_types?.find(t => t.name === 'Privat')
+      if (privatType) {
+        client_type_id.value = privatType.id
+      }
 
-        // Set Name
-        fullname.value = personData.fullname || ''
+      // Set Name
+      fullname.value = personData.fullname || ''
 
-        // Set Postal Code
-        postal_code.value = personData.postnummer || ''
+      // Set Postal Code
+      postal_code.value = personData.postnummer || ''
 
-        // Set Address
-        address.value = personData.adress || ''
+      // Set Address
+      address.value = personData.adress || ''
 
-        // Set Street/City (Postort)
-        street.value = personData.postort || ''
+      // Set Street/City (Postort)
+      street.value = personData.postort || ''
     }
 
   } catch (error) {
-    emit("loading", false);
+    emit("loading", false)
 
     const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
     
     advisor.value = {
-        type: 'error',
-        message: errorMessage,
-        show: true
+      type: 'error',
+      message: errorMessage,
+      show: true,
     }
 
     setTimeout(() => {
       advisor.value = {
-          type: '',
-          message: '',
-          show: false
+        type: '',
+        message: '',
+        show: false,
       }
-      emit('alert', advisor)
+      emit('alert', advisor.value)
     }, 3000)
   }
 }
@@ -427,7 +546,7 @@ const searchPerson = async () => {
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-      let formData = new FormData();
+      let formData = new FormData()
 
       const selectedCountry = Array.isArray(props.countries)
         ? props.countries.find(item => String(item.id) === String(country_id.value))
@@ -446,7 +565,7 @@ const onSubmit = () => {
       formData.append('address', address.value)
       formData.append('street', street.value)
       formData.append('postal_code', postal_code.value)
-      formData.append('phone', phone.value)
+      formData.append('phone', formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
       formData.append('reference', reference.value)
       formData.append('num_iva', num_iva.value)
       formData.append('comments', comments.value)
@@ -454,49 +573,35 @@ const onSubmit = () => {
       emit(
         "clientData",
         { data: formData, id: id.value },
-        isEdit.value ? "update" : "create"
-      );
+        isEdit.value ? "update" : "create",
+      )
 
     }
-  });
-};
+  })
+}
 
-const handleDrawerModelValueUpdate = (val) => {
+const handleDrawerModelValueUpdate = val => {
   if (val === false) {
     if (isDirty.value) {
       // keep drawer open and show confirm dialog
       emit("update:isDrawerOpen", true)
       isConfirmLeaveVisible.value = true
+      
       return
     }
     reallyCloseAndReset()
+    
     return
   }
   emit("update:isDrawerOpen", val)
-};
+}
 
 watch(currentData, () => {
   if (!initialData.value) return
   emit('edited', isDirty.value)
 }, { deep: true })
 
-const findCountry = country => {
-  if (!country || !Array.isArray(props.countries)) return null
-
-  const normalizeText = value =>
-    String(value ?? '')
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-
-  if (typeof country === 'object') {
-    return props.countries.find(item => item.id === country.id) || null
-  }
-
-  return props.countries.find(item => String(item.id) === String(country))
-      || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
-
-}
+const findCountry = country => resolveCountry(country)
 
 const getFlagFromDb = selectedCountry => {
   const flag = String(selectedCountry?.flag ?? '').trim()
@@ -559,7 +664,10 @@ const onCountryFlagError = country => {
         class="btn-white"
         @click="closeNavigationDrawer"
       >
-        <VIcon size="20" icon="custom-close" />
+        <VIcon
+          size="20"
+          icon="custom-close"
+        />
       </VBtn>
     </div>
 
@@ -567,17 +675,26 @@ const onCountryFlagError = country => {
 
     <PerfectScrollbar 
       :options="{ wheelPropagation: false }" 
-      class="scrollbar-no-border">
-      <VCard flat class="card-form client-desktop">
+      class="scrollbar-no-border"
+    >
+      <VCard
+        flat
+        class="card-form client-desktop"
+      >
         <VCardText>
           <!-- 👉 Form -->
           <VForm 
             ref="refForm" 
             v-model="isFormValid" 
             validate-on="submit"
-            @submit.prevent="onSubmit">
+            @submit.prevent="onSubmit"
+          >
             <VRow>
-              <VCol cols="12" md="12" v-if="advisor.show">
+              <VCol
+                v-if="advisor.show"
+                cols="12"
+                md="12"
+              >
                 <VAlert
                   :color="advisor.type"
                   class="alert-no-shrink custom-alert"
@@ -586,8 +703,16 @@ const onCountryFlagError = country => {
                   <VAlertTitle>{{ advisor.message }}</VAlertTitle>
                 </VAlert>
               </VCol>
-              <VCol cols="12" md="12" class="py-0" v-if="role !== 'Supplier' && role !== 'User'">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Leverantörer" />
+              <VCol
+                v-if="role !== 'Supplier' && role !== 'User'"
+                cols="12"
+                md="12"
+                class="py-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Leverantörer"
+                />
                 <VSelect                 
                   v-model="supplier_id"
                   :items="supplierOptions"
@@ -619,7 +744,11 @@ const onCountryFlagError = country => {
                   </template>
                 </VSelect>
               </VCol>               
-              <VCol cols="12" md="6" class="pb-0">
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
                 <AppAutocomplete
                   v-model="client_type_id"
                   label="Kunden är*"
@@ -630,8 +759,15 @@ const onCountryFlagError = country => {
                   autocomplete="off"
                 />
               </VCol> 
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Org/personnummer*"
+                />
                 <div class="d-flex gap-2">
                   <VTextField
                     v-if="client_type_id !== 3"
@@ -640,7 +776,7 @@ const onCountryFlagError = country => {
                     :class="{ 'org-number-duplicate': props.isDuplicate }"
                     :error="props.isDuplicate"
                     :rules="organizationNumberRules"
-                    minLength="11"
+                    min-length="11"
                     maxlength="13"
                     style="flex: 1;"
                     @input="handleOrganizationNumberInput"
@@ -660,46 +796,104 @@ const onCountryFlagError = country => {
                     class="btn-ghost w-auto px-3 h-40"
                     @click="searchEntity"
                   >
-                    <VIcon icon="custom-search" size="24" />
+                    <VIcon
+                      icon="custom-search"
+                      size="24"
+                    />
                   </VBtn>
                 </div>
               </VCol>
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel v-if="client_type_id === 2" class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
-                <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  v-if="client_type_id === 2"
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Företagsnamn*"
+                />
+                <VLabel
+                  v-else
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Fullständigt namn*"
+                />
                 <VTextField
                   v-model="fullname"
                   :rules="[requiredValidator]"
                 />
               </VCol>  
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Telefon*"
+                />
                 <VTextField
                   v-model="phone"
-                  :rules="[requiredValidator, phoneValidator]"
+                  class="always-show-prefix"
+                  :rules="phoneRules"
+                  :min-length="phoneDigitsLimit"
+                  :maxlength="phoneDigitsLimit"
+                  :prefix="phonePrefix"
+                  inputmode="numeric"
+                  @input="handlePhoneInput"
+                  @keydown="handlePhoneKeydown"
                 />
               </VCol> 
-              <VCol cols="12" md="12" class="pb-0" v-if="client_type_id === 1">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+              <VCol
+                v-if="client_type_id === 1"
+                cols="12"
+                md="12"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Adress*"
+                />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
                 />
               </VCol>    
-              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 2">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Momsreg. nr." />
+              <VCol
+                v-if="client_type_id === 2"
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Momsreg. nr."
+                />
                 <VTextField
                   v-model="num_iva"
                 />
               </VCol>
-              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 2">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+              <VCol
+                v-if="client_type_id === 2"
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Adress*"
+                />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
                 />
               </VCol> 
-              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 3">
+              <VCol
+                v-if="client_type_id === 3"
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
                 <AppAutocomplete
                   v-model="country_id"
                   label="Land*"
@@ -716,11 +910,12 @@ const onCountryFlagError = country => {
                   <template
                     v-if="country_id"
                     #prepend
-                    >
+                  >
                     <VAvatar
                       start
                       style="margin-top: -7px;"
-                      size="36">
+                      size="36"
+                    >
                       <VImg
                         :src="getFlagCountry(country_id)"
                         cover
@@ -730,47 +925,92 @@ const onCountryFlagError = country => {
                   </template>
                 </AppAutocomplete>
               </VCol>  
-              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 3">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+              <VCol
+                v-if="client_type_id === 3"
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Adress*"
+                />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
                 />
               </VCol> 
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Postnummer*"
+                />
                 <VTextField
                   v-model="postal_code"
                   :rules="[requiredValidator]"
                 />
               </VCol>
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Stad*"
+                />
                 <VTextField
                   v-model="street"
                   :rules="[requiredValidator]"
                 />
               </VCol>
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="E-post*"
+                />
                 <VTextField
                   v-model="email"
                   :rules="[emailValidator, requiredValidator]"
                 />
               </VCol>               
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
+              <VCol
+                cols="12"
+                md="6"
+                class="pb-0"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Vår referens"
+                />
                 <VTextField v-model="reference" />
               </VCol>
-              <VCol cols="12" md="12">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
+              <VCol
+                cols="12"
+                md="12"
+              >
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Beskrivning"
+                />
                 <VTextarea 
                   v-model="comments"
                   rows="3"
-                  />
+                />
               </VCol>            
               <!-- 👉 Submit and Cancel -->
-              <VCol cols="12" class="pb-0">
+              <VCol
+                cols="12"
+                class="pb-0"
+              >
                 <VBtn
                   type="reset"
                   class="btn-light me-3"
@@ -778,7 +1018,10 @@ const onCountryFlagError = country => {
                 >
                   Avbryt
                 </VBtn>
-                <VBtn type="submit" class="btn-gradient">
+                <VBtn
+                  type="submit"
+                  class="btn-gradient"
+                >
                   {{ isEdit ? "Uppdatering" : "Lägg till" }}
                 </VBtn>
               </VCol>
@@ -800,25 +1043,48 @@ const onCountryFlagError = country => {
       class="btn-white close-btn"
       @click="isConfirmLeaveVisible = false"
     >
-      <VIcon size="16" icon="custom-close" />
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
     </VBtn>
     <VCard>
       <VCardText class="dialog-title-box">
-        <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
-        <div class="dialog-title">Avsluta utan att spara?</div>
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
       </VCardText>
       <VCardText class="dialog-text">
         <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
       </VCardText>
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Avbryt</VBtn>
-        <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Ja, fortsätt</VBtn>
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
       </VCardText>
     </VCard>
   </VDialog>
 </template>
 
 <style lang="scss">
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
   .btn-close-client {
     height: 32px !important;
   }
@@ -839,7 +1105,7 @@ const onCountryFlagError = country => {
           .v-field {
             background-color: #f6f6f6 !important;
             min-height: 40px !important;
-            height: 40px !important;
+            /*height: 40px !important;*/
 
             .v-text-field__suffix {
               padding: 8px 16px !important;
@@ -847,7 +1113,7 @@ const onCountryFlagError = country => {
 
             .v-field__input {
               min-height: 40px !important;
-              height: 40px !important;
+              /*height: 40px !important;*/
               padding: 8px 16px !important;
 
               input {
@@ -863,6 +1129,20 @@ const onCountryFlagError = country => {
             .v-field__append-inner {
               align-items: center;
               padding-top: 0px;
+            }
+
+            .v-text-field__prefix {
+              height: 40px;
+            }
+          }
+        }
+      }
+
+      .v-input.always-show-prefix {
+        .v-input__control {
+          .v-field {
+            .v-field__input {
+              padding: 8px 0 !important;
             }
           }
         }
