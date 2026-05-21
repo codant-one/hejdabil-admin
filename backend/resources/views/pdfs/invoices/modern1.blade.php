@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">  
+<html lang="es">
     <head>
     @include('pdfs.shared.fonts')
         <meta charset="UTF-8">
@@ -162,7 +162,7 @@
         .info-supplier {
             display: flex;
             flex-direction: column;
-            width: auto;            
+            width: auto;
         }
 
         .style-supplier {
@@ -172,239 +172,52 @@
         .table-supplier td {
             vertical-align: top;
         }
-    </style> 
+
+        .table-supplier .summary td {
+            padding-top: 16px;
+        }
+
+        .invoice-page {
+            page-break-inside: avoid;
+        }
+
+        .invoice-page-break {
+            page-break-after: always;
+        }
+
+        .page-number {
+            text-align: right;
+            color: {{ $company->primary_color ?? '#E7E7E7' }};
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .footer-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background-color: #FFFFFF;
+        }
+    </style>
     <body>
-        <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
-            <tbody>
-                <tr>
-                    <td>
-                        <table width="100%" class="invoice-background">
-                            <tr>
-                                <td width="35%" class="data-from">
-                                    <div class="d-flex align-center mb-6 {{ ($company->logo ?? null) ? 'box-logo' : '' }} ">
-                                        @if($company->logo ?? null)
-                                            <img src="{{ asset('storage/'.($company->logo ?? '')) }}" width="150" alt="logo-main">
-                                        @else
-                                            <h1 style="margin: 0 !important;">{{ $company->company ?? '' }} </h1>
-                                            <div class="contract-details">
-                                                {{ $company->name ?? '' }} {{ $company->last_name ?? '' }} <br>
-                                                {{ $company->email ?? '' }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td width="65%" class="data-from">
-                                    <div style="text-align: right;">
-                                        <span class="m-0 faktura">
-                                            {{ 
-                                                $billing->state_id === 9 ? 
-                                                'KREDIT FAKTURA' : 
-                                                ( 
-                                                    $billing->payment_terms === '0 dagar netto' ?
-                                                    'KONTANT FAKTURA' :
-                                                    'FAKTURA'
-                                                )
-                                            }}
-                                        </span>
-                                    </div>                                    
-                                </td>
-                            </tr>
-                            <tr>
-                                <td width="65%" class="data-from pt-0">
-                                    <table width="100%" class="invoice-background">
-                                        <tr class="font-weight-medium m-0 d-flex">
-                                            <td width="30%">
-                                                <h4 class="font-weight-medium m-0 d-flex">
-                                                    Faktura nr:
-                                                </h4>
-                                            </td>
-                                            <td>
-                                                <h4 class="font-weight-medium m-0 d-flex">
-                                                    {{ $billing->invoice_id }}
-                                                </h4>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30%">Kund nr:</td>
-                                            <td>{{ $billing->client->order_id }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30%">Fakturadatum:</td>
-                                            <td>
-                                                <span>{{ $billing->invoice_date }}</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30%">Förfallodatum:</td>
-                                            <td>
-                                                <span>{{ $billing->due_date }}</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td width="30%">Betalningsvillkor:</td>
-                                            <td>{{ $billing->payment_terms }}</td>
-                                        </tr>
-                                    </table>
- 
-                                    <p class="mt-20 m-0">{{ $billing->terms_and_conditions }}</p>           
-                                </td>
-                                <td width="35%" class="data-from pt-0" style="vertical-align: top;">
-                                    <h3 class="m-0" style="text-align: right;">
-                                        {{$billing->client->fullname}}
-                                    </h3> 
-                                    @if($billing->reference)
-                                    <div style="text-align: right;">
-                                        <span width="30%">Vår referens: </span>
-                                        <span>{{ $billing->reference }}</span>
-                                    </div>
-                                    @endif 
-                                    <div style="text-align: right;" class="mt-5 number-invoice">
-                                        <span class="number-invoice" style="line-height: 100%">
-                                            <p class="m-0">Org.nr. {{ $billing->client->organization_number }}</p>
-                                            <p class="m-0">{{ $billing->client->address }}</p>
-                                            <p class="m-0">{{ $billing->client->postal_code }}, {{ $billing->client->street }}</p>
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <!------------------------TABLE ITEMS--------------------->    
-                <tr>
-                    <td>
-                        <table width="100%" class="table-items">
-                            <thead class="bg-items">
-                                <tr>
-                                    @foreach($types as $key => $type)
-                                    <td 
-                                        style="
-                                            text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
-                                            width: {{$type->type_id === 1 ? '40' : '15' }}%; 
-                                            {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 16px !important;
-                                            height: 48px !important;"> 
-                                        {{ $type->name }}
-                                    </td>
-                                    @endforeach
-                                    @if($billing->rabatt)
-                                    <td 
-                                        style="
-                                            text-align: right!important;
-                                            width: 15%; 
-                                            padding-right: 16px !important;
-                                            height: 48px !important;"> 
-                                        Rabatt
-                                    </td>
-                                    @endif
-                                </tr>
-                            </thead>
-                            @foreach($invoices as $rowIndex => $row)
-                                <tr style="height: 48px !important;">
-                                    @foreach($row as $colIndex => $column)
-                                        @isset($column['id'])
-                                            @if($column['id'] < 5)
-                                            <td 
-                                                style="
-                                                text-align: {{ $column['id'] === 1 ? ' start' : 'right' }}!important;
-                                                {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 16px !important;
-                                                height: 48px !important; 
-                                                border-bottom: 1px solid #E7E7E7;">
-                                                <span>
-                                                {{ ($column['id'] === 2 || $column['id'] === 3)
-                                                    ? formatCurrency($column['value'])
-                                                    : $column['value'] 
-                                                }}
-                                                </span>
-                                                @if($column['id'] === 3 || $column['id'] === 4)
-                                                <span>kr</span>
-                                                @endif
-                                            </td>
-                                            @elseif($column['id'] === 5 && $billing->rabatt)
-                                            <td 
-                                                style="
-                                                text-align: right!important;
-                                                padding-right: 16px!important;
-                                                height: 48px !important; 
-                                                border-bottom: 1px solid #E7E7E7;">
-                                                <span>
-                                                {{ formatCurrency($column['value'])}} %
-                                                </span>
-                                            </td>
-                                            @endif
-                                        @else
-                                        <td 
-                                            colspan="{{ $billing->rabatt ? 5 : 4 }}"
-                                            style="
-                                            padding-left: 16px !important; 
-                                            text-align: start !important; 
-                                            height: 48px !important; 
-                                            border-bottom: 1px solid #E7E7E7;">
-                                            <span>
-                                            {{ $column['note'] }}
-                                            </span>
-                                        </td>
-                                        @endisset
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </table>     
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <!------------------------- BILL TO---------------------------------->
-        <div style="position: fixed; bottom: 0; width: 100%;">
-            <table width="100%" class="table-supplier">
-                <tr>
-                    <td width="15%"></td>
-                    <td width="15%"></td>
-                    <td width="15%"></td>
-                    <td width="55%" class="info-total">
-                        <table width="100%">
-                            <tr>
-                                <td style="text-align: right;">
-                                    Netto:
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>{{ formatCurrency($billing->subtotal) }} kr</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: right;">
-                                    Moms {{$billing->tax}}% (beräknad på {{ formatCurrency($billing->subtotal) }} kr):
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>{{ formatCurrency($billing->amount_tax) }} kr</span>
-                                </td>
-                            </tr>
-                            @if($billing->discount > 0)
-                            <tr>
-                                <td style="text-align: right;">
-                                    Preliminär skattereduktion {{$billing->discount}}% av {{ formatCurrency($billing->subtotal) }} kr:
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>- {{ formatCurrency($billing->amount_discount) }} kr</span>
-                                </td>
-                            </tr>
-                            @endif
-                            <tr class="summary">
-                                <td style="text-align: right;">
-                                    <strong>
-                                        @if($billing->state_id === 9)
-                                            Krediterad belopp:
-                                        @else
-                                            Summa att betala:
-                                        @endif
-                                    </strong>
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+        @php
+            $rowHeight = 48;
+            $reservedContentHeight = 250;
+            $availableHeight = 900 - 45 - 45 - 200;
+            $minSpacerPadding = 16;
+            $rowsPerPage = max(1, (int) floor(($availableHeight - $reservedContentHeight - $minSpacerPadding) / $rowHeight));
+            $invoicePages = collect($invoices)->chunk($rowsPerPage)->values();
+
+            if ($invoicePages->isEmpty()) {
+                $invoicePages = collect([collect()]);
+            }
+
+            $totalPages = $invoicePages->count();
+        @endphp
+
+        <div class="footer-fixed">
             <table width="100%" class="table-supplier border-top mt-10 style-supplier">
                 <tr>
                     <td width="25%">
@@ -497,7 +310,7 @@
                             </span>
                         </p>
                         @endif
-                        
+
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Företagets e-post
@@ -550,5 +363,259 @@
                 </tr>
             </table>
         </div>
+
+        @foreach($invoicePages as $pageIndex => $pageRows)
+            @php
+                $pageNumber = $pageIndex + 1;
+                $isLastPage = $pageNumber === $totalPages;
+                $rowCount = count($pageRows);
+                $usedHeight = $reservedContentHeight + ($rowCount * $rowHeight);
+                $spacerPadding = max($minSpacerPadding, $availableHeight - $usedHeight + ($totalPages === 1 ? 38 : 0));
+            @endphp
+            <div class="invoice-page {{ $isLastPage ? '' : 'invoice-page-break' }}">
+                <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <table width="100%" class="invoice-background">
+                                    <tr>
+                                        <td width="35%" class="data-from">
+                                            <div class="d-flex align-center mb-6 {{ ($company->logo ?? null) ? 'box-logo' : '' }} ">
+                                                @if($company->logo ?? null)
+                                                    <img src="{{ asset('storage/'.($company->logo ?? '')) }}" width="150" alt="logo-main">
+                                                @else
+                                                    <h1 style="margin: 0 !important;">{{ $company->company ?? '' }}</h1>
+                                                    <div class="contract-details">
+                                                        {{ $company->name ?? '' }} {{ $company->last_name ?? '' }} <br>
+                                                        {{ $company->email ?? '' }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td width="65%" class="data-from">
+                                            <div style="text-align: right;">
+                                                <span class="m-0 faktura">
+                                                    {{
+                                                        $billing->state_id === 9
+                                                            ? 'KREDIT FAKTURA'
+                                                            : ($billing->payment_terms === '0 dagar netto' ? 'KONTANT FAKTURA' : 'FAKTURA')
+                                                    }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="65%" class="data-from pt-0">
+                                            <table width="100%" class="invoice-background">
+                                                <tr class="font-weight-medium m-0 d-flex">
+                                                    <td width="30%">
+                                                        <h4 class="font-weight-medium m-0 d-flex">
+                                                            Faktura nr:
+                                                        </h4>
+                                                    </td>
+                                                    <td>
+                                                        <h4 class="font-weight-medium m-0 d-flex">
+                                                            {{ $billing->invoice_id }}
+                                                        </h4>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="30%">Kund nr:</td>
+                                                    <td>{{ $billing->client->order_id }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="30%">Fakturadatum:</td>
+                                                    <td>
+                                                        <span>{{ $billing->invoice_date }}</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="30%">Förfallodatum:</td>
+                                                    <td>
+                                                        <span>{{ $billing->due_date }}</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="30%">Betalningsvillkor:</td>
+                                                    <td>{{ $billing->payment_terms }}</td>
+                                                </tr>
+                                            </table>
+
+                                            <p class="mt-20 m-0">{{ $billing->terms_and_conditions }}</p>
+                                        </td>
+                                        <td width="35%" class="data-from pt-0" style="vertical-align: top;">
+                                            <h3 class="m-0" style="text-align: right;">
+                                                {{ $billing->client->fullname }}
+                                            </h3>
+                                            @if($billing->reference)
+                                            <div style="text-align: right;">
+                                                <span width="30%">Vår referens: </span>
+                                                <span>{{ $billing->reference }}</span>
+                                            </div>
+                                            @endif
+                                            <div style="text-align: right;" class="mt-5 number-invoice">
+                                                <span class="number-invoice" style="line-height: 100%">
+                                                    <p class="m-0">Org.nr. {{ $billing->client->organization_number }}</p>
+                                                    <p class="m-0">{{ $billing->client->address }}</p>
+                                                    <p class="m-0">{{ $billing->client->postal_code }}, {{ $billing->client->street }}</p>
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!------------------------TABLE ITEMS--------------------->
+                        <tr>
+                            <td>
+                                <table width="100%" class="table-items">
+                                    <thead class="bg-items">
+                                        <tr>
+                                            @foreach($types as $key => $type)
+                                            <td
+                                                style="
+                                                    text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
+                                                    width: {{ $type->type_id === 1 ? '40' : '15' }}%;
+                                                    {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 16px !important;
+                                                    height: 48px !important;">
+                                                {{ $type->name }}
+                                            </td>
+                                            @endforeach
+                                            @if($billing->rabatt)
+                                            <td
+                                                style="
+                                                    text-align: right!important;
+                                                    width: 15%;
+                                                    padding-right: 16px !important;
+                                                    height: 48px !important;">
+                                                Rabatt
+                                            </td>
+                                            @endif
+                                        </tr>
+                                    </thead>
+                                    @foreach($pageRows as $row)
+                                        <tr style="height: 48px !important;">
+                                            @foreach($row as $column)
+                                                @isset($column['id'])
+                                                    @if($column['id'] < 5)
+                                                    <td
+                                                        style="
+                                                            text-align: {{ $column['id'] === 1 ? 'start' : 'right' }}!important;
+                                                            {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 16px !important;
+                                                            height: 48px !important;
+                                                            border-bottom: 1px solid #E7E7E7;">
+                                                        <span>
+                                                            {{ ($column['id'] === 2 || $column['id'] === 3) ? formatCurrency($column['value']) : $column['value'] }}
+                                                        </span>
+                                                        @if($column['id'] === 3 || $column['id'] === 4)
+                                                        <span>kr</span>
+                                                        @endif
+                                                    </td>
+                                                    @elseif($column['id'] === 5 && $billing->rabatt)
+                                                    <td
+                                                        style="
+                                                            text-align: right!important;
+                                                            padding-right: 16px!important;
+                                                            height: 48px !important;
+                                                            border-bottom: 1px solid #E7E7E7;">
+                                                        <span>{{ formatCurrency($column['value']) }} %</span>
+                                                    </td>
+                                                    @endif
+                                                @else
+                                                <td
+                                                    colspan="{{ $billing->rabatt ? 5 : 4 }}"
+                                                    style="
+                                                        padding-left: 16px !important;
+                                                        text-align: start !important;
+                                                        height: 48px !important;
+                                                        border-bottom: 1px solid #E7E7E7;">
+                                                    <span>{{ $column['note'] }}</span>
+                                                </td>
+                                                @endisset
+                                            @endforeach
+                                        </tr>
+                                    @endforeach
+                                    <tr>
+                                        <td colspan="{{ $billing->rabatt ? 5 : 4 }}" style="padding-top: {{ $spacerPadding }}px;">
+                                            @if($isLastPage)
+                                            <table width="100%" class="table-supplier">
+                                                <tr>
+                                                    <td width="15%"></td>
+                                                    <td width="15%"></td>
+                                                    <td width="15%"></td>
+                                                    <td width="55%" class="info-total">
+                                                        <table width="100%">
+                                                            @if($totalPages !== 1)
+                                                            <tr>
+                                                                <td colspan="2" width="100%" class="data-from page-number pb-0 pr-0">
+                                                                    Sida {{ $pageNumber }} av {{ $totalPages }}
+                                                                </td>
+                                                            </tr>
+                                                            @endif
+                                                            <tr>
+                                                                <td style="text-align: right;">
+                                                                    Netto:
+                                                                </td>
+                                                                <td class="numbers" style="text-align: right;">
+                                                                    <span>{{ formatCurrency($billing->subtotal) }} kr</span>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="text-align: right;">
+                                                                    Moms {{ $billing->tax }}% (beräknad på {{ formatCurrency($billing->subtotal) }} kr):
+                                                                </td>
+                                                                <td class="numbers" style="text-align: right;">
+                                                                    <span>{{ formatCurrency($billing->amount_tax) }} kr</span>
+                                                                </td>
+                                                            </tr>
+                                                            @if($billing->discount > 0)
+                                                            <tr>
+                                                                <td style="text-align: right;">
+                                                                    Preliminär skattereduktion {{ $billing->discount }}% av {{ formatCurrency($billing->subtotal) }} kr:
+                                                                </td>
+                                                                <td class="numbers" style="text-align: right;">
+                                                                    <span>- {{ formatCurrency($billing->amount_discount) }} kr</span>
+                                                                </td>
+                                                            </tr>
+                                                            @endif
+                                                            <tr class="summary">
+                                                                <td style="text-align: right;">
+                                                                    <strong>
+                                                                        @if($billing->state_id === 9)
+                                                                            Krediterad belopp:
+                                                                        @else
+                                                                            Summa att betala:
+                                                                        @endif
+                                                                    </strong>
+                                                                </td>
+                                                                <td class="numbers" style="text-align: right;">
+                                                                    <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            @else
+                                            <table width="100%" class="table-supplier">
+                                                <tr>
+                                                    <td width="15%"></td>
+                                                    <td width="15%"></td>
+                                                    <td width="15%"></td>
+                                                    <td width="55%" class="page-number">
+                                                        Sida {{ $pageNumber }} av {{ $totalPages }}
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
     </body>
 </html>

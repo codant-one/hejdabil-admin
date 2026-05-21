@@ -1961,7 +1961,7 @@ const handleFocus = (element, fieldId) => {
                 <VuePdfEmbed
                   v-if="billing?.file"
                   :source="pdfSource"
-                  class="d-flex justify-content-center w-auto m-auto"
+                  class="w-auto m-auto"
                 />
                 <img
                   v-else
@@ -2168,6 +2168,30 @@ const handleFocus = (element, fieldId) => {
   border: solid 1px #e7e7e7;
 }
 
+:deep(.invoice-panel .vue-pdf-embed) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+:deep(.invoice-panel .vue-pdf-embed > div) {
+  width: 100% !important;
+}
+
+:deep(.invoice-panel .vue-pdf-embed > div + div) {
+  margin-top: 12px;
+}
+
+:deep(.invoice-panel .vue-pdf-embed__page) {
+  margin: 0 auto;
+}
+
+:deep(.invoice-panel .vue-pdf-embed canvas) {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
 .invoice-box {
   border-radius: 16px;
   padding: 16px;
@@ -2199,7 +2223,7 @@ const handleFocus = (element, fieldId) => {
 @media (max-width: 1023px) {
   .invoice-panel {
     margin: 0;
-    padding: 2px !important;
+    padding: 0 !important;
   }
 }
 

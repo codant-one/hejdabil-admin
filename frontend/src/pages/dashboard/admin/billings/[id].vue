@@ -559,7 +559,7 @@ onBeforeUnmount(() => {
                   themeConfig.settings.urlStorage +
                   invoice.file
                 "
-                class="d-flex justify-content-center w-100 m-auto"
+                class="w-100 m-auto"
               />
             </div>
           </div>
@@ -1136,6 +1136,18 @@ onBeforeUnmount(() => {
     display: block;
     width: 100%;
     max-width: 100%;
+  }
+
+  .vue-pdf-embed > div {
+    width: 100% !important;
+  }
+
+  .vue-pdf-embed > div + div {
+    margin-top: 12px;
+  }
+
+  .vue-pdf-embed__page {
+    margin: 0 auto;
   }
   
   canvas {
