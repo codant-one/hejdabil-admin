@@ -1618,6 +1618,8 @@ class SignatureController extends Controller
                 'signed_by'    => $token->recipient_email,
                 'user_id'      => $userId, // ID del usuario que debe recibir la notificación
                 'order_id'     => null,
+                'client'       => null,
+                'reg_num'      => null
             ];
 
             // Add document or agreement ID for download
@@ -1628,6 +1630,11 @@ class SignatureController extends Controller
                     $response['order_id'] = $agreement->agreement_type_id === 4 ? $agreement->offer_id : $agreement->agreement_id;
                 }
                 $response['is_agreement'] = true;
+                $response['client'] = $agreement->agreement_client ? $agreement->agreement_client->fullname : null;
+                $response['reg_num'] = 
+                    $agreement->agreement_type_id === 4 ? 
+                    $agreement->offer->reg_num : 
+                    ($agreement->agreement_type_id === 3 ? $agreement->commission->vehicle->reg_num : $agreement->vehicle_client->vehicle->reg_num);
             } elseif ($token->document_id) {
                 $response['document_id'] = $token->document_id;
                 $document = $token->document;
