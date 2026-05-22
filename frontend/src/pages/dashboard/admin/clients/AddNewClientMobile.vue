@@ -1021,7 +1021,7 @@ const truncateText = (text, length = 30) => {
 
             .v-field {
               .v-text-field__prefix {
-                height: 50px;
+                height: 48px;
                 color: #454545;
               }
             }
