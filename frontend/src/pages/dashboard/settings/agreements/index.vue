@@ -685,9 +685,9 @@ onBeforeUnmount(() => {
           <div class="settings-layout border-bottom-settings pb-6">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
-                <span class="subtitle-settings">SMS för signering</span>
+                <span class="subtitle-settings">SMS-meddelanden</span>
                 <span class="text-settings">
-                  Detta SMS skickas automatiskt till kunden när ett avtal skickas för digital signering via SMS.
+                  Så här ser SMS-meddelandet ut som skickas till kunden när ett avtal skickas för digital signering.
                 </span>
               </div>
             </div>
