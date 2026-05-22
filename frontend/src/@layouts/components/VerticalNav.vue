@@ -130,13 +130,14 @@ const handleNavScroll = (evt) => {
         <div class="d-flex flex-column gap-4">
           <VBtn
             class="btn-light w-auto"
+            :class="hideTitleAndIcon ? 'px-3' : ''"
             :to="{ name: 'dashboard-panel' }"
           >
             <VIcon icon="custom-return" size="24" />
-            Tillbaka
+            <span :class="hideTitleAndIcon ? 'd-none' : 'text-span'">Tillbaka</span>
           </VBtn>
 
-          <span class="title-settings">
+          <span class="title-settings" :class="hideTitleAndIcon ? 'd-none' : ''">
             Inställningar
           </span>
         </div>
@@ -233,6 +234,10 @@ const handleNavScroll = (evt) => {
       font-size: 16px;
       line-height: 16px;
       color: #1c2925;
+    }
+
+    .text-span {
+      color: #6e9383 !important;
     }
 
     .header-action {
