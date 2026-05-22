@@ -1038,7 +1038,7 @@ const truncateText = (text, length = 30) => {
           .v-input__control {
             .v-field {
               .v-field__input {
-                padding: 12px 0 !important;
+                padding: 8px 0 !important;
               }
             }
           }
