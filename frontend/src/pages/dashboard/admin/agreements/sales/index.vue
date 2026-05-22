@@ -2,6 +2,7 @@
 
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, getPhoneInputConfig, normalizePhoneInput, resolvePhoneCountry } from '@/@core/utils/phone'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
@@ -189,6 +190,11 @@ const email = ref('')
 const failedExternalFlags = ref({})
 const save_client = ref(false)
 const disabled_client = ref(false)
+const defaultForeignCountryId = PHONE_INPUT_DEFAULTS.defaultCountryId
+const phoneInputOptions = {
+    defaultCountryId: defaultForeignCountryId,
+    stripLeadingZeroCountryId: PHONE_INPUT_DEFAULTS.stripLeadingZeroCountryId,
+}
 
 //Const tab 4
 const price = ref(null)
@@ -509,23 +515,7 @@ const selectBrand = brand => {
     }
 }
 
-const findCountry = country => {
-  if (!country || !Array.isArray(countries.value)) return null
-
-  const normalizeText = value =>
-    String(value ?? '')
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-
-  if (typeof country === 'object') {
-    return countries.value.find(item => item.id === country.id) || null
-  }
-
-  return countries.value.find(item => String(item.id) === String(country))
-      || countries.value.find(item => normalizeText(item.name) === normalizeText(country))
-
-}
+const findCountry = country => resolvePhoneCountry(countries.value, country)
 
 const getFlagFromDb = selectedCountry => {
   const flag = String(selectedCountry?.flag ?? '').trim()
@@ -563,6 +553,85 @@ const onCountryFlagError = country => {
     [selectedCountry.id]: true,
   }
 }
+
+const phoneConfig = computed(() => {
+    const selectedCountry = client_type_id.value === 3 ? country_id.value : null
+
+    return getPhoneInputConfig(countries.value, selectedCountry, phoneInputOptions)
+})
+
+const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
+const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
+
+const phoneRules = computed(() => [
+    requiredValidator,
+    minLengthDigitsValidator(phoneDigitsLimit.value),
+    phoneValidator,
+])
+
+const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, countries.value, country, phoneInputOptions)
+
+const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, countries.value, country, phoneInputOptions)
+
+const handlePhoneInput = () => {
+    const selectedCountry = client_type_id.value === 3 ? country_id.value : null
+
+    phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handlePhoneKeydown = event => {
+    const allowedKeys = [
+        'Backspace',
+        'Delete',
+        'Tab',
+        'Enter',
+        'Escape',
+        'ArrowLeft',
+        'ArrowRight',
+        'ArrowUp',
+        'ArrowDown',
+        'Home',
+        'End',
+    ]
+
+    if (allowedKeys.includes(event.key))
+        return
+
+    if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+        return
+
+    if (/^\d$/.test(event.key))
+        return
+
+    event.preventDefault()
+}
+
+watch(client_type_id, clientTypeId => {
+    if (clientTypeId === 3 && !country_id.value)
+        country_id.value = defaultForeignCountryId
+})
+
+watch(country_id, (newCountryId, previousCountryId) => {
+    if (client_type_id.value !== 3 || !phone.value)
+        return
+
+    if (!previousCountryId)
+        return
+
+    if (String(newCountryId ?? '') === String(previousCountryId ?? ''))
+        return
+
+    phone.value = ''
+})
+
+watch([client_type_id, country_id], () => {
+    if (!phone.value)
+        return
+
+    const selectedCountry = client_type_id.value === 3 ? country_id.value : null
+
+    phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+})
 
 const selectModel = selected => {
 
@@ -628,6 +697,9 @@ const clearClient = () => {
 const selectClient = client => {
     if (client) {
         let _client = clients.value.find(item => item.id === client)
+        const resolvedCountryId = _client.client_type_id === 3
+            ? _client.country_id ?? _client.country?.id ?? _client.country?.name ?? defaultForeignCountryId
+            : _client.country_id ?? _client.country?.id ?? _client.country?.name ?? null
     
         fullname.value = _client.fullname
         email.value = _client.email
@@ -635,11 +707,11 @@ const selectClient = client => {
         address.value = _client.address
         street.value = _client.street
         postal_code.value = _client.postal_code
-        phone.value = _client.phone
+        phone.value = normalizePhoneForInput(_client.phone, _client.client_type_id === 3 ? resolvedCountryId : null)
 
         // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
         client_type_id.value = _client.client_type_id ?? client_type_id.value
-        country_id.value = _client.country_id
+        country_id.value = resolvedCountryId
 
         save_client.value = false
         disabled_client.value = true
@@ -1077,6 +1149,8 @@ const showTabValidationWarning = (message) => {
 }
 
 const getTabValidationErrors = () => {
+    const isPhoneValid = phoneRules.value.every(rule => rule(phone.value) === true)
+
     const hasTab0Errors = !reg_num.value || 
                           !brand_id.value || 
                           (model_id.value !== 0 && !model_id.value) ||
@@ -1120,7 +1194,7 @@ const getTabValidationErrors = () => {
                         !postal_code.value || 
                         !street.value || 
                         !phone.value || 
-                        (phone.value && phoneValidator(phone.value) !== true) ||
+                        (phone.value && !isPhoneValid) ||
                         !email.value || 
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
@@ -1330,11 +1404,13 @@ const onSubmit = async () => {
         refForm.value?.validate().then(({ valid: isValid }) => {
             if (isValid) {
                 let formData = new FormData()
+                const selectedCountry = findCountry(country_id.value)
+                const normalizedCountryId = selectedCountry?.id ?? country_id.value
 
                 //client
                 formData.append('save_client', save_client.value)
                 formData.append('client_type_id', client_type_id.value)
-                formData.append('country_id', country_id.value)
+                formData.append('country_id', normalizedCountryId)
                 formData.append('client_id', client_id.value)
                 formData.append('fullname', fullname.value)
                 formData.append('email', email.value)
@@ -1342,7 +1418,7 @@ const onSubmit = async () => {
                 formData.append('address', address.value)
                 formData.append('street', street.value)
                 formData.append('postal_code', postal_code.value)
-                formData.append('phone', phone.value)
+                formData.append('phone', formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
 
                 //vehicle
                 formData.append('reg_num', reg_num.value)
@@ -2612,7 +2688,14 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
                                             <VTextField
                                                 v-model="phone"
-                                                :rules="[requiredValidator, phoneValidator]"
+                                                class="always-show-prefix"
+                                                :rules="phoneRules"
+                                                :min-length="phoneDigitsLimit"
+                                                :maxlength="phoneDigitsLimit"
+                                                :prefix="phonePrefix"
+                                                inputmode="numeric"
+                                                @input="handlePhoneInput"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="client_type_id === 3">
@@ -3175,6 +3258,10 @@ onBeforeRouteLeave((to, from, next) => {
 </style>
 <style lang="scss">
 
+    .always-show-prefix .v-text-field__prefix {
+        opacity: 1 !important;
+    }
+
     .radio-form {
         display: flex;
         align-items: center;
@@ -3375,7 +3462,18 @@ onBeforeRouteLeave((to, from, next) => {
                     }
 
                     .v-text-field__prefix {
-                        padding-top: 12px !important  ;
+                        height: 48px;
+                        color: #33303CAD;
+                    }
+                }
+            }
+        }
+
+        .v-input.always-show-prefix {
+            .v-input__control {
+                .v-field {
+                    .v-field__input {
+                        padding: 8px 0 !important;
                     }
                 }
             }

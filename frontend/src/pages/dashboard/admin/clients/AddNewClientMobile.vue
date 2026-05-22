@@ -1,5 +1,6 @@
 <script setup>
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, getPhoneInputConfig, normalizePhoneInput, resolvePhoneCountry } from "@/@core/utils/phone"
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators"
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
@@ -113,45 +114,18 @@ const organizationNumberForeignRules = computed(() => [
   duplicateOrganizationNumberValidator(props.isDuplicate),
 ])
 
-const defaultForeignCountryId = 205
-
-const normalizeText = value =>
-  String(value ?? '')
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-
-const resolveCountry = country => {
-  if (!country || !Array.isArray(props.countries)) return null
-
-  if (typeof country === 'object')
-    return props.countries.find(item => String(item.id) === String(country.id)) || null
-
-  return props.countries.find(item => String(item.id) === String(country))
-    || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+const defaultForeignCountryId = PHONE_INPUT_DEFAULTS.defaultCountryId
+const phoneInputOptions = {
+  defaultCountryId: defaultForeignCountryId,
+  stripLeadingZeroCountryId: PHONE_INPUT_DEFAULTS.stripLeadingZeroCountryId,
 }
 
-const getPhoneConfig = country => {
-  const selectedCountry = resolveCountry(country)
-  const phonecode = String(selectedCountry?.phonecode ?? '').replace(/\D/g, '') || '46'
-  const parsedPhoneDigits = Number(selectedCountry?.phone_digits)
-
-  const phoneDigits = Number.isFinite(parsedPhoneDigits) && parsedPhoneDigits > 0
-    ? parsedPhoneDigits
-    : 9
-
-  return {
-    selectedCountry,
-    phonecode,
-    phoneDigits,
-  }
-}
+const resolveCountry = country => resolvePhoneCountry(props.countries, country)
 
 const phoneConfig = computed(() => {
-  if (client_type_id.value === 3)
-    return getPhoneConfig(country_id.value)
+  const selectedCountry = client_type_id.value === 3 ? country_id.value : null
 
-  return getPhoneConfig(null)
+  return getPhoneInputConfig(props.countries, selectedCountry, phoneInputOptions)
 })
 
 const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
@@ -163,26 +137,9 @@ const phoneRules = computed(() => [
   phoneValidator,
 ])
 
-const normalizePhoneForInput = (value, country = null) => {
-  const digits = String(value ?? '').replace(/\D/g, '')
-  const { phonecode, phoneDigits } = getPhoneConfig(country)
-  const digitsWithoutLeadingZero = digits.replace(/^0+/, '')
+const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, props.countries, country, phoneInputOptions)
 
-  if (!digitsWithoutLeadingZero)
-    return ''
-
-  if (phonecode && digitsWithoutLeadingZero.startsWith(phonecode) && digitsWithoutLeadingZero.length - phonecode.length === phoneDigits)
-    return digitsWithoutLeadingZero.slice(phonecode.length)
-
-  return digitsWithoutLeadingZero.slice(0, phoneDigits)
-}
-
-const formatPhoneForPayload = (value, country = null) => {
-  const localNumber = normalizePhoneForInput(value, country)
-  const { phonecode } = getPhoneConfig(country)
-
-  return localNumber ? `+${phonecode}${localNumber}` : ''
-}
+const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, props.countries, country, phoneInputOptions)
 
 watch(() => props.isDuplicate, async isDuplicate => {
   await nextTick()
@@ -536,10 +493,7 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData()
 
-      const selectedCountry = Array.isArray(props.countries)
-        ? props.countries.find(item => String(item.id) === String(country_id.value))
-          || props.countries.find(item => item.name === country_id.value)
-        : null
+      const selectedCountry = resolveCountry(country_id.value)
 
       const normalizedCountryId = selectedCountry?.id ?? country_id.value
 
