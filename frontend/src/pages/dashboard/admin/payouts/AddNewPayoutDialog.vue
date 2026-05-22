@@ -44,11 +44,12 @@ const personInfoStores = usePersonInfoStores()
 
 const normalizePayeeAliasForInput = value => {
   const digits = String(value ?? '').replace(/\D/g, '')
+  const normalizedDigits = digits.replace(/^0+/, '')
 
-  if (digits.length === 11 && digits.startsWith('46'))
-    return digits.slice(2)
+  if (normalizedDigits.length === 11 && normalizedDigits.startsWith('46'))
+    return normalizedDigits.slice(2)
 
-  return digits
+  return normalizedDigits
 }
 
 const formatPayeeAliasForPayload = value => {
@@ -106,8 +107,7 @@ const closeDialog = () => {
 const format_number = (value) => {
   
   if  (value === 'payee_alias') {
-    let numbers = payee_alias.value.replace(/\D/g, '')
-    payee_alias.value = numbers
+    payee_alias.value = normalizePayeeAliasForInput(payee_alias.value)
     return
   }
 
