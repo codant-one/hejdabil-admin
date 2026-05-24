@@ -6,7 +6,8 @@ import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginatio
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { getDocumentSmsVisibilityCacheKey, loadDocumentSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
@@ -82,6 +83,9 @@ const resendSignaturePhone = ref('')
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+const signaturePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const signaturePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const signaturePhoneRules = [minLengthDigitsValidator(signaturePhoneDigits), phoneValidator]
 
 const isPlacementModalVisible = ref(false)
 const placementPdfSource = ref(null)
@@ -248,6 +252,14 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const normalizeSignaturePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatSignaturePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const handleSignaturePhoneInput = () => {
+  signaturePhone.value = normalizeSignaturePhoneForInput(signaturePhone.value)
+}
 
 useMobilePaginationScroll({
   targetRef: sectionEl,
@@ -1120,7 +1132,7 @@ const handleSignatureSubmit = async () => {
     const payload = {
       documentId: selectedDocument.value.id,
       email: signatureEmail.value,
-      phone: signaturePhone.value,
+      phone: formatSignaturePhoneForPayload(signaturePhone.value),
       x: x_percent.toFixed(4),
       y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
@@ -2266,8 +2278,13 @@ onBeforeUnmount(() => {
             </VTooltip>
             <VTextField
               v-model="signaturePhone"
-              placeholder="+46701234567"
-              :rules="[phoneValidator]"
+              class="always-show-prefix"
+              :rules="signaturePhoneRules"
+              minLength="9"
+              maxlength="9"
+              :prefix="signaturePhonePrefix"
+              inputmode="numeric"
+              @input="handleSignaturePhoneInput"
             />
           </VCardText>
           <VCardText class="dialog-text mt-4" :class="windowWidth < 1024 ? 'flex-0' : ''">
@@ -2760,6 +2777,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -2837,6 +2858,21 @@ onBeforeUnmount(() => {
           .v-field__append-inner {
             align-items: center;
             padding-top: 0px;
+          }
+
+          .v-text-field__prefix {
+            height: 48px;
+            color: #33303CAD;
+          }
+        }
+      }
+    }
+
+    & .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 12px 0 !important;
           }
         }
       }
