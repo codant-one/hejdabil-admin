@@ -663,8 +663,7 @@ class AgreementController extends Controller
                 }
 
                 $failedRecipients[] = [
-                $smsSender = $this->resolveSmsSenderForCurrentUser();
-                $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
+                    'phone' => $phoneNumber,
                     'error' => $result,
                 ];
             }
