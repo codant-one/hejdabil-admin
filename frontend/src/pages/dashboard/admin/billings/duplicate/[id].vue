@@ -59,6 +59,7 @@ const company = ref({});
 
 const DEFAULT_BILLING_DUE_DATES = 5;
 const DEFAULT_BILLING_TERMS = "Efter forfallodagen debiteras ranta enligt rantelagen.";
+const DEFAULT_INVOICE_ID = 1;
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -104,7 +105,16 @@ async function fetchData() {
     if(Number(route.params.id) && route.name === 'dashboard-admin-billings-duplicate-id') {
         isRequestOngoing.value = true
 
+        const resolveConfiguredInvoiceId = (settings, fallbackInvoiceId = 0) => {
+          const configuredInvoiceId = Number(settings?.invoice_id)
+
+          return Number.isFinite(configuredInvoiceId) && configuredInvoiceId > 0
+            ? configuredInvoiceId
+            : Number(fallbackInvoiceId) || DEFAULT_INVOICE_ID
+        }
+
         const applyBillingSettings = (settings) => {
+          invoice_id.value = resolveConfiguredInvoiceId(settings, response?.data?.data?.invoice_id)
           company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
           company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
             ? settings.terms_and_conditions
@@ -158,6 +168,7 @@ async function fetchData() {
           //admin
           await configsStores.getFeature("company");
           await configsStores.getFeature("logo");
+          await configsStores.getFeature("billings");
     
           company.value = configsStores.getFeaturedConfig("company");
           company.value.billings = response.data.data.billings;

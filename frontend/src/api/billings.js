@@ -30,6 +30,10 @@ class Billings {
         return axios.post(`/billings/sendMails/${data.id}`, data)
     }
 
+    sendSms(data) {
+        return axios.post(`/billings/sendSms/${data.id}`, data)
+    }
+
     all(){
         return axios.get(`/billings/data/all`)
     }

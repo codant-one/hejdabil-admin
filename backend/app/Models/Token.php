@@ -19,6 +19,7 @@ class Token extends Model
         'signable_id',
         'signature_status',
         'recipient_email',
+        'recipient_phone',
         'signing_token',
         'token_expires_at',
         'signed_at',

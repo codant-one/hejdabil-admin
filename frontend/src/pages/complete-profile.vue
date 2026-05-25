@@ -8,6 +8,7 @@ import {
   urlValidator,
   minLengthDigitsValidator,
 } from "@/@core/utils/validators";
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from "@/@core/utils/phone";
 import { useAuthStores } from "@/stores/useAuth";
 import { useProfileStores } from "@/stores/useProfile";
 import { Cropper } from "vue-advanced-cropper";
@@ -36,6 +37,14 @@ const sectionEl = ref(null)
 
 const authStores = useAuthStores();
 const profileStores = useProfileStores();
+
+const profilePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`;
+const profilePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits;
+const requiredProfilePhoneRules = [requiredValidator, minLengthDigitsValidator(profilePhoneDigits), phoneValidator];
+
+const normalizeProfilePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS);
+
+const formatProfilePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS);
 
 const refVForm = ref();
 const user_id = ref("");
@@ -125,6 +134,7 @@ const validateTab0 = async () => {
   results.push(requiredValidator(email.value));
   results.push(emailValidator(email.value));
   results.push(requiredValidator(phone.value));
+  results.push(minLengthDigitsValidator(profilePhoneDigits)(phone.value));
   results.push(phoneValidator(phone.value));
   results.push(requiredValidator(address.value));
 
@@ -155,6 +165,7 @@ const validateTab1 = async () => {
 
   if (!isUser) {
     results.push(requiredValidator(form.value.phone));
+    results.push(minLengthDigitsValidator(profilePhoneDigits)(form.value.phone));
     results.push(phoneValidator(form.value.phone));
   }
 
@@ -234,6 +245,14 @@ const alert = ref({
   type: "",
 });
 
+const handlePersonalPhoneInput = () => {
+  phone.value = normalizeProfilePhoneForInput(phone.value);
+};
+
+const handleCompanyPhoneInput = () => {
+  form.value.phone = normalizeProfilePhoneForInput(form.value.phone);
+};
+
 watchEffect(fetchData);
 
 async function fetchData() {
@@ -247,7 +266,7 @@ async function fetchData() {
   email.value = userData.value.email;
   name.value = userData.value.name;
   last_name.value = userData.value.last_name;
-  phone.value = userData.value.user_detail?.personal_phone || "";
+  phone.value = normalizeProfilePhoneForInput(userData.value.user_detail?.personal_phone || "");
   address.value = userData.value.user_detail?.personal_address || "";
 
   //company
@@ -277,8 +296,8 @@ async function fetchData() {
       : userData.value.user_detail?.postal_code || "";
   form.value.phone =
     role.value === "User"
-      ? userData.value.supplier?.boss?.user?.user_detail?.phone || ""
-      : userData.value.user_detail?.phone || "";
+      ? normalizeProfilePhoneForInput(userData.value.supplier?.boss?.user?.user_detail?.phone || "")
+      : normalizeProfilePhoneForInput(userData.value.user_detail?.phone || "");
 
   //bank
   form.value.bank =
@@ -435,7 +454,7 @@ const submitCompleteProfile = async () => {
       formData.append("email", email.value);
       formData.append("name", name.value);
       formData.append("last_name", last_name.value);
-      formData.append("personal_phone", phone.value);
+      formData.append("personal_phone", formatProfilePhoneForPayload(phone.value));
       formData.append("personal_address", address.value);
 
       if (selectedPresetAvatar) {
@@ -454,7 +473,7 @@ const submitCompleteProfile = async () => {
       formData.append("address", form.value.address);
       formData.append("street", form.value.street);
       formData.append("postal_code", form.value.postal_code);
-      formData.append("phone", form.value.phone);
+      formData.append("phone", formatProfilePhoneForPayload(form.value.phone));
       formData.append("link", form.value.link);
       formData.append("bank", form.value.bank);
       formData.append("iban", form.value.iban);
@@ -947,8 +966,13 @@ const dataURLtoBlob = (dataURL) => {
                 <VTextField
                   v-model="phone"
                   type="tel"
-                  placeholder="+(XX) XXXXXXXXX"
-                  :rules="[phoneValidator, requiredValidator]"
+                  class="always-show-prefix"
+                  :rules="requiredProfilePhoneRules"
+                  :min-length="profilePhoneDigits"
+                  :maxlength="profilePhoneDigits"
+                  :prefix="profilePhonePrefix"
+                  inputmode="numeric"
+                  @input="handlePersonalPhoneInput"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
@@ -1033,7 +1057,13 @@ const dataURLtoBlob = (dataURL) => {
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.phone"
-                  :rules="[requiredValidator, phoneValidator]"
+                  class="always-show-prefix"
+                  :rules="requiredProfilePhoneRules"
+                  :min-length="profilePhoneDigits"
+                  :maxlength="profilePhoneDigits"
+                  :prefix="profilePhonePrefix"
+                  inputmode="numeric"
+                  @input="handleCompanyPhoneInput"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
@@ -1218,8 +1248,13 @@ const dataURLtoBlob = (dataURL) => {
             <VTextField
               v-model="phone"
               type="tel"
-              placeholder="+(XX) XXXXXXXXX"
-              :rules="[phoneValidator, requiredValidator]"
+              class="always-show-prefix"
+              :rules="requiredProfilePhoneRules"
+              :min-length="profilePhoneDigits"
+              :maxlength="profilePhoneDigits"
+              :prefix="profilePhonePrefix"
+              inputmode="numeric"
+              @input="handlePersonalPhoneInput"
             />
           </div>
           <div class="form-field d-flex flex-column gap-1">
@@ -1574,6 +1609,35 @@ const dataURLtoBlob = (dataURL) => {
         color: #454545;
       }
     }
+}
+
+.always-show-prefix .v-text-field__prefix {
+  opacity: 1 !important;
+}
+
+.auth-form {
+  .v-input.always-show-prefix {
+    .v-input__control {
+      .v-field {
+        min-height: 40px !important;
+
+        .v-text-field__prefix {
+          height: 40px;
+          color: #33303CAD;
+        }
+
+        .v-field__input {
+          min-height: 40px !important;
+          padding: 8px 0 !important;
+
+          input {
+            min-height: 40px !important;
+            height: 40px !important;
+          }
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: 991px) {

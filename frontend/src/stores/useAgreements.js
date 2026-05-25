@@ -174,6 +174,19 @@ export const useAgreementsStores = defineStore('agreements', {
          
         },
 
+        sendSms(data) {
+            this.setLoading(true)
+            
+            return Agreements.sendSms(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+
         requestSignature(payload) {
             return new Promise((resolve, reject) => {
               // La URL sigue siendo la misma, pero ahora le añadimos un cuerpo (body) a la petición.
@@ -181,6 +194,7 @@ export const useAgreementsStores = defineStore('agreements', {
               axios.post(
                 `/agreements/${payload.agreementId}/send-signature-request`, 
                 { email: payload.email,
+                          phone: payload.phone,
                     x: payload.x,
                     y: payload.y,
                     page: payload.page
@@ -202,6 +216,14 @@ export const useAgreementsStores = defineStore('agreements', {
         resendSignature(payload) {
             return new Promise((resolve, reject) => {
                 Agreements.resendSignatureRequest(payload)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
+
+        resendSignatureSms(payload) {
+            return new Promise((resolve, reject) => {
+                Agreements.resendSignatureSms(payload)
                     .then(response => resolve(response))
                     .catch(error => reject(error))
             })

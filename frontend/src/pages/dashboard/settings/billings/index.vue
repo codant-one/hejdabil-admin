@@ -9,11 +9,14 @@ import billing2 from '@images/billings/2.svg'
 import billing3 from '@images/billings/3.svg'
 import billing4 from '@images/billings/4.svg'
 
+const DEFAULT_BILLING_SMS_MESSAGE = 'Du har fått en faktura från {Företagsnamn}.'
+const DEFAULT_BILLING_COMPANY_NAME = 'Billogg Sverige AB'
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
 const DEFAULT_THEME = 0
 const LIGHT_THEME_TEXT_COLOR = '#FFFFFF'
 const DARK_THEME_TEXT_COLOR = '#454545'
+const DEFAULT_INVOICE_ID = 1
 const DEFAULT_BILLING_DUE_DATES = 5
 const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen'
 const DEFAULT_BILLING_SEND_REMINDER = true
@@ -43,6 +46,7 @@ const configsStores = useConfigsStores()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
+const companyName = ref('')
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const isBillingPreviewReady = ref(false)
 
@@ -52,8 +56,10 @@ const advisor = ref({
   type: '',
 })
 
+const invoice_id = ref(DEFAULT_INVOICE_ID)
 const due_date = ref(null)
 const terms_and_conditions = ref('')
+const billingSmsMessageTemplate = ref(DEFAULT_BILLING_SMS_MESSAGE)
 const isTermsDialogVisible = ref(false)
 const termsDialogDraft = ref('')
 
@@ -92,6 +98,30 @@ const getSecondaryColorFromPrimary = primary => {
 
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
+
+const replaceCompanyPlaceholder = (message, company) => {
+  if (typeof message !== 'string')
+    return ''
+
+  const normalizedCompany = String(company || '').trim() || DEFAULT_BILLING_COMPANY_NAME
+
+  return message.replaceAll('{Företagsnamn}', normalizedCompany)
+}
+
+const resolveCompanyName = () => {
+  if (isAdminRole.value) {
+    const companyConfig = configsStores.getFeaturedConfig('company') ?? {}
+
+    return String(companyConfig?.company ?? '').trim()
+  }
+
+  if (role.value === 'User')
+    return String(userData.value?.supplier?.boss?.user?.user_detail?.company ?? userData.value?.supplier?.boss?.user?.userDetail?.company ?? '').trim()
+
+  return String(userData.value?.user_detail?.company ?? userData.value?.userDetail?.company ?? '').trim()
+}
+
+const smsSigningMessage = computed(() => replaceCompanyPlaceholder(billingSmsMessageTemplate.value, companyName.value))
 
 const resolveLoggedUserId = () => {
   if (role.value === 'User')
@@ -245,6 +275,10 @@ const hydrateBillingForm = () => {
 
   selectedBillingTemplate.value = getBillingTemplateByType(billingSettings?.type ?? 1)
 
+  invoice_id.value = billingSettings?.invoice_id !== undefined && billingSettings?.invoice_id !== null
+    ? Number(billingSettings.invoice_id) || DEFAULT_INVOICE_ID
+    : DEFAULT_INVOICE_ID
+
   due_date.value = billingSettings?.due_dates !== undefined && billingSettings?.due_dates !== null
     ? Number(billingSettings.due_dates) || DEFAULT_BILLING_DUE_DATES
     : DEFAULT_BILLING_DUE_DATES
@@ -252,6 +286,10 @@ const hydrateBillingForm = () => {
   terms_and_conditions.value = typeof billingSettings?.terms_and_conditions === 'string' && billingSettings.terms_and_conditions.trim()
     ? billingSettings.terms_and_conditions
     : DEFAULT_BILLING_TERMS_AND_CONDITIONS
+
+  billingSmsMessageTemplate.value = typeof billingSettings?.sms_message === 'string' && billingSettings.sms_message.trim()
+    ? billingSettings.sms_message
+    : DEFAULT_BILLING_SMS_MESSAGE
 
   automaticRemindersEnabled.value = billingSettings?.send_reminder !== undefined && billingSettings?.send_reminder !== null
     ? Number(billingSettings.send_reminder) === 1
@@ -271,8 +309,10 @@ const onSubmit = async () => {
   try {
     const payload = {
       type: getSelectedBillingType(),
+      invoice_id: Number(invoice_id.value) || DEFAULT_INVOICE_ID,
       due_dates: Number(due_date.value) || 1,
       terms_and_conditions: terms_and_conditions.value,
+      sms_message: smsSigningMessage.value || replaceCompanyPlaceholder(DEFAULT_BILLING_SMS_MESSAGE, companyName.value),
       send_reminder: automaticRemindersEnabled.value ? 1 : 0,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
@@ -358,6 +398,7 @@ onMounted(async () => {
     if (isAdminRole.value) {
       await Promise.all([
         configsStores.getFeature('billings'),
+        configsStores.getFeature('company'),
         configsStores.getFeature('color'),
       ])
     } else {
@@ -371,6 +412,7 @@ onMounted(async () => {
     settingsData.value = null
   }
 
+  companyName.value = resolveCompanyName()
   hydrateBillingForm()
   loadBillingPreviewSources()
   resizeSectionToRemainingViewport();
@@ -486,6 +528,33 @@ onBeforeUnmount(() => {
           <div class="settings-layout border-bottom-settings pb-6">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Nästa fakturanummer</span>
+                <span class="text-settings">
+                  Ange vilket nummer din nästa faktura ska börja på. Numret ökar sedan automatiskt för varje ny faktura.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 me-2 text-high-emphasis" text="Fakturanummer*" />
+                    <VTextField
+                      type="number"
+                      v-model="invoice_id"
+                      :disabled="role === 'User'"
+                      min="1"
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-6">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Betalningsvillkor & Ränta</span>
                 <span class="text-settings">
                   Ställ in betalningsvillkor och dröjsmålsränta för dina fakturor.
@@ -562,6 +631,40 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
+         <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-6">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">SMS-meddelanden</span>
+                <span class="text-settings">
+                  Så här ser SMS-meddelandet ut som skickas till kunden när SMS används för fakturor.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 me-2 text-high-emphasis" text="SMS-meddelande" />
+                    <VTooltip location="bottom" max-width="200"> 
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          <VIcon icon="custom-circle-help" size="24" />
+                        </span>
+                      </template>
+                      Meddelandet används vid digital signering och kan inte ändras.
+                    </VTooltip>
+                    <VTextarea
+                      :model-value="smsSigningMessage"
+                      :rows="windowWidth < 1024 ? 2 : 1"
+                      readonly
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
         <VCardText class="pb-0">
           <div class="settings-layout pb-4">
             <div class="settings-layout__sidebar">
@@ -592,7 +695,7 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
 
-                <VRadio value="email-sms" class="delivery-method-option" disabled>
+                <VRadio value="email-sms" class="delivery-method-option">
                   <template #label>
                     <div class="delivery-method-content">
                       <span class="delivery-method-title">E-post + SMS</span>
@@ -784,6 +887,10 @@ onBeforeUnmount(() => {
 
   .delivery-method-group {
     width: 100%;
+  }
+
+  .delivery-method-group .v-selection-control-group .v-radio {
+    margin-inline-end: 0.9rem !important;
   }
 
   .delivery-method-option {

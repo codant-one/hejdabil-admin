@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Services\CacheService;
 use App\Jobs\SendEmailJob;
+use App\Services\TwilioSms;
 
 use App\Models\Agreement;
 use App\Models\AgreementType;
@@ -45,6 +46,7 @@ use App\Models\User;;
 use App\Models\UserDetails;
 use App\Models\Config;
 use App\Models\Notification;
+use App\Models\Setting;
 
 class AgreementController extends Controller
 {
@@ -601,9 +603,171 @@ class AgreementController extends Controller
         }
     }
 
+    public function sendSms(Request $request, $id, TwilioSms $twilioSms)
+    {
+        $validator = Validator::make($request->all(), [
+            'phoneDefault' => ['nullable', 'boolean'],
+            'phones' => ['nullable', 'array'],
+            'phones.*' => ['required', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $agreement = Agreement::with([
+                'agreement_type',
+                'agreement_client',
+                'supplier.user.userDetail',
+            ])->find($id);
+
+            if (!$agreement) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Avtalet hittades inte.',
+                ], 404);
+            }
+
+            $phoneNumbers = collect($request->input('phones', []))
+                ->filter(fn ($phone) => is_string($phone) && trim($phone) !== '')
+                ->map(fn ($phone) => trim($phone));
+
+            if ($request->boolean('phoneDefault') && !empty($agreement->agreement_client?->phone))
+                $phoneNumbers->prepend(trim($agreement->agreement_client->phone));
+
+            $phoneNumbers = $phoneNumbers->unique()->values();
+
+            if ($phoneNumbers->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ange minst ett telefonnummer för att skicka SMS.',
+                ], 422);
+            }
+
+            $message = $this->resolveAgreementSmsMessage($agreement);
+            $smsSender = $this->resolveSmsSenderForCurrentUser();
+            $failedRecipients = [];
+            $sentRecipients = [];
+
+            foreach ($phoneNumbers as $phoneNumber) {
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
+
+                if ($result === true) {
+                    $sentRecipients[] = $phoneNumber;
+                    continue;
+                }
+
+                $failedRecipients[] = [
+                    'phone' => $phoneNumber,
+                    'error' => $result,
+                ];
+            }
+
+            if (empty($sentRecipients)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => collect($failedRecipients)->map(fn ($item) => $item['phone'].': '.$item['error'])->implode(' | '),
+                ], 500);
+            }
+
+            SupplierActivity::createActivity([
+                'entity_id' => $agreement->id,
+                'entity_type' => 'agreements',
+                'action_type' => 'send_agreement_sms',
+                'title' => $this->agreementActivityTitle($agreement, ' - SMS skickat'),
+                'description' => 'Avtalet skickades via SMS.',
+                'icon' => 'custom-contract',
+                'route' => $this->agreementActivityRoute($agreement->id),
+                'metadata' => json_encode([
+                    'agreement_id' => $agreement->id,
+                    'phones' => $sentRecipients,
+                    'phone_default' => $request->boolean('phoneDefault'),
+                    'agreement_client_phone' => $agreement->agreement_client?->phone,
+                    'signature_status' => $agreement->token?->signature_status,
+                    'failed' => $failedRecipients,
+                ])
+            ]);
+
+            $messageText = empty($failedRecipients)
+                ? 'SMS skickat!'
+                : 'SMS skickat till '.count($sentRecipients).' nummer. Vissa mottagare misslyckades.';
+
+            return response()->json([
+                'success' => true,
+                'message' => $messageText,
+                'data' => [
+                    'sent' => $sentRecipients,
+                    'failed' => $failedRecipients,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function agreementActivityRoute(int $agreementId): string
     {
         return '/dashboard/admin/agreements?file_id='.$agreementId;
+    }
+
+    private function resolveAgreementSmsMessage(Agreement $agreement): string
+    {
+        $companyName = $this->resolveAgreementCompanyName($agreement);
+
+        if ($agreement->supplier_id === null) {
+            $agreementConfig = Config::getByKey('agreements') ?? ['value' => '[]'];
+            $rawValue = is_array($agreementConfig) ? ($agreementConfig['value'] ?? '[]') : ($agreementConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
+
+            return $this->finalizeAgreementSmsMessage($smsMessage, $companyName, $agreement);
+        }
+
+        $setting = Setting::with('agreement')->where('supplier_id', $agreement->supplier_id)->first();
+        $smsMessage = $setting?->agreement?->sms_message ?? '';
+
+        return $this->finalizeAgreementSmsMessage($smsMessage, $companyName, $agreement);
+    }
+
+    private function resolveAgreementCompanyName(Agreement $agreement): string
+    {
+        if ($agreement->supplier_id === null) {
+            $companyConfig = Config::getByKey('company') ?? ['value' => '[]'];
+            $rawValue = is_array($companyConfig) ? ($companyConfig['value'] ?? '[]') : ($companyConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+        }
+
+        return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function finalizeAgreementSmsMessage(?string $message, string $companyName, Agreement $agreement): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $fallbackMessage = 'Du har fått ett avtal från '.$resolvedCompanyName.' för digital signering.';
+        $normalizedMessage = trim((string) $message) . ' ' . env('APP_DOMAIN') . '/sign/' . $agreement->token->signing_token;
+
+        if ($normalizedMessage === '')
+            return $fallbackMessage;
+
+        return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
     }
 
     private function agreementActivityTitle(Agreement $agreement, string $suffix): string

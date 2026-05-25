@@ -103,6 +103,7 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
             return new Promise((resolve, reject) => {
                 SignableDocuments.sendSignatureRequest(payload.documentId, {
                     email: payload.email,
+                    phone: payload.phone,
                     x: payload.x,
                     y: payload.y,
                     page: payload.page,
@@ -116,6 +117,13 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
         resendSignature(payload) {
             return new Promise((resolve, reject) => {
                 SignableDocuments.resendSignatureRequest(payload)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
+        resendSignatureSms(payload) {
+            return new Promise((resolve, reject) => {
+                SignableDocuments.resendSignatureSms(payload)
                     .then(response => resolve(response))
                     .catch(error => reject(error))
             })

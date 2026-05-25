@@ -42,7 +42,8 @@ class SettingController extends Controller
                 'color',
                 'billing',
                 'agreement',
-                'notification'
+                'notification',
+                'document'
             ])->where('user_id', $id)->first();
 
             return response()->json([
@@ -161,6 +162,31 @@ class SettingController extends Controller
             ], 200);
 
         } catch(\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function documents(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $settings = Setting::where('supplier_id', $id)->first();
+            $settings = Setting::documents($request, $settings);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'settings' => $settings
+                ]
+            ], 200);
+
+        } catch(
+            \Throwable $ex
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'server_error',

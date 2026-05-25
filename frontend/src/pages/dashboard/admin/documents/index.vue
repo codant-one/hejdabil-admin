@@ -6,7 +6,9 @@ import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginatio
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
+import { getDocumentSmsVisibilityCacheKey, loadDocumentSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -37,6 +39,28 @@ const status = ref(null);
 const clients = ref([])
 const isFilterDialogVisible = ref(false);
 const filtreraMobile = ref(false);
+const canShowDocumentSmsAction = ref(false)
+const isDocumentSmsActionVisibilityLoading = ref(true)
+const documentSmsVisibilityCacheKey = ref('')
+
+const loadDocumentSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getDocumentSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && documentSmsVisibilityCacheKey.value === nextCacheKey) {
+    isDocumentSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isDocumentSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowDocumentSmsAction.value = await loadDocumentSmsActionPreference(resolvedUserData)
+    documentSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isDocumentSmsActionVisibilityLoading.value = false
+  }
+}
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -49,14 +73,19 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCancelSignatureDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
+const signaturePhone = ref('')
 const textEmail = ref(null)
 const refSignatureForm = ref()
 const refResendSignatureForm = ref()
 const isConfirmResendSignatureVisible = ref(false)
 const resendSignatureEmail = ref('')
+const resendSignaturePhone = ref('')
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+const signaturePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const signaturePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const signaturePhoneRules = [minLengthDigitsValidator(signaturePhoneDigits), phoneValidator]
 
 const isPlacementModalVisible = ref(false)
 const placementPdfSource = ref(null)
@@ -223,6 +252,14 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const normalizeSignaturePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatSignaturePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const handleSignaturePhoneInput = () => {
+  signaturePhone.value = normalizeSignaturePhoneForInput(signaturePhone.value)
+}
 
 useMobilePaginationScroll({
   targetRef: sectionEl,
@@ -447,14 +484,15 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
   isFilterDialogVisible.value = false;
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? null
+  const documentSmsVisibilityPromise = loadDocumentSmsActionVisibility(userData.value)
+
   await documentsStores.fetchDocuments(data)
 
   documents.value = documentsStores.getDocuments
   totalPages.value = documentsStores.last_page
   totalDocuments.value = documentsStores.documentsTotalCount
-  
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value?.roles?.[0]?.name ?? null
 
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = documentsStores.getSuppliers
@@ -463,6 +501,8 @@ async function fetchData(cleanFilters = false) {
   // Fetch clients for send document dialog
   await clientsStores.fetchClients({ limit: -1 })
   clients.value = clientsStores.getClients
+
+  await documentSmsVisibilityPromise
 
   hasLoaded.value = true
   isRequestOngoing.value = false
@@ -693,7 +733,13 @@ const trackerEvents = computed(() => {
   const items = []
   const latestToken = trackerDocument.value.token ?? null
   const history = Array.isArray(latestToken?.histories)
-    ? [...latestToken.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    ? [...latestToken.histories].sort((a, b) => {
+      const createdAtDiff = new Date(a.created_at) - new Date(b.created_at)
+
+      if (createdAtDiff !== 0) return createdAtDiff
+
+      return Number(a.id ?? 0) - Number(b.id ?? 0)
+    })
     : []
 
   const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -732,7 +778,15 @@ const trackerEvents = computed(() => {
   }))
 })
 
+const getEventChannel = event => event?.metadata?.channel === 'sms' ? 'sms' : 'email'
+
+const getEventRecipient = event => getEventChannel(event) === 'sms'
+  ? event?.metadata?.phone || event?.metadata?.recipient_phone || 'mottagare'
+  : event?.metadata?.email || event?.metadata?.recipient || 'mottagare'
+
 const getEventConfig = (eventType, event) => {
+  const isSms = getEventChannel(event) === 'sms'
+  const isResend = Boolean(event?.metadata?.resend)
   const configs = {
     'created': {
       title: 'Dokument skapat',
@@ -742,22 +796,30 @@ const getEventConfig = (eventType, event) => {
       icon: 'custom-star'
     },
     'sent': {
-      title: 'Signeringsförfrågan skickad',
-      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      title: isSms
+        ? (isResend ? 'SMS skickat igen' : 'SMS skickat')
+        : (isResend ? 'E-post skickad igen' : 'E-post skickad'),
+      text: `Skickad till ${getEventRecipient(event)}`,
       color: '#1890FF',
       bgClass: 'status-success',
       icon: 'custom-forward'
     },
     'delivered': {
-      title: 'E-post levererad',
-      text: 'E-postmeddelandet har levererats framgångsrikt',
+      title: isSms
+        ? (isResend ? 'SMS levererat igen' : 'SMS levererat')
+        : (isResend ? 'E-post levererad igen' : 'E-post levererad'),
+      text: isSms
+        ? 'SMS-meddelandet har levererats framgångsrikt'
+        : 'E-postmeddelandet har levererats framgångsrikt',
       color: '#52C41A',
       bgClass: 'status-success',
       icon: 'custom-check-mark-2'
     },
     'delivery_issues': {
-      title: 'Leveransproblem',
-      text: 'Det uppstod problem med e-postleveransen',
+      title: isSms ? 'SMS-leveransproblem' : 'E-postleveransproblem',
+      text: isSms
+        ? 'Det uppstod problem med SMS-leveransen'
+        : 'Det uppstod problem med e-postleveransen',
       color: '#FAAD14',
       bgClass: 'status-warning',
       icon: 'custom-risk'
@@ -950,6 +1012,7 @@ const handleAdminPdfClick = (event) => {
 
 const openSignatureDialog = () => {
   signatureEmail.value = ''
+  signaturePhone.value = ''
   textEmail.value = null
   isSignatureDialogVisible.value = true
 }
@@ -960,6 +1023,7 @@ const getResendRecipientEmail = (document) => {
 
 const resetResendSignatureState = () => {
   resendSignatureEmail.value = ''
+  resendSignaturePhone.value = ''
 }
 
 const closeResendSignatureDialog = () => {
@@ -972,6 +1036,7 @@ const openResendSignature = async (documentData) => {
 
   selectedDocument.value = { ...documentData }
   resendSignatureEmail.value = getResendRecipientEmail(documentData)
+  resendSignaturePhone.value = documentData?.token?.recipient_phone || ''
   isConfirmResendSignatureVisible.value = true
 }
 
@@ -1003,6 +1068,7 @@ const submitResendSignature = async () => {
   if (!valid) return
 
   const trimmedEmail = resendSignatureEmail.value.trim()
+  const trimmedPhone = resendSignaturePhone.value.trim()
 
   isConfirmResendSignatureVisible.value = false
 
@@ -1013,7 +1079,24 @@ const submitResendSignature = async () => {
       emailDefault: false,
       emails: [trimmedEmail],
     })
-    advisor.value = { type: 'success', message: response.data.message || 'E-postmeddelandet har skickats igen.', show: true }
+
+    let advisorType = 'success'
+    let advisorMessage = response.data.message || 'E-postmeddelandet har skickats igen.'
+
+    if (canShowDocumentSmsAction.value && trimmedPhone) {
+      try {
+        await documentsStores.resendSignatureSms({
+          id: selectedDocument.value.id,
+          phone: trimmedPhone,
+        })
+        advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
+      } catch (smsError) {
+        advisorType = 'warning'
+        advisorMessage = `${advisorMessage}\n${smsError.response?.data?.message || 'SMS-kunde inte skickas. Kontrollera att telefonnumret är korrekt och försök igen.'}`
+      }
+    }
+
+    advisor.value = { type: advisorType, message: advisorMessage, show: true }
     await fetchData()
   } catch (error) {
     advisor.value = { type: 'error', message: error.response?.data?.message || 'Det gick inte att skicka om e-postmeddelandet.', show: true }
@@ -1049,6 +1132,7 @@ const handleSignatureSubmit = async () => {
     const payload = {
       documentId: selectedDocument.value.id,
       email: signatureEmail.value,
+      phone: formatSignaturePhoneForPayload(signaturePhone.value),
       x: x_percent.toFixed(4),
       y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
@@ -1059,7 +1143,7 @@ const handleSignatureSubmit = async () => {
     const response = await documentsStores.requestSignature(payload)
     
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
@@ -1075,6 +1159,7 @@ const handleSignatureSubmit = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
+    signaturePhone.value = ''
     textEmail.value = null
     setTimeout(() => {
       advisor.value = { show: false } 
@@ -1354,7 +1439,7 @@ onBeforeUnmount(() => {
       :color="advisor.type"
       class="snackbar-alert snackbar-dashboard"
     >
-      {{ advisor.message }}
+      <span class="snackbar-message">{{ advisor.message }}</span>
     </VSnackbar>      
 
     <Toaster />
@@ -1662,7 +1747,7 @@ onBeforeUnmount(() => {
             >
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isDocumentSmsActionVisibilityLoading">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -1676,13 +1761,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="
-                      $can('edit','signed-documents') && (
-                        document.token?.signature_status !== 'sent' && 
-                        document.token?.signature_status !== 'signed' && 
-                        document.token?.signature_status !== 'delivered' &&
-                        document.token?.signature_status !== 'reviewed'
-                      )"
+                    v-if="$can('edit','signed-documents') && (document.token?.signature_status === 'created' || document.token?.signature_status === 'cancelled')"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
                       <VIcon icon="custom-signature" size="24" class="mr-2" />
@@ -1826,6 +1905,7 @@ onBeforeUnmount(() => {
             <div class="mb-4 row-with-buttons">
               <VBtn
                 class="btn-light"
+                :disabled="isDocumentSmsActionVisibilityLoading"
                 @click="selectedDocumentForAction = document; isMobileActionDialogVisible = true"
               >
                 Åtgärder
@@ -1922,6 +2002,22 @@ onBeforeUnmount(() => {
               v-model="resendSignatureEmail"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowDocumentSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="resendSignaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -2126,8 +2222,13 @@ onBeforeUnmount(() => {
     <!-- 👉 Signature Dialog -->
     <VDialog
       v-model="isSignatureDialogVisible"
+      :fullscreen="windowWidth < 1024"
       persistent
-      class="action-dialog"
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     >
       <!-- Dialog close btn -->
       <VBtn
@@ -2140,25 +2241,53 @@ onBeforeUnmount(() => {
       <VForm
         ref="refSignatureForm"
         @submit.prevent="handleSignatureSubmit"
+        :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
       >
-        <VCard flat class="card-form">
-          <VCardText class="dialog-title-box">
+        <VCard 
+          :class="windowWidth < 1024 ? 'h-100 d-flex flex-column card-form' : 'card-form'"
+          :style="windowWidth < 1024 ? 'border-radius: 0 !important;' : ''"
+        >
+          <VCardText 
+            class="dialog-title-box"
+            :style="windowWidth < 1024 ? 'gap: 8px !important;' : ''"
+            :class="windowWidth < 1024 ? 'pb-0 d-flex flex-column flex-0' : ''">
             <VIcon size="32" icon="custom-sent" class="action-icon" />
             <div class="dialog-title">
               Skicka signeringsförfrågan
             </div>
           </VCardText>
-          <VCardText class="dialog-text">
+          <VCardText class="dialog-text" :class="windowWidth < 1024 ? 'flex-0 mt-2' : ''">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
           </VCardText>           
-          <VCardText class="dialog-text mt-4">
+          <VCardText class="dialog-text mt-4" :class="windowWidth < 1024 ? 'flex-0' : ''">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />                                            
             <VTextField
               v-model="signatureEmail"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-          <VCardText class="dialog-text mt-4">
+          <VCardText class="dialog-text mt-4" :class="windowWidth < 1024 ? 'flex-0' : ''" v-if="canShowDocumentSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200"> 
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567. 
+            </VTooltip>
+            <VTextField
+              v-model="signaturePhone"
+              class="always-show-prefix"
+              :rules="signaturePhoneRules"
+              minLength="9"
+              maxlength="9"
+              :prefix="signaturePhonePrefix"
+              inputmode="numeric"
+              @input="handleSignaturePhoneInput"
+            />
+          </VCardText>
+          <VCardText class="dialog-text mt-4" :class="windowWidth < 1024 ? 'flex-0' : ''">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                   
             <VTextarea
               v-model="textEmail"
@@ -2490,13 +2619,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Spårare</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="
-              $can('edit', 'signed-documents') && (
-                selectedDocumentForAction.token?.signature_status !== 'sent' && 
-                selectedDocumentForAction.token?.signature_status !== 'signed' && 
-                selectedDocumentForAction.token?.signature_status !== 'delivered' &&
-                selectedDocumentForAction.token?.signature_status !== 'reviewed'
-              )"
+            v-if="$can('edit','signed-documents') && (selectedDocumentForAction.token?.signature_status === 'created' || selectedDocumentForAction.token?.signature_status === 'cancelled')"
             @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2654,6 +2777,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -2732,6 +2859,21 @@ onBeforeUnmount(() => {
             align-items: center;
             padding-top: 0px;
           }
+
+          .v-text-field__prefix {
+            height: 48px;
+            color: #33303CAD;
+          }
+        }
+      }
+    }
+
+    & .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 12px 0 !important;
+          }
         }
       }
     }
@@ -2745,6 +2887,10 @@ onBeforeUnmount(() => {
 </style>
 
 <style lang="scss" scoped>
+  .snackbar-message {
+    white-space: pre-line;
+  }
+
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

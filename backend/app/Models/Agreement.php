@@ -1076,6 +1076,9 @@ class Agreement extends Model
             $job->delay(now()->addSeconds($delaySeconds));
         }
 
+        $agreement->send_reminder = 1;
+        $agreement->update();
+
         return $agreement;
     }
 

@@ -4,7 +4,8 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { getAgreementSmsVisibilityCacheKey, getBillingSmsVisibilityCacheKey, loadAgreementSmsActionPreference, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -39,11 +40,18 @@ const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
 const isConfirmKreditera = ref(false)
 const isConfirmSendMailReminder = ref(false);
+const refSendBillingForm = ref()
 const emailDefault = ref(true);
+const phoneDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
+const selectedPhoneTags = ref([]);
+const existingPhoneTags = ref([]);
 const selectedBilling = ref({});
+const billingRecipientEmail = ref('')
+const billingRecipientPhone = ref('')
 const isValid = ref(false);
+const isPhoneValid = ref(false);
 const userData = ref(null);
 const role = ref(null);
 const tabBilling = ref("fakturor");
@@ -62,6 +70,41 @@ const advisor = ref({
   message: "",
   show: false,
 });
+const canShowBillingSmsAction = ref(false)
+const canShowAgreementSmsAction = ref(false)
+const billingSmsVisibilityCacheKey = ref('')
+const agreementSmsVisibilityCacheKey = ref('')
+const isAgreementSmsActionVisibilityLoading = ref(true)
+
+const loadBillingSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getBillingSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && billingSmsVisibilityCacheKey.value === nextCacheKey)
+    return
+
+  canShowBillingSmsAction.value = await loadBillingSmsActionPreference(resolvedUserData)
+  billingSmsVisibilityCacheKey.value = nextCacheKey
+}
+
+const loadAgreementSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getAgreementSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && agreementSmsVisibilityCacheKey.value === nextCacheKey) {
+    isAgreementSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isAgreementSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowAgreementSmsAction.value = await loadAgreementSmsActionPreference(resolvedUserData)
+    agreementSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isAgreementSmsActionVisibilityLoading.value = false
+  }
+}
 
 const paginationData = computed(() => {
   const firstIndex = billings.value.length
@@ -130,6 +173,8 @@ async function fetchData() {
   // Obtener datos de usuario
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
+  const billingSmsVisibilityPromise = loadBillingSmsActionVisibility(userData.value)
+  const agreementSmsVisibilityPromise = loadAgreementSmsActionVisibility(userData.value)
 
   // Solo buscar en la pestaña activa
   if (tabBilling.value === "fakturor") {
@@ -161,6 +206,8 @@ async function fetchData() {
     totalPagesAgreements.value = agreementsStores.last_page
     totalAgreements.value = agreementsStores.agreementsTotalCount
   }
+
+  await Promise.all([billingSmsVisibilityPromise, agreementSmsVisibilityPromise])
   
   emit("loading", false);
 }
@@ -352,12 +399,29 @@ const send = (billingData) => {
   if (billingData.agreement_type_id) {
     isConfirmSendMailVisible.value = true
     selectedAgreement.value = { ...billingData }
+    selectedBilling.value = {}
+    billingRecipientEmail.value = ''
+    billingRecipientPhone.value = ''
+    emailDefault.value = Boolean(billingData?.agreement_client?.email)
   } else {
     // Es un billing
     isConfirmSendMailVisible.value = true
     selectedBilling.value = { ...billingData }
+    selectedAgreement.value = {}
+    billingRecipientEmail.value = getBillingRecipientEmail(billingData)
+    billingRecipientPhone.value = getBillingRecipientPhone(billingData)
+
+    nextTick(() => {
+      refSendBillingForm.value?.resetValidation()
+    })
   }
-};
+  selectedTags.value = []
+  existingTags.value = []
+  isValid.value = false
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  isPhoneValid.value = false
+}
 
 const addTag = (event) => {
   const newTag = event.target.value.trim();
@@ -371,12 +435,75 @@ const addTag = (event) => {
   }
 };
 
+const addPhoneTag = event => {
+  const newTag = event.target.value.trim()
+
+  if (!newTag)
+    return
+
+  const validationResult = phoneValidator(newTag)
+
+  if (validationResult !== true) {
+    isPhoneValid.value = true
+    selectedPhoneTags.value.pop()
+    return
+  }
+
+  isPhoneValid.value = false
+}
+
+const getBillingRecipientEmail = billing => billing?.client?.email ?? ''
+
+const getBillingRecipientPhone = billing => billing?.client?.phone ?? ''
+
+const validateBillingRecipientEmail = value => {
+  const trimmedEmail = String(value ?? '').trim()
+  const trimmedPhone = String(billingRecipientPhone.value ?? '').trim()
+
+  if (!trimmedEmail) {
+    if (canShowBillingSmsAction.value && trimmedPhone)
+      return true
+
+    return canShowBillingSmsAction.value
+      ? 'Ange en e-postadress eller ett telefonnummer'
+      : 'Ange en e-postadress'
+  }
+
+  return emailValidator(trimmedEmail)
+}
+
+const validateBillingRecipientPhone = value => {
+  const trimmedPhone = String(value ?? '').trim()
+
+  if (!trimmedPhone)
+    return true
+
+  return phoneValidator(trimmedPhone)
+}
+
 const getResendRecipientEmail = (agreement) => {
-  return agreement?.token?.recipient_email || agreement?.agreement_client?.email || ''
+  return agreement?.token?.recipient_email
+    || agreement?.agreement_client?.email
+    || agreement?.offer?.client?.email
+    || agreement?.commission?.client?.email
+    || agreement?.vehicle_client?.client?.email
+    || agreement?.vehicle_client?.email
+    || ''
+}
+
+const getAgreementRecipientPhone = (agreement) => {
+  return agreement?.token?.recipient_phone
+    || agreement?.agreement_client?.phone
+    || agreement?.offer?.client?.phone
+    || agreement?.commission?.client?.phone
+    || agreement?.vehicle_client?.client?.phone
+    || agreement?.vehicle_client?.phone
+    || ''
 }
 
 const resetResendSignatureState = () => {
   resendSignatureEmail.value = ''
+  resendSignaturePhone.value = ''
 }
 
 const closeResendSignatureDialog = () => {
@@ -384,62 +511,136 @@ const closeResendSignatureDialog = () => {
   resetResendSignatureState()
 }
 
-const sendMails = async () => {
-  if (!isValid.value) {
-    isConfirmSendMailVisible.value = false;
-    emit("loading", true);
+const resetSendDialogState = () => {
+  selectedTags.value = []
+  existingTags.value = []
+  emailDefault.value = true
+  billingRecipientEmail.value = ''
+  billingRecipientPhone.value = ''
+  selectedPhoneTags.value = []
+  existingPhoneTags.value = []
+  phoneDefault.value = true
+  isValid.value = false
+  isPhoneValid.value = false
+  selectedBilling.value = {}
+  selectedAgreement.value = {}
+}
 
-    // Determinar si es billing o agreement
-    let data, res;
-    
-    if (selectedAgreement.value.id) {
-      // Es un agreement
+const closeSendDialog = () => {
+  isConfirmSendMailVisible.value = false
+  refSendBillingForm.value?.resetValidation()
+  resetSendDialogState()
+}
+
+const sendMails = async () => {
+  const isSendingAgreement = Boolean(selectedAgreement.value.id)
+
+  if (isSendingAgreement) {
+    if (isValid.value)
+      return
+  } else {
+    const validationResult = await refSendBillingForm.value?.validate()
+    if (validationResult && !validationResult.valid)
+      return
+  }
+
+  isConfirmSendMailVisible.value = false
+  emit("loading", true)
+
+  try {
+    let data, res
+    let advisorType = 'success'
+    let advisorMessage = ''
+
+    if (isSendingAgreement) {
       data = {
         id: selectedAgreement.value.id,
         emailDefault: emailDefault.value,
         emails: selectedTags.value,
-      };
-      res = await agreementsStores.sendMails(data);
+      }
+
+      res = await agreementsStores.sendMails(data)
+      advisorMessage = res.data.success ? 'Avtalet är skickat!' : res.data.message
     } else {
-      // Es un billing
+      const trimmedEmail = String(billingRecipientEmail.value ?? '').trim()
+      const trimmedPhone = String(billingRecipientPhone.value ?? '').trim()
+      const hasEmailTarget = Boolean(trimmedEmail)
+      const hasSmsTarget = canShowBillingSmsAction.value && Boolean(trimmedPhone)
+
       data = {
         id: selectedBilling.value.id,
-        emailDefault: emailDefault.value,
-        emails: selectedTags.value,
-      };
-      res = await billingsStores.sendMails(data);
+        emailDefault: false,
+        emails: hasEmailTarget ? [trimmedEmail] : [],
+      }
+
+      res = await billingsStores.sendMails(data)
+      advisorMessage = res.data.success ? 'Fakturan är skickad!' : res.data.message
+
+      if (res.data.success && hasSmsTarget) {
+        const smsResponse = await billingsStores.sendSms({
+          id: selectedBilling.value.id,
+          phoneDefault: false,
+          phones: [trimmedPhone],
+        })
+
+        if (smsResponse.data.success) {
+          advisorMessage = hasEmailTarget
+            ? 'Fakturan har skickats via e-post och SMS!'
+            : 'Fakturan har skickats via SMS!'
+        } else {
+          advisorType = 'warning'
+          advisorMessage = hasEmailTarget
+            ? `${advisorMessage} ${smsResponse.data.message || 'SMS kunde inte skickas.'}`
+            : (smsResponse.data.message || 'SMS kunde inte skickas.')
+        }
+      }
     }
 
-    emit("loading", false);
-
     advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? (selectedAgreement.value.id ? "Avtalan är skickad!" : "Fakturan är skickad!") : res.data.message,
+      type: res.data.success ? advisorType : 'error',
+      message: advisorMessage,
       show: true,
-    };
+    }
 
-    emit("alert", advisor);
+    emit("alert", advisor)
 
     setTimeout(() => {
-      selectedTags.value = [];
-      existingTags.value = [];
-      emailDefault.value = true;
-      selectedAgreement.value = {};
+      resetSendDialogState()
 
       advisor.value = {
         type: "",
         message: "",
         show: false,
-      };
+      }
 
-      emit("alert", advisor);
-    }, 3000);
+      emit("alert", advisor)
+    }, 3000)
 
-    await fetchData();
+    await fetchData()
 
-    return true;
+    return true
+  } catch (err) {
+    advisor.value = {
+      type: "error",
+      message: err.response?.data?.message || err.message || "Det gick inte att skicka fakturan.",
+      show: true,
+    };
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+
+      emit('alert', advisor)
+    }, 3000)
+  } finally {
+    emit("loading", false)
   }
-};
+}
 
 const resolveStatus = state_id => {
   if (state_id === 4)
@@ -633,9 +834,11 @@ const trackerPreviewError = ref('')
 
 const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')
+const signaturePhone = ref('')
 const refSignatureForm = ref()
 const refResendSignatureForm = ref()
 const resendSignatureEmail = ref('')
+const resendSignaturePhone = ref('')
 const isConfirmResendSignatureVisible = ref(false)
 const isStaticSignatureFlow = ref(false)
 const selectedAgreement = ref({})
@@ -684,20 +887,9 @@ watch(isTrackerPreviewVisible, val => {
 const openStaticSignatureDialog = (agreementData) => {
   selectedAgreement.value = { ...agreementData }
   isStaticSignatureFlow.value = true
-  
-  // Intentar obtener el email de diferentes fuentes según el tipo de agreement
-  let email = ''
-  if (agreementData.agreement_client?.email) {
-    email = agreementData.agreement_client.email
-  } else if (agreementData.offer?.client?.email) {
-    email = agreementData.offer.client.email
-  } else if (agreementData.commission?.client?.email) {
-    email = agreementData.commission.client.email
-  } else if (agreementData.vehicle_client?.client?.email) {
-    email = agreementData.vehicle_client.client.email
-  }
-  
-  signatureEmail.value = email
+
+  signatureEmail.value = getResendRecipientEmail(agreementData)
+  signaturePhone.value = getAgreementRecipientPhone(agreementData)
   isSignatureDialogVisible.value = true
 }
 
@@ -706,6 +898,7 @@ const openResendSignature = async (agreementData) => {
 
   selectedAgreement.value = { ...agreementData }
   resendSignatureEmail.value = getResendRecipientEmail(agreementData)
+  resendSignaturePhone.value = getAgreementRecipientPhone(agreementData)
   isConfirmResendSignatureVisible.value = true
 }
 
@@ -747,6 +940,7 @@ const submitResendSignature = async () => {
   if (!valid) return;
 
   const trimmedEmail = resendSignatureEmail.value.trim()
+  const trimmedPhone = resendSignaturePhone.value.trim()
 
   isConfirmResendSignatureVisible.value = false
 
@@ -757,9 +951,26 @@ const submitResendSignature = async () => {
       emailDefault: false,
       emails: [trimmedEmail],
     })
+
+    let advisorType = 'success'
+    let advisorMessage = response.data.message || 'E-postmeddelandet har skickats igen.'
+
+    if (canShowAgreementSmsAction.value && trimmedPhone) {
+      try {
+        await agreementsStores.resendSignatureSms({
+          id: selectedAgreement.value.id,
+          phone: trimmedPhone,
+        })
+        advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
+      } catch (smsError) {
+        advisorType = 'warning'
+        advisorMessage = `${advisorMessage}\n${smsError.response?.data?.message || 'SMS-kunde inte skickas. Kontrollera att telefonnumret är korrekt och försök igen.'}`
+      }
+    }
+
     advisor.value = {
-      type: 'success',
-      message: response.data.message || 'E-postmeddelandet har skickats igen.',
+      type: advisorType,
+      message: advisorMessage,
       show: true,
     }
     emit("alert", advisor)
@@ -791,13 +1002,14 @@ const submitStaticSignatureRequest = async () => {
   try {
     const payload = {
       agreementId: selectedAgreement.value.id,
-      email: signatureEmail.value
+      email: signatureEmail.value,
+      phone: signaturePhone.value,
     }
 
     const response = await agreementsStores.requestStaticSignature(payload)
 
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
@@ -817,6 +1029,7 @@ const submitStaticSignatureRequest = async () => {
   } finally {
     emit("loading", false)
     signatureEmail.value = ''
+    signaturePhone.value = ''
     setTimeout(() => {
       advisor.value = { show: false }
       emit("alert", advisor)
@@ -909,7 +1122,13 @@ const trackerEvents = computed(() => {
   const items = []
   const token = trackerAgreement.value.token
   const history = Array.isArray(token?.histories)
-    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    ? [...token.histories].sort((a, b) => {
+      const createdAtDiff = new Date(a.created_at) - new Date(b.created_at)
+
+      if (createdAtDiff !== 0) return createdAtDiff
+
+      return Number(a.id ?? 0) - Number(b.id ?? 0)
+    })
     : []
 
   const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -948,7 +1167,15 @@ const trackerEvents = computed(() => {
   }))
 })
 
+const getEventChannel = event => event?.metadata?.channel === 'sms' ? 'sms' : 'email'
+
+const getEventRecipient = event => getEventChannel(event) === 'sms'
+  ? event?.metadata?.phone || event?.metadata?.recipient_phone || 'mottagare'
+  : event?.metadata?.email || event?.metadata?.recipient || 'mottagare'
+
 const getEventConfig = (eventType, event) => {
+  const isSms = getEventChannel(event) === 'sms'
+  const isResend = Boolean(event?.metadata?.resend)
   const configs = {
     'created': {
       title: 'Avtal skapad',
@@ -958,22 +1185,30 @@ const getEventConfig = (eventType, event) => {
       icon: 'custom-star'
     },
     'sent': {
-      title: 'Signeringsförfrågan skickad',
-      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      title: isSms
+        ? (isResend ? 'SMS skickat igen' : 'SMS skickat')
+        : (isResend ? 'E-post skickad igen' : 'E-post skickad'),
+      text: `Skickad till ${getEventRecipient(event)}`,
       color: '#1890FF',
       bgClass: 'status-success',
       icon: 'custom-forward'
     },
     'delivered': {
-      title: 'E-post levererad',
-      text: 'E-postmeddelandet har levererats framgångsrikt',
+      title: isSms
+        ? (isResend ? 'SMS levererat igen' : 'SMS levererat')
+        : (isResend ? 'E-post levererad igen' : 'E-post levererad'),
+      text: isSms
+        ? 'SMS-meddelandet har levererats framgångsrikt'
+        : 'E-postmeddelandet har levererats framgångsrikt',
       color: '#52C41A',
       bgClass: 'status-success',
       icon: 'custom-check-mark-2'
     },
     'delivery_issues': {
-      title: 'Leveransproblem',
-      text: 'Det uppstod problem med e-postleveransen',
+      title: isSms ? 'SMS-leveransproblem' : 'E-postleveransproblem',
+      text: isSms
+        ? 'Det uppstod problem med SMS-leveransen'
+        : 'Det uppstod problem med e-postleveransen',
       color: '#FAAD14',
       bgClass: 'status-warning',
       icon: 'custom-risk'
@@ -1960,7 +2195,7 @@ onBeforeUnmount(() => {
                           Se detaljer
                         </VBtn>
                         
-                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
+                        <VBtn class="btn-light" icon :disabled="isAgreementSmsActionVisibilityLoading" @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
                           <VIcon icon="custom-dots-vertical" size="24" />
                         </VBtn>
                       </div>
@@ -1996,37 +2231,43 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm send -->
     <VDialog 
       v-model="isConfirmSendMailVisible" 
-      persistent 
-      class="action-dialog">
+      persistent
+      class="action-dialog"
+    >
       <!-- Dialog close btn -->
 
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+        @click="closeSendDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
+      <VCard 
+        v-if="selectedAgreement.id"
+        :class="windowWidth < 1024 ? 'h-100 d-flex flex-column card-form' : 'card-form'"
+        :style="windowWidth < 1024 ? 'border-radius: 0 !important;' : ''"
+      >
+        <VCardText 
+          class="dialog-title-box"
+          :style="windowWidth < 1024 ? 'gap: 8px !important;' : ''"
+          :class="windowWidth < 1024 ? 'pb-0 d-flex flex-column flex-0' : ''">
           <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
-            {{ selectedAgreement.id ? 'Skicka avtal via e-post' : 'Skicka fakturan via e-post' }}
+            Skicka avtal via e-post
           </div>
         </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturor' }} till följande
-          e-postadresser?
+        <VCardText class="dialog-text" :class="windowWidth < 1024 ? 'flex-0 mt-2' : ''">
+          Är du säker på att du vill skicka avtal till följande e-postadresser?
         </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
+        <VCardText class="d-flex flex-column gap-2" :class="windowWidth < 1024 ? 'flex-0' : ''">
           <VCheckbox
             v-model="emailDefault"
-            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.email || 'N/A') : (selectedBilling.client?.email || 'N/A')"
+            :label="selectedAgreement.agreement_client?.email || 'N/A'"
             class="ml-2"
           />
-          <VLabel class="text-body-2 text-high-emphasis" :text="selectedAgreement.id ? 'Ange e-postadresser för att skicka avtal' : 'Ange e-postadresser för att skicka fakturan'" />
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka avtal" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -2044,12 +2285,63 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
-          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
+          <VBtn class="btn-light" @click="closeSendDialog">
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
         </VCardText>
       </VCard>
+
+      <VForm
+        v-else
+        ref="refSendBillingForm"
+        @submit.prevent="sendMails"
+      >
+        <VCard class="card-form"
+        >
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka fakturan
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill skicka fakturan.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+            <VTextField
+              v-model="billingRecipientEmail"
+              placeholder="kund@exempel.com"
+              :rules="[validateBillingRecipientEmail]"
+            />
+          </VCardText>
+
+          <VCardText v-if="canShowBillingSmsAction" class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="billingRecipientPhone"
+              placeholder="+46701234567"
+              :rules="[validateBillingRecipientPhone]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="closeSendDialog">
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- 👉 Confirm kreditera -->
@@ -2147,7 +2439,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"\
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2429,6 +2721,23 @@ onBeforeUnmount(() => {
             <VTextField
               v-model="signatureEmail"
               placeholder="kund@exempel.com"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="signaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -2474,6 +2783,22 @@ onBeforeUnmount(() => {
               v-model="resendSignatureEmail"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="resendSignaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
 
@@ -2667,14 +2992,6 @@ onBeforeUnmount(() => {
     width: 100%;
     border-collapse: collapse;
     font-size: 12px;
-  }
-
-  .billing-detail-table th,
-  .billing-detail-table td {
-    padding: 8px;
-    border-bottom: 1px solid #E7E7E7;
-    text-align: left;
-    vertical-align: top;
   } 
 
   .bottom-sheet-card {

@@ -2,14 +2,16 @@
 
 import { useDisplay } from "vuetify";
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
+import { emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useBillingsStores } from "@/stores/useBillings";
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
 import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { formatNumber, formatNumberInteger, formatDateTime } from "@/@core/utils/formatters";
+import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { getBillingSmsVisibilityCacheKey, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
 import Toaster from "@/components/common/Toaster.vue";
@@ -41,10 +43,9 @@ const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
 const isConfirmSendMailReminder = ref(false);
 const isConfirmKreditera = ref(false)
-const emailDefault = ref(true);
-const selectedTags = ref([]);
-const existingTags = ref([]);
-const isValid = ref(false);
+const refSendBillingForm = ref();
+const billingRecipientEmail = ref('');
+const billingRecipientPhone = ref('');
 const selectedBilling = ref({});
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -90,6 +91,18 @@ const readCachedCompany = () => {
 };
 
 const company = ref(readCachedCompany())
+const canShowBillingSmsAction = ref(false)
+const isBillingSmsActionVisibilityLoading = ref(true)
+
+const loadBillingSmsActionVisibility = async currentUserData => {
+  isBillingSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowBillingSmsAction.value = await loadBillingSmsActionPreference(currentUserData ?? userData.value)
+  } finally {
+    isBillingSmsActionVisibilityLoading.value = false
+  }
+}
 
 const setCompany = (value) => {
   const normalized = value && typeof value === 'object' ? { ...value } : {};
@@ -141,15 +154,21 @@ watchEffect(() => {
 
 onMounted(async () => {
   try {
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+    role.value = userData.value?.roles?.[0]?.name ?? null;
+
+    const initialBillingSmsVisibilityKey = getBillingSmsVisibilityCacheKey(userData.value)
+    const initialBillingSmsVisibilityPromise = loadBillingSmsActionVisibility(userData.value)
+
+    if (!role.value) {
+      await initialBillingSmsVisibilityPromise
+      return
+    }
+
     state_id.value = billingsStores.getStateId ?? state_id.value;
     updateStateId(state_id.value);
 
     await loadData();
-
-    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-    role.value = userData.value.roles[0].name;
-
-    if (!role.value) return;
 
     if (role.value === "SuperAdmin" || role.value === "Administrator") {
       suppliers.value = billingsStores.suppliers;
@@ -162,6 +181,15 @@ onMounted(async () => {
     ability.update(userAbilities)
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data ?? userData.value
+    role.value = userData.value?.roles?.[0]?.name ?? role.value
+
+    const updatedBillingSmsVisibilityKey = getBillingSmsVisibilityCacheKey(userData.value)
+
+    if (updatedBillingSmsVisibilityKey === initialBillingSmsVisibilityKey)
+      await initialBillingSmsVisibilityPromise
+    else
+      await loadBillingSmsActionVisibility(userData.value)
 
     if (role.value === 'Supplier') {
       setCompany({
@@ -194,6 +222,8 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('Failed to load company data:', error);
+    canShowBillingSmsAction.value = false
+    isBillingSmsActionVisibilityLoading.value = false
   }
 });
 
@@ -565,46 +595,122 @@ const credit = (billingData) => {
   billingsStores.setStateId(state_id.value);
 };
 
+const getBillingRecipientEmail = billing => billing?.client?.email ?? ''
+
+const getBillingRecipientPhone = billing => billing?.client?.phone ?? ''
+
+const validateBillingRecipientEmail = value => {
+  const trimmedEmail = String(value ?? '').trim()
+  const trimmedPhone = String(billingRecipientPhone.value ?? '').trim()
+
+  if (!trimmedEmail) {
+    if (canShowBillingSmsAction.value && trimmedPhone)
+      return true
+
+    return canShowBillingSmsAction.value
+      ? 'Ange en e-postadress eller ett telefonnummer'
+      : 'Ange en e-postadress'
+  }
+
+  return emailValidator(trimmedEmail)
+}
+
+const validateBillingRecipientPhone = value => {
+  const trimmedPhone = String(value ?? '').trim()
+
+  if (!trimmedPhone)
+    return true
+
+  return phoneValidator(trimmedPhone)
+}
+
 const send = (billingData) => {
   isConfirmSendMailVisible.value = true;
   selectedBilling.value = { ...billingData };
+  billingRecipientEmail.value = getBillingRecipientEmail(billingData);
+  billingRecipientPhone.value = getBillingRecipientPhone(billingData);
+
+  nextTick(() => {
+    refSendBillingForm.value?.resetValidation();
+  });
 };
 
-const addTag = (event) => {
-  const newTag = event.target.value.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const resetSendDialogState = () => {
+  billingRecipientEmail.value = '';
+  billingRecipientPhone.value = '';
+  selectedBilling.value = {};
+};
 
-  if (newTag && emailRegex.test(newTag)) {
-    // no hago nada, sino invalido
-  } else {
-    isValid.value = true;
-    selectedTags.value.pop();
-  }
+const closeSendDialog = () => {
+  isConfirmSendMailVisible.value = false;
+  refSendBillingForm.value?.resetValidation();
+  resetSendDialogState();
 };
 
 const sendMails = async () => {
-  if (!isValid.value) {
-    isConfirmSendMailVisible.value = false;
-    isRequestOngoing.value = true;
+  const validationResult = await refSendBillingForm.value?.validate();
+  if (validationResult && !validationResult.valid)
+    return;
 
-    let data = {
+  const trimmedEmail = String(billingRecipientEmail.value ?? '').trim();
+  const trimmedPhone = String(billingRecipientPhone.value ?? '').trim();
+  const hasEmailTarget = Boolean(trimmedEmail);
+  const hasSmsTarget = canShowBillingSmsAction.value && Boolean(trimmedPhone);
+
+  isConfirmSendMailVisible.value = false;
+  isRequestOngoing.value = true;
+
+  try {
+    const emailPayload = {
       id: selectedBilling.value.id,
-      emailDefault: emailDefault.value,
-      emails: selectedTags.value,
+      emailDefault: false,
+      emails: hasEmailTarget ? [trimmedEmail] : [],
     };
 
-    let res = await billingsStores.sendMails(data);
+    const emailResponse = await billingsStores.sendMails(emailPayload);
+
+    if (!emailResponse.data.success) {
+      advisor.value = {
+        type: "error",
+        message: emailResponse.data.message,
+        show: true,
+      };
+
+      return;
+    }
+
+    let advisorType = "success";
+    let advisorMessage = emailResponse.data.message || "Fakturan är skickad!";
+
+    if (hasSmsTarget) {
+      const smsPayload = {
+        id: selectedBilling.value.id,
+        phoneDefault: false,
+        phones: [trimmedPhone],
+      };
+
+      const smsResponse = await billingsStores.sendSms(smsPayload);
+
+      if (smsResponse.data.success) {
+        advisorMessage = hasEmailTarget
+          ? "Fakturan har skickats via e-post och SMS!"
+          : "Fakturan har skickats via SMS!";
+      } else {
+        advisorType = "warning";
+        advisorMessage = hasEmailTarget
+          ? `${advisorMessage} ${smsResponse.data.message || 'SMS kunde inte skickas.'}`
+          : (smsResponse.data.message || 'SMS kunde inte skickas.');
+      }
+    }
 
     advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? "Fakturan är skickad!" : res.data.message,
+      type: advisorType,
+      message: advisorMessage,
       show: true,
     };
 
     setTimeout(() => {
-      selectedTags.value = [];
-      existingTags.value = [];
-      emailDefault.value = true;
+      resetSendDialogState();
 
       advisor.value = {
         type: "",
@@ -617,6 +723,22 @@ const sendMails = async () => {
     await fetchData();
 
     return true;
+  } catch (err) {
+    advisor.value = {
+      type: "error",
+      message: err.response?.data?.message || err.message || "Det gick inte att skicka fakturan.",
+      show: true,
+    };
+
+    setTimeout(() => {
+      advisor.value = {
+        type: "",
+        message: "",
+        show: false,
+      };
+    }, 3000);
+  } finally {
+    isRequestOngoing.value = false;
   }
 };
 
@@ -1755,62 +1877,68 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm send -->
     <VDialog 
       v-model="isConfirmSendMailVisible" 
-      persistent 
-      class="action-dialog">
+      persistent
+      class="action-dialog"
+    >
       <!-- Dialog close btn -->
 
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+        @click="closeSendDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
-          <div class="dialog-title">
-            Skicka fakturan via e-post
-          </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka fakturor till följande
-          e-postadresser?
-        </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
-          <VCheckbox
-            v-model="emailDefault"
-            :label="selectedBilling.client.email"
-            class="ml-2"
-          />
-          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
-          <VCombobox
-            v-model="selectedTags"
-            :items="existingTags"
-            multiple
-            chips
-            deletable-chips
-            clearable
-            @blur="addTag"
-            @keydown.enter.prevent="addTag"
-            @input="isValid = false"
-          />
-          <span 
-            class="text-xs text-error" 
-            v-if="isValid">
-            E-postadressen måste vara en giltig e-postadress
-          </span>
-        </VCardText>
+      <VForm
+        ref="refSendBillingForm"
+        @submit.prevent="sendMails"
+      >
+        <VCard class="card-form"
+        >
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka fakturan
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill skicka fakturan.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+            <VTextField
+              v-model="billingRecipientEmail"
+              placeholder="kund@exempel.com"
+              :rules="[validateBillingRecipientEmail]"
+            />
+          </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
-          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
-        </VCardText>
-      </VCard>
+          <VCardText v-if="canShowBillingSmsAction" class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="billingRecipientPhone"
+              placeholder="+46701234567"
+              :rules="[validateBillingRecipientPhone]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="closeSendDialog">
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- 👉 Confirm kreditera -->

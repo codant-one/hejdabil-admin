@@ -163,7 +163,8 @@ class Supplier extends Model
             'user_id' => $user->id,
             'creator_id' => Auth::user()->id,
             'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
-            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null
+            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null,
+            'sms_sender' => ( $request->has('sms_sender') ) ? $request->sms_sender : null
         ]);
 
         $user_details = UserDetails::where('user_id', $user->id)->first();
@@ -177,11 +178,19 @@ class Supplier extends Model
         $user = User::with('userDetail')->find($supplier->user_id);
 
         User::updateUser($request, $user);
+
+        $supplier->update([
+            'sms_sender' => ($request->has('sms_sender')) ? $request->sms_sender : null,
+        ]);
         
         if( $supplier->boss_id > 0 )
             $user->assignRole('User');
         else
             $user->assignRole('Supplier');
+
+        $supplier->update([
+            'sms_sender' => $request->sms_sender === 'null' ? null : $request->sms_sender
+        ]);
 
         return $supplier;
     }

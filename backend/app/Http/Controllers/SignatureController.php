@@ -31,6 +31,7 @@ use App\Models\TokenHistory;
 use App\Models\Setting;
 use App\Models\SettingColor;
 use App\Models\SettingAgreement;
+use App\Services\TwilioSms;
 
 class SignatureController extends Controller
 {
@@ -60,7 +61,7 @@ class SignatureController extends Controller
      * Method 1: Start the signing process (Triggered from your Vue Dashboard).
      * URL: POST /api/agreements/{agreement}/send-signature-request
      */
-    public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request)
+    public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
   
@@ -89,6 +90,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $validated['x'],
@@ -110,6 +112,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $validated['x'],
                 'placement_y' => $validated['y'],
@@ -126,10 +129,17 @@ class SignatureController extends Controller
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress.',
+                    description: TokenHistory::buildChannelFailureDescription(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $validated['email']
+                    ),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
-                    metadata: ['recipient' => $validated['email'], 'error' => 'Invalid email format']
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $validated['email'],
+                        ['error' => 'Invalid email format']
+                    )
                 );
                 
                 return response()->json([
@@ -144,10 +154,16 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'E-post skickad till ' . $validated['email'],
+                description: TokenHistory::buildChannelSentDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
             );
 
             if($agreement->supplier_id === null) {
@@ -220,23 +236,118 @@ class SignatureController extends Controller
                 $subject
             );
             
-            // Update status to delivered if the sending was successful
-            $token->update(['signature_status' => 'delivered']);
-            
-            // Log 'delivered' event
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
+                description: TokenHistory::buildChannelDeliveredDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
             );
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false);
+            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsError = null;
+
+            if ($smsPhone !== '') {
+                TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: TokenHistory::EVENT_SENT,
+                    description: TokenHistory::buildChannelSentDescription(
+                        TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    )
+                );
+
+                try {
+                    $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+                    $smsSender = $this->resolveSmsSenderForCurrentUser();
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
+
+                    if ($smsResult !== true) {
+                        $smsError = $smsResult;
+
+                        TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                            description: TokenHistory::buildChannelFailureDescription(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: TokenHistory::buildChannelMetadata(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone,
+                                [
+                                    'error' => $smsResult,
+                                    'error_type' => 'sms_delivery_result',
+                                ]
+                            )
+                        );
+                    } else {
+                        TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: TokenHistory::EVENT_DELIVERED,
+                            description: TokenHistory::buildChannelDeliveredDescription(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: TokenHistory::buildChannelMetadata(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            )
+                        );
+                    }
+                } catch (\Throwable $smsException) {
+                    $smsError = $smsException->getMessage();
+
+                    TokenHistory::logEvent(
+                        tokenId: $token->id,
+                        eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                        description: TokenHistory::buildChannelFailureDescription(
+                            TokenHistory::CHANNEL_SMS,
+                            $smsPhone
+                        ),
+                        ipAddress: $request->ip(),
+                        userAgent: $request->userAgent(),
+                        metadata: TokenHistory::buildChannelMetadata(
+                            TokenHistory::CHANNEL_SMS,
+                            $smsPhone,
+                            [
+                                'error' => $smsException->getMessage(),
+                                'error_type' => get_class($smsException),
+                            ]
+                        )
+                    );
+                }
+            }
+
+            $token->update([
+                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
+            ]);
+
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $validated['phone'] ?? null, $smsError);
             
             return response()->json([
-                'message' => 'Begäran om underskrift skickad med framgång.'
+                'success' => true,
+                'warning' => (bool) $smsError,
+                'message' => $smsError
+                    ? "Begäran om underskrift skickad med framgång.\n{$smsError}"
+                    : 'Begäran om underskrift skickad med framgång.'
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error sending signature email: ' . $e->getMessage(), [
@@ -250,10 +361,17 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Email sending failed',
+                description: TokenHistory::buildChannelFailureDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'error_type' => get_class($e), 'recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email'],
+                    ['error' => $e->getMessage(), 'error_type' => get_class($e)]
+                )
             );
             
             return response()->json([
@@ -264,7 +382,7 @@ class SignatureController extends Controller
     }
 
     // Sign with a fixed position.
-    public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request)
+    public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
 
@@ -295,6 +413,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $defaultPlacement['x'],
@@ -317,6 +436,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
+                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $token->placement_x ?? $defaultPlacement['x'],
                 'placement_y' => $token->placement_y ?? $defaultPlacement['y'],
@@ -334,10 +454,17 @@ class SignatureController extends Controller
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Invalid email address',
+                    description: TokenHistory::buildChannelFailureDescription(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $validated['email']
+                    ),
                     ipAddress: $request->ip(),
                     userAgent: $request->userAgent(),
-                    metadata: ['recipient' => $validated['email'], 'error' => 'Invalid email format']
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $validated['email'],
+                        ['error' => 'Invalid email format']
+                    )
                 );
                 
                 return response()->json([
@@ -352,10 +479,16 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'E-post skickad till ' . $validated['email'],
+                description: TokenHistory::buildChannelSentDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
             );
 
             if($agreement->supplier_id === null) {
@@ -428,22 +561,119 @@ class SignatureController extends Controller
                 $subject
             );
             
-            // Update status to 'delivered' if the sending was successful
-            $token->update(['signature_status' => 'delivered']);
-            
-            // Log 'delivered' event
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
+                description: TokenHistory::buildChannelDeliveredDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                )
             );
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true);
+            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsError = null;
+
+            if ($smsPhone !== '') {
+                TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: TokenHistory::EVENT_SENT,
+                    description: TokenHistory::buildChannelSentDescription(
+                        TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_SMS,
+                        $smsPhone
+                    )
+                );
+
+                try {
+                    $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+                    $smsSender = $this->resolveSmsSenderForCurrentUser();
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
+
+                    if ($smsResult !== true) {
+                        $smsError = $smsResult;
+
+                        TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                            description: TokenHistory::buildChannelFailureDescription(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: TokenHistory::buildChannelMetadata(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone,
+                                [
+                                    'error' => $smsResult,
+                                    'error_type' => 'sms_delivery_result',
+                                ]
+                            )
+                        );
+                    } else {
+                        TokenHistory::logEvent(
+                            tokenId: $token->id,
+                            eventType: TokenHistory::EVENT_DELIVERED,
+                            description: TokenHistory::buildChannelDeliveredDescription(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            ),
+                            ipAddress: $request->ip(),
+                            userAgent: $request->userAgent(),
+                            metadata: TokenHistory::buildChannelMetadata(
+                                TokenHistory::CHANNEL_SMS,
+                                $smsPhone
+                            )
+                        );
+                    }
+                } catch (\Throwable $smsException) {
+                    $smsError = $smsException->getMessage();
+
+                    TokenHistory::logEvent(
+                        tokenId: $token->id,
+                        eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                        description: TokenHistory::buildChannelFailureDescription(
+                            TokenHistory::CHANNEL_SMS,
+                            $smsPhone
+                        ),
+                        ipAddress: $request->ip(),
+                        userAgent: $request->userAgent(),
+                        metadata: TokenHistory::buildChannelMetadata(
+                            TokenHistory::CHANNEL_SMS,
+                            $smsPhone,
+                            [
+                                'error' => $smsException->getMessage(),
+                                'error_type' => get_class($smsException),
+                            ]
+                        )
+                    );
+                }
+            }
+
+            $token->update([
+                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
+            ]);
+
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $validated['phone'] ?? null, $smsError);
             
-            return response()->json(['message' => 'Begäran om underskrift skickad med framgång.']);
+            return response()->json([
+                'success' => true,
+                'warning' => (bool) $smsError,
+                'message' => $smsError
+                    ? "Begäran om underskrift skickad med framgång.\n{$smsError}"
+                    : 'Begäran om underskrift skickad med framgång.'
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error sending static signature email for document: ' . $e->getMessage());
             $token->update(['signature_status' => 'delivery_issues']);
@@ -452,10 +682,17 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Email sending failed',
+                description: TokenHistory::buildChannelFailureDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email']
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'error_type' => get_class($e), 'recipient' => $validated['email']]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $validated['email'],
+                    ['error' => $e->getMessage(), 'error_type' => get_class($e)]
+                )
             );
             
             return response()->json([
@@ -512,6 +749,28 @@ class SignatureController extends Controller
                 : $newRecipientEmail;
 
             if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                $sourceToken->update(['signature_status' => 'delivery_issues']);
+
+                TokenHistory::logEvent(
+                    tokenId: $sourceToken->id,
+                    eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: TokenHistory::buildChannelFailureDescription(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $recipientEmail,
+                        true
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_EMAIL,
+                        $recipientEmail,
+                        [
+                            'error' => 'Invalid email format',
+                            'resend' => true,
+                        ]
+                    )
+                );
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Det finns ingen giltig mottagare för att skicka om.'
@@ -528,10 +787,18 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Skicka om signaturpost påbörjad till ' . $recipientEmail,
+                description: TokenHistory::buildChannelSentDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    ['resend' => true]
+                )
             );
 
             if($agreement->supplier_id === null) {
@@ -609,10 +876,18 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'E-post skickad om',
+                description: TokenHistory::buildChannelDeliveredDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['recipient' => $recipientEmail, 'resend' => true]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail,
+                    ['resend' => true]
+                )
             );
 
             $this->createAgreementSignatureResentActivity($agreement, $token, $recipientEmail);
@@ -634,20 +909,203 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid skicka om e-post till ' . ($recipientEmail ?: $token->recipient_email),
+                description: TokenHistory::buildChannelFailureDescription(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail ?: $token->recipient_email,
+                    true
+                ),
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: [
-                    'error' => $e->getMessage(),
-                    'error_type' => get_class($e),
-                    'recipient' => $recipientEmail ?: $sourceToken->recipient_email,
-                    'resend' => true,
-                ]
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_EMAIL,
+                    $recipientEmail ?: $sourceToken->recipient_email,
+                    [
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e),
+                        'resend' => true,
+                    ]
+                )
             );
 
             return response()->json([
                 'success' => false,
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function resendSignatureSms(Agreement $agreement, Request $request, TwilioSms $twilioSms)
+    {
+        $token = $agreement->tokens()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues', 'cancelled'])
+            ->latest()
+            ->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om via SMS.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'phone' => ['nullable', 'string', 'regex:/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s.\/0-9]*$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kontrollera telefonnumret och försök igen.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $agreement->loadMissing(['agreement_type', 'agreement_client', 'supplier.user.userDetail']);
+
+        $recipientPhone = trim((string) ($request->input('phone') ?? $token->recipient_phone ?? $agreement->agreement_client?->phone ?? ''));
+
+        if ($recipientPhone === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Det finns inget giltigt telefonnummer för att skicka om SMS.'
+            ], 422);
+        }
+
+        try {
+            $token->update([
+                'recipient_phone' => $recipientPhone,
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'sent',
+            ]);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_SENT,
+                description: TokenHistory::buildChannelSentDescription(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    ['resend' => true]
+                )
+            );
+
+            $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
+            $smsSender = $this->resolveSmsSenderForCurrentUser();
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
+
+            if ($smsResult !== true) {
+                $token->update(['signature_status' => 'delivery_issues']);
+
+                TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: TokenHistory::buildChannelFailureDescription(
+                        TokenHistory::CHANNEL_SMS,
+                        $recipientPhone,
+                        true
+                    ),
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: TokenHistory::buildChannelMetadata(
+                        TokenHistory::CHANNEL_SMS,
+                        $recipientPhone,
+                        [
+                            'error' => $smsResult,
+                            'error_type' => 'sms_delivery_result',
+                            'resend' => true,
+                        ]
+                    )
+                );
+
+                return response()->json([
+                    'success' => false,
+                    'message' => TwilioSms::isInvalidRecipientMessage($smsResult)
+                        ? $smsResult
+                        : 'Det gick inte att skicka om SMS: ' . $smsResult,
+                ], 500);
+            }
+
+            $token->update(['signature_status' => 'delivered']);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_DELIVERED,
+                description: TokenHistory::buildChannelDeliveredDescription(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    ['resend' => true]
+                )
+            );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $agreement->id,
+                'entity_type' => 'agreements',
+                'action_type' => 'resend_signature_agreement_sms',
+                'title' => $this->agreementActivityTitle($agreement, ' - SMS skickat igen för signering'),
+                'description' => 'Skickades igen för signering via SMS.',
+                'icon' => 'custom-contract',
+                'route' => $this->agreementActivityRoute($agreement->id),
+                'metadata' => json_encode([
+                    'agreement_id' => $agreement->id,
+                    'token_id' => $token->id,
+                    'recipient_phone' => $recipientPhone,
+                    'signature_status' => $token->signature_status,
+                    'resend' => true,
+                    'sms' => true,
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS-meddelandet har skickats igen.'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error resending signature SMS for agreement: ' . $e->getMessage(), [
+                'exception' => $e,
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'phone' => $recipientPhone,
+            ]);
+
+            $token->update(['signature_status' => 'delivery_issues']);
+
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: TokenHistory::buildChannelFailureDescription(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    true
+                ),
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: TokenHistory::buildChannelMetadata(
+                    TokenHistory::CHANNEL_SMS,
+                    $recipientPhone,
+                    [
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e),
+                        'resend' => true,
+                    ]
+                )
+            );
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Det gick inte att skicka om SMS-meddelandet: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1163,6 +1621,8 @@ class SignatureController extends Controller
                 'signed_by'    => $token->recipient_email,
                 'user_id'      => $userId, // ID del usuario que debe recibir la notificación
                 'order_id'     => null,
+                'client'       => null,
+                'reg_num'      => null
             ];
 
             // Add document or agreement ID for download
@@ -1173,6 +1633,11 @@ class SignatureController extends Controller
                     $response['order_id'] = $agreement->agreement_type_id === 4 ? $agreement->offer_id : $agreement->agreement_id;
                 }
                 $response['is_agreement'] = true;
+                $response['client'] = $agreement->agreement_client ? $agreement->agreement_client->fullname : null;
+                $response['reg_num'] = 
+                    $agreement->agreement_type_id === 4 ? 
+                    $agreement->offer->reg_num : 
+                    ($agreement->agreement_type_id === 3 ? $agreement->commission->vehicle->reg_num : $agreement->vehicle_client->vehicle->reg_num);
             } elseif ($token->document_id) {
                 $response['document_id'] = $token->document_id;
                 $document = $token->document;
@@ -1418,7 +1883,66 @@ class SignatureController extends Controller
         return $filePath;
     }
 
-    private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature): void
+    private function buildAgreementSignatureSmsMessage(Agreement $agreement, Token $token): string
+    {
+        $baseMessage = $this->resolveAgreementSignatureSmsMessage($agreement);
+        $signingUrl = rtrim((string) env('APP_DOMAIN'), '/') . '/sign/' . $token->signing_token;
+
+        return trim($baseMessage . ' ' . $signingUrl);
+    }
+
+    private function resolveAgreementSignatureSmsMessage(Agreement $agreement): string
+    {
+        $companyName = $this->resolveAgreementSignatureCompanyName($agreement);
+
+        if ($agreement->supplier_id === null) {
+            $agreementConfig = Config::getByKey('agreements') ?? ['value' => '[]'];
+            $rawValue = is_array($agreementConfig) ? ($agreementConfig['value'] ?? '[]') : ($agreementConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            $smsMessage = is_array($decoded) ? ($decoded['sms_message'] ?? '') : '';
+
+            return $this->finalizeAgreementSignatureSmsMessage($smsMessage, $companyName);
+        }
+
+        $setting = Setting::with('agreement')->where('supplier_id', $agreement->supplier_id)->first();
+        $smsMessage = $setting?->agreement?->sms_message ?? '';
+
+        return $this->finalizeAgreementSignatureSmsMessage($smsMessage, $companyName);
+    }
+
+    private function resolveAgreementSignatureCompanyName(Agreement $agreement): string
+    {
+        if ($agreement->supplier_id === null) {
+            $companyConfig = Config::getByKey('company') ?? ['value' => '[]'];
+            $rawValue = is_array($companyConfig) ? ($companyConfig['value'] ?? '[]') : ($companyConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+        }
+
+        return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function finalizeAgreementSignatureSmsMessage(?string $message, string $companyName): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $fallbackMessage = 'Du har fått ett avtal från ' . $resolvedCompanyName . ' för digital signering.';
+        $normalizedMessage = trim((string) $message);
+
+        if ($normalizedMessage === '')
+            return $fallbackMessage;
+
+        return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
+    }
+
+    private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature, ?string $recipientPhone = null, $smsError = null): void
     {
         SupplierActivity::createActivity([
             'entity_id' => $agreement->id,
@@ -1432,13 +1956,15 @@ class SignatureController extends Controller
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
                 'recipient_email' => $recipientEmail,
+                'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
                 'static_signature' => $isStaticSignature,
+                'sms_error' => $smsError,
             ])
         ]);
     }
 
-    private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail): void
+    private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail, ?string $recipientPhone = null, $smsError = null): void
     {
         SupplierActivity::createActivity([
             'entity_id' => $agreement->id,
@@ -1452,9 +1978,11 @@ class SignatureController extends Controller
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
                 'recipient_email' => $recipientEmail,
+                'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
                 'resend' => true,
                 'static_signature' => is_null($token->placement_x) && is_null($token->placement_y),
+                'sms_error' => $smsError,
             ])
         ]);
     }

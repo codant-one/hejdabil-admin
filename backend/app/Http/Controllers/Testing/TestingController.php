@@ -129,7 +129,7 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(22);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(56);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -179,6 +179,7 @@ class TestingController extends Controller
 
         $company->primary_color = '#09DAD9';
         $company->secondary_color = '#DFFAFA';
+        $company->theme = 0;
 
         return view('pdfs.invoices.modern2', 
             compact(

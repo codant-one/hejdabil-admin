@@ -319,7 +319,7 @@ const extractDaysFromNetTermSplit = (term) => {
   return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 };
 
-const getNextInvoiceId = (billings = [], fallbackId = 0) => {
+const getInitialInvoiceId = (billings = [], configuredInvoiceId = 0) => {
   const maxFromBillings = Array.isArray(billings)
     ? billings.reduce((maxValue, billingItem) => {
         const currentId = Number(billingItem?.invoice_id);
@@ -329,28 +329,29 @@ const getNextInvoiceId = (billings = [], fallbackId = 0) => {
       }, 0)
     : 0;
 
-  const baseId = Math.max(maxFromBillings, Number(fallbackId) || 0);
+  const nextAvailableId = maxFromBillings + 1;
+  const configuredId = Number(configuredInvoiceId);
 
-  return baseId + 1;
+  if (Number.isFinite(configuredId) && configuredId > 0)
+    return Math.max(nextAvailableId, configuredId);
+
+  return nextAvailableId;
 };
 
 watch(
-  () => props.company,
-  (val) => {
-    company.value = val;
+  [() => props.company, () => props.invoice_id],
+  ([companyValue]) => {
+    company.value = companyValue;
 
     if (props.billing) {
       invoice.value.id = route.path.includes("/duplicate/")
-        ? getNextInvoiceId(company.value?.billings, props.invoice_id)
+        ? getInitialInvoiceId(company.value?.billings, props.invoice_id)
         : props.billing.invoice_id;
-    } else if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
-    } else if (props.role === "User" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
     } else {
-      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
+      invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
@@ -463,7 +464,7 @@ const checkIfMobile = () => {
 async function fetchData() {
   if (props.billing) {
     invoice.value.id = route.path.includes("/duplicate/")
-      ? getNextInvoiceId(company.value?.billings, props.invoice_id)
+      ? getInitialInvoiceId(company.value?.billings, props.invoice_id)
       : props.billing.invoice_id;
     invoice.value.reference = props.billing.reference;
     invoice.value.invoice_date = route.path.includes("/duplicate/") ? new Date().toLocaleDateString('sv-SE') : props.billing.invoice_date;
@@ -490,11 +491,7 @@ async function fetchData() {
 
     invoice.value.invoice_date = `${year}-${month}-${day}`;
 
-    if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
-    } else {
-      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
-    }
+    invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
   }
 }
 
@@ -552,13 +549,13 @@ const selectSupplier = async () => {
     company.value = selected.user.user_detail;
     company.value.email = selected.user.email;
     company.value.billings = selected.billings;
-    invoice.value.id = getNextInvoiceId(selected.billings, props.invoice_id);
+    invoice.value.id = getInitialInvoiceId(selected.billings, props.invoice_id);
     clients.value = props.clients.filter(
       item => String(item?.supplier_id) === String(invoice.value.supplier_id)
     );
   } else {
     company.value = props.company;
-    invoice.value.id = getNextInvoiceId(props.company?.billings, props.invoice_id);
+    invoice.value.id = getInitialInvoiceId(props.company?.billings, props.invoice_id);
     clients.value = props.clients;
   }
 
@@ -1964,7 +1961,7 @@ const handleFocus = (element, fieldId) => {
                 <VuePdfEmbed
                   v-if="billing?.file"
                   :source="pdfSource"
-                  class="d-flex justify-content-center w-auto m-auto"
+                  class="w-auto m-auto"
                 />
                 <img
                   v-else
@@ -1987,17 +1984,17 @@ const handleFocus = (element, fieldId) => {
   >
     <VBtn
       icon
-      class="btn-white close-btn"
+      class="btn-white close-btn px-1"
       @click="isInvoiceIdAlertVisible = false"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
 
     <VCard>
-      <VCardText class="dialog-title-box">
-        <VIcon size="32" icon="custom-alarm" class="action-icon" />
+      <VCardText class="dialog-title-box d-flex" :style="windowWidth < 1024 ? '' : 'gap: 4px'">
+        <VIcon size="32" icon="custom-factura-outlined" class="action-icon" />
         <div class="dialog-title">
-          Fakturanummer kan redigeras
+          Välj ditt startnummer för fakturor
         </div>
       </VCardText>
       <VCardText class="dialog-text">
@@ -2005,9 +2002,33 @@ const handleFocus = (element, fieldId) => {
         Om inget nummer anges börjar numreringen från 01. Detta kan ändras i inställningarna.
       </VCardText>
 
+      <VCardText class="dialog-text my-4">
+        <div class="billing-empty">
+          <div class="d-flex align-center gap-2">
+            <span>#</span>
+            <div class="d-flex flex-column">
+              <span>Faktura nr</span>
+              <span class="text-black">1</span>
+            </div>
+          </div>
+          <div class="status-chip status-chip-disabled">
+            Standard
+          </div>
+        </div>
+        
+      </VCardText>
+
+      <VCardText class="dialog-text">
+        Detta meddelande visas bara en gång.
+      </VCardText>
+
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" :to="{ name: 'dashboard-settings-billings' }">
+          Gå till inställningar
+        </VBtn>
+
         <VBtn class="btn-gradient" @click="isInvoiceIdAlertVisible = false">
-          Okej
+          Förstår
         </VBtn>
       </VCardText>
     </VCard>
@@ -2125,6 +2146,21 @@ const handleFocus = (element, fieldId) => {
 
 <style lang="scss" scoped>
 
+.billing-empty {
+  display: flex;
+  justify-content: space-between;
+  border-radius: 8px;
+  padding-top: 8px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+  background-color: #F6F6F6;
+  border: 1px solid #E7E7E7;
+  color: #878787;
+  align-items: center;
+  font-size: 14px;
+}
+
 :deep(.deleted-supplier-option .deleted-supplier-text),
 .deleted-supplier-text {
   text-decoration: line-through;
@@ -2171,6 +2207,30 @@ const handleFocus = (element, fieldId) => {
   border: solid 1px #e7e7e7;
 }
 
+:deep(.invoice-panel .vue-pdf-embed) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+:deep(.invoice-panel .vue-pdf-embed > div) {
+  width: 100% !important;
+}
+
+:deep(.invoice-panel .vue-pdf-embed > div + div) {
+  margin-top: 12px;
+}
+
+:deep(.invoice-panel .vue-pdf-embed__page) {
+  margin: 0 auto;
+}
+
+:deep(.invoice-panel .vue-pdf-embed canvas) {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
 .invoice-box {
   border-radius: 16px;
   padding: 16px;
@@ -2202,7 +2262,7 @@ const handleFocus = (element, fieldId) => {
 @media (max-width: 1023px) {
   .invoice-panel {
     margin: 0;
-    padding: 2px !important;
+    padding: 0 !important;
   }
 }
 

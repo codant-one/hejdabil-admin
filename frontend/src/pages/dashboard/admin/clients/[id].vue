@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
       :color="advisor.type"
       class="snackbar-alert snackbar-dashboard"
     >
-      {{ advisor.message }}
+      <span class="snackbar-message">{{ advisor.message }}</span>
     </VSnackbar> 
       
     <Toaster />
@@ -224,6 +224,10 @@ meta:
 </route>
 
 <style lang="scss" scoped>
+  .snackbar-message {
+    white-space: pre-line;
+  }
+
   .client-slug {
     @media (max-width: 768px) {
       border-radius: 0px !important;

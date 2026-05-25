@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Jobs\SendEmailJob;
 
 use App\Models\User;
 use App\Models\UserRegisterToken;

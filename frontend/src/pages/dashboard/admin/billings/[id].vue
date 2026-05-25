@@ -3,6 +3,8 @@
 import { useDisplay } from "vuetify";
 import { themeConfig } from "@themeConfig";
 import { useBillingsStores } from "@/stores/useBillings";
+import { emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
@@ -12,16 +14,16 @@ import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
 const billingsStores = useBillingsStores();
 const route = useRoute();
 const emitter = inject("emitter");
+const userData = ref(null);
 
 const types = ref([]);
 const invoices = ref([]);
 const invoice = ref(null);
 const isRequestOngoing = ref(true);
 const isConfirmSendMailVisible = ref(false);
-const emailDefault = ref(true);
-const selectedTags = ref([]);
-const existingTags = ref([]);
-const isValid = ref(false);
+const refSendBillingForm = ref();
+const billingRecipientEmail = ref('');
+const billingRecipientPhone = ref('');
 const file = ref(false);
 const skickaDialog = ref(false);
 const inteSkapatsDialog = ref(false);
@@ -41,16 +43,62 @@ const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
+const role = computed(() => userData.value?.roles?.[0]?.name ?? '');
+const canShowBillingSmsAction = ref(false)
+
 const pdfScale = computed(() => {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.max(dpr, 2.5);
+  const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
+  return Math.min(2.25, Math.max(1.75, dpr * 1.05));
+});
+const pdfViewportEl = ref(null);
+const pdfViewportWidth = ref(0);
+let pdfResizeObserver;
+
+const pdfWidth = computed(() => {
+  if (pdfViewportWidth.value > 0)
+    return Math.max(280, Math.round(pdfViewportWidth.value));
+
+  if (windowWidth.value < 1024)
+    return Math.max(280, windowWidth.value - 32);
+
+  return 700;
 });
 
+const updatePdfViewportWidth = () => {
+  const el = pdfViewportEl.value;
+  if (!el)
+    return;
+
+  pdfViewportWidth.value = el.clientWidth;
+};
+
+const initPdfResizeObserver = () => {
+  const el = pdfViewportEl.value;
+  if (!el || typeof ResizeObserver === "undefined")
+    return;
+
+  if (pdfResizeObserver)
+    pdfResizeObserver.disconnect();
+
+  pdfResizeObserver = new ResizeObserver(() => updatePdfViewportWidth());
+  pdfResizeObserver.observe(el);
+  updatePdfViewportWidth();
+};
+
 watchEffect(fetchData);
+watchEffect(async () => {
+  if (!invoice.value)
+    return;
+
+  await nextTick();
+  initPdfResizeObserver();
+});
 
 async function fetchData() {
   if (Number(route.params.id) && route.name === "dashboard-admin-billings-id") {
     isRequestOngoing.value = true;
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    canShowBillingSmsAction.value = await loadBillingSmsActionPreference(userData.value)
 
     let response = await billingsStores.all();
     types.value = response.data.data.invoices;
@@ -66,17 +114,34 @@ async function fetchData() {
   }
 }
 
-const addTag = (event) => {
-  const newTag = event.target.value.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const getBillingRecipientEmail = billing => billing?.client?.email ?? ''
 
-  if (newTag && emailRegex.test(newTag)) {
-    // no hago nada, sino invalido
-  } else {
-    isValid.value = true;
-    selectedTags.value.pop();
+const getBillingRecipientPhone = billing => billing?.client?.phone ?? ''
+
+const validateBillingRecipientEmail = value => {
+  const trimmedEmail = String(value ?? '').trim()
+  const trimmedPhone = String(billingRecipientPhone.value ?? '').trim()
+
+  if (!trimmedEmail) {
+    if (canShowBillingSmsAction.value && trimmedPhone)
+      return true
+
+    return canShowBillingSmsAction.value
+      ? 'Ange en e-postadress eller ett telefonnummer'
+      : 'Ange en e-postadress'
   }
-};
+
+  return emailValidator(trimmedEmail)
+}
+
+const validateBillingRecipientPhone = value => {
+  const trimmedPhone = String(value ?? '').trim()
+
+  if (!trimmedPhone)
+    return true
+
+  return phoneValidator(trimmedPhone)
+}
 
 const createBilling = () => {
   router.push({ name: "dashboard-admin-billings-add" });
@@ -96,41 +161,71 @@ const goToBilling = () => {
 };
 
 const sendMails = async () => {
-  if (!isValid.value) {
-    isConfirmSendMailVisible.value = false;
-    isRequestOngoing.value = true;
+  const validationResult = await refSendBillingForm.value?.validate()
+  if (validationResult && !validationResult.valid)
+    return
 
-    let data = {
-      id: invoice.value.id,
-      emailDefault: emailDefault.value,
-      emails: selectedTags.value,
-    };
+  const trimmedEmail = String(billingRecipientEmail.value ?? '').trim()
+  const trimmedPhone = String(billingRecipientPhone.value ?? '').trim()
+  const hasEmailTarget = Boolean(trimmedEmail)
+  const hasSmsTarget = canShowBillingSmsAction.value && Boolean(trimmedPhone)
 
-    try {
-      let res = await billingsStores.sendMails(data);
+  isConfirmSendMailVisible.value = false;
+  isRequestOngoing.value = true;
 
-      if (res.data.success) {
-        skickaDialog.value = true;
-      } else {
-        inteSkapatsDialog.value = true;
-      }
+  const data = {
+    id: invoice.value.id,
+    emailDefault: false,
+    emails: hasEmailTarget ? [trimmedEmail] : [],
+  };
 
-      isRequestOngoing.value = false;
+  try {
+    const res = await billingsStores.sendMails(data);
 
-      setTimeout(() => {
-        selectedTags.value = [];
-        existingTags.value = [];
-        emailDefault.value = true;
-      }, 3000);
-
-    } catch (error) {
-      console.error("Error sending emails:", error);
+    if (!res.data.success) {
       inteSkapatsDialog.value = true;
-      isRequestOngoing.value = false;
+      return true;
     }
 
-    return true;
+    if (hasSmsTarget) {
+      const smsResponse = await billingsStores.sendSms({
+        id: invoice.value.id,
+        phoneDefault: false,
+        phones: [trimmedPhone],
+      })
+
+      if (!smsResponse.data.success) {
+        advisor.value = {
+          type: 'warning',
+          message: smsResponse.data.message || 'SMS kunde inte skickas.',
+          show: true,
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+          }
+        }, 3000)
+      }
+    }
+
+    skickaDialog.value = true;
+
+    setTimeout(() => {
+      billingRecipientEmail.value = '';
+      billingRecipientPhone.value = '';
+    }, 3000);
+
+  } catch (error) {
+    console.error("Error sending invoice:", error);
+    inteSkapatsDialog.value = true;
+  } finally {
+    isRequestOngoing.value = false;
   }
+
+  return true;
 };
 
 const credit = () => {
@@ -173,7 +268,20 @@ const kreditera = () => {
 
 const send = () => {
   isConfirmSendMailVisible.value = true;
+  billingRecipientEmail.value = getBillingRecipientEmail(invoice.value)
+  billingRecipientPhone.value = getBillingRecipientPhone(invoice.value)
+
+  nextTick(() => {
+    refSendBillingForm.value?.resetValidation()
+  })
 };
+
+const closeSendDialog = () => {
+  isConfirmSendMailVisible.value = false
+  billingRecipientEmail.value = ''
+  billingRecipientPhone.value = ''
+  refSendBillingForm.value?.resetValidation()
+}
 
 const sendReminder = () => {
   isConfirmSendMailReminder.value = true;
@@ -336,6 +444,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+
+  if (pdfResizeObserver)
+    pdfResizeObserver.disconnect();
 });
 </script>
 
@@ -419,18 +530,21 @@ onBeforeUnmount(() => {
 
           <VDivider class="mt-2 mx-4" />
 
-          <div class="invoice-panel">
-            <VuePdfEmbed
-              text-layer
-              :scale="pdfScale"
-              :source="
-                themeConfig.settings.urlbase +
-                'proxy-image?url=' +
-                themeConfig.settings.urlStorage +
-                invoice.file
-              "
-              class="d-flex justify-content-center w-auto m-auto"
-            />
+          <div ref="pdfViewportEl" class="invoice-panel">
+            <div class="pdf-host" :style="{ width: `${pdfWidth}px` }">
+              <VuePdfEmbed
+                text-layer
+                :width="pdfWidth"
+                :scale="pdfScale"
+                :source="
+                  themeConfig.settings.urlbase +
+                  'proxy-image?url=' +
+                  themeConfig.settings.urlStorage +
+                  invoice.file
+                "
+                class="w-100 m-auto"
+              />
+            </div>
           </div>
         </VCard>
       </VCol>
@@ -582,6 +696,7 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
+
           <VListItem
             v-if="$can('view', 'billings')"
             @click="printInvoice(); isMobileActionDialogVisible = false"
@@ -634,60 +749,67 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm send -->
     <VDialog 
       v-model="isConfirmSendMailVisible" 
-      persistent 
-      class="action-dialog">
+      persistent
+      class="action-dialog"
+    >
       <!-- Dialog close btn -->
 
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+        @click="closeSendDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
-          <div class="dialog-title">
-            Skicka fakturan via e-post
-          </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill skicka fakturor till följande
-          e-postadresser?
-        </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
-          <VCheckbox
-            v-model="emailDefault"
-            :label="invoice.client.email"
-            class="ml-2"
-          />
-          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
-          <VCombobox
-            v-model="selectedTags"
-            :items="existingTags"
-            multiple
-            chips
-            deletable-chips
-            clearable
-            @blur="addTag"
-            @keydown.enter.prevent="addTag"
-            @input="isValid = false"
-          />
-          <span class="text-xs text-error" v-if="isValid"
-            >E-postadressen måste vara en giltig e-postadress</span
-          >
-        </VCardText>
+      <VForm
+        ref="refSendBillingForm"
+        @submit.prevent="sendMails"
+      >
+        <VCard class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka fakturan
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill skicka fakturan.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+            <VTextField
+              v-model="billingRecipientEmail"
+              placeholder="kund@exempel.com"
+              :rules="[validateBillingRecipientEmail]"
+            />
+          </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
-        </VCardText>
-      </VCard>
+          <VCardText v-if="canShowBillingSmsAction" class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="billingRecipientPhone"
+              placeholder="+46701234567"
+              :rules="[validateBillingRecipientPhone]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="closeSendDialog">
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <VDialog
@@ -947,19 +1069,34 @@ onBeforeUnmount(() => {
   opacity: 1;
   border: solid 1px #e7e7e7;
   overflow: hidden;
+  background-color: #fff;
+
+  .pdf-host {
+    max-width: 100%;
+  }
   
   .vue-pdf-embed {
-    border-radius: 8px;
+    display: block;
     width: 100%;
+    max-width: 100%;
+  }
+
+  .vue-pdf-embed > div {
+    width: 100% !important;
+  }
+
+  .vue-pdf-embed > div + div {
+    margin-top: 12px;
+  }
+
+  .vue-pdf-embed__page {
+    margin: 0 auto;
   }
   
   canvas {
-    border-radius: 8px;
     display: block;
     width: 100% !important;
     height: auto !important;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
   }
 }
 

@@ -924,7 +924,7 @@ const submitFinalSignature = async (signatureImage) => {
       await notificationsStore.send({
         title: response.data.is_agreement ? 'Avtal signerat' : 'Dokument signerat',
         subtitle: response.data.is_agreement ? 'Ett avtal har signerats framgångsrikt' : 'Ett dokument har signerats framgångsrikt',
-        text: response.data.is_agreement ? `Avtalet har signerats korrekt. Avtals ID: ${response.data.order_id || 'N/A'}` : `Dokumentet har signerats korrekt. Dokument ID: ${response.data.order_id || 'N/A'}`,
+        text: response.data.is_agreement ? `Avtalet har signerats korrekt av ${response.data.client || 'N/A'} för reg nr ${response.data.reg_num || 'N/A'}` : `Dokumentet har signerats korrekt. Dokument ID: ${response.data.order_id || 'N/A'}`,
         color: 'primary',
         icon: response.data.is_agreement ? 'custom-contract' : 'custom-signature',
         route: route || null,

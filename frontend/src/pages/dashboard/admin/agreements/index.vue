@@ -5,7 +5,8 @@ import { useDisplay } from "vuetify";
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { getAgreementSmsVisibilityCacheKey, loadAgreementSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -35,6 +36,7 @@ const isConfirmCancelSignatureDialogVisible = ref(false)
 const hasLoaded = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
+const signaturePhone = ref('')
 const refSignatureForm = ref()              
 const refResendSignatureForm = ref()
 const isConfirmSendMailVisible = ref(false)
@@ -44,6 +46,7 @@ const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
 const resendSignatureEmail = ref('')
+const resendSignaturePhone = ref('')
 const selectedAgreement = ref({})
 const isStaticSignatureFlow = ref(false)
 const filtreraMobile = ref(false);
@@ -54,6 +57,28 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const canShowAgreementSmsAction = ref(false)
+const isAgreementSmsActionVisibilityLoading = ref(true)
+const agreementSmsVisibilityCacheKey = ref('')
+
+const loadAgreementSmsActionVisibility = async currentUserData => {
+  const resolvedUserData = currentUserData ?? userData.value
+  const nextCacheKey = getAgreementSmsVisibilityCacheKey(resolvedUserData)
+
+  if (nextCacheKey && agreementSmsVisibilityCacheKey.value === nextCacheKey) {
+    isAgreementSmsActionVisibilityLoading.value = false
+    return
+  }
+
+  isAgreementSmsActionVisibilityLoading.value = true
+
+  try {
+    canShowAgreementSmsAction.value = await loadAgreementSmsActionPreference(resolvedUserData)
+    agreementSmsVisibilityCacheKey.value = nextCacheKey
+  } finally {
+    isAgreementSmsActionVisibilityLoading.value = false
+  }
+}
 
 // 👉 Column visibility state
 const isColumnsDialogVisible = ref(false)
@@ -358,6 +383,10 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
   isFilterDialogVisible.value = false;
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? null
+  const agreementSmsVisibilityPromise = loadAgreementSmsActionVisibility(userData.value)
+
   await agreementsStores.fetchAgreements(data)
 
   agreements.value = Array.isArray(agreementsStores.getAgreements)
@@ -367,12 +396,11 @@ async function fetchData(cleanFilters = false) {
   totalAgreements.value = agreementsStores.agreementsTotalCount
   hasLoaded.value = true
 
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = agreementsStores.getSuppliers
   }
+
+  await agreementSmsVisibilityPromise
   
   isRequestOngoing.value = false
 
@@ -435,11 +463,16 @@ const send = agreementData => {
 }
 
 const getResendRecipientEmail = (agreement) => {
-  return agreement?.token?.recipient_email || agreement?.agreement_client?.email || ''
+  return agreement?.token?.recipient_email || agreement?.agreement_client?.email || agreement?.vehicle_client?.email || ''
+}
+
+const getAgreementRecipientPhone = (agreement) => {
+  return agreement?.token?.recipient_phone || agreement?.agreement_client?.phone || agreement?.vehicle_client?.phone || ''
 }
 
 const resetResendSignatureState = () => {
   resendSignatureEmail.value = ''
+  resendSignaturePhone.value = ''
 }
 
 const closeResendSignatureDialog = () => {
@@ -637,15 +670,19 @@ const handleAdminPdfClick = (event) => {
 }
 
 const openSignatureDialog = (agreementData) => {
-  // Ahora selectedAgreement ya está seteado.
-  signatureEmail.value = agreementData.agreement_client?.email || ''
+  if (agreementData?.id)
+    selectedAgreement.value = { ...agreementData }
+
+  signatureEmail.value = getResendRecipientEmail(agreementData)
+  signaturePhone.value = getAgreementRecipientPhone(agreementData)
   isSignatureDialogVisible.value = true
 }
 
 const openStaticSignatureDialog = (agreementData) => {
   selectedAgreement.value = { ...agreementData }; // Aseguramos que el agreement está seleccionado
   isStaticSignatureFlow.value = true // ¡Importante! Indicamos que es el flujo estático
-  signatureEmail.value = agreementData.agreement_client?.email || ''
+  signatureEmail.value = getResendRecipientEmail(agreementData)
+  signaturePhone.value = getAgreementRecipientPhone(agreementData)
   isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
 }
 
@@ -654,6 +691,7 @@ const openResendSignature = async (agreementData) => {
 
   selectedAgreement.value = { ...agreementData }
   resendSignatureEmail.value = getResendRecipientEmail(agreementData)
+  resendSignaturePhone.value = getAgreementRecipientPhone(agreementData)
   isConfirmResendSignatureVisible.value = true
 }
 
@@ -695,6 +733,7 @@ const submitResendSignature = async () => {
   if (!valid) return;
 
   const trimmedEmail = resendSignatureEmail.value.trim()
+  const trimmedPhone = resendSignaturePhone.value.trim()
 
   isConfirmResendSignatureVisible.value = false
 
@@ -705,9 +744,25 @@ const submitResendSignature = async () => {
       emailDefault: false,
       emails: [trimmedEmail],
     })
+    let advisorType = 'success'
+    let advisorMessage = response.data.message || 'E-postmeddelandet har skickats igen.'
+
+    if (canShowAgreementSmsAction.value && trimmedPhone) {
+      try {
+        await agreementsStores.resendSignatureSms({
+          id: selectedAgreement.value.id,
+          phone: trimmedPhone,
+        })
+        advisorMessage = 'E-postmeddelandet och SMS-meddelandet har skickats igen.'
+      } catch (smsError) {
+        advisorType = 'warning'
+        advisorMessage = `${advisorMessage}\n${smsError.response?.data?.message || 'SMS-kunde inte skickas. Kontrollera att telefonnumret är korrekt och försök igen.'}`
+      }
+    }
+
     advisor.value = {
-      type: 'success',
-      message: response.data.message || 'E-postmeddelandet har skickats igen.',
+      type: advisorType,
+      message: advisorMessage,
       show: true,
     }
     await fetchData()
@@ -756,6 +811,7 @@ const submitPlacementSignatureRequest  = async () => {
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
+      phone: signaturePhone.value,
       x: x_percent.toFixed(2),
       y: y_percent.toFixed(2),
       page: signaturePlacement.value.page,
@@ -766,7 +822,7 @@ const submitPlacementSignatureRequest  = async () => {
     
     // 6. Muestra el mensaje de éxito
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
@@ -786,6 +842,7 @@ const submitPlacementSignatureRequest  = async () => {
     // Limpia todo y oculta el spinner
     isRequestOngoing.value = false
     signatureEmail.value = '' // Limpia el email para la próxima vez
+    signaturePhone.value = ''
     setTimeout(() => {
       advisor.value = { show: false }
     }, 3000)
@@ -805,7 +862,8 @@ const submitStaticSignatureRequest = async () => {
     // 3. Prepara un payload más simple, sin coordenadas
     const payload = {
       agreementId: selectedAgreement.value.id,
-      email: signatureEmail.value
+      email: signatureEmail.value,
+      phone: signaturePhone.value,
     };
 
     // 4. Llama a una NUEVA acción en el store de Pinia
@@ -813,7 +871,7 @@ const submitStaticSignatureRequest = async () => {
 
     // 5. Muestra mensaje de éxito
     advisor.value = {
-      type: 'success',
+      type: response.data?.warning ? 'warning' : 'success',
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     };
@@ -830,6 +888,7 @@ const submitStaticSignatureRequest = async () => {
     // Limpieza
     isRequestOngoing.value = false;
     signatureEmail.value = '';
+    signaturePhone.value = '';
     setTimeout(() => {
       advisor.value = { show: false };
     }, 3000);
@@ -912,7 +971,13 @@ const trackerEvents = computed(() => {
   const items = []
   const token = trackerAgreement.value.token
   const history = Array.isArray(token?.histories)
-    ? [...token.histories].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    ? [...token.histories].sort((a, b) => {
+      const createdAtDiff = new Date(a.created_at) - new Date(b.created_at)
+
+      if (createdAtDiff !== 0) return createdAtDiff
+
+      return Number(a.id ?? 0) - Number(b.id ?? 0)
+    })
     : []
 
   const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -922,6 +987,7 @@ const trackerEvents = computed(() => {
     if (eventConfig) {
       items.push({
         key: `${event.id ?? event.created_at}-${event.event_type}-${index}`,
+        eventType: event.event_type,
         title: eventConfig.title,
         meta: new Date(event.created_at).toLocaleString('en-GB', {
           year: 'numeric',
@@ -950,7 +1016,15 @@ const trackerEvents = computed(() => {
   }))
 })
 
+const getEventChannel = event => event?.metadata?.channel === 'sms' ? 'sms' : 'email'
+
+const getEventRecipient = event => getEventChannel(event) === 'sms'
+  ? event?.metadata?.phone || event?.metadata?.recipient_phone || 'mottagare'
+  : event?.metadata?.email || event?.metadata?.recipient || 'mottagare'
+
 const getEventConfig = (eventType, event) => {
+  const isSms = getEventChannel(event) === 'sms'
+  const isResend = Boolean(event?.metadata?.resend)
   const configs = {
     'created': {
       title: 'Avtal skapad',
@@ -960,22 +1034,30 @@ const getEventConfig = (eventType, event) => {
       icon: 'custom-star'
     },
     'sent': {
-      title: 'Signeringsförfrågan skickad',
-      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      title: isSms
+        ? (isResend ? 'SMS skickat igen' : 'SMS skickat')
+        : (isResend ? 'E-post skickad igen' : 'E-post skickad'),
+      text: `Skickad till ${getEventRecipient(event)}`,
       color: '#1890FF',
       bgClass: 'status-success',
       icon: 'custom-forward'
     },
     'delivered': {
-      title: 'E-post levererad',
-      text: 'E-postmeddelandet har levererats framgångsrikt',
+      title: isSms
+        ? (isResend ? 'SMS levererat igen' : 'SMS levererat')
+        : (isResend ? 'E-post levererad igen' : 'E-post levererad'),
+      text: isSms
+        ? 'SMS-meddelandet har levererats framgångsrikt'
+        : 'E-postmeddelandet har levererats framgångsrikt',
       color: '#52C41A',
       bgClass: 'status-success',
       icon: 'custom-check-mark-2'
     },
     'delivery_issues': {
-      title: 'Leveransproblem',
-      text: 'Det uppstod problem med e-postleveransen',
+      title: isSms ? 'SMS-leveransproblem' : 'E-postleveransproblem',
+      text: isSms
+        ? 'Det uppstod problem med SMS-leveransen'
+        : 'Det uppstod problem med e-postleveransen',
       color: '#FAAD14',
       bgClass: 'status-warning',
       icon: 'custom-risk'
@@ -1243,7 +1325,7 @@ onBeforeUnmount(() => {
       :color="advisor.type"
       class="snackbar-alert snackbar-dashboard"
     >
-      {{ advisor.message }}
+      <span class="snackbar-message">{{ advisor.message }}</span>
     </VSnackbar>
 
     <Toaster />
@@ -1549,7 +1631,7 @@ onBeforeUnmount(() => {
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')">      
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isAgreementSmsActionVisibilityLoading">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -1738,7 +1820,7 @@ onBeforeUnmount(() => {
                     Se detaljer
                   </VBtn>
                   
-                  <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
+                  <VBtn class="btn-light" icon :disabled="isAgreementSmsActionVisibilityLoading" @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
                     <VIcon icon="custom-dots-vertical" size="24" />
                   </VBtn>
                 </div>
@@ -1910,6 +1992,22 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="signaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
+            />
+          </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
@@ -2066,6 +2164,22 @@ onBeforeUnmount(() => {
               v-model="resendSignatureEmail"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="dialog-text pt-2" v-if="canShowAgreementSmsAction">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis me-1" text="Telefon" />
+            <VTooltip location="bottom" max-width="200">
+              <template #activator="{ props }">
+                <span v-bind="props" class="cursor-pointer">
+                  <VIcon icon="custom-circle-help" size="24" />
+                </span>
+              </template>
+              Ange telefonnumret med landskod, till exempel +46701234567.
+            </VTooltip>
+            <VTextField
+              v-model="resendSignaturePhone"
+              placeholder="+46701234567"
+              :rules="[phoneValidator]"
             />
           </VCardText>
 
@@ -2478,12 +2592,12 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  v-if="(item.eventType === 'created' || item.eventType === 'signed') && trackerAgreement && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
                   <VIcon icon="custom-pdf-2" size="14" />
-                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                  <span>{{ item.eventType === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 
@@ -2537,6 +2651,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+  .snackbar-message {
+    white-space: pre-line;
+  }
+
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

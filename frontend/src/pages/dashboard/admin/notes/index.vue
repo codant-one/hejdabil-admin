@@ -11,7 +11,8 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber, formatDateTime } from '@/@core/utils/formatters'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { emailValidator, minLengthDigitsValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import AddNewNoteDrawer from './AddNewNoteDrawer.vue'
@@ -82,6 +83,17 @@ const leaveContext = ref(null); // 'mobile' | 'route' | 'noteEdit' | 'noteEditMo
 const originalNoteData = ref(null);
 
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+const notePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const notePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const notePhoneRules = [minLengthDigitsValidator(notePhoneDigits), phoneValidator]
+
+const normalizeNotePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatNotePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const handleSelectedNotePhoneInput = () => {
+  selectedNote.value.phone = normalizeNotePhoneForInput(selectedNote.value.phone)
+}
 
 const exporteraMobile = ref(false)
 
@@ -241,14 +253,17 @@ const cancelLeave = () => {
 
 const showNote = (noteData, isMobile = false, is_edit = false) => {
     isEdit.value = is_edit;
-    selectedNote.value = { ...noteData }
+  selectedNote.value = {
+    ...noteData,
+    phone: normalizeNotePhoneForInput(noteData.phone),
+  }
 
     // Guardar copia original para detectar cambios
     originalNoteData.value = JSON.stringify({
         reg_num: noteData.reg_num,
         note: noteData.note,
         name: noteData.name,
-        phone: noteData.phone,
+    phone: normalizeNotePhoneForInput(noteData.phone),
         email: noteData.email,
         comment: noteData.comment
     })
@@ -478,7 +493,7 @@ const submitFormFromDrawer = async () => {
   formData.append('reg_num', selectedNote.value.reg_num)
   formData.append('note', selectedNote.value.note)
   formData.append('name', selectedNote.value.name)
-  formData.append('phone', selectedNote.value.phone)
+  formData.append('phone', formatNotePhoneForPayload(selectedNote.value.phone))
   formData.append('email', selectedNote.value.email)
   formData.append('comment', selectedNote.value.comment)
 
@@ -1460,8 +1475,14 @@ onBeforeUnmount(() => {
                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                     <VTextField
                       v-model="selectedNote.phone"
-                      :rules="[phoneValidator]"
+                      class="always-show-prefix"
+                      :rules="notePhoneRules"
+                      :min-length="notePhoneDigits"
+                      :maxlength="notePhoneDigits"
+                      :prefix="notePhonePrefix"
+                      inputmode="numeric"
                       :readonly="!isEdit"
+                      @input="handleSelectedNotePhoneInput"
                     />
                 </VCol>
                 <VCol cols="12" md="12" class="pb-0">
@@ -1632,8 +1653,14 @@ onBeforeUnmount(() => {
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                       <VTextField
                         v-model="selectedNote.phone"
-                        :rules="[phoneValidator]"
+                        class="always-show-prefix"
+                        :rules="notePhoneRules"
+                        :min-length="notePhoneDigits"
+                        :maxlength="notePhoneDigits"
+                        :prefix="notePhonePrefix"
+                        inputmode="numeric"
                         :readonly="!isEdit"
+                        @input="handleSelectedNotePhoneInput"
                       />
                     </VCol>
                     <VCol cols="12" md="12" class="pb-0">
@@ -1796,6 +1823,10 @@ onBeforeUnmount(() => {
 
 <style lang="scss">
 
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
   .card-form.note-index {
     .v-input:not(.v-textarea) {
       .v-input__control {
@@ -1810,7 +1841,7 @@ onBeforeUnmount(() => {
 
           .v-field__input {
             min-height: 40px !important;
-            height: 40px !important;
+            /*height: 40px !important;*/
             padding: 8px 16px !important;
 
             input {
@@ -1826,6 +1857,21 @@ onBeforeUnmount(() => {
           .v-field__append-inner {
             align-items: center;
             padding-top: 0px;
+          }
+
+          .v-text-field__prefix {
+            height: 40px;
+            color: #33303CAD;
+          }
+        }
+      }
+    }
+
+    .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 8px 0 !important;
           }
         }
       }
