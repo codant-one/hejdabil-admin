@@ -3,6 +3,7 @@
 import { nextTick } from 'vue'
 import { useDisplay } from 'vuetify'
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator, emailValidator, hexColorValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -29,6 +30,14 @@ const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const profileStores = useProfileStores()
 const settingsStore = useSettingsStore()
+
+const companyPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const companyPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const companyPhoneRules = [requiredValidator, minLengthDigitsValidator(companyPhoneDigits), phoneValidator]
+
+const normalizeCompanyPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatCompanyPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const isRequestOngoing = ref(true)
 const isConfirmChangeLogoVisible = ref(false)
@@ -566,7 +575,7 @@ const applyCompanyForm = detail => {
   form.value.address = detail?.address ?? ''
   form.value.street = detail?.street ?? ''
   form.value.postal_code = detail?.postal_code ?? ''
-  form.value.phone = detail?.phone ?? ''
+  form.value.phone = normalizeCompanyPhoneForInput(detail?.phone ?? '')
   form.value.bank = detail?.bank ?? ''
   form.value.account_number = detail?.account_number ?? ''
   form.value.iban = detail?.iban ?? ''
@@ -971,6 +980,10 @@ const saveSignatureFromPad = async () => {
 
 const onCropChange = () => {}
 
+const handleCompanyPhoneInput = () => {
+  form.value.phone = normalizeCompanyPhoneForInput(form.value.phone)
+}
+
 const formatOrgNumber = () => {
   let numbers = form.value.organization_number.replace(/\D/g, '')
 
@@ -1003,7 +1016,7 @@ const onSubmit = () => {
             address: form.value.address,
             street: form.value.street,
             postal_code: form.value.postal_code,
-            phone: form.value.phone,
+            phone: formatCompanyPhoneForPayload(form.value.phone),
             link: form.value.link,
             bank: form.value.bank,
             iban: form.value.iban,
@@ -1042,7 +1055,7 @@ const onSubmit = () => {
     formData.append('address', form.value.address)
     formData.append('street', form.value.street)
     formData.append('postal_code', form.value.postal_code)
-    formData.append('phone', form.value.phone)
+    formData.append('phone', formatCompanyPhoneForPayload(form.value.phone))
     formData.append('link', form.value.link)
     formData.append('bank', form.value.bank)
     formData.append('iban', form.value.iban)
@@ -1336,8 +1349,14 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                   <VTextField
                     v-model="form.phone"
+                    class="always-show-prefix"
                     :disabled="role === 'User'"
-                    :rules="[requiredValidator, phoneValidator]"
+                    :rules="companyPhoneRules"
+                    :min-length="companyPhoneDigits"
+                    :maxlength="companyPhoneDigits"
+                    :prefix="companyPhonePrefix"
+                    inputmode="numeric"
+                    @input="handleCompanyPhoneInput"
                   />
                 </div>
 
@@ -1777,6 +1796,16 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+
+:deep(.always-show-prefix .v-text-field__prefix) {
+  opacity: 1 !important;
+  height: 48px;
+  color: #33303CAD;
+}
+
+:deep(.card-form .v-input.always-show-prefix .v-field__input) {
+  padding: 12px 0 !important;
+}
 
 .avatar-text {
   font-weight: 400;
