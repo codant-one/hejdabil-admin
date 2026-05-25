@@ -1,7 +1,8 @@
 <script setup>
 
 import { useProfileStores } from '@/stores/useProfile'
-import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { emailValidator, minLengthDigitsValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import avatar1 from '@/assets/images/avatars/1.svg'
 import avatar2 from '@/assets/images/avatars/2.svg'
 import avatar3 from '@/assets/images/avatars/3.svg'
@@ -48,6 +49,13 @@ const advisor = ref({
 })
 
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
+const profilePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const profilePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const profilePhoneRules = [requiredValidator, minLengthDigitsValidator(profilePhoneDigits), phoneValidator]
+
+const normalizeProfilePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatProfilePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const avatarOptions = [
   { id: 1, src: avatar1 },
@@ -89,6 +97,10 @@ const syncInitialProfileSnapshot = () => {
   isFormEdited.value = false
 }
 
+const handlePhoneInput = () => {
+  phone.value = normalizeProfilePhoneForInput(phone.value)
+}
+
 function loadUserData() {
   isRequestOngoing.value = true
   isHydratingProfile.value = true
@@ -99,7 +111,7 @@ function loadUserData() {
   email.value = storedUser?.email ?? ''
   name.value = storedUser?.name ?? ''
   last_name.value = storedUser?.last_name ?? ''
-  phone.value = storedUser?.user_detail?.personal_phone ?? ''
+  phone.value = normalizeProfilePhoneForInput(storedUser?.user_detail?.personal_phone ?? '')
   address.value = storedUser?.user_detail?.personal_address ?? ''
 
   avatarId.value = storedUser?.user_detail?.avatar_id ?? null
@@ -220,7 +232,7 @@ const onSubmit = () => {
     formData.append('email', email.value)
     formData.append('name', name.value)
     formData.append('last_name', last_name.value)
-    formData.append('personal_phone', phone.value)
+    formData.append('personal_phone', formatProfilePhoneForPayload(phone.value))
     formData.append('personal_address', address.value)
 
     if (selectedPresetAvatar) {
@@ -435,8 +447,13 @@ onBeforeUnmount(() => {
                           <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Telefon*" />
                           <VTextField
                             v-model="phone"
-                            placeholder="+(XX) XXXXXXXXX"
-                            :rules="[requiredValidator, phoneValidator]"
+                            class="always-show-prefix"
+                            :rules="profilePhoneRules"
+                            :min-length="profilePhoneDigits"
+                            :maxlength="profilePhoneDigits"
+                            :prefix="profilePhonePrefix"
+                            inputmode="numeric"
+                            @input="handlePhoneInput"
                           />
                         </div>
                         <div :style=" windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -582,6 +599,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
   .avatar-text {
     font-weight: 400;
     font-size: 16px;
@@ -627,6 +648,21 @@ onBeforeUnmount(() => {
           .v-field__append-inner {
             align-items: center;
             padding-top: 0;
+          }
+
+          .v-text-field__prefix {
+            height: 48px;
+            color: #33303CAD;
+          }
+        }
+      }
+    }
+
+    .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 12px 0 !important;
           }
         }
       }
