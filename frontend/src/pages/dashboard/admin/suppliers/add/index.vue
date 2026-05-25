@@ -1,6 +1,7 @@
 <script setup>
 
 import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
@@ -32,6 +33,14 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
+
+const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const supplierPhoneRules = [requiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+
+const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatSupplierPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const closeReactivateSupplierDialog = function() {
     isReactivateSupplierDialog.value = false
@@ -113,6 +122,10 @@ const formatOrgNumber = () => {
     organization_number.value = numbers
 }
 
+const handlePhoneInput = () => {
+    phone.value = normalizeSupplierPhoneForInput(phone.value)
+}
+
 const onSubmit = () => {
 
     refForm.value?.validate().then(({ valid }) => {
@@ -134,7 +147,7 @@ const onSubmit = () => {
             formData.append('address', address.value)
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
-            formData.append('phone', phone.value)
+            formData.append('phone', formatSupplierPhoneForPayload(phone.value))
             formData.append('swish', swish.value)
 
             //bank
@@ -319,8 +332,13 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="phone"
-                                                    :rules="[requiredValidator, phoneValidator]"
-                                                    label="Telefon"
+                                                    class="always-show-prefix"
+                                                    :rules="supplierPhoneRules"
+                                                    :min-length="supplierPhoneDigits"
+                                                    :maxlength="supplierPhoneDigits"
+                                                    :prefix="supplierPhonePrefix"
+                                                    inputmode="numeric"
+                                                    @input="handlePhoneInput"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -437,6 +455,16 @@ const onSubmit = () => {
 </template>
 
 <style scoped>
+    :deep(.always-show-prefix .v-text-field__prefix) {
+        opacity: 1 !important;
+        height: 56px;
+        color: #454545;
+    }
+
+    :deep(.v-input.always-show-prefix .v-field__input) {
+        padding: 16px 0 !important;
+    }
+
     .v-btn--disabled {
         opacity: 1 !important;
     }
