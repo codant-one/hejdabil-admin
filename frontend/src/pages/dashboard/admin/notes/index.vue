@@ -1841,7 +1841,7 @@ onBeforeUnmount(() => {
 
           .v-field__input {
             min-height: 40px !important;
-            height: 40px !important;
+            /*height: 40px !important;*/
             padding: 8px 16px !important;
 
             input {
