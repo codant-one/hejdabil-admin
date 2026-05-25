@@ -650,11 +650,12 @@ class AgreementController extends Controller
             }
 
             $message = $this->resolveAgreementSmsMessage($agreement);
+            $smsSender = $this->resolveSmsSenderForCurrentUser();
             $failedRecipients = [];
             $sentRecipients = [];
 
             foreach ($phoneNumbers as $phoneNumber) {
-                $result = $twilioSms->sendMessage($phoneNumber, $message);
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
 
                 if ($result === true) {
                     $sentRecipients[] = $phoneNumber;
@@ -662,7 +663,8 @@ class AgreementController extends Controller
                 }
 
                 $failedRecipients[] = [
-                    'phone' => $phoneNumber,
+                $smsSender = $this->resolveSmsSenderForCurrentUser();
+                $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
                     'error' => $result,
                 ];
             }

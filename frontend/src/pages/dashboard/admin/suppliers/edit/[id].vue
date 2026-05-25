@@ -1,6 +1,6 @@
 <script setup>
 
-import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -27,6 +27,7 @@ const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
 const swish = ref('')
+const sms_sender = ref('')
 const bank = ref('')
 const account_number = ref('')
 const name = ref('')
@@ -36,10 +37,21 @@ const email = ref('')
 const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
 const supplierPhoneRules = [requiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const supplierSmsSenderMaxLength = 11
+const supplierSmsSenderRules = [smsSenderValidator]
 
 const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
 
+const normalizeSupplierSmsSenderForInput = value => String(value ?? '')
+    .replace(/[åäöÅÄÖ]/g, char => ({ å: 'a', ä: 'a', ö: 'o', Å: 'A', Ä: 'A', Ö: 'O' }[char] ?? char))
+    .replace(/[^A-Za-z0-9 ]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trimStart()
+    .slice(0, supplierSmsSenderMaxLength)
+
 const formatSupplierPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatSupplierSmsSenderForPayload = value => normalizeSupplierSmsSenderForInput(value).trim()
 
 onMounted(async () => {
 
@@ -69,6 +81,7 @@ watchEffect(async() => {
         postal_code.value = supplier.value.user.user_detail.postal_code
         phone.value = normalizeSupplierPhoneForInput(supplier.value.user.user_detail.phone)
         swish.value = supplier.value.user.user_detail.swish
+        sms_sender.value = supplier.value.sms_sender
 
         //bank
         bank.value = supplier.value.user.user_detail.bank
@@ -94,6 +107,10 @@ const formatOrgNumber = () => {
 
 const handlePhoneInput = () => {
     phone.value = normalizeSupplierPhoneForInput(phone.value)
+}
+
+const handleSmsSenderInput = () => {
+    sms_sender.value = normalizeSupplierSmsSenderForInput(sms_sender.value)
 }
 
 const onSubmit = () => {
@@ -127,7 +144,7 @@ const onSubmit = () => {
             formData.append('iban_number', supplier.value.user.user_detail?.iban_number)
             formData.append('bic', supplier.value.user.user_detail?.bic)
             formData.append('plus_spin', supplier.value.user.user_detail?.plus_spin)
-            formData.append('swish', supplier.value.user.user_detail?.swish)
+            formData.append('sms_sender', formatSupplierSmsSenderForPayload(sms_sender.value))
             formData.append('vat', supplier.value.user.user_detail?.vat)
             formData.append('personal_phone', supplier.value.user.user_detail?.personal_phone)
             formData.append('personal_address', supplier.value.user.user_detail?.personal_address)
@@ -299,6 +316,17 @@ const onSubmit = () => {
                                                     v-model="swish"
                                                     :rules="[phoneValidator]"
                                                     label="Swish"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="sms_sender"
+                                                    :rules="supplierSmsSenderRules"
+                                                    :maxlength="supplierSmsSenderMaxLength"
+                                                    hint="A-Z, 0-9 och mellanslag, max 11 tecken"
+                                                    persistent-hint
+                                                    label="SMS Sender"
+                                                    @input="handleSmsSenderInput"
                                                 />
                                             </VCol>
                                         </VRow>

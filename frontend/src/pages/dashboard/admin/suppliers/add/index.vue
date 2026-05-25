@@ -1,6 +1,6 @@
 <script setup>
 
-import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -28,6 +28,7 @@ const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
 const swish = ref('')
+const sms_sender = ref('')
 const bank = ref('')
 const account_number = ref('')
 const name = ref('')
@@ -37,10 +38,21 @@ const email = ref('')
 const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
 const supplierPhoneRules = [requiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const supplierSmsSenderMaxLength = 11
+const supplierSmsSenderRules = [smsSenderValidator]
 
 const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
 
+const normalizeSupplierSmsSenderForInput = value => String(value ?? '')
+    .replace(/[åäöÅÄÖ]/g, char => ({ å: 'a', ä: 'a', ö: 'o', Å: 'A', Ä: 'A', Ö: 'O' }[char] ?? char))
+    .replace(/[^A-Za-z0-9 ]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trimStart()
+    .slice(0, supplierSmsSenderMaxLength)
+
 const formatSupplierPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatSupplierSmsSenderForPayload = value => normalizeSupplierSmsSenderForInput(value).trim()
 
 const closeReactivateSupplierDialog = function() {
     isReactivateSupplierDialog.value = false
@@ -126,6 +138,10 @@ const handlePhoneInput = () => {
     phone.value = normalizeSupplierPhoneForInput(phone.value)
 }
 
+const handleSmsSenderInput = () => {
+    sms_sender.value = normalizeSupplierSmsSenderForInput(sms_sender.value)
+}
+
 const onSubmit = () => {
 
     refForm.value?.validate().then(({ valid }) => {
@@ -149,6 +165,7 @@ const onSubmit = () => {
             formData.append('postal_code', postal_code.value)
             formData.append('phone', formatSupplierPhoneForPayload(phone.value))
             formData.append('swish', swish.value)
+            formData.append('sms_sender', formatSupplierSmsSenderForPayload(sms_sender.value))
 
             //bank
             formData.append('bank', bank.value)
@@ -346,6 +363,17 @@ const onSubmit = () => {
                                                     v-model="swish"
                                                     :rules="[phoneValidator]"
                                                     label="Swish"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="sms_sender"
+                                                    :rules="supplierSmsSenderRules"
+                                                    :maxlength="supplierSmsSenderMaxLength"
+                                                    hint="A-Z, 0-9 och mellanslag, max 11 tecken"
+                                                    persistent-hint
+                                                    label="SMS Sender"
+                                                    @input="handleSmsSenderInput"
                                                 />
                                             </VCol>
                                         </VRow>

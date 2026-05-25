@@ -47,6 +47,12 @@ class SupplierRequest extends FormRequest
             'phone' => [
                 'required'
             ],
+            'sms_sender' => [
+                'nullable',
+                'string',
+                'max:11',
+                'regex:/^[A-Za-z0-9 ÅÄÖåäö]+$/'
+            ],
             'bank' => [
                 'required'
             ],
@@ -78,6 +84,8 @@ class SupplierRequest extends FormRequest
             'street.required' => 'Gatan är obligatorisk.',
             'postal_code.required' => 'Postnumret är obligatoriskt.',
             'phone.required' => 'Telefonen är obligatorisk.',
+            'sms_sender.max' => 'SMS Sender får vara högst 11 tecken.',
+            'sms_sender.regex' => 'SMS Sender får endast innehålla A-Z, 0-9 och mellanslag.',
             'bank.required' => 'Bankens namn är obligatoriskt. ',
             'account_number.required' => 'Kontonumret är obligatoriskt.',
             'name.required' => 'Förnamnet är obligatoriskt.',

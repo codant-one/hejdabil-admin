@@ -130,6 +130,18 @@ export const alphaDashValidator = value => {
   return /^[0-9A-Z_-]*$/i.test(valueAsString) || 'Alla tecken är ogiltiga'
 }
 
+// 👉 SMS Sender Validator
+export const smsSenderValidator = value => {
+  if (isEmpty(value))
+    return true
+
+  const valueAsString = String(value)
+  const hasValidCharacters = /^[A-Za-z0-9 ÅÄÖåäö]+$/.test(valueAsString)
+  const hasValidLength = valueAsString.length <= 11
+
+  return (hasValidCharacters && hasValidLength) || 'SMS Sender får endast innehålla A-Z, 0-9 och mellanslag, max 11 tecken'
+}
+
 // 👉 phone Validator
 export const phoneValidator = value => {
   if (isEmpty(value))

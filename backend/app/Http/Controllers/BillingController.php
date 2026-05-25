@@ -714,11 +714,12 @@ class BillingController extends Controller
             }
 
             $message = $this->resolveBillingSmsMessage($billing);
+            $smsSender = $this->resolveSmsSenderForCurrentUser();
             $failedRecipients = [];
             $sentRecipients = [];
 
             foreach ($phoneNumbers as $phoneNumber) {
-                $result = $twilioSms->sendMessage($phoneNumber, $message);
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
 
                 if ($result === true) {
                     $sentRecipients[] = $phoneNumber;

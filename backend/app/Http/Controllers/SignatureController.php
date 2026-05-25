@@ -272,7 +272,8 @@ class SignatureController extends Controller
 
                 try {
                     $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
-                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+                    $smsSender = $this->resolveSmsSenderForCurrentUser();
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
 
                     if ($smsResult !== true) {
                         $smsError = $smsResult;
@@ -596,7 +597,8 @@ class SignatureController extends Controller
 
                 try {
                     $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
-                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage);
+                    $smsSender = $this->resolveSmsSenderForCurrentUser();
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
 
                     if ($smsResult !== true) {
                         $smsError = $smsResult;
@@ -994,7 +996,8 @@ class SignatureController extends Controller
             );
 
             $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
-            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage);
+            $smsSender = $this->resolveSmsSenderForCurrentUser();
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
 
             if ($smsResult !== true) {
                 $token->update(['signature_status' => 'delivery_issues']);
