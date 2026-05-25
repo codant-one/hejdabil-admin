@@ -2,7 +2,8 @@
 
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
-import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
@@ -53,6 +54,14 @@ const position = ref(null)
 const assignedPermissions = ref([])
 const readonly =  ref(false)
 const permissionsRol = ref([])
+
+const userPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const userPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const userPhoneRules = [requiredValidator, minLengthDigitsValidator(userPhoneDigits), phoneValidator]
+
+const normalizeUserPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatUserPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const positions = ref ([
   { id: 1, name: "Admin" },
@@ -107,7 +116,7 @@ async function fetchData() {
     name.value = selectedUser.value.user.name
     password.value = selectedUser.value.user.password
     last_name.value = selectedUser.value.user.last_name
-    phone.value = selectedUser.value.user.user_detail?.personal_phone
+    phone.value = normalizeUserPhoneForInput(selectedUser.value.user.user_detail?.personal_phone)
     address.value = selectedUser.value.user.user_detail?.personal_address
     position.value = selectedUser.value.position
     permissionsRol.value = []
@@ -153,6 +162,10 @@ const showError = () => {
 
 };
 
+const handlePhoneInput = () => {
+    phone.value = normalizeUserPhoneForInput(phone.value)
+}
+
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab 0 (Konto)
@@ -161,6 +174,7 @@ const onSubmit = async () => {
         !email.value?.trim() ||
         !phone.value?.trim() ||
         !address.value?.trim() ||
+        (phone.value && minLengthDigitsValidator(userPhoneDigits)(phone.value) !== true) ||
         (phone.value && phoneValidator(phone.value) !== true) ||
         (email.value && emailValidator(email.value) !== true) ||
         !position.value
@@ -228,7 +242,7 @@ const onSubmit = async () => {
                 formData.append('email', email.value)
                 formData.append('name', name.value)
                 formData.append('last_name', last_name.value)
-                formData.append('personal_phone', phone.value)
+                formData.append('personal_phone', formatUserPhoneForPayload(phone.value))
                 formData.append('personal_address', address.value)
                 formData.append('position', position.value)
 
@@ -468,8 +482,13 @@ const goToProfile = () => {
                                             <VTextField
                                                 v-model="phone"
                                                 type="tel"
-                                                :rules="[requiredValidator, phoneValidator]"
-                                                placeholder="+(XX) XXXXXXXXX"
+                                                class="always-show-prefix"
+                                                :rules="userPhoneRules"
+                                                :min-length="userPhoneDigits"
+                                                :maxlength="userPhoneDigits"
+                                                :prefix="userPhonePrefix"
+                                                inputmode="numeric"
+                                                @input="handlePhoneInput"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1143,6 +1162,10 @@ const goToProfile = () => {
         opacity: 1 !important;
     }
 
+    .always-show-prefix .v-text-field__prefix {
+        opacity: 1 !important;
+    }
+
     .border-bottom-secondary {
         border-bottom: 1px solid #d9d9d9;
         padding-bottom: 10px;
@@ -1255,7 +1278,19 @@ const goToProfile = () => {
                     }
 
                     .v-text-field__prefix {
-                        padding-top: 12px !important  ;
+                        padding-top: 8px !important  ;
+                        height: 48px;
+                        color: #33303CAD;
+                    }
+                }
+            }
+        }
+
+        .v-input.always-show-prefix {
+            .v-input__control {
+                .v-field {
+                    .v-field__input {
+                        padding: 12px 0 !important;
                     }
                 }
             }
