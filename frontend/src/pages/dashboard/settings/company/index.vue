@@ -1799,12 +1799,11 @@ onBeforeUnmount(() => {
 
 :deep(.always-show-prefix .v-text-field__prefix) {
   opacity: 1 !important;
-  height: 48px;
   color: #33303CAD;
 }
 
 :deep(.card-form .v-input.always-show-prefix .v-field__input) {
-  padding: 12px 0 !important;
+  padding: 8px 0 !important;
 }
 
 .avatar-text {
