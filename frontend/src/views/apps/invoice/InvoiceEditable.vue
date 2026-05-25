@@ -1984,17 +1984,17 @@ const handleFocus = (element, fieldId) => {
   >
     <VBtn
       icon
-      class="btn-white close-btn"
+      class="btn-white close-btn px-1"
       @click="isInvoiceIdAlertVisible = false"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
 
     <VCard>
-      <VCardText class="dialog-title-box">
-        <VIcon size="32" icon="custom-alarm" class="action-icon" />
+      <VCardText class="dialog-title-box d-flex" :style="windowWidth < 1024 ? '' : 'gap: 4px'">
+        <VIcon size="32" icon="custom-factura-outlined" class="action-icon" />
         <div class="dialog-title">
-          Fakturanummer kan redigeras
+          Välj ditt startnummer för fakturor
         </div>
       </VCardText>
       <VCardText class="dialog-text">
@@ -2002,9 +2002,33 @@ const handleFocus = (element, fieldId) => {
         Om inget nummer anges börjar numreringen från 01. Detta kan ändras i inställningarna.
       </VCardText>
 
+      <VCardText class="dialog-text my-4">
+        <div class="billing-empty">
+          <div class="d-flex align-center gap-2">
+            <span>#</span>
+            <div class="d-flex flex-column">
+              <span>Faktura nr</span>
+              <span class="text-black">1</span>
+            </div>
+          </div>
+          <div class="status-chip status-chip-disabled">
+            Standard
+          </div>
+        </div>
+        
+      </VCardText>
+
+      <VCardText class="dialog-text">
+        Detta meddelande visas bara en gång.
+      </VCardText>
+
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" :to="{ name: 'dashboard-settings-billings' }">
+          Gå till inställningar
+        </VBtn>
+
         <VBtn class="btn-gradient" @click="isInvoiceIdAlertVisible = false">
-          Okej
+          Förstår
         </VBtn>
       </VCardText>
     </VCard>
@@ -2121,6 +2145,21 @@ const handleFocus = (element, fieldId) => {
 </template>
 
 <style lang="scss" scoped>
+
+.billing-empty {
+  display: flex;
+  justify-content: space-between;
+  border-radius: 8px;
+  padding-top: 8px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+  background-color: #F6F6F6;
+  border: 1px solid #E7E7E7;
+  color: #878787;
+  align-items: center;
+  font-size: 14px;
+}
 
 :deep(.deleted-supplier-option .deleted-supplier-text),
 .deleted-supplier-text {

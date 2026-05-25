@@ -1,7 +1,8 @@
 <script setup>
 
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { emailValidator, minLengthDigitsValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -19,6 +20,14 @@ const emit = defineEmits([
   'noteData',
   'edited'
 ])
+
+const notePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const notePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+const notePhoneRules = [minLengthDigitsValidator(notePhoneDigits), phoneValidator]
+
+const normalizeNotePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const formatNotePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const isFormValid = ref(false)
 const refForm = ref()
@@ -62,7 +71,7 @@ watchEffect(async() => {
       reg_num.value = props.note.reg_num
       note.value = props.note.note
       name.value = props.note.name
-      phone.value = props.note.phone
+      phone.value = normalizeNotePhoneForInput(props.note.phone)
       email.value = props.note.email
       comment.value = props.note.comment
      
@@ -105,6 +114,19 @@ const closeNavigationDrawer = () => {
   reallyCloseAndReset()
 }
 
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false
+  reallyCloseAndReset()
+}
+
+const cancelLeave = () => {
+  isConfirmLeaveVisible.value = false
+}
+
+const handlePhoneInput = () => {
+  phone.value = normalizeNotePhoneForInput(phone.value)
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -113,7 +135,7 @@ const onSubmit = () => {
       formData.append('reg_num', reg_num.value)
       formData.append('note', note.value)
       formData.append('name', name.value)
-      formData.append('phone', phone.value)
+      formData.append('phone', formatNotePhoneForPayload(phone.value))
       formData.append('email', email.value)
       formData.append('comment', comment.value)
 
@@ -168,7 +190,13 @@ watch(currentData, () => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                 <VTextField
                     v-model="phone"
-                    :rules="[phoneValidator]"
+                class="always-show-prefix"
+                :rules="notePhoneRules"
+                :min-length="notePhoneDigits"
+                :maxlength="notePhoneDigits"
+                :prefix="notePhonePrefix"
+                inputmode="numeric"
+                @input="handlePhoneInput"
                 />
             </VListItem>
             <VListItem>
@@ -213,7 +241,7 @@ watch(currentData, () => {
         <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmLeaveVisible = false"
+        @click="cancelLeave"
         >
         <VIcon size="16" icon="custom-close" />
         </VBtn>
@@ -226,8 +254,8 @@ watch(currentData, () => {
             Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
         </VCardText>
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-            <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Lämna sidan</VBtn>
-            <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Stanna kvar</VBtn>
+          <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="cancelLeave">Stanna kvar</VBtn>
         </VCardText>
         </VCard>
     </VDialog>
@@ -254,6 +282,10 @@ watch(currentData, () => {
 </style>
 
 <style lang="scss">
+.always-show-prefix .v-text-field__prefix {
+  opacity: 1 !important;
+}
+
 @media (max-width: 1023px) {
   .card-form.note-mobile {
     .v-list {
@@ -305,6 +337,12 @@ watch(currentData, () => {
         .v-text-field {
           .v-input__control {
             padding-top: 0;
+
+            .v-text-field__prefix {
+              height: 48px;
+              color: #454545;
+            }
+
             input {
               min-height: 48px !important;
               height: 48px !important;
@@ -314,6 +352,17 @@ watch(currentData, () => {
         }
       }
     }
+
+    & .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 8px 0 !important;
+          }
+        }
+      }
+    }
+
     & .v-input:not(.v-textarea) {
       & .v-input__control {
         .v-field {
