@@ -1998,8 +1998,9 @@ const handleFocus = (element, fieldId) => {
         </div>
       </VCardText>
       <VCardText class="dialog-text">
-        Du kan själv välja startnummer för dina fakturor. 
-        Om inget nummer anges börjar numreringen från 01. Detta kan ändras i inställningarna.
+        Du kan själv välja startnummer för dina fakturor direkt här innan den första fakturan skapas. 
+        Om inget nummer anges börjar numreringen från 01. 
+        Därefter kan numreringen endast ändras i inställningarna
       </VCardText>
 
       <VCardText class="dialog-text my-4">
@@ -2023,12 +2024,8 @@ const handleFocus = (element, fieldId) => {
       </VCardText>
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" :to="{ name: 'dashboard-settings-billings' }">
-          Gå till inställningar
-        </VBtn>
-
         <VBtn class="btn-gradient" @click="isInvoiceIdAlertVisible = false">
-          Förstår
+          Jag förstår
         </VBtn>
       </VCardText>
     </VCard>
