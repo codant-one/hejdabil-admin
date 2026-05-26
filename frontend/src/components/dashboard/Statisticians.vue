@@ -38,6 +38,7 @@ import Dashboard from '@/api/dashboard'
   const exporteraMobile = ref(false);
   const filterMenuVisible = ref(false)
   const filterDateRange = ref(null)
+  const currentYear = new Date().getFullYear()
 
   // 👉 Export management refs
   const selectedExportType = ref(null)
@@ -696,7 +697,10 @@ import Dashboard from '@/api/dashboard'
 <template>
   <VCard title="" class="card-dashboard">
     <VCardTitle class="title-box">
-        <div class="title-text">Affärsstatistik</div>
+        <div class="title-text d-flex align-center gap-2">
+          Affärsstatistik
+          <div class="current-year">{{ currentYear }}</div>
+        </div>
 
         <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
           <VMenu 
@@ -854,6 +858,14 @@ import Dashboard from '@/api/dashboard'
 </template>
 
 <style lang="scss">
+
+  .current-year {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    color: #6E9383;
+  }
 
   .border-selected {
     width: 104px;
