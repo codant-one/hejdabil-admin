@@ -104,6 +104,26 @@ watch(isExportMenuVisible, isVisible => {
     lastExportSelectionKey.value = null
 })
 
+watch([
+  hasLoaded,
+  () => route.query.open_payout,
+], ([loaded, openPayout]) => {
+  if (!loaded || openPayout !== 'true')
+    return
+
+  if (role.value === 'Supplier' || role.value === 'User')
+    openPayoutDialog()
+
+  const query = new URLSearchParams(window.location.search)
+  query.delete('open_payout')
+
+  history.replaceState(
+    null,
+    '',
+    location.pathname + (query.toString() ? `?${query.toString()}` : ''),
+  )
+}, { immediate: true })
+
 // 👉 Open payout detail when payout_id query param is present
 watch(() => route.query.payout_id, async (payoutId) => {
   if (payoutId && hasLoaded.value) {

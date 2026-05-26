@@ -31,30 +31,19 @@ const redirectTo = (path) => {
   });
 };
 
+const redirectToPayoutsAndOpenDialog = () => {
+  router.push({
+    name: 'dashboard-admin-payouts',
+    query: { open_payout: 'true' },
+  });
+};
+
 </script>
 
 <template>
   <VerticalNavLayout :nav-items="isSettingsRoute ? settingsNavItems : navItems">
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
-      <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" class="sticky-container">
-          <div class="d-flex gap-x-3 buttons-center">
-            <VBtn
-              class="btn-blue px-6"
-              @click="redirectTo('dashboard-admin-agreements-purchase')"
-            >
-              Köp
-              <VIcon icon="custom-car-close" size="24" />
-            </VBtn>
-            <VBtn
-              class="btn-green px-6"
-              @click="redirectTo('dashboard-admin-agreements-sales')"
-            >
-              Sälj
-              <VIcon icon="custom-car-open" size="24" />
-            </VBtn>
-          </div>
-        </div>
       <div class="d-flex h-100 align-center">
         <RouterLink to="/" :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" class="align-center md-ms-3 header-logo">
           <VNodeRenderer :nodes="themeConfig.app.logoFull" />
@@ -63,7 +52,34 @@ const redirectTo = (path) => {
         <VSpacer />
 
         <div class="d-flex align-center gap-x-2">
+          <VBtn
+            class="btn-blue px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectTo('dashboard-admin-agreements-purchase')"
+          >
+            Köp
+            <VIcon icon="custom-car-close" size="24" />
+          </VBtn>
+          <VBtn
+            class="btn-green px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectTo('dashboard-admin-agreements-sales')"
+          >
+            Sälj
+            <VIcon icon="custom-car-open" size="24" />
+          </VBtn>
+            
+          <VBtn
+            class="btn-gradient-2 px-4"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectToPayoutsAndOpenDialog"
+          >
+            <VIcon icon="custom-swish-outlined" size="24" />
+            Swisha
+          </VBtn>
+
           <NavBarNotifications />
+
           <VBtn
             variant="flat"
             :class="[

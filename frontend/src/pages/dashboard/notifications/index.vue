@@ -200,6 +200,13 @@ const formatTime = (dateString) => {
   return date.toLocaleDateString('sv-SE')
 }
 
+const redirectToPayoutsAndOpenDialog = () => {
+  router.push({
+    name: 'dashboard-admin-payouts',
+    query: { open_payout: 'true' },
+  });
+};
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -246,9 +253,10 @@ onBeforeUnmount(() => {
           <img :src="logo" width="121" height="40" alt="Billogg" />
         </div>
 
-        <div class="d-flex gap-x-3 buttons-center" v-if="windowWidth >= 1024">
+        <div class="d-flex align-center gap-x-2">
           <VBtn
             class="btn-blue px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-purchase')"
           >
             Köp
@@ -256,15 +264,24 @@ onBeforeUnmount(() => {
           </VBtn>
           <VBtn
             class="btn-green px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-sales')"
           >
             Sälj
             <VIcon icon="custom-car-open" size="24" />
           </VBtn>
-        </div>
 
-        <div class="d-flex align-center gap-x-2">
+          <VBtn
+            class="btn-gradient-2 px-4"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectToPayoutsAndOpenDialog"
+          >
+            <VIcon icon="custom-swish-outlined" size="24" />
+            Swisha
+          </VBtn>
+
           <NavBarNotifications />
+
           <VBtn
             variant="flat"
             :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
