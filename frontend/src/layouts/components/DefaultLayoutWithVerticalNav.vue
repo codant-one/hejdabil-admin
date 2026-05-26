@@ -18,12 +18,33 @@ import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
 const route = useRoute();
+const vm = getCurrentInstance();
 const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
 const settingsButtonStyle = computed(() => (
   isSettingsRoute.value
     ? "box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;"
     : undefined
 ));
+const canShowSwishaButton = computed(() => {
+  const hasPermission = vm?.proxy?.$can ? vm.proxy.$can('create', 'payouts') : true;
+
+  if (!hasPermission)
+    return false;
+
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null');
+  if (!userData)
+    return false;
+
+  const userRole = userData.roles?.[0]?.name;
+
+  if (userRole !== 'Supplier' && userRole !== 'User')
+    return false;
+
+  if (userRole === 'Supplier')
+    return userData.supplier?.is_payout === 1;
+
+  return true;
+});
 
 const redirectTo = (path) => {
   router.push({
@@ -53,6 +74,7 @@ const redirectToPayoutsAndOpenDialog = () => {
 
         <div class="d-flex align-center gap-x-2">
           <VBtn
+            v-if="$can('create', 'agreements')"
             class="btn-blue px-6"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-purchase')"
@@ -61,6 +83,7 @@ const redirectToPayoutsAndOpenDialog = () => {
             <VIcon icon="custom-car-close" size="24" />
           </VBtn>
           <VBtn
+            v-if="$can('create', 'agreements')"
             class="btn-green px-6"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-sales')"
@@ -70,6 +93,7 @@ const redirectToPayoutsAndOpenDialog = () => {
           </VBtn>
             
           <VBtn
+            v-if="canShowSwishaButton"
             class="btn-gradient-2 px-4"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectToPayoutsAndOpenDialog"

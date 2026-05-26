@@ -14,6 +14,7 @@ import logo from "@images/logos/billogg-logo.svg";
 const notificationsStore = useNotificationsStore()
 const router = useRouter()
 const emitter = inject("emitter")
+const vm = getCurrentInstance()
 
 const { width: windowWidth } = useWindowSize()
 const { mdAndDown } = useDisplay();
@@ -34,6 +35,27 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+const canShowSwishaButton = computed(() => {
+  const hasPermission = vm?.proxy?.$can ? vm.proxy.$can('create', 'payouts') : true
+
+  if (!hasPermission)
+    return false
+
+  const storedUserData = JSON.parse(localStorage.getItem('user_data') || 'null')
+  if (!storedUserData)
+    return false
+
+  const userRole = storedUserData.roles?.[0]?.name
+
+  if (userRole !== 'Supplier' && userRole !== 'User')
+    return false
+
+  if (userRole === 'Supplier')
+    return storedUserData.supplier?.is_payout === 1
+
+  return true
 })
 
 useMobilePaginationScroll({
@@ -255,6 +277,7 @@ onBeforeUnmount(() => {
 
         <div class="d-flex align-center gap-x-2">
           <VBtn
+            v-if="$can('create', 'agreements')"
             class="btn-blue px-6"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-purchase')"
@@ -263,6 +286,7 @@ onBeforeUnmount(() => {
             <VIcon icon="custom-car-close" size="24" />
           </VBtn>
           <VBtn
+            v-if="$can('create', 'agreements')"
             class="btn-green px-6"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectTo('dashboard-admin-agreements-sales')"
@@ -272,6 +296,7 @@ onBeforeUnmount(() => {
           </VBtn>
 
           <VBtn
+            v-if="canShowSwishaButton"
             class="btn-gradient-2 px-4"
             :class="windowWidth < 1024 ? 'd-none' : ''"
             @click="redirectToPayoutsAndOpenDialog"
