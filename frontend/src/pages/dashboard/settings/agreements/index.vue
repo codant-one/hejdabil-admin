@@ -748,7 +748,17 @@ onBeforeUnmount(() => {
                 <VRadio value="email-sms" class="delivery-method-option">
                   <template #label>
                     <div class="delivery-method-content">
-                      <span class="delivery-method-title">E-post + SMS</span>
+                      <span class="delivery-method-title d-flex gap-2">
+                        E-post + SMS
+                        <VTooltip location="bottom" max-width="200"> 
+                          <template #activator="{ props }">
+                            <span v-bind="props" class="cursor-pointer">
+                              <VIcon icon="custom-circle-help" size="24" />
+                            </span>
+                          </template>
+                          För varje SMS som skickas tillkommer en kostnad på 1 kr.
+                        </VTooltip>
+                      </span>
                       <span class="delivery-method-description">
                         Avtalet skickas via e-post och avisering via SMS. Extra kostnad tillkommer.
                       </span>
