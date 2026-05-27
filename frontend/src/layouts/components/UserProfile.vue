@@ -5,6 +5,13 @@ import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
+defineProps({
+  canShowSwishaButton: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const authStores = useAuthStores();
 const router = useRouter();
 const route = useRoute();
@@ -216,6 +223,23 @@ const logout = async () => {
             </template>
 
             <VListItemTitle>Mitt team</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 Swish payout -->
+          <VListItem 
+            v-if="canShowSwishaButton"
+            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            :to="{ name: 'dashboard-admin-payouts', query: { open_payout: 'true' } }"
+            >
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="custom-swish"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Swisha</VListItemTitle>
           </VListItem>
 
           <!--  👉 Settings -->

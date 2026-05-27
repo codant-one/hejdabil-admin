@@ -118,7 +118,7 @@ const redirectToPayoutsAndOpenDialog = () => {
           >
             <VIcon icon="custom-settings" size="24" />
           </VBtn>
-          <UserProfile />
+          <UserProfile :can-show-swisha-button="canShowSwishaButton" />
         </div>
       </div>
     </template>
