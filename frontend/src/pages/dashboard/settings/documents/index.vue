@@ -7,6 +7,8 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const DEFAULT_DOCUMENT_SMS_MESSAGE = 'Du har fått ett dokument från {Företagsnamn} för digital signering.'
 const DEFAULT_DOCUMENT_COMPANY_NAME = 'Billogg Sverige AB'
+const DEFAULT_DOCUMENT_DUE_DATES = 5
+const DEFAULT_DOCUMENT_SEND_REMINDER = true
 const DEFAULT_DOCUMENT_DELIVERY_METHOD = 'email'
 
 const { width: windowWidth } = useWindowSize()
@@ -30,6 +32,8 @@ const advisor = ref({
   type: '',
 })
 
+const due_date = ref(DEFAULT_DOCUMENT_DUE_DATES)
+const automaticRemindersEnabled = ref(DEFAULT_DOCUMENT_SEND_REMINDER)
 const documentSmsMessageTemplate = ref(DEFAULT_DOCUMENT_SMS_MESSAGE)
 
 const replaceCompanyPlaceholder = (message, company) => {
@@ -83,6 +87,14 @@ const getStoredDocumentSettings = () => settingsData.value?.document || settings
 const hydrateDocumentForm = () => {
   const documentSettings = getStoredDocumentSettings()
 
+  due_date.value = documentSettings?.due_dates !== undefined && documentSettings?.due_dates !== null
+    ? Number(documentSettings.due_dates) || DEFAULT_DOCUMENT_DUE_DATES
+    : DEFAULT_DOCUMENT_DUE_DATES
+
+  automaticRemindersEnabled.value = documentSettings?.send_reminder !== undefined && documentSettings?.send_reminder !== null
+    ? Number(documentSettings.send_reminder) === 1
+    : DEFAULT_DOCUMENT_SEND_REMINDER
+
   documentSmsMessageTemplate.value = typeof documentSettings?.sms_message === 'string' && documentSettings.sms_message.trim()
     ? documentSettings.sms_message
     : DEFAULT_DOCUMENT_SMS_MESSAGE
@@ -105,7 +117,9 @@ const onSubmit = async () => {
 
   try {
     const payload = {
+      due_dates: Number(due_date.value) || DEFAULT_DOCUMENT_DUE_DATES,
       sms_message: smsSigningMessage.value || replaceCompanyPlaceholder(DEFAULT_DOCUMENT_SMS_MESSAGE, companyName.value),
+      send_reminder: automaticRemindersEnabled.value ? 1 : 0,
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
 
@@ -238,6 +252,49 @@ onBeforeUnmount(() => {
                       readonly
                       :rules="[requiredValidator]"
                     />
+                </div>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-4">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Påminnelser för signering</span>
+                <span class="text-settings">
+                  Skicka påminnelser till kunder som ännu inte har signerat sina dokument.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Skicka påminnelse efter (dagar)*" />
+                    <VTextField
+                      type="number"
+                      v-model="due_date"
+                      :disabled="role === 'User'"
+                      min="1"
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+
+                <div class="d-flex gap-4 align-start">
+                  <VSwitch
+                    v-model="automaticRemindersEnabled"
+                    :readonly="role === 'User'"
+                    class="reminders-switch"
+                    hide-details
+                    inset
+                  >
+                    <template v-slot:label>
+                      <span class="reminders-description">
+                        En påminnelse skickas via vald leveransmetod om dokumentet inte har signerats inom angivet antal dagar.
+                      </span>
+                    </template>
+                  </VSwitch>                
                 </div>
               </div>
             </div>
