@@ -52,6 +52,12 @@ const redirectTo = (path) => {
   });
 };
 
+const logButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? 'box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;'
+    : undefined
+));
+
 const redirectToPayoutsAndOpenDialog = () => {
   router.push({
     name: 'dashboard-admin-payouts',
@@ -72,7 +78,7 @@ const redirectToPayoutsAndOpenDialog = () => {
 
         <VSpacer />
 
-        <div class="d-flex align-center gap-x-2">
+        <div class="d-flex align-center" :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
           <VBtn
             v-if="$can('create', 'agreements')"
             class="btn-blue px-6"
@@ -100,6 +106,16 @@ const redirectToPayoutsAndOpenDialog = () => {
           >
             <VIcon icon="custom-swish-outlined" size="24" />
             Swisha
+          </VBtn>
+
+          <VBtn
+            class="btn-white-2"
+            :class="windowWidth < 1024 ? 'px-3' : 'px-4'"
+            :to="{ name: 'dashboard-activities' }"
+            :style="logButtonStyle"
+          >
+            <VIcon icon="custom-log-outlined" size="24" />
+            <span :class="windowWidth < 1024 ? 'd-none' : ''">Din logg</span>
           </VBtn>
 
           <NavBarNotifications />
