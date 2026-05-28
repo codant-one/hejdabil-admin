@@ -48,6 +48,7 @@ class Client extends Model
             $q->where('fullname', 'LIKE', '%' . $search . '%')
                 ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
                 ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                ->orWhere('landline', 'LIKE', '%' . $search . '%')
                 ->orWhere('address', 'LIKE', '%' . $search . '%')
                 ->orWhere('email', 'LIKE', '%' . $search . '%')
                 ->orWhereHas('user', function ($uq) use ($search) {
@@ -123,6 +124,7 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
+            'landline' => $request->landline,
             'reference' => $request->reference === 'null' ? null : $request->reference,
             'num_iva' => $request->num_iva === 'null' ? null : $request->num_iva,
             'comments' =>  $request->comments === 'null' ? null : $request->comments
@@ -144,6 +146,7 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
+            'landline' => $request->landline,
             'reference' => $request->reference === 'null' ? null : $request->reference,
             'num_iva' => $request->num_iva === 'null' ? null : $request->num_iva,
             'comments' =>  $request->comments === 'null' ? null : $request->comments

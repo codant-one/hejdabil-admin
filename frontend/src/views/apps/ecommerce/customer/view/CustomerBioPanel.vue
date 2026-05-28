@@ -25,6 +25,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update"]);
 
+const { width: windowWidth } = useWindowSize();
 const route = useRoute();
 const suppliersStores = useSuppliersStores();
 
@@ -180,31 +181,39 @@ const onSubmit = () => {
                 </div>
               </div>
               <div class="bio-item">
-                <div class="bio-label">Postnummer</div>
-                <div class="bio-value">{{ props.customerData.postal_code }}</div>
+                <div class="bio-label">Organisationsnummer</div>
+                <div class="bio-value">{{ props.customerData.organization_number }}</div>
+              </div>
+              
+              <div class="bio-item">
+                <div class="bio-label">Mobilnummer</div>
+                <div class="bio-value">
+                  {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone ?? '---' }}
+                </div>
               </div>
               <div class="bio-item">
                 <div class="bio-label">Telefon</div>
                 <div class="bio-value">
-                  {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
+                  {{ props.isSupplier ? props.customerData.user.user_detail.landline : props.customerData.landline ?? '---' }}
                 </div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Postnummer</div>
+                <div class="bio-value">{{ props.customerData.postal_code }}</div>
               </div>
               <div class="bio-item">
                 <div class="bio-label">Stad</div>
                 <div class="bio-value">{{ props.customerData.street }}</div>
-              </div>
+              </div>              
+            </div>
+          </div>
+          <div class="bio-right">
+            <div :class=" windowWidth < 1024 ? 'bio-fields' : 'd-flex flex-column gap-4'">
               <div class="bio-item">
                 <div class="bio-label">Adress</div>
                 <div class="bio-value">{{ props.customerData.address }}</div>
               </div>
-              <div class="bio-item">
-                <div class="bio-label">Organisationsnummer</div>
-                <div class="bio-value">{{ props.customerData.organization_number }}</div>
-              </div>
-            </div>
-          </div>
-          <div class="bio-right">
-            <div class="bio-item" v-if="props.customerData.client_type_id === 3">
+              <div class="bio-item" v-if="props.customerData.client_type_id === 3">
                 <div class="bio-label">Land</div>
                 <div class="bio-value">{{ props.customerData.country.name }}</div>
               </div>
@@ -212,10 +221,11 @@ const onSubmit = () => {
                 <div class="bio-label">Momsreg. nr.</div>
                 <div class="bio-value">{{ props.customerData.num_iva ?? '---'}}</div>
               </div>
-              <div class="bio-item">
-                <div class="bio-label">Kundbeskrivning</div>
-                <div class="bio-value">{{ props.customerData.comments ?? "---" }}</div>
-              </div>
+            </div>
+            <div class="bio-item">
+              <div class="bio-label">Kundbeskrivning</div>
+              <div class="bio-value">{{ props.customerData.comments ?? "---" }}</div>
+            </div>
           </div>
         </div>
       </div>

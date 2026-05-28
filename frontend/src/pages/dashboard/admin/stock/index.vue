@@ -1188,7 +1188,7 @@ onBeforeUnmount(() => {
                 <span v-else class="font-weight-medium text-aqua">
                   {{ vehicle.client_purchase?.fullname }} 
                 </span>
-                <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone }}</span>
+                <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone ??  vehicle.client_purchase?.landline }}</span>
               </div>
             </td> 
             <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">

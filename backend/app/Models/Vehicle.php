@@ -118,13 +118,15 @@ class Vehicle extends Model
             ->orWhereHas('client_sale', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('fullname', 'LIKE', '%' . $search . '%')
-                         ->orWhere('phone', 'LIKE', '%' . $search . '%');
+                         ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                         ->orWhere('landline', 'LIKE', '%' . $search . '%');
                 });
             })
             ->orWhereHas('client_purchase', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('fullname', 'LIKE', '%' . $search . '%')
-                         ->orWhere('phone', 'LIKE', '%' . $search . '%');
+                         ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                         ->orWhere('landline', 'LIKE', '%' . $search . '%');
                 });
             })
             ->orWhere('reg_num', 'LIKE', '%' . $search . '%')

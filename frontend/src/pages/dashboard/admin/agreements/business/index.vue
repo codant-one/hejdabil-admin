@@ -105,6 +105,7 @@ const address = ref(null)
 const street = ref(null)
 const postal_code = ref(null)
 const phone = ref(null)
+const landline = ref(null)
 const disabled_client = ref(false)
 const save_client = ref(false)
 const failedExternalFlags = ref({})
@@ -336,6 +337,7 @@ const clearClient = () => {
   street.value = null
   postal_code.value = null
   phone.value = null
+  landline.value = null
   client_type_id.value = null
   country_id.value = null
 
@@ -353,6 +355,9 @@ const selectClient = client => {
     ? selected.country_id ?? selected.country?.id ?? selected.country?.name ?? defaultForeignCountryId
     : selected.country_id ?? selected.country?.id ?? selected.country?.name ?? null
 
+  client_type_id.value = selected.client_type_id ?? client_type_id.value
+  country_id.value = resolvedCountryId
+
   fullname.value = selected.fullname
   email.value = selected.email
   organization_number.value = selected.organization_number
@@ -360,11 +365,9 @@ const selectClient = client => {
   street.value = selected.street
   postal_code.value = selected.postal_code
   phone.value = normalizePhoneForInput(selected.phone, selected.client_type_id === 3 ? resolvedCountryId : null)
+  landline.value = normalizeLandlineForInput(selected.landline)
 
   // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
-  client_type_id.value = selected.client_type_id ?? client_type_id.value
-  country_id.value = resolvedCountryId
-
   disabled_client.value = true
   save_client.value = false
 }
@@ -417,13 +420,26 @@ const phoneConfig = computed(() => {
 const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
 const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const phoneRules = computed(() => [
-  requiredValidator,
+  phoneOrLandlineRequiredValidator,
   minLengthDigitsValidator(phoneDigitsLimit.value),
   phoneValidator,
 ])
 
+const landlineRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
+
 const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, countries.value, country, phoneInputOptions)
+
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, countries.value, country, phoneInputOptions)
 
@@ -431,6 +447,10 @@ const handlePhoneInput = () => {
   const selectedCountry = client_type_id.value === 3 ? country_id.value : null
 
   phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handleLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value)
 }
 
 const handlePhoneKeydown = event => {
@@ -680,6 +700,7 @@ const onTabChange = async (targetTab) => {
 
 const onSubmit = async () => {
   const isPhoneValid = phoneRules.value.every(rule => rule(phone.value) === true)
+  const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
 
   // Validación manual ANTES de usar VForm.validate()
   // Verificar tab 0 (Erbjudande)
@@ -705,8 +726,8 @@ const onSubmit = async () => {
                         !address.value || 
                         !postal_code.value || 
                         !street.value || 
-                        !phone.value || 
-                        (phone.value && !isPhoneValid) ||
+                        !isPhoneValid ||
+                        !isLandlineValid ||
                         !email.value || 
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
@@ -835,6 +856,7 @@ const onSubmit = async () => {
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
+            formData.append('landline', normalizeLandlineForInput(landline.value))
             formData.append('save_client', save_client.value);
 
             //agreement
@@ -942,6 +964,7 @@ const currentData = computed(() => ({
     street: street.value,
     postal_code: postal_code.value,
     phone: phone.value,
+    landline: landline.value,
     save_client: save_client.value
 }))
 
@@ -1474,7 +1497,7 @@ onBeforeRouteLeave((to, from, next) => {
                         />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                         <VTextField
                             v-model="phone"
                         class="always-show-prefix"
@@ -1482,10 +1505,22 @@ onBeforeRouteLeave((to, from, next) => {
                         :min-length="phoneDigitsLimit"
                         :maxlength="phoneDigitsLimit"
                         :prefix="phonePrefix"
+                        type="tel"
                         inputmode="numeric"
                         @input="handlePhoneInput"
                         @keydown="handlePhoneKeydown"
                         />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                      <VTextField
+                        v-model="landline"
+                        :rules="landlineRules"
+                        type="tel"
+                        inputmode="numeric"
+                        @input="handleLandlineInput"
+                        @keydown="handlePhoneKeydown"
+                      />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="client_type_id === 3">
                       <AppAutocomplete

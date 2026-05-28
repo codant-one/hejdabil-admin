@@ -85,6 +85,7 @@ const organization_number_purchase = ref('')
 const address_purchase = ref('')
 const postal_code_purchase = ref('')
 const phone_purchase = ref('')
+const landline_purchase = ref('')
 const fullname_purchase= ref('')
 const email_purchase = ref('')
 
@@ -92,6 +93,7 @@ const organization_number_sale = ref('')
 const address_sale = ref('')
 const postal_code_sale = ref('')
 const phone_sale = ref('')
+const landline_sale = ref('')
 const fullname_sale= ref('')
 const email_sale = ref('')
 
@@ -147,6 +149,7 @@ watchEffect(async () => {
             address_sale.value = props.vehicle.client_sale?.address
             postal_code_sale.value = props.vehicle.client_sale?.street + ' ' + props.vehicle.client_sale?.postal_code
             phone_sale.value = props.vehicle.client_sale?.phone
+            landline_sale.value = props.vehicle.client_sale?.landline
             fullname_sale.value = props.vehicle.client_sale?.fullname
             email_sale.value = props.vehicle.client_sale?.email
 
@@ -155,6 +158,7 @@ watchEffect(async () => {
             address_purchase.value = props.vehicle.client_purchase?.address
             postal_code_purchase.value = props.vehicle.client_purchase ? (props.vehicle.client_purchase?.street + ' ' + props.vehicle.client_purchase?.postal_code) : null
             phone_purchase.value = props.vehicle.client_purchase?.phone
+            landline_purchase.value = props.vehicle.client_purchase?.landline
             fullname_purchase.value = props.vehicle.client_purchase?.fullname
             email_purchase.value = props.vehicle.client_purchase?.email
 
@@ -540,15 +544,19 @@ const setThumbsSwiper = (swiper) => {
                                                     <span class="title-detail"> Adress </span>
                                                     <span class="subtitle-detail">{{ address_purchase }}</span>
                                                 </div>
-                                            </div>
-                                            <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2" v-if="postal_code_purchase">
                                                     <span class="title-detail"> Postnr. ort</span>
                                                     <span class="subtitle-detail">{{postal_code_purchase }}</span>
                                                 </div>
+                                            </div>
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2" v-if="phone_purchase">
-                                                    <span class="title-detail"> Telefon</span>
+                                                    <span class="title-detail"> Mobilnummer</span>
                                                     <span class="subtitle-detail">{{ phone_purchase }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="landline_purchase">
+                                                    <span class="title-detail"> Telefon</span>
+                                                    <span class="subtitle-detail">{{ landline_purchase }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2" v-if="email_purchase">
                                                     <span class="title-detail"> E-post</span>
@@ -659,16 +667,20 @@ const setThumbsSwiper = (swiper) => {
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Adress</span>
                                                     <span class="subtitle-detail">{{ address_sale }}</span>
-                                                </div>                                 
-                                            </div>
-                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                </div> 
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Postnr. ort</span>
                                                     <span class="subtitle-detail">{{ postal_code_sale }}</span>
-                                                </div>
-                                                <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Telefon</span>
+                                                </div>                                
+                                            </div>
+                                            <div class="flex-1-1 d-flex flex-column gap-4">                                                
+                                                <div class="d-flex flex-column gap-2" v-if="phone_sale">
+                                                    <span class="title-detail"> Mobilnummer</span>
                                                     <span class="subtitle-detail">{{ phone_sale }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="landline_sale">
+                                                    <span class="title-detail"> Telefon</span>
+                                                    <span class="subtitle-detail">{{ landline_sale }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> E-post</span>

@@ -58,6 +58,7 @@ const address = ref("")
 const street = ref("")
 const postal_code = ref("")
 const phone = ref("")
+const landline = ref("")
 const fullname = ref("")
 const email = ref("")
 const reference = ref("")
@@ -79,6 +80,7 @@ const currentData = computed(() => ({
   street: street.value,
   postal_code: postal_code.value,
   phone: phone.value,
+  landline: landline.value,
   fullname: fullname.value,
   email: email.value,
   reference: reference.value,
@@ -131,13 +133,25 @@ const phoneConfig = computed(() => {
 const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
 const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const phoneRules = computed(() => [
-  requiredValidator,
+  phoneOrLandlineRequiredValidator,
   minLengthDigitsValidator(phoneDigitsLimit.value),
   phoneValidator,
 ])
 
+const landlineRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
+
 const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, props.countries, country, phoneInputOptions)
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, props.countries, country, phoneInputOptions)
 
@@ -211,6 +225,7 @@ watchEffect(async () => {
       street.value = props.client.street
       postal_code.value = props.client.postal_code
       phone.value = normalizePhoneForInput(props.client.phone, props.client.client_type_id === 3 ? resolvedCountryId : null)
+      landline.value = normalizeLandlineForInput(props.client.landline)
       fullname.value = props.client.fullname
       email.value = props.client.email
       reference.value = props.client.reference
@@ -240,6 +255,7 @@ const reallyCloseAndReset = () => {
     street.value = null
     postal_code.value = null
     phone.value = null
+    landline.value = null
     fullname.value = null
     email.value = null
     reference.value = null
@@ -285,6 +301,10 @@ const handlePhoneInput = () => {
   const selectedCountry = client_type_id.value === 3 ? country_id.value : null
 
   phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handleLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value)
 }
 
 const handlePhoneKeydown = event => {
@@ -508,6 +528,7 @@ const onSubmit = () => {
       formData.append("street", street.value)
       formData.append("postal_code", postal_code.value)
       formData.append("phone", formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
+      formData.append("landline", normalizeLandlineForInput(landline.value))
       formData.append("reference", reference.value)
       formData.append("num_iva", num_iva.value)
       formData.append("comments", comments.value)
@@ -699,23 +720,6 @@ const truncateText = (text, length = 30) => {
           :rules="[requiredValidator]"
         />
       </VListItem>
-      <VListItem>
-        <VLabel
-          class="mb-1 text-body-2 text-high-emphasis"
-          text="Telefon*"
-        />        
-        <VTextField
-          v-model="phone"
-          class="always-show-prefix"
-          :rules="phoneRules"
-          :min-length="phoneDigitsLimit"
-          :maxlength="phoneDigitsLimit"
-          :prefix="phonePrefix"
-          inputmode="numeric"
-          @input="handlePhoneInput"
-          @keydown="handlePhoneKeydown"
-        />
-      </VListItem>
       <VListItem v-if="client_type_id === 2">
         <VLabel
           class="mb-1 text-body-2 text-high-emphasis"
@@ -756,6 +760,38 @@ const truncateText = (text, length = 30) => {
             </VAvatar>
           </template>
         </AppAutocomplete>
+      </VListItem>
+      <VListItem>
+        <VLabel
+          class="mb-1 text-body-2 text-high-emphasis"
+          text="Mobilnummer"
+        />        
+        <VTextField
+          v-model="phone"
+          class="always-show-prefix"
+          :rules="phoneRules"
+          :min-length="phoneDigitsLimit"
+          :maxlength="phoneDigitsLimit"
+          :prefix="phonePrefix"
+          type="tel"
+          inputmode="numeric"
+          @input="handlePhoneInput"
+          @keydown="handlePhoneKeydown"
+        />
+      </VListItem>
+      <VListItem>
+        <VLabel
+          class="mb-1 text-body-2 text-high-emphasis"
+          text="Telefon"
+        />
+        <VTextField
+          v-model="landline"
+          :rules="landlineRules"
+          type="tel"
+          inputmode="numeric"
+          @input="handleLandlineInput"
+          @keydown="handlePhoneKeydown"
+        />
       </VListItem>
       <VListItem>
         <VLabel

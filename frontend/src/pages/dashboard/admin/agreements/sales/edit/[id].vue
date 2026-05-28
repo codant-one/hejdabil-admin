@@ -185,6 +185,7 @@ const address = ref('')
 const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
+const landline = ref('')
 const fullname = ref('')
 const email = ref('')
 const failedExternalFlags = ref({})
@@ -487,10 +488,11 @@ async function fetchData() {
         address.value = agreement.value.agreement_client.address
         street.value = agreement.value.agreement_client.street
         postal_code.value = agreement.value.agreement_client.postal_code
-        phone.value = normalizePhoneInput(agreement.value.agreement_client.phone, countries.value, agreement.value.agreement_client.client_type_id === 3 ? resolvedCountryId : null, phoneInputOptions)
+        country_id.value = resolvedCountryId
+        phone.value = normalizePhoneForInput(agreement.value.agreement_client.phone, agreement.value.agreement_client.client_type_id === 3 ? resolvedCountryId : null)
+        landline.value = normalizeLandlineForInput(agreement.value.agreement_client.landline)
         fullname.value = agreement.value.agreement_client.fullname
         email.value = agreement.value.agreement_client.email
-        country_id.value = resolvedCountryId
 
         price.value = formatDecimal(agreement.value.price)
         iva_id.value = agreement.value.iva_id
@@ -693,13 +695,26 @@ const phoneConfig = computed(() => {
 const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
 const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+    return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const phoneRules = computed(() => [
-    requiredValidator,
+    phoneOrLandlineRequiredValidator,
     minLengthDigitsValidator(phoneDigitsLimit.value),
     phoneValidator,
 ])
 
+const landlineRules = computed(() => [
+    phoneOrLandlineRequiredValidator,
+    phoneValidator,
+])
+
 const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, countries.value, country, phoneInputOptions)
+
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, countries.value, country, phoneInputOptions)
 
@@ -707,6 +722,10 @@ const handlePhoneInput = () => {
     const selectedCountry = client_type_id.value === 3 ? country_id.value : null
 
     phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handleLandlineInput = () => {
+    landline.value = normalizeLandlineForInput(landline.value)
 }
 
 const handlePhoneKeydown = event => {
@@ -817,16 +836,22 @@ const clearClient = () => {
     street.value = null
     postal_code.value = null
     phone.value = null
+    landline.value = null
     client_type_id.value = null
     country_id.value = null
 }
 
 const selectClient = client => {
     if (client) {
-        let _client = clients.value.find(item => item.id === client)
+        const _client = clients.value.find(item => item.id === client)
+        if (!_client) return
+
         const resolvedCountryId = _client.client_type_id === 3
             ? _client.country_id ?? _client.country?.id ?? _client.country?.name ?? defaultForeignCountryId
             : _client.country_id ?? _client.country?.id ?? _client.country?.name ?? null
+
+        client_type_id.value = _client.client_type_id ?? client_type_id.value
+        country_id.value = resolvedCountryId
     
         fullname.value = _client.fullname
         email.value = _client.email
@@ -835,10 +860,9 @@ const selectClient = client => {
         street.value = _client.street
         postal_code.value = _client.postal_code
         phone.value = normalizePhoneForInput(_client.phone, _client.client_type_id === 3 ? resolvedCountryId : null)
+        landline.value = normalizeLandlineForInput(_client.landline)
 
         // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
-        client_type_id.value = _client.client_type_id ?? client_type_id.value
-        country_id.value = resolvedCountryId
     }
 }
 
@@ -1282,6 +1306,7 @@ const onTabChange = async (targetTab) => {
 const onSubmit = async (forceSave = false) => {
     // Validación manual ANTES de usar VForm.validate()
         const isPhoneValid = phoneRules.value.every(rule => rule(phone.value) === true)
+        const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
 
         // Verificar tab 0 (Försäljning)
         const hasTab0Errors = !reg_num.value || 
@@ -1328,8 +1353,8 @@ const onSubmit = async (forceSave = false) => {
                         !address.value || 
                         !postal_code.value || 
                         !street.value || 
-                        !phone.value || 
-                        (phone.value && !isPhoneValid) ||
+                        !isPhoneValid ||
+                        !isLandlineValid ||
                         !email.value || 
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
@@ -1575,6 +1600,7 @@ const onSubmit = async (forceSave = false) => {
                 formData.append('street', street.value)
                 formData.append('postal_code', postal_code.value)
                 formData.append('phone', formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
+                formData.append('landline', normalizeLandlineForInput(landline.value))
 
                 //vehicle
                 formData.append('reg_num', reg_num.value)
@@ -1786,6 +1812,7 @@ const currentData = computed(() => ({
     street: street.value,
     postal_code: postal_code.value,
     phone: phone.value,
+    landline: landline.value,
     fullname: fullname.value,
     email: email.value,
 
@@ -2850,7 +2877,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                             <VTextField
                                                 v-model="phone"
                                                 class="always-show-prefix"
@@ -2858,8 +2885,20 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :min-length="phoneDigitsLimit"
                                                 :maxlength="phoneDigitsLimit"
                                                 :prefix="phonePrefix"
+                                                type="tel"
                                                 inputmode="numeric"
                                                 @input="handlePhoneInput"
+                                                @keydown="handlePhoneKeydown"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VTextField
+                                                v-model="landline"
+                                                :rules="landlineRules"
+                                                type="tel"
+                                                inputmode="numeric"
+                                                @input="handleLandlineInput"
                                                 @keydown="handlePhoneKeydown"
                                             />
                                         </div>
