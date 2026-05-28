@@ -78,6 +78,7 @@ class AgreementClient extends Model
             'address' => $request->address === 'null' ? null : $request->address,
             'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
             'phone' => $request->phone === 'null' ? null : $request->phone,
+            'landline' => $request->landline === 'null' ? null : $request->landline,
             'street' => $request->street === 'null' ? null : $request->street
         ]);
 
@@ -96,6 +97,7 @@ class AgreementClient extends Model
             'address' => ($request->address === 'null' || empty($request->address)) ? $client->address : $request->address,
             'postal_code' => ($request->postal_code === 'null' || empty($request->postal_code)) ? $client->postal_code : $request->postal_code,
             'phone' => ($request->phone === 'null' || empty($request->phone)) ? $client->phone : $request->phone,
+            'landline' => ($request->landline === 'null' || empty($request->landline)) ? $client->landline : $request->landline,
             'street' => ($request->street === 'null' || empty($request->street)) ? $client->street : $request->street
         ]);
 

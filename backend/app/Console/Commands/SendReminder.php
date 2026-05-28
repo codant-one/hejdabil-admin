@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use App\Models\Config;
 use App\Models\Billing;
 use App\Models\Agreement;
+use App\Models\Document;
 
 class SendReminder extends Command
 {
@@ -23,7 +24,7 @@ class SendReminder extends Command
      *
      * @var string
      */
-    protected $description = 'Send reminders for overdue billings and agreements';
+    protected $description = 'Send reminders for overdue billings, agreements and documents';
 
     /**
      * Create a new command instance.
@@ -44,6 +45,7 @@ class SendReminder extends Command
     {
         self::billings();
         self::agreements();
+        self::documents();
 
         return 0;
     }
@@ -202,6 +204,83 @@ class SendReminder extends Command
                 }
             }
         }    
+
+        return 0;
+    }
+
+    private function documents()
+    {
+        $delayCounter = 0;
+        $delayStep = 3;
+
+        $documents = Document::with(['supplier.settings.document', 'token'])
+            ->whereHas('token', function ($query) {
+                $query->where('signature_status', 'delivered');
+            })
+            ->where('send_reminder', 0)
+            ->get();
+
+        foreach ($documents as $document) {
+            if ($document?->supplier) {
+                $send_reminder = ((int) ($document?->supplier?->settings?->document?->send_reminder ?? 0)) === 1;
+                $days = (int) ($document?->supplier?->settings?->document?->due_dates ?? 1);
+            } else {
+                $documentConfig = Config::getByKey('documents') ?? ['value' => '{}'];
+
+                $getValue = function ($cfg) {
+                    if (is_array($cfg))
+                        return $cfg['value'] ?? '{}';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '{}';
+                };
+
+                $documentRaw = $getValue($documentConfig);
+
+                if (is_string($documentRaw)) {
+                    $documentRaw = json_decode($documentRaw, true) ?? [];
+                }
+
+                if (!is_array($documentRaw)) {
+                    $documentRaw = [];
+                }
+
+                $send_reminder = ((int) ($documentRaw['send_reminder'] ?? 0)) === 1;
+                $days = (int) ($documentRaw['due_dates'] ?? $documentRaw['due_date'] ?? 1);
+            }
+
+            $this->info('Document: #' . $document->id . ' - Send reminder: ' . ($send_reminder ? 'Yes' : 'No'));
+
+            $isOverdue = $document->token?->updated_at && \Carbon\Carbon::parse($document->token->updated_at)->lte(now()->subDays($days));
+
+            if ($send_reminder && $isOverdue) {
+                try {
+                    $documentToSend = Document::find($document->id);
+
+                    if (!$documentToSend) {
+                        $this->warn('The document could not be found: ' . $document->id);
+                        continue;
+                    }
+
+                    if ((int) $documentToSend->send_reminder !== 0) {
+                        $this->info('Document: #' . $documentToSend->id . ' - Reminder already created, skipping.');
+                        continue;
+                    }
+
+                    if ($delayCounter > 0) {
+                        sleep($delayStep);
+                    }
+
+                    Document::createReminder($documentToSend);
+                    $delayCounter++;
+
+                    $this->info('Document: #' . $documentToSend->id . ' - Reminder sent (' . $delayCounter . ').');
+                } catch (\Throwable $e) {
+                    $this->error('Error creating reminder for document ' . $document->id . ': ' . $e->getMessage());
+                    continue;
+                }
+            }
+        }
 
         return 0;
     }

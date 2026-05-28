@@ -1122,7 +1122,7 @@ onBeforeUnmount(() => {
                 <span v-else class="font-weight-medium text-aqua">
                   {{ vehicle.client_sale.fullname }} 
                 </span>
-                <span class="text-sm text-disabled">{{ vehicle.client_sale.phone }}</span>
+                <span class="text-sm text-disabled">{{ vehicle.client_sale.phone ?? vehicle.client_sale.landline }}</span>
               </div>
               <span v-else class="text-sm text-disabled">—</span>
             </td> 

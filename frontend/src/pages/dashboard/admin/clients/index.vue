@@ -19,6 +19,7 @@ import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import { languages } from "prismjs";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -651,6 +652,7 @@ const downloadPDF = async () => {
       email: element.email,
       organizationNumber: element.organization_number ?? "",
       phone: element.phone,
+      landline: element.landline,
       address: element.address + ',',
       street: element.postal_code  + ' ' + element.street,
       supplier: element.supplier
@@ -677,12 +679,15 @@ const downloadPDF = async () => {
         const addressLines = [item.address, item.street].filter(Boolean)
         const addressMarkup = addressLines.map(line => escapeHtml(line)).join('<br />')
 
+        const phoneLines = [item.phone, item.landline].filter(Boolean)
+        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
+
         return `
       <tr style="height: 48px;">
         <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.organizationNumber)}</td>
-        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
         ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${addressMarkup}</td>
       </tr>
@@ -705,7 +710,7 @@ const downloadPDF = async () => {
                       <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Organisationsnummer</td>
-                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Telefon</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
                       ${includeSupplierColumn ? `<td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Leverantör</td>` : ''}
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Adress</td>
                     </tr>
@@ -763,7 +768,8 @@ const downloadCSV = async () => {
       Kontakt: element.fullname,
       E_post: element.email,
       Organisationsnummer: element.organization_number ?? "",
-      Telefon: element.phone,
+      Mobilnummer: element.phone ?? "",
+      Telefon: element.landline ?? "",
       Adress: element.address,
       Postnummer: element.postal_code,
       Stad: element.street,
@@ -1036,6 +1042,7 @@ onBeforeUnmount(() => {
             <th scope="col">#ID</th>
             <th scope="col">Kontakt</th>
             <th scope="col" class="text-center">Organisationsnummer</th>
+            <th scope="col" class="text-center">Mobilnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
@@ -1073,6 +1080,11 @@ onBeforeUnmount(() => {
             <td class="text-center">
               <span class="">
                 {{ client.phone ?? "" }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="">
+                {{ client.landline ?? "" }}
               </span>
             </td>
             <td class="text-center">
@@ -1257,10 +1269,18 @@ onBeforeUnmount(() => {
                 {{ client.address ?? "" }}
               </div>
             </div>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Telefon:</div>
-              <div class="expansion-panel-item-value">
-                {{ client.phone ?? "" }}
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Mobilnummer:</div>
+                <div class="expansion-panel-item-value">
+                  {{ client.phone ?? "" }}
+                </div>
+              </div>
+              <div v-if="client.landline">
+                <div class="expansion-panel-item-label">Telefon:</div>
+                <div class="expansion-panel-item-value">
+                  {{ client.landline ?? "" }}
+                </div>
               </div>
             </div>
             <div class="mb-4 row-with-buttons" v-if="client.deleted_at === null">

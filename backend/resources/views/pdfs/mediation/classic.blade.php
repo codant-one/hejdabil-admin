@@ -260,7 +260,7 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Telefon</div>
                                 <div class="value">
-                                    {{ $agreement->commission->client->phone }}
+                                    {{ $agreement->commission->client->phone ?? $agreement->commission->client->landline }}
                                 </div>
                             </td>
                         </tr>
@@ -309,7 +309,7 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Telefon</div>
                                 <div class="value">
-                                    {{ $company->phone }}
+                                    {{ $company->phone ?? $company->landline }}
                                 </div>
                             </td>
                         </tr>

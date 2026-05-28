@@ -162,6 +162,8 @@ class Setting extends Model
             'id' => $documentId,
         ], [
             'sms_message' => self::resolveOptionalField($request, 'sms_message', $currentSettingDocument->sms_message ?? ''),
+            'due_dates' => self::resolveOptionalField($request, 'due_dates', $currentSettingDocument->due_dates ?? 5),
+            'send_reminder' => self::resolveOptionalField($request, 'send_reminder', $currentSettingDocument->send_reminder ?? 1),
             'send_notifications' => self::resolveOptionalField($request, 'send_notifications', $currentSettingDocument->send_notifications ?? 0),
         ]);
 

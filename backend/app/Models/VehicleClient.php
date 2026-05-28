@@ -85,6 +85,7 @@ class VehicleClient extends Model
             'address' => $request->address === 'null' ? null : $request->address,
             'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
             'phone' => $request->phone === 'null' ? null : $request->phone,
+            'landline' => $request->landline === 'null' ? null : $request->landline,
             'street' => $request->street === 'null' ? null : $request->street
         ]);
 
@@ -104,6 +105,7 @@ class VehicleClient extends Model
             'address' => $request->address === 'null' ? null : $request->address,
             'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
             'phone' => $request->phone === 'null' ? null : $request->phone,
+            'landline' => $request->landline === 'null' ? null : $request->landline,
             'street' => $request->street === 'null' ? null : $request->street
         ]);
 

@@ -370,6 +370,10 @@ class DocumentController extends Controller
             'y' => 'required|numeric',
             'page' => 'required|integer'
         ]);
+        $shouldSendSms = $this->shouldSendDocumentSignatureSms($document);
+        $recipientPhone = $shouldSendSms && isset($validated['phone'])
+            ? trim((string) $validated['phone'])
+            : null;
 
         if (!$document->file) {
             return response()->json([
@@ -390,7 +394,7 @@ class DocumentController extends Controller
             $token = $document->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at' => now()->addDays(7),
                 'signature_status' => 'created',
                 'placement_x' => $validated['x'],
@@ -416,7 +420,7 @@ class DocumentController extends Controller
             // Update existing token with signature details
             $token->update([
                 'recipient_email' => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $validated['x'],
                 'placement_y' => $validated['y'],
@@ -528,7 +532,7 @@ class DocumentController extends Controller
                 )
             );
 
-            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsPhone = $recipientPhone ?? '';
             $smsError = null;
 
             if ($smsPhone !== '') {
@@ -630,7 +634,7 @@ class DocumentController extends Controller
                     'title' => $document->title,
                     'token_id' => $token->id,
                     'recipient_email' => $validated['email'],
-                    'recipient_phone' => $validated['phone'] ?? null,
+                    'recipient_phone' => $recipientPhone,
                     'signature_status' => $token->signature_status,
                     'placement_x' => $token->placement_x,
                     'placement_y' => $token->placement_y,
@@ -929,6 +933,13 @@ class DocumentController extends Controller
 
     public function resendSignatureSms(Document $document, Request $request, TwilioSms $twilioSms)
     {
+        if (!$this->shouldSendDocumentSignatureSms($document)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SMS-utskick är inte aktiverat för dokument.'
+            ], 422);
+        }
+
         $token = $document->tokens()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues', 'cancelled'])
             ->latest()
@@ -1214,6 +1225,50 @@ class DocumentController extends Controller
         }
 
         return trim((string) ($document->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+    }
+
+    private function shouldSendDocumentSignatureSms(Document $document): bool
+    {
+        if ($document->supplier_id === null) {
+            $documentConfig = Config::getByKey('documents') ?? ['value' => '[]'];
+            $rawValue = is_array($documentConfig)
+                ? ($documentConfig['value'] ?? '[]')
+                : ($documentConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return $this->resolveBooleanSettingValue(is_array($decoded) ? ($decoded['send_notifications'] ?? null) : null);
+        }
+
+        $setting = Setting::with('document')->where('supplier_id', $document->supplier_id)->first();
+
+        return $this->resolveBooleanSettingValue($setting?->document?->send_notifications ?? null);
+    }
+
+    private function resolveBooleanSettingValue($value, bool $fallback = false): bool
+    {
+        if ($value === null)
+            return $fallback;
+
+        if (is_bool($value))
+            return $value;
+
+        if (is_numeric($value))
+            return (int) $value === 1;
+
+        if (is_string($value)) {
+            $normalizedValue = strtolower(trim($value));
+
+            if (in_array($normalizedValue, ['1', 'true', 'yes', 'on'], true))
+                return true;
+
+            if (in_array($normalizedValue, ['0', 'false', 'no', 'off'], true))
+                return false;
+        }
+
+        return $fallback;
     }
 
     private function finalizeDocumentSmsMessage(?string $message, string $companyName): string

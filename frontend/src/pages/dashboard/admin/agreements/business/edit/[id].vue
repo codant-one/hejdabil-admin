@@ -106,6 +106,7 @@ const address = ref(null)
 const street = ref(null)
 const postal_code = ref(null)
 const phone = ref(null)
+const landline = ref(null)
 const failedExternalFlags = ref({})
 const defaultForeignCountryId = PHONE_INPUT_DEFAULTS.defaultCountryId
 const phoneInputOptions = {
@@ -187,8 +188,9 @@ async function fetchData() {
           address.value = agreement.value.agreement_client.address
           street.value = agreement.value.agreement_client.street
           postal_code.value = agreement.value.agreement_client.postal_code
-          phone.value = normalizePhoneForInput(agreement.value.agreement_client.phone, agreement.value.agreement_client.client_type_id === 3 ? resolvedCountryId : null)
           country_id.value = resolvedCountryId
+          phone.value = normalizePhoneForInput(agreement.value.agreement_client.phone, agreement.value.agreement_client.client_type_id === 3 ? resolvedCountryId : null)
+          landline.value = normalizeLandlineForInput(agreement.value.agreement_client.landline)
         }
      
         if(agreement.value.offer.model_id !== null) {
@@ -390,6 +392,7 @@ const clearClient = () => {
   street.value = null
   postal_code.value = null
   phone.value = null
+  landline.value = null
   client_type_id.value = null
   country_id.value = null
 }
@@ -404,6 +407,9 @@ const selectClient = client => {
     ? selected.country_id ?? selected.country?.id ?? selected.country?.name ?? defaultForeignCountryId
     : selected.country_id ?? selected.country?.id ?? selected.country?.name ?? null
 
+  client_type_id.value = selected.client_type_id ?? client_type_id.value
+  country_id.value = resolvedCountryId
+
   fullname.value = selected.fullname
   email.value = selected.email
   organization_number.value = selected.organization_number
@@ -411,10 +417,9 @@ const selectClient = client => {
   street.value = selected.street
   postal_code.value = selected.postal_code
   phone.value = normalizePhoneForInput(selected.phone, selected.client_type_id === 3 ? resolvedCountryId : null)
+  landline.value = normalizeLandlineForInput(selected.landline)
 
   // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
-  client_type_id.value = selected.client_type_id ?? client_type_id.value
-  country_id.value = resolvedCountryId
 }
 
 const formatDecimal = (value) => {
@@ -475,13 +480,26 @@ const phoneConfig = computed(() => {
 const phonePrefix = computed(() => `+${phoneConfig.value.phonecode}`)
 const phoneDigitsLimit = computed(() => phoneConfig.value.phoneDigits)
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const phoneRules = computed(() => [
-  requiredValidator,
+  phoneOrLandlineRequiredValidator,
   minLengthDigitsValidator(phoneDigitsLimit.value),
   phoneValidator,
 ])
 
+const landlineRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
+
 const normalizePhoneForInput = (value, country = null) => normalizePhoneInput(value, countries.value, country, phoneInputOptions)
+
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const formatPhoneForPayload = (value, country = null) => formatPhonePayload(value, countries.value, country, phoneInputOptions)
 
@@ -489,6 +507,10 @@ const handlePhoneInput = () => {
   const selectedCountry = client_type_id.value === 3 ? country_id.value : null
 
   phone.value = normalizePhoneForInput(phone.value, selectedCountry)
+}
+
+const handleLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value)
 }
 
 const handlePhoneKeydown = event => {
@@ -765,6 +787,7 @@ const onTabChange = async (targetTab) => {
 
 const onSubmit = async (forceSave = false) => {
   const isPhoneValid = phoneRules.value.every(rule => rule(phone.value) === true)
+  const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
 
   // Validación manual ANTES de usar VForm.validate()
   // Verificar tab 0 (Erbjudande)
@@ -789,8 +812,8 @@ const onSubmit = async (forceSave = false) => {
                         !address.value || 
                         !postal_code.value || 
                         !street.value || 
-                        !phone.value || 
-                        (phone.value && !isPhoneValid) ||
+                        !isPhoneValid ||
+                        !isLandlineValid ||
                         !email.value || 
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
@@ -924,6 +947,7 @@ const onSubmit = async (forceSave = false) => {
               formData.append('street', street.value)
               formData.append('postal_code', postal_code.value)
               formData.append('phone', formatPhoneForPayload(phone.value, client_type_id.value === 3 ? normalizedCountryId : null))
+              formData.append('landline', normalizeLandlineForInput(landline.value))
 
               //agreement
               formData.append('agreement_type_id', 4)
@@ -1008,6 +1032,7 @@ const currentData = computed(() => ({
     street: street.value,
     postal_code: postal_code.value,
     phone: phone.value,
+    landline: landline.value,
 }))
 
 const isDirty = computed(() => {
@@ -1538,19 +1563,31 @@ onBeforeRouteLeave((to, from, next) => {
                         />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                         <VTextField
                             v-model="phone"
-                        class="always-show-prefix"
-                        :rules="phoneRules"
-                        :min-length="phoneDigitsLimit"
-                        :maxlength="phoneDigitsLimit"
-                        :prefix="phonePrefix"
-                        inputmode="numeric"
-                        @input="handlePhoneInput"
-                        @keydown="handlePhoneKeydown"
+                          class="always-show-prefix"
+                          :rules="phoneRules"
+                          :min-length="phoneDigitsLimit"
+                          :maxlength="phoneDigitsLimit"
+                          :prefix="phonePrefix"
+                          type="tel"
+                          inputmode="numeric"
+                          @input="handlePhoneInput"
+                          @keydown="handlePhoneKeydown"
                         />
                     </div>
+                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                        <VTextField
+                          v-model="landline"
+                          :rules="landlineRules"
+                          type="tel"
+                          inputmode="numeric"
+                          @input="handleLandlineInput"
+                          @keydown="handlePhoneKeydown"
+                        />
+                      </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="client_type_id === 3">
                       <AppAutocomplete
                         v-model="country_id"

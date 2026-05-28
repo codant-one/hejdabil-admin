@@ -889,7 +889,9 @@ const openStaticSignatureDialog = (agreementData) => {
   isStaticSignatureFlow.value = true
 
   signatureEmail.value = getResendRecipientEmail(agreementData)
-  signaturePhone.value = getAgreementRecipientPhone(agreementData)
+  signaturePhone.value = canShowAgreementSmsAction.value
+    ? getAgreementRecipientPhone(agreementData)
+    : ''
   isSignatureDialogVisible.value = true
 }
 
@@ -999,11 +1001,15 @@ const submitStaticSignatureRequest = async () => {
   isSignatureDialogVisible.value = false
   emit("loading", true)
 
+  const signatureRequestPhone = canShowAgreementSmsAction.value
+    ? signaturePhone.value.trim()
+    : ''
+
   try {
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
-      phone: signaturePhone.value,
+      phone: signatureRequestPhone,
     }
 
     const response = await agreementsStores.requestStaticSignature(payload)

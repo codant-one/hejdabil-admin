@@ -220,5 +220,83 @@ class Document extends Model
             return false;
         }
     }
+
+    public static function createReminder($document, int $delaySeconds = 0)
+    {
+        $document = self::with(['token', 'supplier.user.userDetail'])->find($document->id);
+
+        if (!$document || !$document->token || empty($document->token->recipient_email)) {
+            return null;
+        }
+
+        if ($document->supplier_id === null) {
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo = Config::getByKey('logo') ?? ['value' => '[]'];
+
+            $getValue = function ($cfg) {
+                if (is_array($cfg))
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+
+            $companyRaw = $getValue($configCompany);
+            $logoRaw = $getValue($configLogo);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+
+                if (!is_object($decoded))
+                    $decoded = (object) [];
+
+                return $decoded;
+            };
+
+            $company = $decodeSafe($companyRaw);
+            $logoObj = $decodeSafe($logoRaw);
+
+            $company->logo = $logoObj->logo ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $document->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+            $logo = $user->user->userDetail->logo_url ?? null;
+        }
+
+        $signingUrl = env('APP_DOMAIN') . '/sign/' . $document->token->signing_token;
+        $subject = 'Påminnelse: Dokument för digital signering från ' . ($company->company ?? '');
+
+        $data = [
+            'company' => $company,
+            'signingUrl' => $signingUrl,
+            'text' => $document->description,
+            'title' => 'Påminnelse: Dokument för digital signering',
+            'icon' => asset('/images/signature.png'),
+            'logo' => $logo,
+        ];
+
+        $job = \App\Jobs\SendEmailJob::dispatch(
+            'emails.documents.signature_request',
+            $data,
+            $document->token->recipient_email,
+            $subject
+        )->onQueue('emails');
+
+        if ($delaySeconds > 0) {
+            $job->delay(now()->addSeconds($delaySeconds));
+        }
+
+        $document->send_reminder = 1;
+        $document->update();
+
+        return $document;
+    }
 }
 

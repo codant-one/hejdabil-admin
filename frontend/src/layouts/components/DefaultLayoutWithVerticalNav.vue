@@ -18,16 +18,50 @@ import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
 const route = useRoute();
+const vm = getCurrentInstance();
 const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
 const settingsButtonStyle = computed(() => (
   isSettingsRoute.value
     ? "box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;"
     : undefined
 ));
+const canShowSwishaButton = computed(() => {
+  const hasPermission = vm?.proxy?.$can ? vm.proxy.$can('create', 'payouts') : true;
+
+  if (!hasPermission)
+    return false;
+
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null');
+  if (!userData)
+    return false;
+
+  const userRole = userData.roles?.[0]?.name;
+
+  if (userRole !== 'Supplier' && userRole !== 'User')
+    return false;
+
+  if (userRole === 'Supplier')
+    return userData.supplier?.is_payout === 1;
+
+  return true;
+});
 
 const redirectTo = (path) => {
   router.push({
     name: path,
+  });
+};
+
+const logButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? 'box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;'
+    : undefined
+));
+
+const redirectToPayoutsAndOpenDialog = () => {
+  router.push({
+    name: 'dashboard-admin-payouts',
+    query: { open_payout: 'true' },
   });
 };
 
@@ -37,24 +71,6 @@ const redirectTo = (path) => {
   <VerticalNavLayout :nav-items="isSettingsRoute ? settingsNavItems : navItems">
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
-      <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" class="sticky-container">
-          <div class="d-flex gap-x-3 buttons-center">
-            <VBtn
-              class="btn-blue px-6"
-              @click="redirectTo('dashboard-admin-agreements-purchase')"
-            >
-              Köp
-              <VIcon icon="custom-car-close" size="24" />
-            </VBtn>
-            <VBtn
-              class="btn-green px-6"
-              @click="redirectTo('dashboard-admin-agreements-sales')"
-            >
-              Sälj
-              <VIcon icon="custom-car-open" size="24" />
-            </VBtn>
-          </div>
-        </div>
       <div class="d-flex h-100 align-center">
         <RouterLink to="/" :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" class="align-center md-ms-3 header-logo">
           <VNodeRenderer :nodes="themeConfig.app.logoFull" />
@@ -62,8 +78,48 @@ const redirectTo = (path) => {
 
         <VSpacer />
 
-        <div class="d-flex align-center gap-x-2">
+        <div class="d-flex align-center" :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
+          <VBtn
+            v-if="$can('create', 'agreements')"
+            class="btn-blue px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectTo('dashboard-admin-agreements-purchase')"
+          >
+            Köp
+            <VIcon icon="custom-car-close" size="24" />
+          </VBtn>
+          <VBtn
+            v-if="$can('create', 'agreements')"
+            class="btn-green px-6"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectTo('dashboard-admin-agreements-sales')"
+          >
+            Sälj
+            <VIcon icon="custom-car-open" size="24" />
+          </VBtn>
+            
+          <VBtn
+            v-if="canShowSwishaButton"
+            class="btn-gradient-2 px-4"
+            :class="windowWidth < 1024 ? 'd-none' : ''"
+            @click="redirectToPayoutsAndOpenDialog"
+          >
+            <VIcon icon="custom-swish-outlined" size="24" />
+            Swisha
+          </VBtn>
+
+          <VBtn
+            class="btn-white-2 d-none"
+            :class="windowWidth < 1024 ? 'd-none' : 'px-4'"
+            :to="{ name: 'dashboard-activities' }"
+            :style="logButtonStyle"
+          >
+            <VIcon icon="custom-log-outlined" size="24" />
+            Din logg
+          </VBtn>
+
           <NavBarNotifications />
+
           <VBtn
             variant="flat"
             :class="[
@@ -78,7 +134,7 @@ const redirectTo = (path) => {
           >
             <VIcon icon="custom-settings" size="24" />
           </VBtn>
-          <UserProfile />
+          <UserProfile :can-show-swisha-button="canShowSwishaButton" />
         </div>
       </div>
     </template>

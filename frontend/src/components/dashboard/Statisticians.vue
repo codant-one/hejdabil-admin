@@ -38,7 +38,6 @@ import Dashboard from '@/api/dashboard'
   const exporteraMobile = ref(false);
   const filterMenuVisible = ref(false)
   const filterDateRange = ref(null)
-  const currentYear = new Date().getFullYear()
 
   // 👉 Export management refs
   const selectedExportType = ref(null)
@@ -110,6 +109,33 @@ import Dashboard from '@/api/dashboard'
 
     return null
   }
+
+  const getYearFromValue = value => {
+    if (!value)
+      return null
+
+    if (value instanceof Date && !Number.isNaN(value.getTime()))
+      return value.getFullYear()
+
+    if (typeof value === 'string') {
+      const normalized = value.trim()
+      const ymdMatch = normalized.match(/^(\d{4})-\d{2}-\d{2}/)
+      if (ymdMatch)
+        return Number(ymdMatch[1])
+
+      const parsed = new Date(normalized)
+      if (!Number.isNaN(parsed.getTime()))
+        return parsed.getFullYear()
+    }
+
+    return null
+  }
+
+  const currentYear = computed(() => {
+    const range = normalizeRangeValue(filterDateRange.value)
+
+    return getYearFromValue(range?.[0]) ?? new Date().getFullYear()
+  })
 
   const onFilterDateUpdate = value => {
     const range = normalizeRangeValue(value)

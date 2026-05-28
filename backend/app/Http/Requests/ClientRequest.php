@@ -53,9 +53,6 @@ class ClientRequest extends FormRequest
             'postal_code' => [
                 'required'
             ],
-            'phone' => [
-                'required'
-            ],
             'fullname' => [
                 'required'
             ],
@@ -78,7 +75,6 @@ class ClientRequest extends FormRequest
             'address.required' => 'Adressen är obligatorisk.',
             'street.required' => 'Gatan är obligatorisk.',
             'postal_code.required' => 'Postnumret är obligatoriskt.',
-            'phone.required' => 'Telefonen är obligatorisk.',
             'fullname.required' => 'Namnet är obligatoriskt.',
             'email.required' => 'E-postadressen är obligatorisk.',
             'organization_number.unique' => 'organization_number.unique'

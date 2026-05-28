@@ -299,7 +299,7 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Telefon</div>
                                 <div class="value">
-                                    {{ $company->phone }}
+                                    {{ $company->phone ?? $company->landline }}
                                 </div>
                             </td>
                         </tr>
@@ -342,7 +342,7 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Telefon</div>
                                 <div class="value">
-                                    {{ $agreement->agreement_client->phone }}
+                                    {{ $agreement->agreement_client->phone ?? $agreement->agreement_client->landline }}
                                 </div>
                             </td>
                         </tr>

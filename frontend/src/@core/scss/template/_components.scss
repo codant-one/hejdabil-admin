@@ -358,6 +358,26 @@ body .v-btn {
     }
   }
 
+  &.btn-gradient-2 {
+    border: 2px solid transparent;
+    background:
+      linear-gradient(#ffffff, #ffffff) padding-box,
+      linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%) border-box !important;
+
+    &:hover,
+    &:focus {
+      background-color: #0fd84e !important;
+    }
+
+    &:active {
+      background-color: #0d6e2d !important;
+
+      .v-btn__content {
+        color: #1c2925 !important;
+      }
+    }
+  }
+
   &.btn-header-action {
     width: 40px;
     height: 40px !important;
