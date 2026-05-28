@@ -673,8 +673,11 @@ const openSignatureDialog = (agreementData) => {
   if (agreementData?.id)
     selectedAgreement.value = { ...agreementData }
 
+  isStaticSignatureFlow.value = false
   signatureEmail.value = getResendRecipientEmail(agreementData)
-  signaturePhone.value = getAgreementRecipientPhone(agreementData)
+  signaturePhone.value = canShowAgreementSmsAction.value
+    ? getAgreementRecipientPhone(agreementData)
+    : ''
   isSignatureDialogVisible.value = true
 }
 
@@ -682,7 +685,9 @@ const openStaticSignatureDialog = (agreementData) => {
   selectedAgreement.value = { ...agreementData }; // Aseguramos que el agreement está seleccionado
   isStaticSignatureFlow.value = true // ¡Importante! Indicamos que es el flujo estático
   signatureEmail.value = getResendRecipientEmail(agreementData)
-  signaturePhone.value = getAgreementRecipientPhone(agreementData)
+  signaturePhone.value = canShowAgreementSmsAction.value
+    ? getAgreementRecipientPhone(agreementData)
+    : ''
   isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
 }
 
@@ -796,6 +801,10 @@ const submitPlacementSignatureRequest  = async () => {
   isSignatureDialogVisible.value = false
   isPlacementModalVisible.value = false
   isRequestOngoing.value = true
+
+  const signatureRequestPhone = canShowAgreementSmsAction.value
+    ? signaturePhone.value.trim()
+    : ''
   
   try {
 
@@ -811,7 +820,7 @@ const submitPlacementSignatureRequest  = async () => {
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
-      phone: signaturePhone.value,
+      phone: signatureRequestPhone,
       x: x_percent.toFixed(2),
       y: y_percent.toFixed(2),
       page: signaturePlacement.value.page,
@@ -858,12 +867,16 @@ const submitStaticSignatureRequest = async () => {
   isSignatureDialogVisible.value = false;
   isRequestOngoing.value = true;
 
+  const signatureRequestPhone = canShowAgreementSmsAction.value
+    ? signaturePhone.value.trim()
+    : ''
+
   try {
     // 3. Prepara un payload más simple, sin coordenadas
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
-      phone: signaturePhone.value,
+      phone: signatureRequestPhone,
     };
 
     // 4. Llama a una NUEVA acción en el store de Pinia

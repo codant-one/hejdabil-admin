@@ -64,6 +64,10 @@ class SignatureController extends Controller
     public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
+        $shouldSendSms = $this->shouldSendAgreementSignatureSms($agreement);
+        $recipientPhone = $shouldSendSms && isset($validated['phone'])
+            ? trim((string) $validated['phone'])
+            : null;
   
         // 1. Check if the agreement already has a generated PDF.
         if (!$agreement->file) {
@@ -90,7 +94,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $validated['x'],
@@ -112,7 +116,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $validated['x'],
                 'placement_y' => $validated['y'],
@@ -251,7 +255,7 @@ class SignatureController extends Controller
                 )
             );
 
-            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsPhone = $recipientPhone ?? '';
             $smsError = null;
 
             if ($smsPhone !== '') {
@@ -340,7 +344,7 @@ class SignatureController extends Controller
                 'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
             ]);
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $validated['phone'] ?? null, $smsError);
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $recipientPhone, $smsError);
             
             return response()->json([
                 'success' => true,
@@ -385,6 +389,10 @@ class SignatureController extends Controller
     public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request, TwilioSms $twilioSms)
     {
         $validated = $request->validated();
+        $shouldSendSms = $this->shouldSendAgreementSignatureSms($agreement);
+        $recipientPhone = $shouldSendSms && isset($validated['phone'])
+            ? trim((string) $validated['phone'])
+            : null;
 
         // 1. Check if the agreement already has a generated PDF.
         if (!$agreement->file) {
@@ -413,7 +421,7 @@ class SignatureController extends Controller
             $token = $agreement->tokens()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at'    => now()->addDays(7),
                 'signature_status'        => 'created',
                 'placement_x'   => $defaultPlacement['x'],
@@ -436,7 +444,7 @@ class SignatureController extends Controller
         } else {
             $token->update([
                 'recipient_email' => $validated['email'],
-                'recipient_phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+                'recipient_phone' => $recipientPhone,
                 'token_expires_at' => now()->addDays(7),
                 'placement_x' => $token->placement_x ?? $defaultPlacement['x'],
                 'placement_y' => $token->placement_y ?? $defaultPlacement['y'],
@@ -576,7 +584,7 @@ class SignatureController extends Controller
                 )
             );
 
-            $smsPhone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+            $smsPhone = $recipientPhone ?? '';
             $smsError = null;
 
             if ($smsPhone !== '') {
@@ -665,7 +673,7 @@ class SignatureController extends Controller
                 'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
             ]);
 
-            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $validated['phone'] ?? null, $smsError);
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $recipientPhone, $smsError);
             
             return response()->json([
                 'success' => true,
@@ -936,6 +944,13 @@ class SignatureController extends Controller
 
     public function resendSignatureSms(Agreement $agreement, Request $request, TwilioSms $twilioSms)
     {
+        if (!$this->shouldSendAgreementSignatureSms($agreement)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SMS-utskick är inte aktiverat för avtal.'
+            ], 422);
+        }
+
         $token = $agreement->tokens()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues', 'cancelled'])
             ->latest()
@@ -1940,6 +1955,50 @@ class SignatureController extends Controller
             return $fallbackMessage;
 
         return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
+    }
+
+    private function shouldSendAgreementSignatureSms(Agreement $agreement): bool
+    {
+        if ($agreement->supplier_id === null) {
+            $agreementConfig = Config::getByKey('agreements') ?? ['value' => '[]'];
+            $rawValue = is_array($agreementConfig)
+                ? ($agreementConfig['value'] ?? '[]')
+                : ($agreementConfig->value ?? '[]');
+            $decoded = json_decode($rawValue, true);
+
+            if (is_string($decoded))
+                $decoded = json_decode($decoded, true);
+
+            return $this->resolveBooleanSettingValue(is_array($decoded) ? ($decoded['send_notifications'] ?? null) : null);
+        }
+
+        $setting = Setting::with('agreement')->where('supplier_id', $agreement->supplier_id)->first();
+
+        return $this->resolveBooleanSettingValue($setting?->agreement?->send_notifications ?? null);
+    }
+
+    private function resolveBooleanSettingValue($value, bool $fallback = false): bool
+    {
+        if ($value === null)
+            return $fallback;
+
+        if (is_bool($value))
+            return $value;
+
+        if (is_numeric($value))
+            return (int) $value === 1;
+
+        if (is_string($value)) {
+            $normalizedValue = strtolower(trim($value));
+
+            if (in_array($normalizedValue, ['1', 'true', 'yes', 'on'], true))
+                return true;
+
+            if (in_array($normalizedValue, ['0', 'false', 'no', 'off'], true))
+                return false;
+        }
+
+        return $fallback;
     }
 
     private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature, ?string $recipientPhone = null, $smsError = null): void

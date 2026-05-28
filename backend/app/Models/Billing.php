@@ -27,6 +27,11 @@ class Billing extends Model
 {
     use HasFactory, SoftDeletes;
 
+    private const BILLING_SMS_COMPANY_PLACEHOLDER = '{Företagsnamn}';
+    private const DEFAULT_BILLING_SMS_MESSAGE = 'Du har fått en faktura från {Företagsnamn}.';
+    private const DEFAULT_BILLING_COMPANY_NAME = 'Billogg Sverige AB';
+    private const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen';
+
     protected $guarded = [];
 
     /**** Relationship ****/
@@ -897,16 +902,23 @@ class Billing extends Model
         $setting = Setting::where('supplier_id', $supplierId)->first();
 
         if ($setting && $setting->setting_billing_id) {
-            SettingBilling::query()->whereKey($setting->setting_billing_id)->update([
-                'invoice_id' => $nextInvoiceId,
-            ]);
+            $settingBilling = SettingBilling::query()->find($setting->setting_billing_id);
 
-            return;
+            if ($settingBilling) {
+                $updates = [
+                    'invoice_id' => $nextInvoiceId,
+                    ...self::missingSettingBillingDefaults($settingBilling, $supplierId, $nextInvoiceId),
+                ];
+
+                $settingBilling->update($updates);
+
+                return;
+            }
         }
 
-        $settingBilling = SettingBilling::create([
-            'invoice_id' => $nextInvoiceId,
-        ]);
+        $settingBilling = SettingBilling::create(
+            self::defaultSettingBillingValues($supplierId, $nextInvoiceId)
+        );
 
         Setting::query()->updateOrCreate([
             'supplier_id' => $supplierId,
@@ -914,5 +926,69 @@ class Billing extends Model
             'user_id' => Auth::id(),
             'setting_billing_id' => $settingBilling->id,
         ]);
+    }
+
+    private static function defaultSettingBillingValues(?int $supplierId, int $nextInvoiceId): array
+    {
+        return [
+            'type' => 1,
+            'due_dates' => 5,
+            'terms_and_conditions' => self::DEFAULT_BILLING_TERMS_AND_CONDITIONS,
+            'sms_message' => self::replaceBillingCompanyPlaceholder(
+                self::DEFAULT_BILLING_SMS_MESSAGE,
+                self::resolveBillingCompanyName($supplierId)
+            ),
+            'send_reminder' => 1,
+            'send_notifications' => 0,
+            'invoice_id' => $nextInvoiceId,
+        ];
+    }
+
+    private static function missingSettingBillingDefaults(SettingBilling $settingBilling, ?int $supplierId, int $nextInvoiceId): array
+    {
+        $defaults = self::defaultSettingBillingValues($supplierId, $nextInvoiceId);
+        $missingDefaults = [];
+
+        foreach ($defaults as $field => $defaultValue) {
+            if ($field === 'invoice_id') {
+                continue;
+            }
+
+            $currentValue = $settingBilling->{$field};
+
+            if (is_null($currentValue) || (is_string($currentValue) && trim($currentValue) === '')) {
+                $missingDefaults[$field] = $defaultValue;
+            }
+        }
+
+        return $missingDefaults;
+    }
+
+    private static function resolveBillingCompanyName(?int $supplierId): string
+    {
+        if (!$supplierId) {
+            return self::DEFAULT_BILLING_COMPANY_NAME;
+        }
+
+        $supplierUserId = Supplier::withTrashed()
+            ->whereKey($supplierId)
+            ->value('user_id');
+
+        if (!$supplierUserId) {
+            return self::DEFAULT_BILLING_COMPANY_NAME;
+        }
+
+        $companyName = UserDetails::query()
+            ->where('user_id', $supplierUserId)
+            ->value('company');
+
+        return trim((string) $companyName) ?: self::DEFAULT_BILLING_COMPANY_NAME;
+    }
+
+    private static function replaceBillingCompanyPlaceholder(string $message, string $companyName): string
+    {
+        $resolvedCompanyName = trim($companyName) ?: self::DEFAULT_BILLING_COMPANY_NAME;
+
+        return str_replace(self::BILLING_SMS_COMPANY_PLACEHOLDER, $resolvedCompanyName, $message);
     }
 }

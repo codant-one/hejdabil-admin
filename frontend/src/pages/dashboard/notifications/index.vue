@@ -1,7 +1,6 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useRouter } from 'vue-router'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -32,13 +31,6 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
-})
-
-useMobilePaginationScroll({
-  targetRef: sectionEl,
-  currentPage,
-  isRequestOngoing,
-  enabled: mdAndDown,
 })
 
 // 👉 Computing pagination data
