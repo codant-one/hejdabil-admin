@@ -109,13 +109,13 @@ const redirectToPayoutsAndOpenDialog = () => {
           </VBtn>
 
           <VBtn
-            class="btn-white-2"
-            :class="windowWidth < 1024 ? 'px-3' : 'px-4'"
+            class="btn-white-2 d-none"
+            :class="windowWidth < 1024 ? 'd-none' : 'px-4'"
             :to="{ name: 'dashboard-activities' }"
             :style="logButtonStyle"
           >
             <VIcon icon="custom-log-outlined" size="24" />
-            <span :class="windowWidth < 1024 ? 'd-none' : ''">Din logg</span>
+            Din logg
           </VBtn>
 
           <NavBarNotifications />
