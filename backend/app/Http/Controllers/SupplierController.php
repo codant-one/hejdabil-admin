@@ -682,7 +682,10 @@ class SupplierController extends Controller
             $supplierId = $this->getCurrentSupplierId();
 
             $query = Supplier::with(['user.roles.permissions', 'user.permissions', 'user.userDetail'])
-                ->where('boss_id', $supplierId);
+                ->where(function ($query) use ($supplierId) {
+                    $query->where('id', $supplierId)
+                        ->orWhere('boss_id', $supplierId);
+                });
 
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -729,6 +732,7 @@ class SupplierController extends Controller
                 $billingCountsByUser,
                 $payoutCountsByUser,
                 $agreementCountsByUser,
+                $supplierId,
             ) {
                 $user = $teamSupplier->user;
                 $userId = $teamSupplier->user_id;
@@ -739,6 +743,7 @@ class SupplierController extends Controller
                 return [
                     'id' => $teamSupplier->id,
                     'user_id' => $teamSupplier->user_id,
+                    'is_boss' => $teamSupplier->id === $supplierId,
                     'order_id' => $teamSupplier->order_id,
                     'deleted_at' => $teamSupplier->deleted_at,
                     'user' => $user,

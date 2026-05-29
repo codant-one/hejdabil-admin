@@ -221,9 +221,14 @@
                            />
                         </VAvatar>
                         <div class="d-flex flex-column">
-                           <span class="font-weight-medium">
-                              {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
-                           </span>
+                           <div class="d-flex gap-1 align-center font-weight-medium text-aqua">
+                              <span class="font-weight-medium">
+                                 {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
+                              </span>
+                              <span class="text-neutral-25" v-if="member.is_boss">
+                                 (Leverantör)
+                              </span>
+                           </div>
                            <span class="text-sm text-disabled">
                            <VTooltip 
                               v-if="member?.email && member.email.length > 20"
@@ -287,6 +292,7 @@
             <VExpansionPanelTitle
                collapse-icon="custom-chevron-right"
                expand-icon="custom-chevron-down"
+               class="p-0"
             >
                <span class="order-id">
                   <VAvatar
@@ -304,9 +310,14 @@
                      />
                   </VAvatar>
                </span>
-               <div class="order-title-box">
+               <div class="order-title-box px-0">
                   <span class="title-panel">
-                     {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
+                     <div class="d-flex gap-1 align-center">
+                        {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
+                        <span class="text-neutral-25 font-12" v-if="member.is_boss">
+                           (Leverantör)
+                        </span>
+                     </div>
                   </span>
                   <div class="title-organization">
                      {{ truncateText(member?.email, 20) }}
