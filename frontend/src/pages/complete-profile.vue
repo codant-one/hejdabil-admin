@@ -38,12 +38,27 @@ const sectionEl = ref(null)
 const authStores = useAuthStores();
 const profileStores = useProfileStores();
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const personalPhoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const profilePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`;
 const profilePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits;
-const requiredProfilePhoneRules = [requiredValidator, minLengthDigitsValidator(profilePhoneDigits), phoneValidator];
+const profilePhoneRules = computed(() => [
+  personalPhoneOrLandlineRequiredValidator,
+  minLengthDigitsValidator(profilePhoneDigits),
+  phoneValidator,
+])
+
+const landlineRules = computed(() => [
+  personalPhoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
 
 const normalizeProfilePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS);
-
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 const formatProfilePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS);
 
 const refVForm = ref();
@@ -52,6 +67,7 @@ const email = ref("");
 const name = ref("");
 const last_name = ref("");
 const phone = ref("");
+const landline = ref("");
 const address = ref("");
 const avatar = ref(null);
 const avatarId = ref(5);
@@ -133,9 +149,11 @@ const validateTab0 = async () => {
   results.push(requiredValidator(last_name.value));
   results.push(requiredValidator(email.value));
   results.push(emailValidator(email.value));
-  results.push(requiredValidator(phone.value));
+  results.push(personalPhoneOrLandlineRequiredValidator(phone.value));
   results.push(minLengthDigitsValidator(profilePhoneDigits)(phone.value));
   results.push(phoneValidator(phone.value));
+  results.push(personalPhoneOrLandlineRequiredValidator(landline.value));
+  results.push(phoneValidator(landline.value));
   results.push(requiredValidator(address.value));
 
   // All validators from Vuetify return true or a string message
@@ -164,9 +182,11 @@ const validateTab1 = async () => {
   if (!isUser) results.push(requiredValidator(form.value.street));
 
   if (!isUser) {
-    results.push(requiredValidator(form.value.phone));
+    results.push(companyPhoneOrLandlineRequiredValidator(form.value.phone));
     results.push(minLengthDigitsValidator(profilePhoneDigits)(form.value.phone));
     results.push(phoneValidator(form.value.phone));
+    results.push(companyPhoneOrLandlineRequiredValidator(form.value.landline));
+    results.push(phoneValidator(form.value.landline));
   }
 
   if (form.value.link) results.push(urlValidator(form.value.link));
@@ -213,6 +233,7 @@ const form = ref({
   street: "",
   postal_code: "",
   phone: "",
+  landline: "",
   link: "",
   bank: "",
   iban: "",
@@ -224,6 +245,21 @@ const form = ref({
   vat: "",
   payout_number: "",
 });
+
+const companyPhoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(form.value.phone) || hasPhoneValue(form.value.landline) || 'krävs *'
+}
+
+const companyPhoneRules = computed(() => [
+  companyPhoneOrLandlineRequiredValidator,
+  minLengthDigitsValidator(profilePhoneDigits),
+  phoneValidator,
+])
+
+const companyLandlineRules = computed(() => [
+  companyPhoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
 
 // Nuevo: checkbox required
 const acceptPrivacy = ref(false);
@@ -249,8 +285,43 @@ const handlePersonalPhoneInput = () => {
   phone.value = normalizeProfilePhoneForInput(phone.value);
 };
 
+const handlePersonalLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value);
+};
+
 const handleCompanyPhoneInput = () => {
   form.value.phone = normalizeProfilePhoneForInput(form.value.phone);
+};
+
+const handleCompanyLandlineInput = () => {
+  form.value.landline = normalizeLandlineForInput(form.value.landline);
+};
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "Enter",
+    "Escape",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+    "Home",
+    "End",
+  ];
+
+  if (allowedKeys.includes(event.key))
+    return;
+
+  if ((event.ctrlKey || event.metaKey) && ["a", "c", "v", "x"].includes(event.key.toLowerCase()))
+    return;
+
+  if (/^\d$/.test(event.key))
+    return;
+
+  event.preventDefault();
 };
 
 watchEffect(fetchData);
@@ -267,6 +338,7 @@ async function fetchData() {
   name.value = userData.value.name;
   last_name.value = userData.value.last_name;
   phone.value = normalizeProfilePhoneForInput(userData.value.user_detail?.personal_phone || "");
+  landline.value = normalizeLandlineForInput(userData.value.user_detail?.personal_landline || "");
   address.value = userData.value.user_detail?.personal_address || "";
 
   //company
@@ -298,6 +370,10 @@ async function fetchData() {
     role.value === "User"
       ? normalizeProfilePhoneForInput(userData.value.supplier?.boss?.user?.user_detail?.phone || "")
       : normalizeProfilePhoneForInput(userData.value.user_detail?.phone || "");
+  form.value.landline =
+    role.value === "User"
+      ? normalizeLandlineForInput(userData.value.supplier?.boss?.user?.user_detail?.landline || "")
+      : normalizeLandlineForInput(userData.value.user_detail?.landline || "");
 
   //bank
   form.value.bank =
@@ -455,6 +531,7 @@ const submitCompleteProfile = async () => {
       formData.append("name", name.value);
       formData.append("last_name", last_name.value);
       formData.append("personal_phone", formatProfilePhoneForPayload(phone.value));
+      formData.append("personal_landline", normalizeLandlineForInput(landline.value));
       formData.append("personal_address", address.value);
 
       if (selectedPresetAvatar) {
@@ -474,6 +551,7 @@ const submitCompleteProfile = async () => {
       formData.append("street", form.value.street);
       formData.append("postal_code", form.value.postal_code);
       formData.append("phone", formatProfilePhoneForPayload(form.value.phone));
+      formData.append("landline", normalizeLandlineForInput(form.value.landline));
       formData.append("link", form.value.link);
       formData.append("bank", form.value.bank);
       formData.append("iban", form.value.iban);
@@ -962,17 +1040,29 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                 <VTextField
                   v-model="phone"
                   type="tel"
                   class="always-show-prefix"
-                  :rules="requiredProfilePhoneRules"
+                  :rules="profilePhoneRules"
                   :min-length="profilePhoneDigits"
                   :maxlength="profilePhoneDigits"
                   :prefix="profilePhonePrefix"
                   inputmode="numeric"
                   @input="handlePersonalPhoneInput"
+                  @keydown="handlePhoneKeydown"
+                />
+              </div>
+              <div class="form-field d-flex flex-column gap-1">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                <VTextField
+                  v-model="landline"
+                  type="tel"
+                  :rules="landlineRules"
+                  inputmode="numeric"
+                  @input="handlePersonalLandlineInput"
+                  @keydown="handlePhoneKeydown"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
@@ -1053,17 +1143,30 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.phone"
                   class="always-show-prefix"
-                  :rules="requiredProfilePhoneRules"
+                  :rules="companyPhoneRules"
                   :min-length="profilePhoneDigits"
                   :maxlength="profilePhoneDigits"
                   :prefix="profilePhonePrefix"
                   inputmode="numeric"
                   @input="handleCompanyPhoneInput"
+                  @keydown="handlePhoneKeydown"
+                />
+              </div>
+              <div class="form-field d-flex flex-column gap-1">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                <VTextField
+                  :disabled="role === 'User'"
+                  v-model="form.landline"
+                  type="tel"
+                  :rules="companyLandlineRules"
+                  inputmode="numeric"
+                  @input="handleCompanyLandlineInput"
+                  @keydown="handlePhoneKeydown"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
@@ -1244,17 +1347,29 @@ const dataURLtoBlob = (dataURL) => {
             />
           </div>
           <div class="form-field d-flex flex-column gap-1">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
             <VTextField
               v-model="phone"
               type="tel"
               class="always-show-prefix"
-              :rules="requiredProfilePhoneRules"
+              :rules="profilePhoneRules"
               :min-length="profilePhoneDigits"
               :maxlength="profilePhoneDigits"
               :prefix="profilePhonePrefix"
               inputmode="numeric"
               @input="handlePersonalPhoneInput"
+              @keydown="handlePhoneKeydown"
+            />
+          </div>
+          <div class="form-field d-flex flex-column gap-1">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+            <VTextField
+              v-model="landline"
+              type="tel"
+              :rules="landlineRules"
+              inputmode="numeric"
+              @input="handlePersonalLandlineInput"
+              @keydown="handlePhoneKeydown"
             />
           </div>
           <div class="form-field d-flex flex-column gap-1">
