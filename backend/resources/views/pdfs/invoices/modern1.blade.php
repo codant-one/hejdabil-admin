@@ -234,7 +234,7 @@
                                 Telefon
                             </h4>
                             <span class="info-supplier">
-                                <p class="m-0">{{ $company->phone ?? '' }}</p>
+                                <p class="m-0">{{ $company->phone ?? $company->landline ?? '' }}</p>
                             </span>
                         </p>
                         <p class="m-0 info-supplier">

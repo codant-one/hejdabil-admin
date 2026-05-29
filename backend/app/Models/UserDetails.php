@@ -63,6 +63,7 @@ class UserDetails extends Model
                 'street' => $request->street === 'null' ? null : $request->street,
                 'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
                 'phone' => $request->phone === 'null' ? null : $request->phone,
+                'landline' => $request->landline === 'null' ? null : $request->landline,
                 'bank' => $request->bank === 'null' ? null : $request->bank,
                 'account_number' => $request->account_number === 'null' ? null : $request->account_number,
                 'iban' => $request->iban === 'null' ? null : $request->iban,

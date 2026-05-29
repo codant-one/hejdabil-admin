@@ -31,12 +31,27 @@ const configsStores = useConfigsStores()
 const profileStores = useProfileStores()
 const settingsStore = useSettingsStore()
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(form.value.phone) || hasPhoneValue(form.value.landline) || 'krävs *'
+}
+
 const companyPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const companyPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-const companyPhoneRules = [requiredValidator, minLengthDigitsValidator(companyPhoneDigits), phoneValidator]
+const companyPhoneRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  minLengthDigitsValidator(companyPhoneDigits),
+  phoneValidator,
+])
+
+const landlineRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
 
 const normalizeCompanyPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
-
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 const formatCompanyPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const isRequestOngoing = ref(true)
@@ -81,6 +96,7 @@ const form = ref({
   street: '',
   postal_code: '',
   phone: '',
+  landline: '',
   link: '',
   bank: '',
   iban: '',
@@ -576,6 +592,7 @@ const applyCompanyForm = detail => {
   form.value.street = detail?.street ?? ''
   form.value.postal_code = detail?.postal_code ?? ''
   form.value.phone = normalizeCompanyPhoneForInput(detail?.phone ?? '')
+  form.value.landline = normalizeLandlineForInput(detail?.landline ?? '')
   form.value.bank = detail?.bank ?? ''
   form.value.account_number = detail?.account_number ?? ''
   form.value.iban = detail?.iban ?? ''
@@ -984,6 +1001,37 @@ const handleCompanyPhoneInput = () => {
   form.value.phone = normalizeCompanyPhoneForInput(form.value.phone)
 }
 
+const handleLandlineInput = () => {
+  form.value.landline = normalizeLandlineForInput(form.value.landline)
+}
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Enter',
+    'Escape',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key))
+    return
+
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+    return
+
+  if (/^\d$/.test(event.key))
+    return
+
+  event.preventDefault()
+}
+
 const formatOrgNumber = () => {
   let numbers = form.value.organization_number.replace(/\D/g, '')
 
@@ -1017,6 +1065,7 @@ const onSubmit = () => {
             street: form.value.street,
             postal_code: form.value.postal_code,
             phone: formatCompanyPhoneForPayload(form.value.phone),
+            landline: normalizeLandlineForInput(form.value.landline),
             link: form.value.link,
             bank: form.value.bank,
             iban: form.value.iban,
@@ -1056,6 +1105,7 @@ const onSubmit = () => {
     formData.append('street', form.value.street)
     formData.append('postal_code', form.value.postal_code)
     formData.append('phone', formatCompanyPhoneForPayload(form.value.phone))
+    formData.append('landline', normalizeLandlineForInput(form.value.landline))
     formData.append('link', form.value.link)
     formData.append('bank', form.value.bank)
     formData.append('iban', form.value.iban)
@@ -1065,6 +1115,10 @@ const onSubmit = () => {
     formData.append('plus_spin', form.value.plus_spin)
     formData.append('swish', form.value.swish)
     formData.append('vat', form.value.vat)
+
+    formData.append('personal_phone', userData.value?.user_detail?.personal_phone ?? '')
+    formData.append('personal_landline', userData.value?.user_detail?.personal_landline ?? '')
+    formData.append('personal_address', userData.value?.user_detail?.personal_address ?? '')
 
     isRequestOngoing.value = true
 
@@ -1279,7 +1333,7 @@ onBeforeUnmount(() => {
                 :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                 :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
               >
-                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                <div class="w-100">
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
                   <VTextField
                     v-model="form.company"
@@ -1346,7 +1400,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                   <VTextField
                     v-model="form.phone"
                     class="always-show-prefix"
@@ -1356,7 +1410,21 @@ onBeforeUnmount(() => {
                     :maxlength="companyPhoneDigits"
                     :prefix="companyPhonePrefix"
                     inputmode="numeric"
+                    type="tel"
                     @input="handleCompanyPhoneInput"
+                    @keydown="handlePhoneKeydown"
+                  />
+                </div>
+
+                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                  <VTextField
+                    v-model="form.landline"
+                    :rules="landlineRules"
+                    type="tel"
+                    inputmode="numeric"
+                    @input="handleLandlineInput"
+                    @keydown="handlePhoneKeydown"
                   />
                 </div>
 
