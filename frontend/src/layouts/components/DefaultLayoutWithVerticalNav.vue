@@ -18,6 +18,7 @@ import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
 const route = useRoute();
+const emitter = inject('emitter');
 const vm = getCurrentInstance();
 const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
 const settingsButtonStyle = computed(() => (
@@ -59,6 +60,12 @@ const logButtonStyle = computed(() => (
 ));
 
 const redirectToPayoutsAndOpenDialog = () => {
+  if (route.name === 'dashboard-admin-payouts') {
+    emitter.emit('open-payout-dialog');
+
+    return;
+  }
+
   router.push({
     name: 'dashboard-admin-payouts',
     query: { open_payout: 'true' },
