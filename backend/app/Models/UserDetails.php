@@ -20,6 +20,7 @@ class UserDetails extends Model
         'street',
         'postal_code',
         'phone',
+        'landline',
         'bank',
         'account_number',
         'iban',
@@ -31,6 +32,7 @@ class UserDetails extends Model
         'logo',
         'img_signature',
         'personal_phone',
+        'personal_landline',
         'personal_address',
         'avatar_id'
     ];
@@ -61,6 +63,7 @@ class UserDetails extends Model
                 'street' => $request->street === 'null' ? null : $request->street,
                 'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
                 'phone' => $request->phone === 'null' ? null : $request->phone,
+                'landline' => $request->landline === 'null' ? null : $request->landline,
                 'bank' => $request->bank === 'null' ? null : $request->bank,
                 'account_number' => $request->account_number === 'null' ? null : $request->account_number,
                 'iban' => $request->iban === 'null' ? null : $request->iban,
@@ -70,19 +73,9 @@ class UserDetails extends Model
                 'swish' => $request->swish === 'null' ? null : $request->swish,
                 'vat' => $request->vat === 'null' ? null : $request->vat,
                 'personal_phone' => $request->personal_phone === 'null' ? null : $request->personal_phone,
+                'personal_landline' => $request->personal_landline === 'null' ? null : $request->personal_landline,
                 'personal_address' => $request->personal_address,
                 'avatar_id' => $request->avatar_id ?? 5
-            ]
-        );
-
-        return $userD;
-    }
-
-    public static function updateOrCreatePhone($request, $user) {
-        $userD = UserDetails::updateOrCreate(
-            [    'user_id' => $user->id ],
-            [
-                'phone' => $request->phone
             ]
         );
 

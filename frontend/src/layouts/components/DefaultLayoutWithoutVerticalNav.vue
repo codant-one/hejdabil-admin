@@ -6,6 +6,8 @@ import router from '@/router'
 import logo from '@images/logos/billogg-logo.svg'
 
 const { width: windowWidth } = useWindowSize()
+const route = useRoute()
+const emitter = inject('emitter')
 const vm = getCurrentInstance()
 
 const canShowSwishaButton = computed(() => {
@@ -36,6 +38,12 @@ const redirectTo = path => {
 }
 
 const redirectToPayoutsAndOpenDialog = () => {
+  if (route.name === 'dashboard-admin-payouts') {
+    emitter.emit('open-payout-dialog')
+
+    return
+  }
+
   router.push({
     name: 'dashboard-admin-payouts',
     query: { open_payout: 'true' },

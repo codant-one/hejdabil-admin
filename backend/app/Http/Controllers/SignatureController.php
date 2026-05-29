@@ -128,8 +128,6 @@ class SignatureController extends Controller
         try {
             // Validate that the email exists and is valid
             if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-                
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -145,6 +143,8 @@ class SignatureController extends Controller
                         ['error' => 'Invalid email format']
                     )
                 );
+
+                $this->syncAgreementTokenDispatchStatus($token);
                 
                 return response()->json([
                     'message' => 'Ogiltig e-postadress.'
@@ -340,9 +340,7 @@ class SignatureController extends Controller
                 }
             }
 
-            $token->update([
-                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
-            ]);
+            $this->syncAgreementTokenDispatchStatus($token);
 
             $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false, $recipientPhone, $smsError);
             
@@ -359,8 +357,6 @@ class SignatureController extends Controller
                 'email' => $validated['email'],
                 'error_type' => get_class($e)
             ]);
-            $token->update(['signature_status' => 'delivery_issues']);
-            
             // Log 'delivery_issues' event
             TokenHistory::logEvent(
                 tokenId: $token->id,
@@ -377,6 +373,8 @@ class SignatureController extends Controller
                     ['error' => $e->getMessage(), 'error_type' => get_class($e)]
                 )
             );
+
+            $this->syncAgreementTokenDispatchStatus($token);
             
             return response()->json([
                 'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
@@ -456,8 +454,6 @@ class SignatureController extends Controller
         try {
             // Validate that the email exists and is valid
             if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-                
                 // Log delivery issues event
                 TokenHistory::logEvent(
                     tokenId: $token->id,
@@ -474,6 +470,8 @@ class SignatureController extends Controller
                         ['error' => 'Invalid email format']
                     )
                 );
+
+                $this->syncAgreementTokenDispatchStatus($token);
                 
                 return response()->json([
                     'message' => 'Ogiltig e-postadress.'
@@ -669,9 +667,7 @@ class SignatureController extends Controller
                 }
             }
 
-            $token->update([
-                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
-            ]);
+            $this->syncAgreementTokenDispatchStatus($token);
 
             $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true, $recipientPhone, $smsError);
             
@@ -684,8 +680,6 @@ class SignatureController extends Controller
             ]);
         } catch (\Exception $e) {
             \Log::error('Error sending static signature email for document: ' . $e->getMessage());
-            $token->update(['signature_status' => 'delivery_issues']);
-            
             // Log 'delivery_issues' event
             TokenHistory::logEvent(
                 tokenId: $token->id,
@@ -702,6 +696,8 @@ class SignatureController extends Controller
                     ['error' => $e->getMessage(), 'error_type' => get_class($e)]
                 )
             );
+
+            $this->syncAgreementTokenDispatchStatus($token);
             
             return response()->json([
                 'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
@@ -748,6 +744,7 @@ class SignatureController extends Controller
             ->first(fn ($email) => !empty($email));
 
         $recipientEmail = null;
+        $token = $sourceToken;
 
         try {
             $agreement->loadMissing(['agreement_client', 'agreement_type']);
@@ -757,8 +754,6 @@ class SignatureController extends Controller
                 : $newRecipientEmail;
 
             if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
-                $sourceToken->update(['signature_status' => 'delivery_issues']);
-
                 TokenHistory::logEvent(
                     tokenId: $sourceToken->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -779,13 +774,14 @@ class SignatureController extends Controller
                     )
                 );
 
+                $this->syncAgreementTokenDispatchStatus($sourceToken);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Det finns ingen giltig mottagare för att skicka om.'
                 ], 422);
             }
 
-            $token = $sourceToken;
             $token->update([
                 'recipient_email' => $recipientEmail,
                 'token_expires_at' => now()->addDays(7),
@@ -912,8 +908,6 @@ class SignatureController extends Controller
                 'email' => $recipientEmail ?: $sourceToken->recipient_email,
             ]);
 
-            $token->update(['signature_status' => 'delivery_issues']);
-
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -934,6 +928,8 @@ class SignatureController extends Controller
                     ]
                 )
             );
+
+            $this->syncAgreementTokenDispatchStatus($token);
 
             return response()->json([
                 'success' => false,
@@ -1015,8 +1011,6 @@ class SignatureController extends Controller
             $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
 
             if ($smsResult !== true) {
-                $token->update(['signature_status' => 'delivery_issues']);
-
                 TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -1037,6 +1031,8 @@ class SignatureController extends Controller
                         ]
                     )
                 );
+
+                $this->syncAgreementTokenDispatchStatus($token);
 
                 return response()->json([
                     'success' => false,
@@ -1095,8 +1091,6 @@ class SignatureController extends Controller
                 'phone' => $recipientPhone,
             ]);
 
-            $token->update(['signature_status' => 'delivery_issues']);
-
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -1117,6 +1111,8 @@ class SignatureController extends Controller
                     ]
                 )
             );
+
+            $this->syncAgreementTokenDispatchStatus($token);
 
             return response()->json([
                 'success' => false,
@@ -2021,6 +2017,28 @@ class SignatureController extends Controller
                 'sms_error' => $smsError,
             ])
         ]);
+    }
+
+    private function syncAgreementTokenDispatchStatus(Token $token): string
+    {
+        $lastLifecycleEventId = $token->histories()
+            ->whereIn('event_type', [TokenHistory::EVENT_CREATED, TokenHistory::EVENT_CANCELLED])
+            ->latest('id')
+            ->value('id');
+
+        $deliveredHistoryQuery = $token->histories()
+            ->where('event_type', TokenHistory::EVENT_DELIVERED);
+
+        if ($lastLifecycleEventId)
+            $deliveredHistoryQuery->where('id', '>', $lastLifecycleEventId);
+
+        $signatureStatus = $deliveredHistoryQuery->exists()
+            ? 'delivered'
+            : 'delivery_issues';
+
+        $token->update(['signature_status' => $signatureStatus]);
+
+        return $signatureStatus;
     }
 
     private function createAgreementSignatureResentActivity(Agreement $agreement, Token $token, string $recipientEmail, ?string $recipientPhone = null, $smsError = null): void

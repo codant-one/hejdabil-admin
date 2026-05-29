@@ -399,7 +399,6 @@ defineExpose({
                 <!-- 👉 Table head -->
                 <thead>
                     <tr>
-                        <th scope="col"> #ID </th> 
                         <th scope="col"> Namn </th>
                         <th class="text-center" scope="col"> Fakturor </th>
                         <th class="text-center" scope="col"> Swish </th>
@@ -414,14 +413,14 @@ defineExpose({
                         :key="user.user.id"
                         style="height: 3rem;"
                     >
-                        <!-- 👉 Id -->
-                        <td> {{ user.order_id }} </td>
-
                         <!-- 👉 name -->
                         <td class="text-wrap">
-                            <div class="d-flex justify-between align-center font-weight-medium text-aqua">
+                            <div class="d-flex gap-1 align-center font-weight-medium text-aqua">
                                 <span class="flex-grow break-words">
                                 {{ user.user.name }}  {{ user.user.last_name ?? '' }}
+                                </span>
+                                <span class="text-neutral-25" v-if="user.is_boss">
+                                  (Leverantör)
                                 </span>
                             </div>
                         </td>
@@ -469,6 +468,9 @@ defineExpose({
                                 <div class="order-title-box">
                                     <span class="title-panel">
                                         {{ user.name ?? '' }} {{ user.last_name ?? "" }}
+                                        <span class="text-neutral-25 font-12" v-if="user.is_boss">
+                                          (Leverantör)
+                                        </span>
                                     </span>
                                     <div class="title-organization">
                                         {{ truncateText(user.email, 20) }}

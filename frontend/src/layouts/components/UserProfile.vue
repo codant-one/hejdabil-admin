@@ -15,6 +15,7 @@ defineProps({
 const authStores = useAuthStores();
 const router = useRouter();
 const route = useRoute();
+const emitter = inject('emitter');
 const ability = useAppAbility();
 const userData_ = ref(null)
 const role = ref(null)
@@ -71,6 +72,19 @@ const truncateText = (text, length = 28) => {
     return text.substring(0, length) + '...';
   }
   return text;
+};
+
+const redirectToPayoutsAndOpenDialog = () => {
+  if (route.name === 'dashboard-admin-payouts') {
+    emitter.emit('open-payout-dialog');
+
+    return;
+  }
+
+  router.push({
+    name: 'dashboard-admin-payouts',
+    query: { open_payout: 'true' },
+  });
 };
 
 const logout = async () => {
@@ -229,7 +243,7 @@ const logout = async () => {
           <VListItem 
             v-if="canShowSwishaButton"
             :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
-            :to="{ name: 'dashboard-admin-payouts', query: { open_payout: 'true' } }"
+            @click="redirectToPayoutsAndOpenDialog"
             >
             <template #prepend>
               <VIcon

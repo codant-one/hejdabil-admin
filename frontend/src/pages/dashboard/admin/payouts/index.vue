@@ -91,6 +91,7 @@ const advisor = ref({
   message: '',
   show: false
 })
+const pendingOpenPayoutDialog = ref(false)
 
 useMobilePaginationScroll({
   targetRef: sectionEl,
@@ -98,6 +99,23 @@ useMobilePaginationScroll({
   isRequestOngoing,
   enabled: mdAndDown,
 })
+
+const requestOpenPayoutDialog = () => {
+  pendingOpenPayoutDialog.value = true
+}
+
+watch([
+  hasLoaded,
+  pendingOpenPayoutDialog,
+], ([loaded, shouldOpen]) => {
+  if (!loaded || !shouldOpen)
+    return
+
+  pendingOpenPayoutDialog.value = false
+
+  if (role.value === 'Supplier' || role.value === 'User')
+    openPayoutDialog()
+}, { immediate: true })
 
 watch(isExportMenuVisible, isVisible => {
   if (isVisible)
@@ -111,14 +129,13 @@ watch([
   if (!loaded || openPayout !== 'true')
     return
 
-  if (role.value === 'Supplier' || role.value === 'User')
-    openPayoutDialog()
+  requestOpenPayoutDialog()
 
   const query = new URLSearchParams(window.location.search)
   query.delete('open_payout')
 
   history.replaceState(
-    null,
+    history.state,
     '',
     location.pathname + (query.toString() ? `?${query.toString()}` : ''),
   )
@@ -323,7 +340,7 @@ const closePayoutDetailDialog = () => {
   // Limpiar query param payout_id al cerrar
   if (route.query.payout_id) {
     const { payout_id, ...rest } = route.query
-    history.replaceState(null, '', location.pathname + (Object.keys(rest).length ? '?' + new URLSearchParams(rest).toString() : ''))
+    history.replaceState(history.state, '', location.pathname + (Object.keys(rest).length ? '?' + new URLSearchParams(rest).toString() : ''))
   }
 
   // Retrasar el reset para evitar errores mientras el diálogo se cierra
@@ -705,6 +722,7 @@ function resizeSectionToRemainingViewport() {
 onMounted(async () => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  emitter.on('open-payout-dialog', requestOpenPayoutDialog)
 
   state_id.value = payoutsStores.getStateId ?? state_id.value;
   updateStateId(state_id.value);
@@ -719,6 +737,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  emitter.off('open-payout-dialog', requestOpenPayoutDialog)
 });
 
 const shareReceipt = (payout) => {

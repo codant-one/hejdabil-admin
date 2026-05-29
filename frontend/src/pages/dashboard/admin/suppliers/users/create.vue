@@ -48,6 +48,7 @@ const name = ref('')
 const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
+const landline = ref('----')
 const address = ref('----')
 const position = ref(null)
 const assignedPermissions = ref([])
@@ -265,6 +266,7 @@ const onSubmit = async () => {
                 formData.append('password', password.value)
                 formData.append('last_name', last_name.value)
                 formData.append('phone', phone.value)
+                formData.append('landline', landline.value)
                 formData.append('address', address.value)
                 formData.append('position', position.value)
                 
@@ -318,6 +320,7 @@ const currentData = computed(() => ({
     password: password.value,
     last_name: last_name.value,
     phone: phone.value,
+    landline: landline.value,
     address: address.value,
     position: position.value,
     assignedPermissions: assignedPermissions.value
@@ -517,9 +520,18 @@ const goToProfile = () => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                             <VTextField
                                                 v-model="phone"
+                                                type="tel"
+                                                placeholder="+(XX) XXXXXXXXX"
+                                                disabled
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VTextField
+                                                v-model="landline"
                                                 type="tel"
                                                 placeholder="+(XX) XXXXXXXXX"
                                                 disabled
@@ -1353,7 +1365,10 @@ const goToProfile = () => {
                     }
 
                     .v-text-field__prefix {
+                        opacity: 1 !important;
                         padding-top: 12px !important  ;
+                        height: 48px;
+                        color: #33303CAD;
                     }
                 }
             }

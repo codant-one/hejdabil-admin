@@ -26,6 +26,7 @@ const email = ref('')
 const name = ref('')
 const last_name = ref('')
 const phone = ref('')
+const landline = ref('')
 const address = ref('')
 
 const avatarId = ref(null)
@@ -48,13 +49,28 @@ const advisor = ref({
   show: false,
 })
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+  return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 const profilePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const profilePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-const profilePhoneRules = [requiredValidator, minLengthDigitsValidator(profilePhoneDigits), phoneValidator]
+const profilePhoneRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  minLengthDigitsValidator(profilePhoneDigits),
+  phoneValidator,
+])
+
+const landlineRules = computed(() => [
+  phoneOrLandlineRequiredValidator,
+  phoneValidator,
+])
 
 const normalizeProfilePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
-
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 const formatProfilePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const avatarOptions = [
@@ -86,6 +102,7 @@ const getProfileSnapshot = () => JSON.stringify({
   name: name.value,
   last_name: last_name.value,
   phone: phone.value,
+  landline: landline.value,
   address: address.value,
   avatarId: avatarId.value,
   avatarPreview: avatarPreview.value ?? null,
@@ -101,6 +118,37 @@ const handlePhoneInput = () => {
   phone.value = normalizeProfilePhoneForInput(phone.value)
 }
 
+const handleLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value)
+}
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Enter',
+    'Escape',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key))
+    return
+
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+    return
+
+  if (/^\d$/.test(event.key))
+    return
+
+  event.preventDefault()
+}
+
 function loadUserData() {
   isRequestOngoing.value = true
   isHydratingProfile.value = true
@@ -112,6 +160,7 @@ function loadUserData() {
   name.value = storedUser?.name ?? ''
   last_name.value = storedUser?.last_name ?? ''
   phone.value = normalizeProfilePhoneForInput(storedUser?.user_detail?.personal_phone ?? '')
+  landline.value = normalizeLandlineForInput(storedUser?.user_detail?.personal_landline ?? '')
   address.value = storedUser?.user_detail?.personal_address ?? ''
 
   avatarId.value = storedUser?.user_detail?.avatar_id ?? null
@@ -138,6 +187,7 @@ watch([
   name,
   last_name,
   phone,
+  landline,
   address,
   avatarId,
   avatarOld,
@@ -233,6 +283,7 @@ const onSubmit = () => {
     formData.append('name', name.value)
     formData.append('last_name', last_name.value)
     formData.append('personal_phone', formatProfilePhoneForPayload(phone.value))
+    formData.append('personal_landline', normalizeLandlineForInput(landline.value))
     formData.append('personal_address', address.value)
 
     if (selectedPresetAvatar) {
@@ -252,6 +303,7 @@ const onSubmit = () => {
     formData.append('street', userData.value?.user_detail?.street ?? '')
     formData.append('postal_code', userData.value?.user_detail?.postal_code ?? '')
     formData.append('phone', userData.value?.user_detail?.phone ?? '')
+    formData.append('landline', userData.value?.user_detail?.landline ?? '')
     formData.append('link', userData.value?.user_detail?.link ?? '')
     formData.append('bank', userData.value?.user_detail?.bank ?? '')
     formData.append('iban', userData.value?.user_detail?.iban ?? '')
@@ -444,7 +496,7 @@ onBeforeUnmount(() => {
                           />
                         </div>
                         <div :style=" windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                          <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Telefon*" />
+                          <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Mobilnummer" />
                           <VTextField
                             v-model="phone"
                             class="always-show-prefix"
@@ -453,7 +505,20 @@ onBeforeUnmount(() => {
                             :maxlength="profilePhoneDigits"
                             :prefix="profilePhonePrefix"
                             inputmode="numeric"
+                            type="tel"
                             @input="handlePhoneInput"
+                            @keydown="handlePhoneKeydown"
+                          />
+                        </div>
+                        <div :style=" windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                          <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Telefon" />
+                          <VTextField
+                            v-model="landline"
+                            :rules="landlineRules"
+                            type="tel"
+                            inputmode="numeric"
+                            @input="handleLandlineInput"
+                            @keydown="handlePhoneKeydown"
                           />
                         </div>
                         <div :style=" windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

@@ -195,10 +195,10 @@ class SendNotifications extends Command
             }
             
             // Prepare data for notification            
-            $title = 'Ånteckning förfaller snart';
+            $title = 'Anteckning förfaller snart';
             $subtitle = $reminder->description;
             $formattedReminderDate = $dueAt->format('Y/m/d H:i');
-            $text = 'Ånteckning "' . $reminder->description . '" förfaller om ca ' . $hours . ' tim (' . $formattedReminderDate . ').';
+            $text = 'Anteckning "' . $reminder->description . '" förfaller om ca ' . $hours . ' tim (' . $formattedReminderDate . ').';
             $color = 'error';
             $icon = 'custom-coffee-2';
             $route = '/dashboard/panel#reminders';

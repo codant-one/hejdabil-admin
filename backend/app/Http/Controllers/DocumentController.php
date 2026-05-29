@@ -617,9 +617,7 @@ class DocumentController extends Controller
                 }
             }
 
-            $token->update([
-                'signature_status' => $smsError ? 'delivery_issues' : 'delivered',
-            ]);
+            $this->syncDocumentTokenDispatchStatus($token);
 
             SupplierActivity::createActivity([
                 'entity_id' => $document->id,
@@ -658,8 +656,6 @@ class DocumentController extends Controller
                 'email' => $validated['email']
             ]);
             
-            $token->update(['signature_status' => 'delivery_issues']);
-            
             // Log 'delivery_issues' event
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
@@ -679,6 +675,8 @@ class DocumentController extends Controller
                     ]
                 )
             );
+
+            $this->syncDocumentTokenDispatchStatus($token);
             
             return response()->json([
                 'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
@@ -731,8 +729,6 @@ class DocumentController extends Controller
             $recipientEmail = $useDefaultRecipient ? $token->recipient_email : $newRecipientEmail;
 
             if (!$recipientEmail || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-
                 \App\Models\TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -749,6 +745,8 @@ class DocumentController extends Controller
                         ['resend' => true, 'error' => 'Invalid email format']
                     )
                 );
+
+                $this->syncDocumentTokenDispatchStatus($token);
 
                 return response()->json([
                     'success' => false,
@@ -900,8 +898,6 @@ class DocumentController extends Controller
             ]);
             
             // If resend fails, change to delivery_issues
-            $token->update(['signature_status' => 'delivery_issues']);
-            
             // Register 'delivery_issues' event for the failed resend
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
@@ -923,6 +919,8 @@ class DocumentController extends Controller
                     ]
                 )
             );
+
+            $this->syncDocumentTokenDispatchStatus($token);
             
             return response()->json([
                 'success' => false,
@@ -1002,8 +1000,6 @@ class DocumentController extends Controller
             $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
 
             if ($smsResult !== true) {
-                $token->update(['signature_status' => 'delivery_issues']);
-
                 \App\Models\TokenHistory::logEvent(
                     tokenId: $token->id,
                     eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -1024,6 +1020,8 @@ class DocumentController extends Controller
                         ]
                     )
                 );
+
+                $this->syncDocumentTokenDispatchStatus($token);
 
                 return response()->json([
                     'success' => false,
@@ -1083,8 +1081,6 @@ class DocumentController extends Controller
                 'phone' => $recipientPhone,
             ]);
 
-            $token->update(['signature_status' => 'delivery_issues']);
-
             \App\Models\TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
@@ -1105,6 +1101,8 @@ class DocumentController extends Controller
                     ]
                 )
             );
+
+            $this->syncDocumentTokenDispatchStatus($token);
 
             return response()->json([
                 'success' => false,
@@ -1177,6 +1175,28 @@ class DocumentController extends Controller
     private function documentActivityRoute(int $documentId): string
     {
         return '/dashboard/admin/documents?file_id=' . $documentId;
+    }
+
+    private function syncDocumentTokenDispatchStatus(\App\Models\Token $token): string
+    {
+        $lastLifecycleEventId = $token->histories()
+            ->whereIn('event_type', [\App\Models\TokenHistory::EVENT_CREATED, \App\Models\TokenHistory::EVENT_CANCELLED])
+            ->latest('id')
+            ->value('id');
+
+        $deliveredHistoryQuery = $token->histories()
+            ->where('event_type', \App\Models\TokenHistory::EVENT_DELIVERED);
+
+        if ($lastLifecycleEventId)
+            $deliveredHistoryQuery->where('id', '>', $lastLifecycleEventId);
+
+        $signatureStatus = $deliveredHistoryQuery->exists()
+            ? 'delivered'
+            : 'delivery_issues';
+
+        $token->update(['signature_status' => $signatureStatus]);
+
+        return $signatureStatus;
     }
 
     private function buildDocumentSmsMessage(Document $document, \App\Models\Token $token): string

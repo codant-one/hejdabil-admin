@@ -23,14 +23,12 @@ const emit = defineEmits([
   'readonly'
 ])
 
-const isUserPermissionsDialog = ref(false)
-
 const email = ref('')
 const name = ref('')
 const password = ref('')
 const last_name = ref('')
 const phone = ref('')
-const isPhone = ref(false)
+const landline = ref('')
 const address = ref('')
 const isAddress = ref(false)
 const readonly =  ref(true)
@@ -45,7 +43,7 @@ watchEffect(() => {
             name.value = props.user.name
             last_name.value = props.user.last_name
             phone.value = props.user.user_detail?.personal_phone ?? '----'
-            isPhone.value = (props.user.user_detail?.personal_phone === null) ? true : false
+            landline.value = props.user.user_detail?.personal_landline ?? '----'
             address.value = props.user.user_detail?.personal_address ?? '----'
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
             assignedPermissions.value = props.user.assignedPermissions
@@ -114,8 +112,12 @@ const hasAssignedPermission = permission => {
                         <div class="detail-item-value"> {{ address }}</div>
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 12px);'">
-                        <VLabel class="mb-1 detail-item-label" text="Telefon" />
+                        <VLabel class="mb-1 detail-item-label" text="Mobilnummer" />
                         <div class="detail-item-value"> {{ phone }}</div>
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 12px);'">
+                        <VLabel class="mb-1 detail-item-label" text="Telefon" />
+                        <div class="detail-item-value"> {{ landline }}</div>
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 12px);'">
                         <VLabel class="mb-1 detail-item-label" text="Lösenord" />

@@ -1244,9 +1244,12 @@ const handleFocus = (element, fieldId) => {
             <span class="text-footer" v-if="company.company">
               {{ company.company }}
             </span>
-            <span class="me-2 mt-4 text-bold text-footer" v-if="company.phone"> Telefon </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.phone || company.landline"> Telefon </span>
             <span class="text-footer" v-if="company.phone">
               {{ company.phone }}
+            </span>
+            <span class="text-footer" v-if="company.landline">
+              {{ company.landline }}
             </span>
             <span class="me-2 mt-4 text-bold text-footer"> Adress </span>
             <span class="d-flex flex-column">
@@ -1899,12 +1902,15 @@ const handleFocus = (element, fieldId) => {
 
                 <span
                   class="me-2 mt-4 text-bold text-footer"
-                  v-if="company.phone"
+                  v-if="company.phone || company.landline"
                 >
                   Telefon
                 </span>
                 <span class="text-footer" v-if="company.phone">
                   {{ company.phone }}
+                </span>
+                <span class="text-footer" v-if="company.landline">
+                  {{ company.landline }}
                 </span>
 
                 <span class="me-2 mt-4 text-bold text-footer"> Adress </span>

@@ -312,7 +312,10 @@ class DashboardController extends Controller
 
             $teamSuppliers = Supplier::query()
                 ->with(['user.userDetail'])
-                ->where('boss_id', $supplierId)
+                ->where(function ($query) use ($supplierId) {
+                    $query->where('id', $supplierId)
+                        ->orWhere('boss_id', $supplierId);
+                })
                 ->orderBy('order_id')
                 ->orderBy('id')
                 ->get();
@@ -346,6 +349,7 @@ class DashboardController extends Controller
                 $billingCountsByUser,
                 $payoutCountsByUser,
                 $agreementCountsByUser,
+                $supplierId,
             ) {
                 $user = $teamSupplier->user;
                 $userId = $teamSupplier->user_id;
@@ -356,6 +360,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $user?->id,
                     'supplier_id' => $teamSupplier->id,
+                    'is_boss' => $teamSupplier->id === $supplierId,
                     'name' => $user?->name,
                     'last_name' => $user?->last_name,
                     'email' => $user?->email,

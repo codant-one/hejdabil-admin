@@ -48,18 +48,27 @@ const email = ref('')
 const name = ref('')
 const password = ref('')
 const last_name = ref('')
-const phone = ref('----')
+const phone = ref('')
+const landline = ref('')
 const address = ref('----')
 const position = ref(null)
 const assignedPermissions = ref([])
 const readonly =  ref(false)
 const permissionsRol = ref([])
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+    return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const userPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const userPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-const userPhoneRules = [requiredValidator, minLengthDigitsValidator(userPhoneDigits), phoneValidator]
+const userPhoneRules = [phoneOrLandlineRequiredValidator, minLengthDigitsValidator(userPhoneDigits), phoneValidator]
+const landlineRules = [phoneOrLandlineRequiredValidator, phoneValidator]
 
 const normalizeUserPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const formatUserPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
@@ -117,6 +126,7 @@ async function fetchData() {
     password.value = selectedUser.value.user.password
     last_name.value = selectedUser.value.user.last_name
     phone.value = normalizeUserPhoneForInput(selectedUser.value.user.user_detail?.personal_phone)
+    landline.value = normalizeLandlineForInput(selectedUser.value.user.user_detail?.personal_landline)
     address.value = selectedUser.value.user.user_detail?.personal_address
     position.value = selectedUser.value.position
     permissionsRol.value = []
@@ -166,16 +176,25 @@ const handlePhoneInput = () => {
     phone.value = normalizeUserPhoneForInput(phone.value)
 }
 
+const handleLandlineInput = () => {
+    landline.value = normalizeLandlineForInput(landline.value)
+}
+
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab 0 (Konto)
+    const hasMissingContactNumber = !hasPhoneValue(phone.value) && !hasPhoneValue(landline.value)
+    const hasInvalidPhone = hasPhoneValue(phone.value)
+        && (minLengthDigitsValidator(userPhoneDigits)(phone.value) !== true || phoneValidator(phone.value) !== true)
+    const hasInvalidLandline = hasPhoneValue(landline.value) && phoneValidator(landline.value) !== true
+
     const hasTab0Errors = !name.value?.trim() ||
         !last_name.value?.trim() ||
         !email.value?.trim() ||
-        !phone.value?.trim() ||
         !address.value?.trim() ||
-        (phone.value && minLengthDigitsValidator(userPhoneDigits)(phone.value) !== true) ||
-        (phone.value && phoneValidator(phone.value) !== true) ||
+        hasMissingContactNumber ||
+        hasInvalidPhone ||
+        hasInvalidLandline ||
         (email.value && emailValidator(email.value) !== true) ||
         !position.value
 
@@ -243,6 +262,7 @@ const onSubmit = async () => {
                 formData.append('name', name.value)
                 formData.append('last_name', last_name.value)
                 formData.append('personal_phone', formatUserPhoneForPayload(phone.value))
+                formData.append('personal_landline', normalizeLandlineForInput(landline.value))
                 formData.append('personal_address', address.value)
                 formData.append('position', position.value)
 
@@ -279,6 +299,7 @@ const currentData = computed(() => ({
     password: password.value,
     last_name: last_name.value,
     phone: phone.value,
+    landline: landline.value,
     address: address.value,
     position: position.value,
     assignedPermissions: assignedPermissions.value
@@ -478,7 +499,7 @@ const goToProfile = () => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                             <VTextField
                                                 v-model="phone"
                                                 type="tel"
@@ -489,6 +510,16 @@ const goToProfile = () => {
                                                 :prefix="userPhonePrefix"
                                                 inputmode="numeric"
                                                 @input="handlePhoneInput"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VTextField
+                                                v-model="landline"
+                                                type="tel"
+                                                inputmode="numeric"
+                                                :rules="landlineRules"
+                                                @input="handleLandlineInput"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1278,6 +1309,7 @@ const goToProfile = () => {
                     }
 
                     .v-text-field__prefix {
+                        opacity: 1 !important;
                         padding-top: 8px !important  ;
                         height: 48px;
                         color: #33303CAD;

@@ -26,6 +26,7 @@ const address = ref('')
 const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
+const landline = ref('')
 const swish = ref('')
 const sms_sender = ref('')
 const bank = ref('')
@@ -34,13 +35,21 @@ const name = ref('')
 const last_name = ref('')
 const email = ref('')
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+    return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-const supplierPhoneRules = [requiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const supplierPhoneRules = [phoneOrLandlineRequiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const landlineRules = [phoneOrLandlineRequiredValidator, phoneValidator]
 const supplierSmsSenderMaxLength = 11
 const supplierSmsSenderRules = [smsSenderValidator]
 
 const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const normalizeSupplierSmsSenderForInput = value => String(value ?? '')
     .replace(/[åäöÅÄÖ]/g, char => ({ å: 'a', ä: 'a', ö: 'o', Å: 'A', Ä: 'A', Ö: 'O' }[char] ?? char))
@@ -80,6 +89,7 @@ watchEffect(async() => {
         street.value = supplier.value.user.user_detail.street
         postal_code.value = supplier.value.user.user_detail.postal_code
         phone.value = normalizeSupplierPhoneForInput(supplier.value.user.user_detail.phone)
+        landline.value = normalizeLandlineForInput(supplier.value.user.user_detail.landline)
         swish.value = supplier.value.user.user_detail.swish
         sms_sender.value = supplier.value.sms_sender
 
@@ -107,6 +117,10 @@ const formatOrgNumber = () => {
 
 const handlePhoneInput = () => {
     phone.value = normalizeSupplierPhoneForInput(phone.value)
+}
+
+const handleLandlineInput = () => {
+    landline.value = normalizeLandlineForInput(landline.value)
 }
 
 const handleSmsSenderInput = () => {
@@ -139,6 +153,7 @@ const onSubmit = () => {
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', formatSupplierPhoneForPayload(phone.value))
+            formData.append('landline', normalizeLandlineForInput(landline.value))
             formData.append('swish', swish.value)            
             formData.append('iban', supplier.value.user.user_detail?.iban)     
             formData.append('iban_number', supplier.value.user.user_detail?.iban_number)
@@ -300,8 +315,10 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                                 <VTextField
                                                     v-model="phone"
+                                                    type="tel"
                                                     class="always-show-prefix"
                                                     :rules="supplierPhoneRules"
                                                     :min-length="supplierPhoneDigits"
@@ -309,6 +326,17 @@ const onSubmit = () => {
                                                     :prefix="supplierPhonePrefix"
                                                     inputmode="numeric"
                                                     @input="handlePhoneInput"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                                <VTextField
+                                                    v-model="landline"
+                                                    type="tel"
+                                                    inputmode="numeric"
+                                                    label="Telefon"
+                                                    :rules="landlineRules"
+                                                    @input="handleLandlineInput"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
