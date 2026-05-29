@@ -27,6 +27,7 @@ const address = ref('')
 const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
+const landline = ref('')
 const swish = ref('')
 const sms_sender = ref('')
 const bank = ref('')
@@ -35,13 +36,21 @@ const name = ref('')
 const last_name = ref('')
 const email = ref('')
 
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+    return hasPhoneValue(value) || hasPhoneValue(phone.value) || hasPhoneValue(landline.value) || 'krävs *'
+}
+
 const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-const supplierPhoneRules = [requiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const supplierPhoneRules = [phoneOrLandlineRequiredValidator, minLengthDigitsValidator(supplierPhoneDigits), phoneValidator]
+const landlineRules = [phoneOrLandlineRequiredValidator, phoneValidator]
 const supplierSmsSenderMaxLength = 11
 const supplierSmsSenderRules = [smsSenderValidator]
 
 const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 
 const normalizeSupplierSmsSenderForInput = value => String(value ?? '')
     .replace(/[åäöÅÄÖ]/g, char => ({ å: 'a', ä: 'a', ö: 'o', Å: 'A', Ä: 'A', Ö: 'O' }[char] ?? char))
@@ -138,6 +147,10 @@ const handlePhoneInput = () => {
     phone.value = normalizeSupplierPhoneForInput(phone.value)
 }
 
+const handleLandlineInput = () => {
+    landline.value = normalizeLandlineForInput(landline.value)
+}
+
 const handleSmsSenderInput = () => {
     sms_sender.value = normalizeSupplierSmsSenderForInput(sms_sender.value)
 }
@@ -164,6 +177,7 @@ const onSubmit = () => {
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', formatSupplierPhoneForPayload(phone.value))
+            formData.append('landline', normalizeLandlineForInput(landline.value))
             formData.append('swish', swish.value)
             formData.append('sms_sender', formatSupplierSmsSenderForPayload(sms_sender.value))
 
@@ -347,8 +361,10 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                                 <VTextField
                                                     v-model="phone"
+                                                    type="tel"
                                                     class="always-show-prefix"
                                                     :rules="supplierPhoneRules"
                                                     :min-length="supplierPhoneDigits"
@@ -356,6 +372,16 @@ const onSubmit = () => {
                                                     :prefix="supplierPhonePrefix"
                                                     inputmode="numeric"
                                                     @input="handlePhoneInput"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                                <VTextField
+                                                    v-model="landline"
+                                                    type="tel"
+                                                    inputmode="numeric"
+                                                    :rules="landlineRules"
+                                                    @input="handleLandlineInput"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -449,37 +475,36 @@ const onSubmit = () => {
                 </VForm>
             </VCol>
         </VRow>
+        <VDialog
+            v-model="isReactivateSupplierDialog"
+            persistent
+            class="action-dialog"
+        >
+            <VCard title="Återaktivera konto">
+                <VDivider class="mt-4"/>
+                <VCardText>
+                    Denna e-postadress är redan registrerad.<br>
+                    Vill du återaktivera kontot?
+                </VCardText>
+
+                <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                    <VBtn
+                        color="secondary"
+                        variant="tonal"
+                        @click="closeReactivateSupplierDialog"
+                    >
+                        Avbryt
+                    </VBtn>
+                    <VBtn
+                        :loading="isReactivatingSupplier"
+                        @click="reactivateSupplierAccount"
+                    >
+                        Acceptera
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
     </section>
-
-    <VDialog
-        v-model="isReactivateSupplierDialog"
-        persistent
-        class="action-dialog"
-    >
-        <VCard title="Återaktivera konto">
-            <VDivider class="mt-4"/>
-            <VCardText>
-                Denna e-postadress är redan registrerad.<br>
-                Vill du återaktivera kontot?
-            </VCardText>
-
-            <VCardText class="d-flex justify-end gap-3 flex-wrap">
-                <VBtn
-                    color="secondary"
-                    variant="tonal"
-                    @click="closeReactivateSupplierDialog"
-                >
-                    Avbryt
-                </VBtn>
-                <VBtn
-                    :loading="isReactivatingSupplier"
-                    @click="reactivateSupplierAccount"
-                >
-                    Acceptera
-                </VBtn>
-            </VCardText>
-        </VCard>
-    </VDialog>
 </template>
 
 <style scoped>
