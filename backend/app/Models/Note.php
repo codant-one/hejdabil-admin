@@ -34,6 +34,7 @@ class Note extends Model
               ->orWhere('note', 'LIKE', '%' . $search . '%')
               ->orWhere('name', 'LIKE', '%' . $search . '%')
               ->orWhere('phone', 'LIKE', '%' . $search . '%')
+              ->orWhere('landline', 'LIKE', '%' . $search . '%')
               ->orWhereHas('user', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
@@ -106,6 +107,7 @@ class Note extends Model
             'note' => $request->note === 'null' ? null : $request->note,
             'name' => $request->name === 'null' ? null : $request->name,
             'phone' => $request->phone === 'null' ? null : $request->phone,
+            'landline' => $request->landline === 'null' ? null : $request->landline,
             'email' => $request->email === 'null' ? null : $request->email,
             'comment' => $request->comment === 'null' ? null : $request->comment
         ]);
@@ -119,6 +121,7 @@ class Note extends Model
             'note' => $request->note === 'null' ? null : $request->note,
             'name' => $request->name === 'null' ? null : $request->name,
             'phone' => $request->phone === 'null' ? null : $request->phone,
+            'landline' => $request->landline === 'null' ? null : $request->landline,
             'email' => $request->email === 'null' ? null : $request->email,
             'comment' => $request->comment === 'null' ? null : $request->comment
         ]);

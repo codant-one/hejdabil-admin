@@ -26,7 +26,7 @@ const notePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
 const notePhoneRules = [minLengthDigitsValidator(notePhoneDigits), phoneValidator]
 
 const normalizeNotePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
-
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 const formatNotePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const isFormValid = ref(false)
@@ -37,6 +37,7 @@ const reg_num = ref('')
 const note = ref('')
 const name = ref('')
 const phone = ref('')
+const landline = ref('')
 const email = ref('')
 const comment = ref('')
 const isEdit = ref(false)
@@ -48,6 +49,7 @@ const currentData = computed(() => ({
   note: note.value,
   name: name.value,
   phone: phone.value,
+  landline: landline.value,
   email: email.value,
   comment: comment.value,
 }))
@@ -72,6 +74,7 @@ watchEffect(async() => {
       note.value = props.note.note
       name.value = props.note.name
       phone.value = normalizeNotePhoneForInput(props.note.phone)
+      landline.value = normalizeLandlineForInput(props.note.landline)
       email.value = props.note.email
       comment.value = props.note.comment
      
@@ -96,6 +99,7 @@ const reallyCloseAndReset = () => {
     note.value = null
     name.value = null
     phone.value = null
+    landline.value = null
     email.value = null
     comment.value = null
     
@@ -127,6 +131,37 @@ const handlePhoneInput = () => {
   phone.value = normalizeNotePhoneForInput(phone.value)
 }
 
+const handleLandlineInput = () => {
+  landline.value = normalizeLandlineForInput(landline.value)
+}
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Enter',
+    'Escape',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key))
+    return
+
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+    return
+
+  if (/^\d$/.test(event.key))
+    return
+
+  event.preventDefault()
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -136,6 +171,7 @@ const onSubmit = () => {
       formData.append('note', note.value)
       formData.append('name', name.value)
       formData.append('phone', formatNotePhoneForPayload(phone.value))
+      formData.append('landline', normalizeLandlineForInput(landline.value))
       formData.append('email', email.value)
       formData.append('comment', comment.value)
 
@@ -187,16 +223,29 @@ watch(currentData, () => {
                 />
             </VListItem>
             <VListItem>
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                 <VTextField
-                    v-model="phone"
-                class="always-show-prefix"
-                :rules="notePhoneRules"
-                :min-length="notePhoneDigits"
-                :maxlength="notePhoneDigits"
-                :prefix="notePhonePrefix"
-                inputmode="numeric"
-                @input="handlePhoneInput"
+                  v-model="phone"
+                  class="always-show-prefix"
+                  :rules="notePhoneRules"
+                  :min-length="notePhoneDigits"
+                  :maxlength="notePhoneDigits"
+                  :prefix="notePhonePrefix"
+                  inputmode="numeric"
+                  type="tel"
+                  @input="handlePhoneInput"
+                  @keydown="handlePhoneKeydown"
+                />
+            </VListItem>
+            <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                 <VTextField
+                  v-model="landline"
+                  :rules="[phoneValidator]"
+                  type="tel"
+                  inputmode="numeric"
+                  @input="handleLandlineInput"
+                  @keydown="handlePhoneKeydown"
                 />
             </VListItem>
             <VListItem>

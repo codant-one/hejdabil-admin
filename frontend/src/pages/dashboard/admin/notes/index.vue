@@ -88,11 +88,42 @@ const notePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
 const notePhoneRules = [minLengthDigitsValidator(notePhoneDigits), phoneValidator]
 
 const normalizeNotePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
-
+const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
 const formatNotePhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
 
 const handleSelectedNotePhoneInput = () => {
   selectedNote.value.phone = normalizeNotePhoneForInput(selectedNote.value.phone)
+}
+
+const handleSelectedLandlineInput = () => {
+  selectedNote.value.landline = normalizeLandlineForInput(selectedNote.value.landline)
+}
+
+const handlePhoneKeydown = event => {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Enter',
+    'Escape',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key))
+    return
+
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
+    return
+
+  if (/^\d$/.test(event.key))
+    return
+
+  event.preventDefault()
 }
 
 const exporteraMobile = ref(false)
@@ -256,6 +287,7 @@ const showNote = (noteData, isMobile = false, is_edit = false) => {
   selectedNote.value = {
     ...noteData,
     phone: normalizeNotePhoneForInput(noteData.phone),
+    landline: normalizeLandlineForInput(noteData.landline)
   }
 
     // Guardar copia original para detectar cambios
@@ -263,7 +295,8 @@ const showNote = (noteData, isMobile = false, is_edit = false) => {
         reg_num: noteData.reg_num,
         note: noteData.note,
         name: noteData.name,
-    phone: normalizeNotePhoneForInput(noteData.phone),
+        phone: normalizeNotePhoneForInput(noteData.phone),
+        landline: normalizeLandlineForInput(noteData.landline),
         email: noteData.email,
         comment: noteData.comment
     })
@@ -284,6 +317,7 @@ const checkNoteFormChanges = () => {
         note: selectedNote.value.note,
         name: selectedNote.value.name,
         phone: selectedNote.value.phone,
+        landline: selectedNote.value.landline,
         email: selectedNote.value.email,
         comment: selectedNote.value.comment
     })
@@ -494,6 +528,7 @@ const submitFormFromDrawer = async () => {
   formData.append('note', selectedNote.value.note)
   formData.append('name', selectedNote.value.name)
   formData.append('phone', formatNotePhoneForPayload(selectedNote.value.phone))
+  formData.append('landline', normalizeLandlineForInput(selectedNote.value.landline))
   formData.append('email', selectedNote.value.email)
   formData.append('comment', selectedNote.value.comment)
 
@@ -591,7 +626,8 @@ const downloadCSV = async () => {
         Reg_nr: element.reg_num,
         Egen_värdering: element.note ?? '',
         Kundnamn: element.name ?? '',
-        Tel_nr: element.phone ?? '',
+        Mobilnummer: element.phone ?? '',
+        Telefon: element.landline ?? '',
         E_post: element.email ?? '',
         Kommentar: element.comment ?? ''
       }
@@ -717,6 +753,7 @@ const downloadPDF = async () => {
         ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
         : '',
       phone: element.phone,
+      landline: element.landline,
       email: element.email,
       note: `${formatNumber(element.note ?? 0)} kr`,
       comment: element.comment ?? ''
@@ -731,15 +768,22 @@ const downloadPDF = async () => {
     })
 
     const rowsMarkup = rows.map(item => `
+      ${(() => {
+        const phoneLines = [item.phone, item.landline].filter(Boolean)
+        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
       <tr style="height: 48px;">
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.reg_num)}</td>
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.note)}</td>
         ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>        
-        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.email)}</td>
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.comment)}</td>
       </tr>
+     `
+      })()}
     `).join('')
 
     pdfContainer = document.createElement('div')
@@ -1150,7 +1194,7 @@ onBeforeUnmount(() => {
                     {{ note.reg_num }}
                   </span>
                   <span class="subtitle-comments">
-                    {{ note.name }} - {{ note.phone }}
+                    {{ note.name }} - {{ note.phone ?? note.landline }}
                   </span>
                 </div>
                 <VSpacer />
@@ -1472,7 +1516,7 @@ onBeforeUnmount(() => {
                     />
                 </VCol>
                 <VCol cols="12" md="12" class="pb-0">
-                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                     <VTextField
                       v-model="selectedNote.phone"
                       class="always-show-prefix"
@@ -1481,8 +1525,22 @@ onBeforeUnmount(() => {
                       :maxlength="notePhoneDigits"
                       :prefix="notePhonePrefix"
                       inputmode="numeric"
+                      type="tel"
                       :readonly="!isEdit"
                       @input="handleSelectedNotePhoneInput"
+                      @keydown="handlePhoneKeydown"
+                    />
+                </VCol>
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                    <VTextField
+                      v-model="selectedNote.landline"
+                      :rules="[phoneValidator]"
+                      type="tel"
+                      inputmode="numeric"
+                      :readonly="!isEdit"
+                      @input="handleSelectedLandlineInput"
+                      @keydown="handlePhoneKeydown"
                     />
                 </VCol>
                 <VCol cols="12" md="12" class="pb-0">
@@ -1650,7 +1708,7 @@ onBeforeUnmount(() => {
                       />
                     </VCol>
                     <VCol cols="12" md="12" class="pb-0">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                       <VTextField
                         v-model="selectedNote.phone"
                         class="always-show-prefix"
@@ -1661,6 +1719,19 @@ onBeforeUnmount(() => {
                         inputmode="numeric"
                         :readonly="!isEdit"
                         @input="handleSelectedNotePhoneInput"
+                        @keydown="handlePhoneKeydown"
+                      />
+                    </VCol>
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                      <VTextField
+                        v-model="selectedNote.landline"
+                        :rules="[phoneValidator]"
+                        type="tel"
+                        inputmode="numeric"
+                        :readonly="!isEdit"
+                        @input="handleSelectedLandlineInput"
+                        @keydown="handlePhoneKeydown"
                       />
                     </VCol>
                     <VCol cols="12" md="12" class="pb-0">
