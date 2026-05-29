@@ -333,7 +333,8 @@ const downloadCSV = async () => {
       NAMN: element.user.name,
       EFTERNAMN: (element.user.last_name ?? ''),
       E_POST: element.user.email,
-      TELEFON: element.user.user_detail?.personal_phone ?? ''
+      MOBILNUMMER: element.user.user_detail?.personal_phone ?? '',
+      TELEFON: element.user.user_detail?.personal_landline ?? '',
     }))
 
     excelParser().exportDataFromJSON(dataArray, "users", "csv")
@@ -379,6 +380,7 @@ const downloadPDF = async () => {
       lastName: element.user.last_name ?? '',
       email: element.user.email ?? '',
       phone: element.user.user_detail?.personal_phone ?? '',
+      landline: element.user.user_detail?.personal_landline ?? '',
     }))
 
     const { headerMarkup } = await buildPdfTopHeader({
@@ -390,12 +392,20 @@ const downloadPDF = async () => {
     })
 
     const rowsMarkup = rows.map(item => `
+      ${(() => {
+       
+        const phoneLines = [item.phone, item.landline].filter(Boolean)
+        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
       <tr style="height: 48px;">
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.lastName)}</td>
         <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.email)}</td>
-        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
       </tr>
+     `
+      })()}
     `).join('')
 
     pdfContainer = document.createElement('div')
@@ -413,7 +423,7 @@ const downloadPDF = async () => {
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Efternamn</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">E-post</td>
-                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Telefon</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -555,6 +565,7 @@ defineExpose({
             <th scope="col"> #ID </th> 
             <th scope="col"> Namn </th>
             <th class="text-center" scope="col"> E-post </th>
+            <th class="text-center" scope="col"> Mobilnummer </th>
             <th class="text-center" scope="col"> Telefon </th>
             <th scope="col" class="text-center">Adress</th>
             <th scope="col" class="text-center">Roll</th>
@@ -603,6 +614,9 @@ defineExpose({
             <!-- 👉 phone -->
             <td class="text-center">
               {{ user.user.user_detail?.personal_phone ?? '----' }}
+            </td>
+            <td class="text-center">
+              {{ user.user.user_detail?.personal_landline ?? '----' }}
             </td>
             <td class="text-center">
               <VTooltip 
@@ -703,7 +717,7 @@ defineExpose({
                       </div>
                     </span>
                     <span class="text-neutral-3">{{ user.user.email }}</span>
-                    <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
+                    <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? user.user.user_detail?.personal_landline ?? '----' }}</span>
                 </div>
               </div>
 
