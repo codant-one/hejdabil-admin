@@ -1291,6 +1291,10 @@ body {
 
   .v-bottom-navigation__content {
     gap: 8px;
+    
+    @media (max-width: 360px) {
+      gap: 4px;
+    }
 
     .v-btn.bg-transparent {
       background-color: transparent !important;
