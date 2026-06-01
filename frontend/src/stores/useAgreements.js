@@ -127,10 +127,10 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.setLoading(false)
                 })  
         },
-        info() {
+        info(params) {
             this.setLoading(true)
 
-            return Agreements.info()
+            return Agreements.info(params)
                 .then((response) => {
                     this.brands = response.data.data.brands
                     this.models = response.data.data.models

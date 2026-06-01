@@ -231,14 +231,12 @@ async function fetchData() {
             company.value.email = user_data.email
             company.value.name = user_data.name
             company.value.last_name = user_data.last_name
-            agreement_id.value = user_data.supplier.agreements.length + 1
             terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_purchase ?? defaultTerms
         } else if(role.value === 'User') {
             company.value = user_data.supplier.boss.user.user_detail
             company.value.email = user_data.supplier.boss.user.email
             company.value.name = user_data.supplier.boss.user.name
             company.value.last_name = user_data.supplier.boss.user.last_name
-            agreement_id.value = user_data.supplier.boss.agreements.length + 1
             terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_purchase ?? defaultTerms
         } else {
             await configsStores.getFeature('company')
@@ -248,7 +246,6 @@ async function fetchData() {
             company.value = configsStores.getFeaturedConfig('company')
             company.value.logo = configsStores.getFeaturedConfig('logo').logo
 
-            agreement_id.value = agreementsStores.agreement_id + 1
             terms_other_conditions.value = configsStores.getFeaturedConfig('agreements')?.terms_and_conditions_purchase ?? defaultTerms
         }
 

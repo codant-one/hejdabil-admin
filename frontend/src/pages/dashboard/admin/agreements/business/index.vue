@@ -143,17 +143,15 @@ watchEffect(async () => {
     const defaultTerms = 'Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.'
 
     if (role.value === 'Supplier') {
-      offer_id.value = user_data.supplier.user.offers.length + 1
       terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
     } else if (role.value === 'User') {
-      offer_id.value = user_data.supplier.boss.user.offers.length + 1
       terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
     } else {
-      offer_id.value = agreementsStores.offer_id + 1
       await configsStores.getFeature("agreements")
       terms_other_conditions.value = configsStores.getFeaturedConfig("agreements")?.terms_and_conditions_business ?? defaultTerms
     }
 
+    offer_id.value = agreementsStores.offer_id + 1
     brands.value = agreementsStores.brands
     models.value = agreementsStores.models 
     currencies.value = agreementsStores.currencies
