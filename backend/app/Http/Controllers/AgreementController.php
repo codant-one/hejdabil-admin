@@ -655,7 +655,12 @@ class AgreementController extends Controller
             $sentRecipients = [];
 
             foreach ($phoneNumbers as $phoneNumber) {
-                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender, [
+                    'supplier_id' => $agreement->supplier_id,
+                    'source_type' => 'agreement',
+                    'source_id' => $agreement->id,
+                    'action_type' => 'send_agreement_sms',
+                ]);
 
                 if ($result === true) {
                     $sentRecipients[] = $phoneNumber;

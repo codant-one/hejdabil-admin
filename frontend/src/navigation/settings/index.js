@@ -47,6 +47,13 @@ export default [
     to: 'dashboard-settings-documents', 
     action: 'view', 
     subject: 'dashboard'
+  },
+  {
+    title: 'SMS-loggar',
+    icon: { icon: 'tabler-message-2' },
+    to: 'dashboard-settings-sms-logs',
+    action: 'view',
+    subject: 'dashboard'
   }
 ]
   

@@ -277,7 +277,12 @@ class SignatureController extends Controller
                 try {
                     $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
                     $smsSender = $this->resolveSmsSenderForCurrentUser();
-                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
+                        'supplier_id' => $agreement->supplier_id,
+                        'source_type' => 'agreement',
+                        'source_id' => $agreement->id,
+                        'action_type' => 'send_agreement_signature_sms',
+                    ]);
 
                     if ($smsResult !== true) {
                         $smsError = $smsResult;
@@ -604,7 +609,12 @@ class SignatureController extends Controller
                 try {
                     $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
                     $smsSender = $this->resolveSmsSenderForCurrentUser();
-                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
+                        'supplier_id' => $agreement->supplier_id,
+                        'source_type' => 'agreement',
+                        'source_id' => $agreement->id,
+                        'action_type' => 'send_agreement_signature_sms',
+                    ]);
 
                     if ($smsResult !== true) {
                         $smsError = $smsResult;
@@ -1008,7 +1018,12 @@ class SignatureController extends Controller
 
             $smsMessage = $this->buildAgreementSignatureSmsMessage($agreement, $token);
             $smsSender = $this->resolveSmsSenderForCurrentUser();
-            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender, [
+                'supplier_id' => $agreement->supplier_id,
+                'source_type' => 'agreement',
+                'source_id' => $agreement->id,
+                'action_type' => 'resend_agreement_signature_sms',
+            ]);
 
             if ($smsResult !== true) {
                 TokenHistory::logEvent(
