@@ -392,8 +392,8 @@ class AgreementController extends Controller
             $agreement_type_id = $request->query('agreement_type_id');
 
             $agreement_id = $this->agreementInfoMaxValue('agreement_id', $agreement_type_id);
-            $commission_id = $this->agreementInfoMaxValue('commission_id');
-            $offer_id = $this->agreementInfoMaxValue('offer_id');
+            $commission_id = $this->commissionInfoMaxValue();
+            $offer_id = $this->offerInfoMaxValue();
 
             $user = Auth::user();
             $isSupplier = Auth::check() && $user->hasRole('Supplier');
@@ -733,8 +733,22 @@ class AgreementController extends Controller
 
     private function agreementInfoQuery(): \Illuminate\Database\Eloquent\Builder
     {
+        return $this->agreementInfoSupplierScopedQuery(Agreement::query());
+    }
+
+    private function commissionInfoMaxValue(): int
+    {
+        return (int) ($this->agreementInfoSupplierScopedQuery(Commission::query())->max('commission_id') ?? 0);
+    }
+
+    private function offerInfoMaxValue(): int
+    {
+        return (int) ($this->agreementInfoSupplierScopedQuery(Offer::query())->max('offer_id') ?? 0);
+    }
+
+    private function agreementInfoSupplierScopedQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
         $user = Auth::user();
-        $query = Agreement::query();
 
         if (!$user)
             return $query;
