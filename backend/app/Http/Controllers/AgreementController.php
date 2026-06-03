@@ -375,7 +375,7 @@ class AgreementController extends Controller
         }
     }
 
-    public function info() {
+    public function info(Request $request) {
 
         try {
 
@@ -389,9 +389,11 @@ class AgreementController extends Controller
                 }
             )->get();
 
-            $agreement_id = Agreement::whereNull('supplier_id')->count();
-            $commission_id = Commission::whereNull('supplier_id')->count();
-            $offer_id = Offer::whereNull('supplier_id')->count();
+            $agreement_type_id = $request->query('agreement_type_id');
+
+            $agreement_id = $this->agreementInfoMaxValue('agreement_id', $agreement_type_id);
+            $commission_id = $this->commissionInfoMaxValue();
+            $offer_id = $this->offerInfoMaxValue();
 
             $user = Auth::user();
             $isSupplier = Auth::check() && $user->hasRole('Supplier');
@@ -655,7 +657,12 @@ class AgreementController extends Controller
             $sentRecipients = [];
 
             foreach ($phoneNumbers as $phoneNumber) {
-                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender, [
+                    'supplier_id' => $agreement->supplier_id,
+                    'source_type' => 'agreement',
+                    'source_id' => $agreement->id,
+                    'action_type' => 'send_agreement_sms',
+                ]);
 
                 if ($result === true) {
                     $sentRecipients[] = $phoneNumber;
@@ -712,6 +719,46 @@ class AgreementController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function agreementInfoMaxValue(string $column, mixed $agreementTypeId = null): int
+    {
+        $query = $this->agreementInfoQuery()->withTrashed();
+
+        if ($column === 'agreement_id' && $agreementTypeId !== null && $agreementTypeId !== '')
+            $query->where('agreement_type_id', $agreementTypeId);
+
+        return (int) ($query->max($column) ?? 0);
+    }
+
+    private function agreementInfoQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->agreementInfoSupplierScopedQuery(Agreement::query());
+    }
+
+    private function commissionInfoMaxValue(): int
+    {
+        return (int) ($this->agreementInfoSupplierScopedQuery(Commission::query())->max('commission_id') ?? 0);
+    }
+
+    private function offerInfoMaxValue(): int
+    {
+        return (int) ($this->agreementInfoSupplierScopedQuery(Offer::query())->max('offer_id') ?? 0);
+    }
+
+    private function agreementInfoSupplierScopedQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        $user = Auth::user();
+
+        if (!$user)
+            return $query;
+
+        return match (true) {
+            $user->hasRole('Supplier') => $query->where('supplier_id', $user->supplier->id),
+            $user->hasRole('User') => $query->where('supplier_id', $user->supplier->boss_id),
+            $user->hasRole('SuperAdmin'), $user->hasRole('Administrator') => $query->whereNull('supplier_id'),
+            default => $query,
+        };
     }
 
     private function agreementActivityRoute(int $agreementId): string

@@ -361,8 +361,14 @@ body .v-btn {
   &.btn-gradient-2 {
     border: 2px solid transparent;
     background:
-      linear-gradient(#ffffff, #ffffff) padding-box,
+      linear-gradient(#FFFFFF, #FFFFFF) padding-box,
       linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%) border-box !important;
+
+    @media (max-width: 1023px) {
+      background:
+        linear-gradient(#EAFFF1, #EAFFF8, #ECFFFF) padding-box,
+        linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%) border-box !important;
+    }
 
     &:hover,
     &:focus {

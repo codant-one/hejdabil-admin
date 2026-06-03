@@ -626,6 +626,10 @@ body {
   background-color: #d8ffe4 !important;
 }
 
+.bg-transparent {
+  background-color: transparent !important;
+}
+
 .layout-nav-type-vertical
   .layout-vertical-nav
   .nav-link
@@ -1286,16 +1290,23 @@ body {
   box-shadow: none !important;
 
   .v-bottom-navigation__content {
-    gap: 16px;
+    gap: 8px;
+    
+    @media (max-width: 360px) {
+      gap: 4px;
+    }
 
+    .v-btn.bg-transparent {
+      background-color: transparent !important;
+    }
     .v-btn {
-      height: 72px !important;
-      width: 72px !important;
+      height: 65px !important;
+      width: 65px !important;
 
       .v-btn__content {
         gap: 8px;
         font-weight: 500;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 16px;
         color: #1c2925 !important;
       }

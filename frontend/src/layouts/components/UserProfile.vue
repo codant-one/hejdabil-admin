@@ -239,21 +239,20 @@ const logout = async () => {
             <VListItemTitle>Mitt team</VListItemTitle>
           </VListItem>
 
-          <!--  👉 Swish payout -->
+          <!--  👉 Activities -->
           <VListItem 
-            v-if="canShowSwishaButton"
-            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
-            @click="redirectToPayoutsAndOpenDialog"
+            :class="windowWidth < 1024 ? 'd-none' : 'd-none'"
+            :to="{ name: 'dashboard-activities' }"
             >
             <template #prepend>
               <VIcon
                 class="me-2"
-                icon="custom-swish"
+                icon="custom-log"
                 size="22"
               />
             </template>
 
-            <VListItemTitle>Swisha</VListItemTitle>
+            <VListItemTitle>Din logg</VListItemTitle>
           </VListItem>
 
           <!--  👉 Settings -->

@@ -554,7 +554,12 @@ class DocumentController extends Controller
                 try {
                     $smsMessage = $this->buildDocumentSmsMessage($document, $token);
                     $smsSender = $this->resolveSmsSenderForCurrentUser();
-                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender);
+                    $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
+                        'supplier_id' => $document->supplier_id,
+                        'source_type' => 'document',
+                        'source_id' => $document->id,
+                        'action_type' => 'send_document_signature_sms',
+                    ]);
 
                     if ($smsResult !== true) {
                         $smsError = $smsResult;
@@ -997,7 +1002,12 @@ class DocumentController extends Controller
 
             $smsMessage = $this->buildDocumentSmsMessage($document, $token);
             $smsSender = $this->resolveSmsSenderForCurrentUser();
-            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender);
+            $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender, [
+                'supplier_id' => $document->supplier_id,
+                'source_type' => 'document',
+                'source_id' => $document->id,
+                'action_type' => 'resend_document_signature_sms',
+            ]);
 
             if ($smsResult !== true) {
                 \App\Models\TokenHistory::logEvent(

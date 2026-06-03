@@ -22,8 +22,8 @@ class Agreements {
         return axios.delete(`/agreements/${id}`)
     }
 
-    info(){
-        return axios.get(`/agreements/info/all`)
+    info(params){
+        return axios.get(`/agreements/info/all`, {params})
     }
     
     sendMails(data) {

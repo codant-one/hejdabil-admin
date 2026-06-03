@@ -40,7 +40,8 @@ use App\Http\Controllers\{
     NotificationController,
     CountryController,
     ReminderController,
-    SettingController
+    SettingController,
+    SmsMessageController
 };
 
 use App\Http\Controllers\Services\{
@@ -111,6 +112,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('countries', CountryController::class);
     Route::apiResource('notifications', NotificationController::class);
     Route::apiResource('reminders', ReminderController::class);
+    Route::get('sms-messages', [SmsMessageController::class, 'index']);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {

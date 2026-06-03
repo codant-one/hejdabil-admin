@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 import { themeConfig } from "@themeConfig";
 import { useWindowSize } from "@vueuse/core";
 import { getComputedNavLinkToProp, isNavLinkActive } from "@layouts/utils";
@@ -9,6 +9,30 @@ import router from "@/router";
 const showMenu = ref(false);
 const { width } = useWindowSize();
 const MOBILE_BREAKPOINT = 1024; // px
+const route = useRoute();
+const emitter = inject("emitter");
+const vm = getCurrentInstance();
+
+const canShowSwishaButton = computed(() => {
+  const hasPermission = vm?.proxy?.$can ? vm.proxy.$can("create", "payouts") : true;
+
+  if (!hasPermission)
+    return false;
+
+  const userData = JSON.parse(localStorage.getItem("user_data") || "null");
+  if (!userData)
+    return false;
+
+  const userRole = userData.roles?.[0]?.name;
+
+  if (userRole !== "Supplier" && userRole !== "User")
+    return false;
+
+  if (userRole === "Supplier")
+    return userData.supplier?.is_payout === 1;
+
+  return true;
+});
 
 // Track open/closed state per top-level item index
 const openGroups = ref({})
@@ -29,6 +53,19 @@ const redirectTo = (path) => {
     name: path
   });
 };
+
+const redirectToPayoutsAndOpenDialog = () => {
+  if (route.name === "dashboard-admin-payouts") {
+    emitter.emit("open-payout-dialog");
+
+    return;
+  }
+
+  router.push({
+    name: "dashboard-admin-payouts",
+    query: { open_payout: "true" },
+  });
+};
 </script>
 
 <template>
@@ -37,17 +74,33 @@ const redirectTo = (path) => {
     height="88"
     class="mobile-bottom-bar"
   >
-    <VBtn @click="redirectTo('dashboard-panel')">
+    <VBtn @click="redirectTo('dashboard-panel')" class="bg-transparent">
       <VIcon icon="custom-home" size="24" />
       <span>Hem</span>
     </VBtn>
-    <VBtn v-if="$can('create', 'agreements')" class="btn-green" @click="redirectTo('dashboard-admin-agreements-purchase')">
+    <VBtn 
+      v-if="$can('create', 'agreements')" 
+      class="btn-green" 
+      @click="redirectTo('dashboard-admin-agreements-purchase')"
+    >
       <VIcon icon="custom-car-close" size="24" />
       <span>Köp</span>
     </VBtn>
-    <VBtn v-if="$can('create', 'agreements')" class="btn-blue" @click="redirectTo('dashboard-admin-agreements-sales')">
+    <VBtn 
+      v-if="$can('create', 'agreements')" 
+      class="btn-blue" 
+      @click="redirectTo('dashboard-admin-agreements-sales')"
+    >
       <VIcon icon="custom-car-open" size="24" />
       <span>Sälj</span>
+    </VBtn>
+    <VBtn
+      v-if="canShowSwishaButton"
+      class="btn-gradient-2 bg-transparent" 
+      @click="redirectToPayoutsAndOpenDialog"
+    >
+      <VIcon icon="custom-swish-outlined" size="24" />
+      <span>Swisha</span>
     </VBtn>
     <VBtn
       ref="menuBtn"

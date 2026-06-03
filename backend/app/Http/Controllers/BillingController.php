@@ -719,7 +719,12 @@ class BillingController extends Controller
             $sentRecipients = [];
 
             foreach ($phoneNumbers as $phoneNumber) {
-                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender);
+                $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender, [
+                    'supplier_id' => $billing->supplier_id,
+                    'source_type' => 'billing',
+                    'source_id' => $billing->id,
+                    'action_type' => 'send_billing_sms',
+                ]);
 
                 if ($result === true) {
                     $sentRecipients[] = $phoneNumber;

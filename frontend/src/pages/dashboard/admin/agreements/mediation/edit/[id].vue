@@ -223,8 +223,6 @@ async function fetchData() {
             bank_name.value = user_data.user_detail.bank
             account_number.value = user_data.user_detail.account_number
 
-            commission_id.value = user_data.supplier.user.commissions.length + 1
-
             terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_mediation ?? defaultTerms
 
         } else if(role.value === 'User') {
@@ -235,8 +233,6 @@ async function fetchData() {
 
             bank_name.value = user_data.supplier.boss.user.user_detail.bank
             account_number.value = user_data.supplier.boss.user.user_detail.account_number
-
-            commission_id.value = user_data.supplier.boss.user.commissions.length + 1
 
             terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_mediation ?? defaultTerms
         } else {
@@ -249,8 +245,6 @@ async function fetchData() {
 
             bank_name.value = company.value.bank
             account_number.value = company.value.account_number
-
-            commission_id.value = agreementsStores.commission_id + 1
 
             terms_other_conditions.value = configsStores.getFeaturedConfig('agreements')?.terms_and_conditions_mediation ?? defaultTerms
         }
