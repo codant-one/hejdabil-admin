@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 import { themeConfig } from "@themeConfig";
 import { useWindowSize } from "@vueuse/core";
 import { getComputedNavLinkToProp, isNavLinkActive } from "@layouts/utils";
@@ -11,6 +11,28 @@ const { width } = useWindowSize();
 const MOBILE_BREAKPOINT = 1024; // px
 const route = useRoute();
 const emitter = inject("emitter");
+const vm = getCurrentInstance();
+
+const canShowSwishaButton = computed(() => {
+  const hasPermission = vm?.proxy?.$can ? vm.proxy.$can("create", "payouts") : true;
+
+  if (!hasPermission)
+    return false;
+
+  const userData = JSON.parse(localStorage.getItem("user_data") || "null");
+  if (!userData)
+    return false;
+
+  const userRole = userData.roles?.[0]?.name;
+
+  if (userRole !== "Supplier" && userRole !== "User")
+    return false;
+
+  if (userRole === "Supplier")
+    return userData.supplier?.is_payout === 1;
+
+  return true;
+});
 
 // Track open/closed state per top-level item index
 const openGroups = ref({})
@@ -73,6 +95,7 @@ const redirectToPayoutsAndOpenDialog = () => {
       <span>Sälj</span>
     </VBtn>
     <VBtn
+      v-if="canShowSwishaButton"
       class="btn-gradient-2 bg-transparent" 
       @click="redirectToPayoutsAndOpenDialog"
     >
