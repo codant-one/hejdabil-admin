@@ -1440,8 +1440,11 @@ onBeforeRouteLeave((to, from, next) => {
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
                       <VTextField 
                         v-model="mileage" 
+                        v-bind="numericTextFieldProps"
                         suffix="Mil"
-                        :rules="[requiredValidator]" 
+                        :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                        @input="mileage = normalizeNumericTextInput(mileage)"
+                        @keydown="handlePhoneKeydown"
                       />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
