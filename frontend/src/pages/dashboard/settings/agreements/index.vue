@@ -1,5 +1,6 @@
 <script setup>
 
+import { handleNumericTextFieldKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
 import { useConfigsStores } from '@/stores/useConfigs'
@@ -54,6 +55,8 @@ const advisor = ref({
   show: false,
   type: '',
 })
+
+const minOneNumericRules = [numericRangeValidator({ min: 1 })]
 
 const due_date = ref(null)
 const terms_and_conditions_purchase = ref('')
@@ -653,11 +656,12 @@ onBeforeUnmount(() => {
                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Skicka påminnelse efter (dagar)*" />
                     <VTextField
-                      type="number"
+                      v-bind="numericTextFieldProps"
                       v-model="due_date"
                       :disabled="role === 'User'"
-                      min="1"
-                      :rules="[requiredValidator]"
+                      :rules="[requiredValidator, ...minOneNumericRules]"
+                      @input="due_date = normalizeNumericTextInput(due_date)"
+                      @keydown="handleNumericTextFieldKeydown"
                     />
                 </div>
 

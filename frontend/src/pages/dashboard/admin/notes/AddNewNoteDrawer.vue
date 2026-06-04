@@ -1,6 +1,7 @@
 <script setup>
 
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { handleNumericTextFieldKeydown as handlePhoneKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { emailValidator, minLengthDigitsValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
@@ -25,6 +26,7 @@ const emit = defineEmits([
 const notePhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
 const notePhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
 const notePhoneRules = [minLengthDigitsValidator(notePhoneDigits), phoneValidator]
+const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
 
 const normalizeNotePhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
 const normalizeLandlineForInput = value => String(value ?? '').replace(/\D/g, '')
@@ -159,33 +161,6 @@ const handleLandlineInput = () => {
   landline.value = normalizeLandlineForInput(landline.value)
 }
 
-const handlePhoneKeydown = event => {
-  const allowedKeys = [
-    'Backspace',
-    'Delete',
-    'Tab',
-    'Enter',
-    'Escape',
-    'ArrowLeft',
-    'ArrowRight',
-    'ArrowUp',
-    'ArrowDown',
-    'Home',
-    'End',
-  ]
-
-  if (allowedKeys.includes(event.key))
-    return
-
-  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))
-    return
-
-  if (/^\d$/.test(event.key))
-    return
-
-  event.preventDefault()
-}
-
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -281,10 +256,11 @@ watch(currentData, () => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Egen värdering*" />
                   <VTextField
                       v-model="note"
-                      type="number"
-                      min="0"
+                    v-bind="numericTextFieldProps"
                       suffix="KR"
-                      :rules="[requiredValidator]"
+                    :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                    @input="note = normalizeNumericTextInput(note)"
+                    @keydown="handlePhoneKeydown"
                   />
               </VCol>
               <VCol cols="12" md="12" class="pb-0">

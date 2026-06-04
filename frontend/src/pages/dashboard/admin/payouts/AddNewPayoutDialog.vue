@@ -1,5 +1,6 @@
 <script setup>
 
+import { handleNumericTextFieldKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -35,6 +36,7 @@ const amount = ref(null)
 const payee_ssn = ref(null)
 const master_password = ref(null)
 const isMasterPasswordVisible = ref(false)
+const minOneNumericRules = [numericRangeValidator({ min: 1 })]
 
 const fullname = ref(null)
 
@@ -275,11 +277,12 @@ const onSubmit = async () => {
                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Belopp*" />
                     <VTextField
                       v-model="amount"
-                      type="number"
+                      v-bind="numericTextFieldProps"
                       suffix="KR"
                       placeholder="Belopp (kr)"
-                      :rules="shouldShowStep1Validation ? [requiredValidator] : []"
-                      min="1"
+                      :rules="shouldShowStep1Validation ? [requiredValidator, ...minOneNumericRules] : []"
+                      @input="amount = normalizeNumericTextInput(amount)"
+                      @keydown="handleNumericTextFieldKeydown"
                     />
                   </div>
                   <div>
