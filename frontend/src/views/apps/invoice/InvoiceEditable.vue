@@ -2,6 +2,7 @@
 
 import { themeConfig } from "@themeConfig";
 import { formatNumber } from "@/@core/utils/formatters";
+import { decimalRangeValidator, decimalTextFieldProps, handleDecimalTextFieldKeydown, handleNumericTextFieldKeydown, normalizeDecimalTextInput, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from "@/@core/utils/numericTextField";
 import { requiredValidator } from "@validators";
 import sampleFaktura from "@images/sample-faktura.jpg";
 import VuePdfEmbed from "vue-pdf-embed";
@@ -198,6 +199,10 @@ const isAlertDiscountVisible = ref(false);
 const isAlertPreviewVisible = ref(false);
 const previousTab = ref("redigera");
 const pdfCacheKey = ref(Date.now());
+const nonNegativeIntegerRules = [numericRangeValidator({ min: 0 })];
+const minOneIntegerRules = [numericRangeValidator({ min: 1 })];
+const percentageIntegerRules = [numericRangeValidator({ min: 0, max: 100 })];
+const nonNegativeDecimalRules = [decimalRangeValidator({ min: 0 })];
 
 const pdfSource = computed(() => {
   if (!props.billing?.file) return null;
@@ -777,11 +782,11 @@ const handleFocus = (element, fieldId) => {
                 <VTextField
                   v-model="invoice.id"
                   :disabled="!canEditInvoiceId"
-                  :rules="canEditInvoiceId ? [requiredValidator] : []"
-                  type="number"
-                  :min="1"
+                  :rules="canEditInvoiceId ? [requiredValidator, ...minOneIntegerRules] : []"
+                  v-bind="numericTextFieldProps"
                   prefix="#"
-                  @input="inputData"
+                  @input="invoice.id = normalizeNumericTextInput(invoice.id); inputData()"
+                  @keydown="handleNumericTextFieldKeydown"
                   style="inline-size: 10.5rem"
                 />
               </div>
@@ -866,10 +871,12 @@ const handleFocus = (element, fieldId) => {
               <div class="form-field">
                 <VTextField
                   v-model="invoice.days"
-                  type="number"
+                  v-bind="numericTextFieldProps"
                   label="Dagar"
                   :disabled="props.isCredit"
-                  :min="0"
+                  :rules="nonNegativeIntegerRules"
+                  @input="invoice.days = normalizeNumericTextInput(invoice.days)"
+                  @keydown="handleNumericTextFieldKeydown"
                 />
               </div>
             </span>
@@ -1065,23 +1072,22 @@ const handleFocus = (element, fieldId) => {
                                 <VTextField
                                   v-if="invoice.type_id === 2"
                                   v-model="element[invoice.id]"
-                                  type="number"
-                                  :min="1"
+                                  v-bind="numericTextFieldProps"
                                   :readonly="element.disabled"
-                                  :rules="[requiredValidator]"
-                                  @input="$emit('edit')"
+                                  :rules="[requiredValidator, ...minOneIntegerRules]"
+                                  @input="element[invoice.id] = normalizeNumericTextInput(element[invoice.id]); $emit('edit')"
+                                  @keydown="handleNumericTextFieldKeydown"
                                   @blur="() => handleBlur(element)"
                                 />
                                 <VTextField
                                   v-if="invoice.type_id === 3"
                                   v-model="element[invoice.id]"
-                                  type="number"
-                                  :min="0"
-                                  :step="0.01"
+                                  v-bind="decimalTextFieldProps"
                                   :readonly="element.disabled"
-                                  @input="$emit('edit')"
-                                  :rules="[requiredValidator]"
+                                  @input="element[invoice.id] = normalizeDecimalTextInput(element[invoice.id]); $emit('edit')"
+                                  :rules="[requiredValidator, ...nonNegativeDecimalRules]"
                                   :disabled="invoice.name === 'Belopp'"
+                                  @keydown="handleDecimalTextFieldKeydown"
                                   @focus="() => handleFocus(element, invoice.id)"
                                   @blur="() => handleBlur(element)"
                                 />
@@ -1096,11 +1102,11 @@ const handleFocus = (element, fieldId) => {
                               <VTextField
                                 :disabled="selectedDiscount > 0"
                                 v-model="element[5]"
-                                type="number"
-                                :min="0"
-                                :max="100"
+                                v-bind="numericTextFieldProps"
                                 :readonly="element.disabled"
-                                @input="$emit('edit')"
+                                :rules="percentageIntegerRules"
+                                @input="element[5] = normalizeNumericTextInput(element[5]); $emit('edit')"
+                                @keydown="handleNumericTextFieldKeydown"
                                 @blur="() => handleBlur(element)"
                               />
                             </div>
@@ -1188,13 +1194,14 @@ const handleFocus = (element, fieldId) => {
 
                       <VTextField
                         v-if="isCustomTax"
-                        v-model.number="invoice.tax"
+                        v-model="invoice.tax"
                         class="mt-2"
-                        type="number"
+                        v-bind="decimalTextFieldProps"
                         label="Customized Moms"
-                        :min="0"
-                        :step="0.01"
+                        :rules="nonNegativeDecimalRules"
                         suffix="%"
+                        @input="invoice.tax = normalizeDecimalTextInput(invoice.tax)"
+                        @keydown="handleDecimalTextFieldKeydown"
                         style="width: 150px"
                       />
                     </div>
@@ -1356,11 +1363,11 @@ const handleFocus = (element, fieldId) => {
                     <VTextField
                       v-model="invoice.id"
                       :disabled="!canEditInvoiceId"
-                      :rules="canEditInvoiceId ? [requiredValidator] : []"
-                      type="number"
-                      :min="1"
+                      :rules="canEditInvoiceId ? [requiredValidator, ...minOneIntegerRules] : []"
+                      v-bind="numericTextFieldProps"
                       prefix="#"
-                      @input="inputData"
+                      @input="invoice.id = normalizeNumericTextInput(invoice.id); inputData()"
+                      @keydown="handleNumericTextFieldKeydown"
                     />
                   </div>
                 </span>
@@ -1450,10 +1457,12 @@ const handleFocus = (element, fieldId) => {
                   <div class="form-field">
                     <VTextField
                       v-model="invoice.days"
-                      type="number"
+                      v-bind="numericTextFieldProps"
                       label="Dagar"
                       :disabled="props.isCredit"
-                      :min="0"
+                      :rules="nonNegativeIntegerRules"
+                      @input="invoice.days = normalizeNumericTextInput(invoice.days)"
+                      @keydown="handleNumericTextFieldKeydown"
                     />
                   </div>
                 </span>
@@ -1680,23 +1689,22 @@ const handleFocus = (element, fieldId) => {
                                     <VTextField
                                       v-if="invoice.type_id === 2"
                                       v-model="element[invoice.id]"
-                                      type="number"
-                                      :min="1"
+                                      v-bind="numericTextFieldProps"
                                       :readonly="element.disabled"
-                                      :rules="[requiredValidator]"
-                                      @input="$emit('edit')"
+                                      :rules="[requiredValidator, ...minOneIntegerRules]"
+                                      @input="element[invoice.id] = normalizeNumericTextInput(element[invoice.id]); $emit('edit')"
+                                      @keydown="handleNumericTextFieldKeydown"
                                       @blur="() => handleBlur(element)"
                                     />
                                     <VTextField
                                       v-if="invoice.type_id === 3"
                                       v-model="element[invoice.id]"
-                                      type="number"
-                                      :min="0"
-                                      :step="0.01"
+                                      v-bind="decimalTextFieldProps"
                                       :readonly="element.disabled"
-                                      @input="$emit('edit')"
-                                      :rules="[requiredValidator]"
+                                      @input="element[invoice.id] = normalizeDecimalTextInput(element[invoice.id]); $emit('edit')"
+                                      :rules="[requiredValidator, ...nonNegativeDecimalRules]"
                                       :disabled="invoice.name === 'Belopp'"
+                                      @keydown="handleDecimalTextFieldKeydown"
                                       @focus="() => handleFocus(element, invoice.id)"
                                       @blur="() => handleBlur(element)"
                                     />
@@ -1711,11 +1719,11 @@ const handleFocus = (element, fieldId) => {
                                   <VTextField
                                     :disabled="selectedDiscount > 0"
                                     v-model="element[5]"
-                                    type="number"
-                                    :min="0"
-                                    :max="100"
+                                    v-bind="numericTextFieldProps"
                                     :readonly="element.disabled"
-                                    @input="$emit('edit')"
+                                    :rules="percentageIntegerRules"
+                                    @input="element[5] = normalizeNumericTextInput(element[5]); $emit('edit')"
+                                    @keydown="handleNumericTextFieldKeydown"
                                     @blur="() => handleBlur(element)"
                                   />
                                 </div>
@@ -1768,13 +1776,14 @@ const handleFocus = (element, fieldId) => {
 
                           <VTextField
                             v-if="isCustomTax"
-                            v-model.number="invoice.tax"
+                            v-model="invoice.tax"
                             class="mt-2"
-                            type="number"
+                            v-bind="decimalTextFieldProps"
                             label="Customized Moms"
-                            :min="0"
-                            :step="0.01"
+                            :rules="nonNegativeDecimalRules"
                             suffix="%"
+                            @input="invoice.tax = normalizeDecimalTextInput(invoice.tax)"
+                            @keydown="handleDecimalTextFieldKeydown"
                             style="width: 125px"
                           />
                         </div>

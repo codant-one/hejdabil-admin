@@ -4,6 +4,7 @@ import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
 import { ref, watchEffect, inject, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { handleNumericTextFieldKeydown as handlePhoneKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, getPhoneInputConfig, normalizePhoneInput, resolvePhoneCountry } from '@/@core/utils/phone'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
@@ -513,29 +514,8 @@ const handleLandlineInput = () => {
   landline.value = normalizeLandlineForInput(landline.value)
 }
 
-const handlePhoneKeydown = event => {
-  const allowedKeys = [
-    'Backspace',
-    'Delete',
-    'Tab',
-    'Enter',
-    'Escape',
-    'ArrowLeft',
-    'ArrowRight',
-    'ArrowUp',
-    'ArrowDown',
-    'Home',
-    'End',
-  ]
-
-  if (allowedKeys.includes(event.key)) return
-
-  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) return
-
-  if (/^\d$/.test(event.key)) return
-
-  event.preventDefault()
-}
+const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
+const minOneNumericRules = [numericRangeValidator({ min: 1 })]
 
 watch(client_type_id, clientTypeId => {
   if (clientTypeId === 3 && !country_id.value)
@@ -1395,10 +1375,12 @@ onBeforeRouteLeave((to, from, next) => {
                             <div class="w-50">
                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
                                 <VTextField
-                                    type="number"
+                                  v-bind="numericTextFieldProps"
                                     v-model="last_service"
                                     suffix="Mil"
-                                    min="0"
+                                  :rules="nonNegativeNumericRules"
+                                  @input="last_service = normalizeNumericTextInput(last_service)"
+                                  @keydown="handlePhoneKeydown"
                                 />
                             </div>
                             <div class="w-50">
@@ -1420,10 +1402,12 @@ onBeforeRouteLeave((to, from, next) => {
                             <div class="w-50">
                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
                                 <VTextField
-                                    type="number"
+                                  v-bind="numericTextFieldProps"
                                     v-model="last_dist_belt"
                                     suffix="Mil"
-                                    min="0"
+                                  :rules="nonNegativeNumericRules"
+                                  @input="last_dist_belt = normalizeNumericTextInput(last_dist_belt)"
+                                  @keydown="handlePhoneKeydown"
                                 />
                             </div>
                             <div class="w-50">
@@ -1446,8 +1430,10 @@ onBeforeRouteLeave((to, from, next) => {
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                       <VTextField
                           v-model="number_keys"
-                          type="number"
-                          min="1"
+                          v-bind="numericTextFieldProps"
+                          :rules="minOneNumericRules"
+                          @input="number_keys = normalizeNumericTextInput(number_keys)"
+                          @keydown="handlePhoneKeydown"
                       />
                     </div>  
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1462,10 +1448,11 @@ onBeforeRouteLeave((to, from, next) => {
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Belopp ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
                       <VTextField
                         v-model="price"
-                        type="number"
-                        min="0"
+                        v-bind="numericTextFieldProps"
                         suffix="KR"
-                        :rules="[requiredValidator]"
+                        :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                        @input="price = normalizeNumericTextInput(price)"
+                        @keydown="handlePhoneKeydown"
                       />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px); margin-top: 27px;'" class="form">

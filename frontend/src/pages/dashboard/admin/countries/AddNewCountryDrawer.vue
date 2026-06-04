@@ -1,6 +1,7 @@
 <script setup>
 
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { handleNumericTextFieldKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { requiredValidator, minLengthNonDigitsValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
@@ -33,6 +34,7 @@ const flag = ref('')
 const flagFile = ref([])
 const flagOld = ref(null)
 const isEdit = ref(false)
+const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
 
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera land': 'Lägg till land'
@@ -261,25 +263,31 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="phonecode"
-                    type="number"
+                v-bind="numericTextFieldProps"
                     label="Código de teléfono"
-                    :rules="[requiredValidator]"
+                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                @input="phonecode = normalizeNumericTextInput(phonecode)"
+                @keydown="handleNumericTextFieldKeydown"
                 />
             </VCol>
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="phone_digits"
-                    type="number"
+                v-bind="numericTextFieldProps"
                     label="Número máximo de dígitos de teléfono"
-                    :rules="[requiredValidator]"
+                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                @input="phone_digits = normalizeNumericTextInput(phone_digits)"
+                @keydown="handleNumericTextFieldKeydown"
                 />
             </VCol>
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="numcode"
-                    type="number"
+                v-bind="numericTextFieldProps"
                     label="C&oacute;digo ISO N&uacute;merico"
-                    :rules="[requiredValidator]"
+                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                @input="numcode = normalizeNumericTextInput(numcode)"
+                @keydown="handleNumericTextFieldKeydown"
                 />
             </VCol>
             <VCol cols="12" md="6">

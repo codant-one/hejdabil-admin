@@ -2,6 +2,7 @@
 
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
+import { normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, getPhoneInputConfig, normalizePhoneInput, resolvePhoneCountry } from '@/@core/utils/phone'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
@@ -545,6 +546,9 @@ const handlePhoneInput = () => {
 const handleLandlineInput = () => {
     landline.value = normalizeLandlineForInput(landline.value)
 }
+
+const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
+const minOneNumericRules = [numericRangeValidator({ min: 1 })]
 
 const handlePhoneKeydown = event => {
     const allowedKeys = [
@@ -1667,11 +1671,12 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
                                             <VTextField
-                                                type="number"
+                                                v-bind="numericTextFieldProps"
                                                 v-model="mileage"
                                                 suffix="Mil"
-                                                min="0"
-                                                :rules="[requiredValidator]"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="mileage = normalizeNumericTextInput(mileage)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1817,10 +1822,12 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
                                                     <VTextField
-                                                        type="number"
+                                                        v-bind="numericTextFieldProps"
                                                         v-model="last_service"
                                                         suffix="Mil"
-                                                        min="0"
+                                                        :rules="nonNegativeNumericRules"
+                                                        @input="last_service = normalizeNumericTextInput(last_service)"
+                                                        @keydown="handlePhoneKeydown"
                                                     />
                                                 </div>
                                                 <div class="w-50">
@@ -1842,10 +1849,12 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
                                                     <VTextField
-                                                        type="number"
+                                                        v-bind="numericTextFieldProps"
                                                         v-model="last_dist_belt"
                                                         suffix="Mil"
-                                                        min="0"
+                                                        :rules="nonNegativeNumericRules"
+                                                        @input="last_dist_belt = normalizeNumericTextInput(last_dist_belt)"
+                                                        @keydown="handlePhoneKeydown"
                                                     />
                                                 </div>
                                                 <div class="w-50">
@@ -1868,8 +1877,10 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                                                 <VTextField
                                                     v-model="number_keys"
-                                                    type="number"
-                                                    min="1"
+                                                    v-bind="numericTextFieldProps"
+                                                    :rules="minOneNumericRules"
+                                                    @input="number_keys = normalizeNumericTextInput(number_keys)"
+                                                    @keydown="handlePhoneKeydown"
                                                 />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2146,10 +2157,11 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpspris*" />
                                             <VTextField
                                                 v-model="price"
-                                                type="number"
-                                                min="0"
+                                                v-bind="numericTextFieldProps"
                                                 suffix="KR"
-                                                :rules="[requiredValidator]"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="price = normalizeNumericTextInput(price)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2192,23 +2204,25 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Varav moms*" />
                                             <VTextField
-                                                type="number"
+                                                v-bind="numericTextFieldProps"
                                                 v-model="iva_purchase_amount"
-                                                min="0"
                                                 disabled
                                                 suffix="KR"
-                                                :rules="[requiredValidator]"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="iva_purchase_amount = normalizeNumericTextInput(iva_purchase_amount)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Prix ex moms*" />
                                             <VTextField
-                                                type="number"
+                                                v-bind="numericTextFieldProps"
                                                 v-model="iva_purchase_exclusive"
-                                                min="0"
                                                 disabled
                                                 suffix="KR"
-                                                :rules="[requiredValidator]"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="iva_purchase_exclusive = normalizeNumericTextInput(iva_purchase_exclusive)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2233,11 +2247,12 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Kreditbelopp" />
                                             <VTextField
                                                 v-model="loan_amount"
-                                                type="number"
-                                                min="0"
+                                                v-bind="numericTextFieldProps"
                                                 suffix="KR"
-                                                :rules="conditionalRulesJa"
+                                                :rules="[...conditionalRulesJa, ...nonNegativeNumericRules]"
                                                 :disabled="is_loan === 1 ? true : false"
+                                                @input="loan_amount = normalizeNumericTextInput(loan_amount)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
