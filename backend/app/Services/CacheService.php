@@ -228,6 +228,18 @@ class CacheService
     }
 
     /**
+     * Get active users suppliers with relationships (cache por 5 minutos)
+     */
+    public static function getActiveUsersSuppliers($bossId)
+    {
+        return Cache::remember('suppliers.active_users.' . $bossId, 300, function () use ($bossId) {
+            return Supplier::with(['user.userDetail', 'billings'])
+                ->where('boss_id', $bossId)
+                ->get();
+        });
+    }
+
+    /**
      * Get all invoices
      */
     public static function getInvoices()

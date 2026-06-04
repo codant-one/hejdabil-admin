@@ -732,6 +732,52 @@ body {
   color: #9B191B;
 }
 
+.empty-select {
+  border-radius: 64px;
+  padding-right: 16px;
+  padding-left: 20px;
+  border: 1px solid #e7e7e7;
+  font-weight: 400;
+  font-size: 15px;
+  color: #454545;
+  width: 136px;
+  height: 48px;
+  flex-shrink: 0;
+  min-width: fit-content;
+
+  .v-input {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .v-field {
+    height: 48px !important;
+    padding: 0px !important;
+
+    .v-field__append-inner {
+      align-items: center;
+      padding-top: 0px !important;
+
+      .v-icon {
+        margin-inline-start: 0 !important;
+      }
+    }
+
+    .v-field__input {
+      height: 48px !important;
+      padding-inline-start: 0px !important;
+      padding-inline-end: 0px !important;
+      align-items: center;
+      color: #454545;
+    }
+
+    .v-field__outline__start,
+    .v-field__outline__end {
+      border: none !important;
+    }
+  }
+}
+
 .visa-select {
   border-radius: 64px;
   padding-right: 16px;

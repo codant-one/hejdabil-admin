@@ -1,90 +1,201 @@
 <script setup>
 
-import { useDisplay } from "vuetify";
-import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
-import { useRouter } from 'vue-router'
-import { useNotificationsStore } from '@/stores/useNotifications'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { themeConfig } from '@themeConfig'
+import { useDisplay } from 'vuetify'
+import { useActivitiesStore } from '@/stores/useActivities'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DefaultLayoutWithoutVerticalNav from '@/layouts/components/DefaultLayoutWithoutVerticalNav.vue'
 import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
+import { getActivityVisibleFields } from './activityVisibleFields'
 import navItems from '@/navigation/vertical'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
-const notificationsStore = useNotificationsStore()
-const router = useRouter()
-const emitter = inject("emitter")
+const activitiesStore = useActivitiesStore()
+const emitter = inject('emitter')
 
 const { width: windowWidth } = useWindowSize()
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
-const notifications = ref([])
+const activities = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalNotifications = ref(0)
+const totalActivities = ref(0)
 const isRequestOngoing = ref(true)
-const user_id = ref(null)
+const expandedActivityId = ref(null)
 
 const userData = ref(null)
+const user_id = ref(null)
+const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
+const mode = ref('Lista')
+
+const modeOptions = [
+  {
+    title: 'Lista',
+    value: 'Lista',
+    icon: 'custom-list',
+  },
+  {
+    title: 'Tabell',
+    value: 'Tabell',
+    icon: 'custom-table',
+  },
+]
+
 const advisor = ref({
   type: '',
   message: '',
-  show: false
+  show: false,
 })
 
-useMobilePaginationScroll({
-  targetRef: sectionEl,
-  currentPage,
-  isRequestOngoing,
-  enabled: mdAndDown,
-})
+const activityModuleLabels = {
+  agreements: 'Avtal',
+  billings: 'Fakturor',
+  clients: 'Kunder',
+  documents: 'Dokument',
+  notes: 'Anteckningar',
+  payouts: 'Utbetalningar',
+  vehicles: 'Fordonslager',
+}
+
+const activityModuleSingularLabels = {
+  agreements: 'Avtal',
+  billings: 'Faktura',
+  clients: 'Kund',
+  documents: 'Dokument',
+  notes: 'Anteckning',
+  payouts: 'Utbetalning',
+  vehicles: 'Fordon',
+}
+
+const activityActionLabels = {
+  cancelled: 'annullerad',
+  create: 'skapad',
+  delete: 'raderad',
+  delivered: 'levererad',
+  paid: 'markerad som betald',
+  reminder: 'påminnelse skickad',
+  resend: 'skickad igen',
+  reviewed: 'granskad',
+  send: 'skickad',
+  signed: 'signerad',
+  unpaid: 'markerad som obetald',
+  update: 'uppdaterad',
+}
+
+const activityDetailTitles = {
+  created: 'Skapad information',
+  deleted: 'Borttagen information',
+  updated: 'Ändring',
+}
+
+const activityFieldLabels = {
+  account: 'Konto',
+  address: 'Adress',
+  agreement_id: 'Avtals-ID',
+  amount: 'Belopp',
+  billing_id: 'Faktura-ID',
+  comments: 'Kommentar',
+  country_id: 'Land',
+  description: 'Beskrivning',
+  email: 'E-post',
+  fullname: 'Namn',
+  installment_amount: 'Belopp',
+  name: 'Namn',
+  notes: 'Anteckning',
+  num_iva: 'Momsnummer',
+  offer_id: 'Offert-ID',
+  organization_number: 'Org.nr',
+  payment_method: 'Betalsätt',
+  phone: 'Telefon',
+  postal_code: 'Postnummer',
+  reference: 'Referens',
+  reg_num: 'Reg. nr.',
+  state_id: 'Status',
+  address: 'Adress',
+  street: 'Stad',
+  title: 'Titel',
+}
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = notifications.value.length 
+  const firstIndex = activities.value.length 
     ? (currentPage.value - 1) * rowPerPage.value + 1 
     : 0
   const 
-  lastIndex = notifications.value.length + (currentPage.value - 1) * rowPerPage.value
+  lastIndex = activities.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `${totalNotifications.value} resultat`;
- //return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalNotifications.value } register`
+  return `${totalActivities.value} resultat`;
+ //return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalActivities.value } register`
+})
+
+const displayActivities = computed(() => {
+  if (!Array.isArray(activities.value))
+    return []
+
+  return activities.value.map(activity => {
+    const { changes, detailMode } = getActivityChangeSummary(activity)
+
+    return {
+      ...activity,
+      changes,
+      createdAtLabel: formatActivityDateTime(activity.created_at),
+      descriptionText: getActivityDescription(activity),
+      descriptionTitle: getActivityTitle(activity),
+      descriptionSubtitle: getActivitySecondaryDescription(activity),
+      detailTitle: getActivityDetailTitle(detailMode, changes.length),
+      eventLabel: getActivityEventLabel(activity),
+      moduleLabel: getActivityModuleLabel(activity.entity_type),
+      userInitials: getActivityUserInitials(activity),
+      userName: getActivityUserName(activity),
+    }
+  })
 })
 
 watchEffect(fetchData)
 
 async function fetchData(cleanFilters = false) {
 
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  user_id.value = userData.value ? userData.value.id : null
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    user_id.value = userData.value ? userData.value.id : null
 
-  if(cleanFilters === true) {
-    searchQuery.value = ''
-    rowPerPage.value = 10
-    currentPage.value = 1;
-    user_id.value = null;
-  }
+    if(cleanFilters === true) {
+        searchQuery.value = ''
+        rowPerPage.value = 10
+        currentPage.value = 1;
+        user_id.value = null;
+    }
 
-  let data = {
-    search: searchQuery.value,
-    orderByField: 'id',
-    orderBy: 'desc',
-    limit: rowPerPage.value,
-    page: currentPage.value,
-    user_id: user_id.value
-  }
+    let data = {
+        search: searchQuery.value,
+        orderByField: 'id',
+        orderBy: 'desc',
+        limit: rowPerPage.value,
+        page: currentPage.value,
+        supplier_id: supplier_id.value
+    }
 
-  isRequestOngoing.value = searchQuery.value !== '' ? false : true
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    role.value = userData.value?.roles?.[0]?.name ?? null
 
-  await notificationsStore.fetchNotifications(data)
+    await activitiesStore.fetchActivities(data)
 
-  notifications.value = notificationsStore.getNotifications
-  totalPages.value = notificationsStore.last_page
-  totalNotifications.value = notificationsStore.notificationsTotalCount
+    activities.value = Array.isArray(activitiesStore.getActivities) ? activitiesStore.getActivities : []
+    totalPages.value = activitiesStore.last_page
+    totalActivities.value = activitiesStore.activitiesTotalCount
+    expandedActivityId.value = activities.value.some(activity => activity.id === expandedActivityId.value)
+        ? expandedActivityId.value
+        : activities.value[0]?.id ?? null
+    isRequestOngoing.value = false
 
-  isRequestOngoing.value = false
+    if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+        suppliers.value = activitiesStore.getSuppliers
+    }
 }
 
 watchEffect(registerEvents)
@@ -93,103 +204,345 @@ function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
 
-const onReadAll = async () => {
-  isRequestOngoing.value = true
+function toggleActivity(activityId) {
+  expandedActivityId.value = expandedActivityId.value === activityId ? null : activityId
+}
+
+function isActivityExpanded(activityId) {
+  return expandedActivityId.value === activityId
+}
+
+function parseActivityMetadata(activity) {
+  if (!activity?.metadata)
+    return {}
+
+  if (typeof activity.metadata === 'object')
+    return activity.metadata
 
   try {
-    await notificationsStore.markAllRead()
-    await fetchData()
-  } finally {
-    isRequestOngoing.value = false
+    return JSON.parse(activity.metadata)
+  } catch (error) {
+    return {}
   }
 }
 
-const onNotificationClick = async (notification) => {
-  // Marcar como leída si tiene ID
-  if (notification.id && !notification.read) {
-    await notificationsStore.markAsRead(notification.id)
+function formatActivityFieldLabel(field) {
+  if (!field)
+    return 'Fält'
+
+  const { sourceKey } = resolveConfiguredActivityField(field)
+
+  return activityFieldLabels[field]
+    ?? activityFieldLabels[sourceKey]
+    ?? String(field)
+      .replace(/_name$/g, '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase())
+}
+
+function normalizeActivityValue(value) {
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim()
+    const normalizedString = trimmedValue.toLowerCase()
+
+    if (!trimmedValue || normalizedString === 'null' || normalizedString === 'undefined')
+      return null
+
+    return trimmedValue
   }
-  
-  // Navegar a la ruta si existe
-  if (notification.route) {
-    router.push(notification.route)
+
+  return value
+}
+
+function formatActivityValue(value) {
+  const normalizedValue = normalizeActivityValue(value)
+
+  if (normalizedValue === null || normalizedValue === undefined || normalizedValue === '')
+    return 'Tomt'
+
+  if (typeof normalizedValue === 'boolean')
+    return normalizedValue ? 'Ja' : 'Nej'
+
+  if (Array.isArray(normalizedValue)) {
+    const formattedValues = normalizedValue
+      .filter(hasRenderableActivityValue)
+      .map(formatActivityValue)
+
+    return formattedValues.length ? formattedValues.join(', ') : 'Tomt'
+  }
+
+  if (typeof normalizedValue === 'object') {
+    const flattenedValues = Object.values(normalizedValue)
+      .filter(hasRenderableActivityValue)
+      .map(formatActivityValue)
+
+    return flattenedValues.length ? flattenedValues.join(', ') : 'Tomt'
+  }
+
+  return String(normalizedValue)
+}
+
+function hasRenderableActivityValue(value) {
+  const normalizedValue = normalizeActivityValue(value)
+
+  if (normalizedValue === null || normalizedValue === undefined)
+    return false
+
+  if (typeof normalizedValue === 'string')
+    return normalizedValue !== ''
+
+  if (Array.isArray(normalizedValue))
+    return normalizedValue.some(hasRenderableActivityValue)
+
+  if (typeof normalizedValue === 'object')
+    return Object.values(normalizedValue).some(hasRenderableActivityValue)
+
+  return true
+}
+
+function normalizeActivityValueMap(values) {
+  if (!values || Array.isArray(values) || typeof values !== 'object')
+    return {}
+
+  return values
+}
+
+function resolveConfiguredActivityField(field) {
+  const normalizedField = String(field ?? '')
+
+  if (normalizedField.endsWith('_name')) {
+    return {
+      displayKey: normalizedField,
+      sourceKey: normalizedField.replace(/_name$/g, '_id'),
+    }
+  }
+
+  return {
+    displayKey: normalizedField,
+    sourceKey: normalizedField,
   }
 }
 
-const onDeleteNotification = async (notificationId) => {
-  if (!notificationId) return
+function getActivityVisibleFieldEntries(activity, availableKeys) {
+  const visibleFields = getActivityVisibleFields(activity?.entity_type)
 
-  isRequestOngoing.value = true
+  if (!Array.isArray(visibleFields)) {
+    return availableKeys.map(key => resolveConfiguredActivityField(key))
+  }
 
-  try {
-    
-    let res = await notificationsStore.deleteNotification(notificationId)
+  return visibleFields
+    .map(field => resolveConfiguredActivityField(field))
+    .filter(({ sourceKey }) => availableKeys.includes(sourceKey))
+}
 
-    if (notifications.value.length === 1 && currentPage.value > 1) {
-      currentPage.value -= 1
-    }
+function getActivityDetailMode(activity, oldValues, newValues) {
+  const normalizedAction = String(activity?.action_type ?? '').toLowerCase()
+  const hasOldValues = Object.keys(oldValues).length > 0
+  const hasNewValues = Object.keys(newValues).length > 0
 
-    advisor.value = {
-      type: res.data.success ? 'success' : 'error',
-      message: res.data.success ? 'Anmälan raderad!' : res.data.message,
-      show: true
-    }
+  if (normalizedAction.includes('create'))
+    return 'created'
 
-    await fetchData()
+  if (normalizedAction.includes('delete'))
+    return 'deleted'
 
-    setTimeout(() => {
-      advisor.value = {
-        type: '',
-        message: '',
-        show: false
+  if (hasOldValues && hasNewValues)
+    return 'updated'
+
+  if (hasNewValues)
+    return 'created'
+
+  if (hasOldValues)
+    return 'deleted'
+
+  return 'default'
+}
+
+function buildCreatedActivityChanges(activity, newValues) {
+  return getActivityVisibleFieldEntries(activity, Object.keys(newValues))
+    .filter(({ sourceKey }) => hasRenderableActivityValue(newValues[sourceKey]))
+    .map(({ displayKey, sourceKey }) => ({
+      key: displayKey,
+      label: formatActivityFieldLabel(displayKey),
+      type: 'created',
+      value: formatActivityValue(newValues[sourceKey]),
+    }))
+}
+
+function buildDeletedActivityChanges(activity, oldValues) {
+  return getActivityVisibleFieldEntries(activity, Object.keys(oldValues))
+    .filter(({ sourceKey }) => hasRenderableActivityValue(oldValues[sourceKey]))
+    .map(({ displayKey, sourceKey }) => ({
+      key: displayKey,
+      label: formatActivityFieldLabel(displayKey),
+      type: 'deleted',
+      value: formatActivityValue(oldValues[sourceKey]),
+    }))
+}
+
+function buildUpdatedActivityChanges(activity, oldValues, newValues) {
+  const keys = [...new Set([...Object.keys(oldValues), ...Object.keys(newValues)])]
+
+  return getActivityVisibleFieldEntries(activity, keys)
+    .map(({ displayKey, sourceKey }) => {
+      const hasOldValue = Object.prototype.hasOwnProperty.call(oldValues, sourceKey)
+      const hasNewValue = Object.prototype.hasOwnProperty.call(newValues, sourceKey)
+      const rawOldValue = hasOldValue ? oldValues[sourceKey] : null
+      const rawNewValue = hasNewValue ? newValues[sourceKey] : null
+      const hasRenderableOldValue = hasRenderableActivityValue(rawOldValue)
+      const hasRenderableNewValue = hasRenderableActivityValue(rawNewValue)
+
+      if (!hasRenderableOldValue && !hasRenderableNewValue)
+        return null
+
+      const oldValue = hasOldValue ? formatActivityValue(oldValues[sourceKey]) : null
+      const newValue = hasNewValue ? formatActivityValue(newValues[sourceKey]) : null
+
+      if (oldValue === newValue)
+        return null
+
+      return {
+        key: displayKey,
+        label: formatActivityFieldLabel(displayKey),
+        type: 'updated',
+        newValue: hasRenderableNewValue ? newValue : null,
+        oldValue: hasRenderableOldValue ? oldValue : null,
       }
-    }, 3000)
-
-  } finally {
-    isRequestOngoing.value = false
-  }
+    })
+    .filter(Boolean)
 }
 
-const onDeleteAll = async () => {
-  if (!user_id.value) return
+function getActivityChangeSummary(activity) {
+  const metadata = parseActivityMetadata(activity)
+  const oldValues = normalizeActivityValueMap(metadata.old_values)
+  const newValues = normalizeActivityValueMap(metadata.new_values)
+  const detailMode = getActivityDetailMode(activity, oldValues, newValues)
 
-  isRequestOngoing.value = true
-
-  try {
-    const res = await notificationsStore.clearAllNotificationsByUser(user_id.value)
-
-    currentPage.value = 1
-    await fetchData()
-
-    advisor.value = {
-      type: res.data.success ? 'success' : 'error',
-      message: res.data.success ? 'Alla meddelanden raderade!' : res.data.message,
-      show: true,
+  if (detailMode === 'created') {
+    return {
+      detailMode,
+      changes: buildCreatedActivityChanges(activity, newValues),
     }
+  }
 
-    setTimeout(() => {
-      advisor.value = {
-        type: '',
-        message: '',
-        show: false,
-      }
-    }, 3000)
-  } finally {
-    isRequestOngoing.value = false
+  if (detailMode === 'deleted') {
+    return {
+      detailMode,
+      changes: buildDeletedActivityChanges(activity, oldValues),
+    }
+  }
+
+  if (detailMode === 'updated') {
+    return {
+      detailMode,
+      changes: buildUpdatedActivityChanges(activity, oldValues, newValues),
+    }
+  }
+
+  return {
+    detailMode,
+    changes: [],
   }
 }
 
-const formatTime = (dateString) => {
+function getActivityDetailTitle(detailMode, changesLength) {
+  if (!changesLength)
+    return 'Beskrivning'
+
+  return activityDetailTitles[detailMode] ?? 'Ändring'
+}
+
+function getActivityModuleLabel(entityType) {
+  return activityModuleLabels[entityType] ?? formatActivityFieldLabel(entityType)
+}
+
+function getActivityModuleSingularLabel(entityType) {
+  return activityModuleSingularLabels[entityType] ?? formatActivityFieldLabel(entityType)
+}
+
+function resolveActivityActionKey(actionType) {
+  const normalizedAction = String(actionType ?? '').toLowerCase()
+  const orderedKeys = ['reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send']
+
+  return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
+}
+
+function getActivityEventLabel(activity) {
+  const actionKey = resolveActivityActionKey(activity?.action_type)
+  const actionLabel = actionKey
+    ? activityActionLabels[actionKey]
+    : activity?.description || 'aktivitet'
+
+  return `${getActivityModuleSingularLabel(activity?.entity_type)} ${actionLabel}`
+}
+
+function getActivityDescription(activity) {
+  return activity?.title || activity?.description || '-'
+}
+
+function getActivityTitle(activity) {
+  return activity?.title || activity?.description || '-'
+}
+
+function getActivitySecondaryDescription(activity) {
+  const title = normalizeActivityValue(activity?.title)
+  const description = normalizeActivityValue(activity?.description)
+
+  if (!description || description === title)
+    return null
+
+  return description
+}
+
+function getActivityUserName(activity) {
+  return [activity?.user?.name, activity?.user?.last_name].filter(Boolean).join(' ') || 'Okänd användare'
+}
+
+function getActivityUserInitials(activity) {
+  const initialsSource = getActivityUserName(activity)
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+
+  return initialsSource || 'NA'
+}
+
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + "...";
+  }
+  return text;
+};
+
+function formatActivityDateTime(dateString) {
   const date = new Date(dateString)
+
+  if (Number.isNaN(date.getTime()))
+    return '-'
+
   const now = new Date()
-  const diffInSeconds = Math.floor((now - date) / 1000)
-  
-  if (diffInSeconds < 60) return 'Nyss'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min sedan`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} tim sedan`
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} dag sedan`
-  
-  return date.toLocaleDateString('sv-SE')
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+
+  const rawDateLabel = date.toDateString() === now.toDateString()
+    ? 'Idag'
+    : date.toDateString() === yesterday.toDateString()
+      ? 'Igår'
+      : date.toLocaleDateString('sv-SE', {
+        day: '2-digit',
+        month: 'short',
+        ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
+      })
+
+  const dateLabel = rawDateLabel.replace('.', '')
+  const timeLabel = date.toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return `${dateLabel}, ${timeLabel}`
 }
 
 function resizeSectionToRemainingViewport() {
@@ -226,41 +579,388 @@ onBeforeUnmount(() => {
     </VSnackbar>
 
     <VCard 
-      class="page-notifications card-fill pa-6 d-flex flex-column" 
+      class="page-activities card-fill pa-6 d-flex flex-column" 
       :class="windowWidth < 1024 ? '' : ''"
     >
       
       <DefaultLayoutWithoutVerticalNav />
 
-      <!--Buttons-->
-      <div class="d-flex w-auto margin-notifications">
-        <VBtn                
-          class="btn-light" 
+      <div class="d-flex w-auto margin-activities">
+        <VBtn
+          class="btn-light"
           :to="{ name: 'dashboard-panel' }"
-          >
+        >
           <VIcon icon="custom-return" size="24" />
           <span v-if="windowWidth < 1024">Gå ut</span>
-          <span v-else>Tillbaka</span>                    
+          <span v-else>Tillbaka</span>
         </VBtn>
       </div>
 
-      <!--List desktop-->
-      <div  
-        v-if="!$vuetify.display.mdAndDown"
-        v-show="notifications.length"
-        class="pb-6">
-
-        <div class="d-flex align-center w-auto margin-notifications my-6" v-if="notifications.length">
-          <span class="title-notifications">Aktivitetshistorik</span>
-
-          <VSpacer />
-
+      <div>
+        <div class="d-flex align-center w-auto margin-activities pb-4 my-4 border-bottom-settings">
+          <span class="title-activities">Aktivitetshistorik</span>
         </div>
 
-       
+        <VCardText class="d-flex align-center justify-space-between gap-2 margin-activities p-0">
+            <!-- 👉 Search  -->
+            <div class="search">
+                <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+            </div>
+
+            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+            <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+                <AppAutocomplete
+                    v-if="role !== 'Supplier' && role !== 'User'"
+                    prepend-icon="custom-profile"
+                    v-model="supplier_id"
+                    placeholder="Leverantörer"
+                    :items="suppliers"
+                    :item-title="(item) => item.full_name"
+                    :item-value="(item) => item.id"
+                    autocomplete="off"
+                    clearable
+                    clear-icon="tabler-x"
+                    class="selector-user selector-truncate"
+                />
+            </div>
+
+            <div
+                v-if="!$vuetify.display.mdAndDown"
+                class="d-flex align-center empty-select"
+                >
+                <VSelect
+                    v-model="mode"
+                    class="custom-select-hover activity-mode-select"
+                    :items="modeOptions"
+                    item-title="title"
+                    item-value="value"
+                >
+                    <template #selection="{ item }">
+                        <div class="activity-mode-option">
+                            <VIcon :icon="item.raw.icon" size="24" />
+                            <span>{{ item.raw.title }}</span>
+                        </div>
+                    </template>
+
+                    <template #item="{ props, item }">
+                        <VListItem v-bind="props">
+                            <template #prepend>
+                            <VIcon :icon="item.raw.icon" size="24" class="activity-mode-item-icon" />
+                            </template>
+                        </VListItem>
+                    </template>
+                </VSelect>
+            </div>
+
+            <VBtn
+                class="btn-transparent px-3"
+                v-if="role !== 'Supplier' && role !== 'User'"
+                @click="isFilterDialogVisible = true"
+                :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+                >
+                <VIcon icon="custom-profile" size="24" />
+            </VBtn>
+
+            <VBtn
+                class="btn-transparent px-3"
+                @click="filtreraMobile = true"
+                v-if="$vuetify.display.mdAndDown"
+                >
+                <VIcon icon="custom-filter" size="24" />
+                <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+
+            <VMenu v-if="!$vuetify.display.mdAndDown">
+                <template #activator="{ props }">
+                    <VBtn class="btn-transparent px-2" v-bind="props">
+                    <VIcon icon="custom-filter" size="24" />
+                    <span class="d-none d-md-block">Filtrera efter</span>
+                    </VBtn>
+                </template>
+                <VList>
+                    <VListItem @click="updateStatus('created')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'created'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Skapad</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem @click="updateStatus('delivered')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'delivered'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Levererad</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem @click="updateStatus('delivery_issues')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'delivery_issues'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Leveransproblem</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem @click="updateStatus('reviewed')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'reviewed'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Granskad</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem @click="updateStatus('signed')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'signed'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Signerad</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem @click="updateStatus('cancelled')">
+                    <template #prepend>
+                        <VListItemAction>
+                        <VCheckbox
+                            :model-value="status === 'cancelled'"
+                            class="ml-3"
+                            true-icon="custom-checked-checkbox"
+                            false-icon="custom-unchecked-checkbox"
+                        /></VListItemAction>
+                    </template>
+                    <VListItemTitle>Annullerad</VListItemTitle>
+                    </VListItem>
+                </VList>
+            </VMenu>
+
+            <div
+                v-if="!$vuetify.display.mdAndDown"
+                class="d-flex align-center visa-select"
+                >
+                <span class="text-no-wrap pr-4">Visa</span>
+                <VSelect
+                    v-model="rowPerPage"
+                    class="custom-select-hover"
+                    :items="[10, 20, 30, 50]"
+                />
+            </div>
+        </VCardText>
       </div>
 
-     
+      <div
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="displayActivities.length"
+      >
+        <VTable class="activities-table margin-activities mt-4">
+          <colgroup>
+            <col style="width: 190px">
+            <col style="width: 190px">
+            <col>
+            <col style="width: 230px">
+            <col style="width: 170px">
+            <col style="width: 72px">
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th scope="col" class="text-center">Modul</th>
+              <th scope="col" class="text-center">Händelse</th>
+              <th scope="col" class="text-center">Beskrivning</th>
+              <th scope="col" class="text-center">Användare</th>
+              <th scope="col" class="text-center">Datum & Tid</th>
+              <th scope="col" class="text-center"></th>
+            </tr>
+          </thead>
+
+          <tbody class="activities-table-body">
+            <template v-for="activity in displayActivities" :key="activity.id">
+              <tr
+                class="activity-summary-row"
+                :class="{ 'is-expanded': isActivityExpanded(activity.id) }"
+                @click="toggleActivity(activity.id)"
+              >
+                <td class="text-center">
+                  <div class="activity-module-pill">
+                    <VIcon :icon="activity.icon || 'custom-circle-help'" size="16" />
+                    <span>{{ activity.moduleLabel }}</span>
+                  </div>
+                </td>
+
+                <td class="text-center">
+                  <span class="activity-event-text">
+                    {{ activity.eventLabel }}
+                  </span>
+                </td>
+
+                <td class="text-center">
+                  <div class="activity-description-text">
+                    <span class="activity-description-title">{{ activity.descriptionTitle }}</span>
+                    <span v-if="activity.descriptionSubtitle" class="activity-description-subtitle">{{ activity.descriptionSubtitle }}</span>
+                  </div>
+                </td>
+
+                <td style="width: 1%; white-space: nowrap">
+                    <div class="d-flex align-center gap-x-1">
+                        <VAvatar
+                            variant="outlined"
+                            size="38"
+                        >
+                            <VImg
+                                v-if="activity.user.avatar"
+                                style="border-radius: 50%"
+                                :src="themeConfig.settings.urlStorage + activity.user.avatar"
+                            />
+                            <PresetAvatarImage
+                                v-else
+                                :avatar-id="activity.user?.user_detail?.avatar_id"
+                            />
+                        </VAvatar>
+                        <div class="d-flex flex-column">
+                            <span class="font-weight-medium">
+                                {{ activity.user.name }} {{ activity.user.last_name ?? "" }}
+                            </span>
+                            <span class="text-sm text-disabled">
+                                <VTooltip 
+                                    v-if="activity.user.email && activity.user.email.length > 20"
+                                    location="bottom">
+                                    <template #activator="{ props }">
+                                        <span v-bind="props" class="cursor-pointer">
+                                        {{ truncateText(activity.user.email, 20) }}
+                                        </span>
+                                    </template>
+                                    <span>{{ activity.user.email }}</span>
+                                    </VTooltip>
+                                    <span class="text-sm text-disabled"v-else>{{ activity.user.email }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </td> 
+
+                <td class="text-center">
+                  <span class="activity-date-text">{{ activity.createdAtLabel }}</span>
+                </td>
+
+                <td class="text-center">
+                  <VBtn
+                    icon
+                    variant="text"
+                    class="activity-toggle-btn"
+                    @click.stop="toggleActivity(activity.id)"
+                  >
+                    <VIcon
+                      icon="custom-chevron-down"
+                      size="18"
+                      class="activity-toggle-icon"
+                      :class="{ 'is-open': isActivityExpanded(activity.id) }"
+                    />
+                  </VBtn>
+                </td>
+              </tr>
+
+              <tr
+                v-if="isActivityExpanded(activity.id)"
+                class="activity-detail-row"
+              >
+                <td colspan="6">
+                  <div class="activity-detail-panel">
+                    <div class="activity-detail-title">{{ activity.detailTitle }}</div>
+
+                    <div v-if="activity.changes.length" class="activity-detail-list">
+                      <div
+                        v-for="change in activity.changes"
+                        :key="`${activity.id}-${change.key}`"
+                        class="activity-detail-item"
+                      >
+                        <div class="activity-detail-label">{{ change.label }}:</div>
+
+                        <div class="activity-detail-values">
+                          <template v-if="change.type === 'created'">
+                            <span class="activity-detail-created">{{ change.value }}</span>
+                          </template>
+
+                          <template v-else-if="change.type === 'deleted'">
+                            <span class="activity-detail-deleted">{{ change.value }}</span>
+                          </template>
+
+                          <template v-else>
+                            <span v-if="change.oldValue !== null" class="activity-detail-old">{{ change.oldValue }}</span>
+                            <VIcon
+                              v-if="change.oldValue !== null && change.newValue !== null"
+                              icon="custom-arrow-right"
+                              size="16"
+                              class="activity-detail-arrow"
+                            />
+                            <span v-if="change.newValue !== null" class="activity-detail-new">{{ change.newValue }}</span>
+                            <span v-else class="activity-detail-muted">Borttagen</span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-else class="activity-detail-empty">
+                      {{ activity.descriptionText }}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </VTable>
+
+        <VCardText
+          v-if="displayActivities.length"
+          :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+          class="align-center flex-wrap gap-4 mt-6 p-0 margin-activities"
+        >
+          <span class="text-pagination-results">
+            {{ paginationData }}
+          </span>
+
+          <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+          <VPagination
+            v-model="currentPage"
+            size="small"
+            :total-visible="4"
+            :length="totalPages"
+            next-icon="custom-chevron-right"
+            prev-icon="custom-chevron-left"
+          />
+        </VCardText>
+      </div>
+
+      <div
+        v-if="!isRequestOngoing && !displayActivities.length"
+        class="activity-empty-state margin-activities"
+      >
+        Inga aktiviteter hittades.
+      </div>
     </VCard>
   </section>
 
@@ -269,128 +969,338 @@ onBeforeUnmount(() => {
 
 <style lang="scss">
 
-  .navigation-bar {
-    background: linear-gradient(90deg, #eafff1 0%, #eafff8 50%, #ecffff 100%) !important;
-    inset-block-start: 0rem;
-    padding: 24px 24px;
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: 0;
-    z-index: 9999;
+    .navigation-bar {
+        background: linear-gradient(90deg, #eafff1 0%, #eafff8 50%, #ecffff 100%) !important;
+        inset-block-start: 0rem;
+        padding: 24px 24px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        z-index: 9999;
 
-    @media (max-width: 1023px) {
-      padding: 16px 24px;
-    }
-  }
-
-  .card-notification {
-    border-radius: 16px;
-    height: 94px !important;
-    min-height: 94px !important;
-    max-height: 94px !important;
-    margin: 0 96px;
-    padding: 24px !important;
-
-    @media (max-width: 1023px) {
-      margin: 0;
-      padding: 18px 12px !important;
-      position: relative;
+        @media (max-width: 1023px) {
+        padding: 16px 24px;
+        }
     }
 
-  }
+    .margin-activities {
+        margin: 0 96px;
 
-  @media (max-width: 1023px) {
-    .card-notification .close-btn {
-      position: absolute;
-      top: -6px;
-      right: 6px;
-      z-index: 1;
-      width: 24px !important;
-      background: transparent !important;
+        @media (max-width: 1023px) {
+            margin: 0;
+        }
     }
 
-    .notification-avatar-mobile > svg,
-    .notification-avatar-mobile .v-icon svg {
-      width: 16px;
-      height: 16px;
+    .page-activities .selector-user {
+      .v-input__control {
+        background: transparent !important;
+        padding-top: 0 !important;
+
+        .v-field,
+        .v-field__overlay {
+          background: transparent !important;
+        }
+      }
     }
-  }
 
-  .pagination-bottom {
-    margin-top: auto !important;
-    height: 48px;
-    min-height: 48px;
-    max-height: 48px;
-    @media (max-width: 1023px) {
-      margin-top: 8px !important;
+    .title-activities {
+        color: #1C2925;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 100%;
     }
-  }
 
-  .margin-notifications {
-    margin: 0 96px;
-
-    @media (max-width: 1023px) {
-      margin: 0;
+    .activity-mode-option {
+      align-items: center;
+      color: #454545;
+      display: inline-flex;
+      gap: 8px;
+      line-height: 16px;
     }
-  }
 
-  .title-notifications {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1C2925;
-  }
-
-  .notification-title {
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #1C2925;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
+    .activity-mode-option .v-icon,
+    .activity-mode-item-icon {
+      color: #454545 !important;
     }
-  }
 
-  .notification-text {
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #454545;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
+    .activities-table {
+        background-color: #FFFFFF !important;
+        border-radius: 16px !important;
+        overflow: hidden;
     }
-  }
 
-  .notification-time {
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #878787;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
+    .activities-table .v-table__wrapper thead th:first-child {
+        border-top-left-radius: 16px !important;
+        border-bottom-left-radius: 0 !important;
     }
-  }
 
-  .page-notifications {
-    margin-top: 80px;
-    background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
-
-    @media (max-width: 1023px) {
-      padding-bottom: 120px !important;
+    .activities-table .v-table__wrapper thead th:last-child {
+        border-top-right-radius: 16px !important;
+        border-bottom-right-radius: 0 !important;
     }
-  }
 
-  .notification-avatar .v-icon {
-    color: #6E9383 !important;
-  }
+    .activities-table .v-table__wrapper {
+        overflow: hidden;
+    }
+
+    .activities-table table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .activities-table thead tr {
+        background-color: #F5F8F6;
+    }
+
+    .activity-summary-row {
+        cursor: pointer;
+    }
+
+    .activity-summary-row td {
+        background-color: #FFFFFF;
+        border-bottom: 1px solid #E7E7E7 !important;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #1C2925 !important;
+        padding: 22px 24px !important;
+        transition: background-color 0.2s ease;
+        vertical-align: middle;
+    }
+
+    .activity-summary-row:hover td {
+        background-color: #FCFDFC;
+    }
+
+    .activity-summary-row.is-expanded td {
+        border-bottom-color: transparent !important;
+    }
+
+    .activity-module-pill {
+        align-items: center;
+        background-color: #E7E7E7;
+        border-radius: 56px;
+        color: #797979;
+        display: inline-flex;
+        gap: 4px;
+        min-height: 32px;
+        padding: 8px;
+        white-space: nowrap;
+    }
+
+    .activity-module-pill .v-icon {
+        color: #878787 !important;
+    }
+
+    .activity-module-pill span {
+        font-size: 14px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #878787 !important;
+    }
+
+    .activity-event-text {
+        font-weight: 600;
+        line-height: 16px;
+        letter-spacing: 0;
+        text-align: center;
+        color: #454545;
+    }
+
+    .activity-description-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #454545;
+    }
+
+    .activity-description-title {
+      color: #454545;
+    }
+
+    .activity-description-subtitle {
+      color: #878787;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .activity-user {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .activity-user-avatar {
+        background-color: #F1F3F2 !important;
+        border: 1px solid #E5EBE8;
+        color: #7E8985 !important;
+        flex-shrink: 0;
+    }
+
+    .activity-user-initials {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .activity-user-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .activity-user-name {
+        color: #2C3A35;
+        font-weight: 600;
+    }
+
+    .activity-user-caption {
+        color: #9CA4A0;
+        font-size: 12px;
+    }
+
+    .activity-date-text {
+        font-weight: 400;
+        line-height: 16px;
+        letter-spacing: 0;
+        text-align: center;
+        color: #454545;
+        white-space: nowrap;
+    }
+
+    .activity-toggle-btn {
+        color: #008C91 !important;
+    }
+
+    .activity-toggle-icon {
+        transition: transform 0.2s ease;
+    }
+
+    .activity-toggle-icon.is-open {
+        transform: rotate(180deg);
+    }
+
+    .activity-detail-row td {
+        background-color: #F6F6F6 !important;
+        border-bottom: 1px solid #EEF2F0 !important;
+        padding: 0 24px 24px !important;
+    }
+
+    .activity-detail-panel {
+        background-color: #F6F6F6;
+        color: #4F5955;
+        padding: 16px 48px;
+    }
+
+    .activity-detail-title {
+        color: #BFBFBF;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+        margin-bottom: 4px;
+    }
+
+    .activity-detail-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .activity-detail-item {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .activity-detail-label {
+        color: #878787;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+    }
+
+    .activity-detail-values {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        line-height: 1.5;
+    }
+
+    .activity-detail-old {
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #F06262;
+    }
+
+    .activity-detail-deleted {
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #F06262;
+    }
+
+    .activity-detail-new {
+        color: #008C91;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+    }
+
+    .activity-detail-created {
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #008C91;
+    }
+
+    .activity-detail-arrow {
+        color: #454545 !important;
+    }
+
+    .activity-detail-muted,
+    .activity-detail-empty {
+        color: #8A948F;
+    }
+
+    .activity-empty-state {
+        color: #5F6D67;
+        font-size: 14px;
+        padding: 40px 0 24px;
+    }
+
+    .page-activities {
+        margin-top: 80px;
+        background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+
+        @media (max-width: 1023px) {
+        padding-bottom: 120px !important;
+        }
+    }
+
+    @media (max-width: 1400px) {
+        .activities-table thead th,
+        .activity-summary-row td,
+        .activity-detail-row td {
+            padding-left: 18px !important;
+            padding-right: 18px !important;
+        }
+
+        .activity-description-text {
+            max-width: 320px;
+    }
+}
 </style>
 
 <route lang="yaml">

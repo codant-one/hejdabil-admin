@@ -396,6 +396,10 @@ body .v-btn {
     }
   }
 
+  &.btn-transparent {
+    background-color: transparent !important;
+  }
+  
   &.btn-ghost {
     background-color: transparent !important;
     width: auto !important;

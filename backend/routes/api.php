@@ -41,7 +41,8 @@ use App\Http\Controllers\{
     CountryController,
     ReminderController,
     SettingController,
-    SmsMessageController
+    SmsMessageController,
+    ActivitiesController
 };
 
 use App\Http\Controllers\Services\{
@@ -112,7 +113,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('countries', CountryController::class);
     Route::apiResource('notifications', NotificationController::class);
     Route::apiResource('reminders', ReminderController::class);
-    Route::get('sms-messages', [SmsMessageController::class, 'index']);
+    Route::apiResource('activities', ActivitiesController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -289,6 +290,9 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
     Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
     Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
+
+    //Messaging
+    Route::get('sms-messages', [SmsMessageController::class, 'index']);
 });
 
 //Public Endpoints
