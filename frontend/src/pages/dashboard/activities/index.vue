@@ -6,6 +6,7 @@ import { useActivitiesStore } from '@/stores/useActivities'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DefaultLayoutWithoutVerticalNav from '@/layouts/components/DefaultLayoutWithoutVerticalNav.vue'
 import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
+import { formatNumber } from '@/@core/utils/formatters'
 import { getActivityVisibleFields } from './activityVisibleFields'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -80,6 +81,7 @@ const activityActionLabels = {
   delivered: 'levererad',
   paid: 'markerad som betald',
   reminder: 'påminnelse skickad',
+  credit: 'kreditfaktura skapad',
   resend: 'skickad igen',
   reviewed: 'granskad',
   send: 'skickad',
@@ -91,6 +93,7 @@ const activityActionLabels = {
 const activityDetailTitles = {
   created: 'Skapad information',
   deleted: 'Borttagen information',
+  sent: 'Skickad till',
   updated: 'Ändring',
 }
 
@@ -99,7 +102,16 @@ const activityFieldLabels = {
   address: 'Adress',
   agreement_id: 'Avtals-ID',
   amount: 'Belopp',
-  billing_id: 'Faktura-ID',
+  invoice_id: 'Faktura nr',
+  invoice_date: 'Fakturadatum',
+  due_date: 'Förfallodatum',
+  tax: 'Moms',
+  detail: 'Detaljer',
+  subtotal: 'Netto',
+  total: 'Summa att betala',
+  discount: 'Preliminär skattereduktion',
+  amount_discount: 'Rabatt',
+  amount_tax: 'Belopp Skatt',
   comments: 'Kommentar',
   country_id: 'Land',
   description: 'Beskrivning',
@@ -230,11 +242,14 @@ function formatActivityFieldLabel(field) {
   if (!field)
     return 'Fält'
 
-  const { sourceKey } = resolveConfiguredActivityField(field)
+  if (typeof field === 'object' && typeof field.label === 'string' && field.label.trim())
+    return field.label.trim()
 
-  return activityFieldLabels[field]
+  const { displayKey, sourceKey } = resolveConfiguredActivityField(field)
+
+  return activityFieldLabels[displayKey]
     ?? activityFieldLabels[sourceKey]
-    ?? String(field)
+    ?? String(displayKey)
       .replace(/_name$/g, '')
       .replace(/_/g, ' ')
       .replace(/\b\w/g, letter => letter.toUpperCase())
@@ -254,32 +269,97 @@ function normalizeActivityValue(value) {
   return value
 }
 
-function formatActivityValue(value) {
+function applyActivityFieldFormatting(value, fieldEntry) {
   const normalizedValue = normalizeActivityValue(value)
 
   if (normalizedValue === null || normalizedValue === undefined || normalizedValue === '')
     return 'Tomt'
 
+  let formattedValue = String(normalizedValue)
+
+  if (fieldEntry?.prefix && !formattedValue.startsWith(fieldEntry.prefix))
+    formattedValue = `${fieldEntry.prefix}${formattedValue}`
+
+  if (fieldEntry?.suffix && !formattedValue.endsWith(fieldEntry.suffix))
+    formattedValue = `${formattedValue}${fieldEntry.suffix}`
+
+  return formattedValue
+}
+
+function formatActivityValue(value, fieldEntry = null) {
+  const normalizedValue = normalizeActivityValue(value)
+
+  if (normalizedValue === null || normalizedValue === undefined || normalizedValue === '')
+    return 'Tomt'
+
+  if (typeof fieldEntry?.formatter === 'function' && !Array.isArray(normalizedValue) && typeof normalizedValue !== 'object') {
+    return applyActivityFieldFormatting(fieldEntry.formatter(normalizedValue), fieldEntry)
+  }
+
   if (typeof normalizedValue === 'boolean')
-    return normalizedValue ? 'Ja' : 'Nej'
+    return applyActivityFieldFormatting(normalizedValue ? 'Ja' : 'Nej', fieldEntry)
 
   if (Array.isArray(normalizedValue)) {
     const formattedValues = normalizedValue
       .filter(hasRenderableActivityValue)
-      .map(formatActivityValue)
+      .map(item => formatActivityValue(item))
 
-    return formattedValues.length ? formattedValues.join(', ') : 'Tomt'
+    return applyActivityFieldFormatting(formattedValues.length ? formattedValues.join(', ') : 'Tomt', fieldEntry)
   }
 
   if (typeof normalizedValue === 'object') {
     const flattenedValues = Object.values(normalizedValue)
       .filter(hasRenderableActivityValue)
-      .map(formatActivityValue)
+      .map(item => formatActivityValue(item))
 
-    return flattenedValues.length ? flattenedValues.join(', ') : 'Tomt'
+    return applyActivityFieldFormatting(flattenedValues.length ? flattenedValues.join(', ') : 'Tomt', fieldEntry)
   }
 
-  return String(normalizedValue)
+  return applyActivityFieldFormatting(normalizedValue, fieldEntry)
+}
+
+function isBillingDetailRenderType(change) {
+  return change?.renderType === 'billing-detail'
+}
+
+function getBillingDetailRows(rawDetail) {
+  if (!rawDetail)
+    return []
+
+  try {
+    const parsed = typeof rawDetail === 'string' ? JSON.parse(rawDetail) : rawDetail
+
+    if (!Array.isArray(parsed))
+      return []
+
+    return parsed
+      .map(row => {
+        if (!Array.isArray(row))
+          return null
+
+        const noteCell = row.find(column => column?.note)
+
+        if (noteCell?.note) {
+          return {
+            note: noteCell.note,
+          }
+        }
+
+        const values = {}
+
+        row.forEach(column => {
+          if (column?.id)
+            values[column.id] = column.value
+        })
+
+        return {
+          values,
+        }
+      })
+      .filter(Boolean)
+  } catch {
+    return []
+  }
 }
 
 function hasRenderableActivityValue(value) {
@@ -307,7 +387,76 @@ function normalizeActivityValueMap(values) {
   return values
 }
 
+function collectActivityRecipientValues(...valueGroups) {
+  return [...new Set(
+    valueGroups
+      .flatMap(value => Array.isArray(value) ? value : [value])
+      .map(value => normalizeActivityValue(value))
+      .filter(value => value !== null && value !== undefined && value !== '')
+      .map(value => String(value)),
+  )]
+}
+
+function resolveActivityRecipients(metadata) {
+  return {
+    emails: collectActivityRecipientValues(metadata?.emails, metadata?.email, metadata?.recipient),
+    phones: collectActivityRecipientValues(metadata?.phones, metadata?.phone, metadata?.recipient_phone),
+  }
+}
+
+function buildSentActivityChanges(metadata) {
+  const { emails, phones } = resolveActivityRecipients(metadata)
+
+  return [
+    ...(emails.length
+      ? [{
+        key: 'emails',
+        label: 'E-post',
+        renderType: null,
+        rawValue: emails,
+        type: 'created',
+        value: emails.join(', '),
+      }]
+      : []),
+    ...(phones.length
+      ? [{
+        key: 'phones',
+        label: 'Telefon',
+        renderType: null,
+        rawValue: phones,
+        type: 'created',
+        value: phones.join(', '),
+      }]
+      : []),
+  ]
+}
+
+function getActivityRecipientSummary(activity) {
+  const metadata = parseActivityMetadata(activity)
+  const { emails, phones } = resolveActivityRecipients(metadata)
+  const parts = []
+
+  if (emails.length)
+    parts.push(`E-post: ${emails.join(', ')}`)
+
+  if (phones.length)
+    parts.push(`Telefon: ${phones.join(', ')}`)
+
+  return parts.length ? `Skickad till ${parts.join(' | ')}` : null
+}
+
 function resolveConfiguredActivityField(field) {
+  if (field && typeof field === 'object') {
+    const displayKey = String(field.displayKey ?? field.key ?? field.sourceKey ?? '')
+    const sourceKey = String(field.sourceKey ?? (displayKey.endsWith('_name') ? displayKey.replace(/_name$/g, '_id') : displayKey))
+
+    return {
+      ...field,
+      displayKey,
+      sourceKey,
+    }
+  }
+
   const normalizedField = String(field ?? '')
 
   if (normalizedField.endsWith('_name')) {
@@ -360,23 +509,27 @@ function getActivityDetailMode(activity, oldValues, newValues) {
 
 function buildCreatedActivityChanges(activity, newValues) {
   return getActivityVisibleFieldEntries(activity, Object.keys(newValues))
-    .filter(({ sourceKey }) => hasRenderableActivityValue(newValues[sourceKey]))
-    .map(({ displayKey, sourceKey }) => ({
-      key: displayKey,
-      label: formatActivityFieldLabel(displayKey),
+    .filter(fieldEntry => hasRenderableActivityValue(newValues[fieldEntry.sourceKey]))
+    .map(fieldEntry => ({
+      key: fieldEntry.displayKey,
+      label: formatActivityFieldLabel(fieldEntry),
+      renderType: fieldEntry.renderType ?? null,
+      rawValue: newValues[fieldEntry.sourceKey],
       type: 'created',
-      value: formatActivityValue(newValues[sourceKey]),
+      value: formatActivityValue(newValues[fieldEntry.sourceKey], fieldEntry),
     }))
 }
 
 function buildDeletedActivityChanges(activity, oldValues) {
   return getActivityVisibleFieldEntries(activity, Object.keys(oldValues))
-    .filter(({ sourceKey }) => hasRenderableActivityValue(oldValues[sourceKey]))
-    .map(({ displayKey, sourceKey }) => ({
-      key: displayKey,
-      label: formatActivityFieldLabel(displayKey),
+    .filter(fieldEntry => hasRenderableActivityValue(oldValues[fieldEntry.sourceKey]))
+    .map(fieldEntry => ({
+      key: fieldEntry.displayKey,
+      label: formatActivityFieldLabel(fieldEntry),
+      renderType: fieldEntry.renderType ?? null,
+      rawValue: oldValues[fieldEntry.sourceKey],
       type: 'deleted',
-      value: formatActivityValue(oldValues[sourceKey]),
+      value: formatActivityValue(oldValues[fieldEntry.sourceKey], fieldEntry),
     }))
 }
 
@@ -384,26 +537,29 @@ function buildUpdatedActivityChanges(activity, oldValues, newValues) {
   const keys = [...new Set([...Object.keys(oldValues), ...Object.keys(newValues)])]
 
   return getActivityVisibleFieldEntries(activity, keys)
-    .map(({ displayKey, sourceKey }) => {
-      const hasOldValue = Object.prototype.hasOwnProperty.call(oldValues, sourceKey)
-      const hasNewValue = Object.prototype.hasOwnProperty.call(newValues, sourceKey)
-      const rawOldValue = hasOldValue ? oldValues[sourceKey] : null
-      const rawNewValue = hasNewValue ? newValues[sourceKey] : null
+    .map(fieldEntry => {
+      const hasOldValue = Object.prototype.hasOwnProperty.call(oldValues, fieldEntry.sourceKey)
+      const hasNewValue = Object.prototype.hasOwnProperty.call(newValues, fieldEntry.sourceKey)
+      const rawOldValue = hasOldValue ? oldValues[fieldEntry.sourceKey] : null
+      const rawNewValue = hasNewValue ? newValues[fieldEntry.sourceKey] : null
       const hasRenderableOldValue = hasRenderableActivityValue(rawOldValue)
       const hasRenderableNewValue = hasRenderableActivityValue(rawNewValue)
 
       if (!hasRenderableOldValue && !hasRenderableNewValue)
         return null
 
-      const oldValue = hasOldValue ? formatActivityValue(oldValues[sourceKey]) : null
-      const newValue = hasNewValue ? formatActivityValue(newValues[sourceKey]) : null
+      const oldValue = hasOldValue ? formatActivityValue(oldValues[fieldEntry.sourceKey], fieldEntry) : null
+      const newValue = hasNewValue ? formatActivityValue(newValues[fieldEntry.sourceKey], fieldEntry) : null
 
       if (oldValue === newValue)
         return null
 
       return {
-        key: displayKey,
-        label: formatActivityFieldLabel(displayKey),
+        key: fieldEntry.displayKey,
+        label: formatActivityFieldLabel(fieldEntry),
+        renderType: fieldEntry.renderType ?? null,
+        oldRawValue: hasOldValue ? oldValues[fieldEntry.sourceKey] : null,
+        newRawValue: hasNewValue ? newValues[fieldEntry.sourceKey] : null,
         type: 'updated',
         newValue: hasRenderableNewValue ? newValue : null,
         oldValue: hasRenderableOldValue ? oldValue : null,
@@ -439,6 +595,15 @@ function getActivityChangeSummary(activity) {
     }
   }
 
+  const sentChanges = buildSentActivityChanges(metadata)
+
+  if (sentChanges.length) {
+    return {
+      detailMode: 'sent',
+      changes: sentChanges,
+    }
+  }
+
   return {
     detailMode,
     changes: [],
@@ -462,7 +627,7 @@ function getActivityModuleSingularLabel(entityType) {
 
 function resolveActivityActionKey(actionType) {
   const normalizedAction = String(actionType ?? '').toLowerCase()
-  const orderedKeys = ['reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send']
+  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send']
 
   return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
 }
@@ -485,6 +650,11 @@ function getActivityTitle(activity) {
 }
 
 function getActivitySecondaryDescription(activity) {
+  const recipientSummary = getActivityRecipientSummary(activity)
+
+  if (recipientSummary)
+    return recipientSummary
+
   const title = normalizeActivityValue(activity?.title)
   const description = normalizeActivityValue(activity?.description)
 
@@ -812,7 +982,7 @@ onBeforeUnmount(() => {
                   </div>
                 </td>
 
-                <td class="text-center">
+                <td class="text-center w-20">
                   <span class="activity-event-text">
                     {{ activity.eventLabel }}
                   </span>
@@ -896,28 +1066,144 @@ onBeforeUnmount(() => {
                         v-for="change in activity.changes"
                         :key="`${activity.id}-${change.key}`"
                         class="activity-detail-item"
+                        :class="{ 'activity-detail-item--rich': isBillingDetailRenderType(change) }"
                       >
                         <div class="activity-detail-label">{{ change.label }}:</div>
 
-                        <div class="activity-detail-values">
+                        <div class="activity-detail-values" :class="{ 'is-rich': isBillingDetailRenderType(change) }">
                           <template v-if="change.type === 'created'">
-                            <span class="activity-detail-created">{{ change.value }}</span>
+                            <template v-if="isBillingDetailRenderType(change)">
+                              <div class="activity-detail-created activity-detail-rich">
+                                <div class="billing-detail-tooltip">
+                                  <table
+                                    v-if="getBillingDetailRows(change.rawValue).length"
+                                    class="billing-detail-table"
+                                  >
+                                    <tbody>
+                                      <tr
+                                        v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                        :key="rowIndex"
+                                      >
+                                        <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                        <template v-else>
+                                          <td>{{ row.values[1] ?? '-' }}</td>
+                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                        </template>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                  <span v-else>Ingen detaljinformation</span>
+                                </div>
+                              </div>
+                            </template>
+                            <span v-else class="activity-detail-created">{{ change.value }}</span>
                           </template>
 
                           <template v-else-if="change.type === 'deleted'">
-                            <span class="activity-detail-deleted">{{ change.value }}</span>
+                            <template v-if="isBillingDetailRenderType(change)">
+                              <div class="activity-detail-deleted activity-detail-rich">
+                                <div class="billing-detail-tooltip">
+                                  <table
+                                    v-if="getBillingDetailRows(change.rawValue).length"
+                                    class="billing-detail-table"
+                                  >
+                                    <tbody>
+                                      <tr
+                                        v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                        :key="rowIndex"
+                                      >
+                                        <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                        <template v-else>
+                                          <td>{{ row.values[1] ?? '-' }}</td>
+                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                        </template>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                  <span v-else>Ingen detaljinformation</span>
+                                </div>
+                              </div>
+                            </template>
+                            <span v-else class="activity-detail-deleted">{{ change.value }}</span>
                           </template>
 
                           <template v-else>
-                            <span v-if="change.oldValue !== null" class="activity-detail-old">{{ change.oldValue }}</span>
-                            <VIcon
-                              v-if="change.oldValue !== null && change.newValue !== null"
-                              icon="custom-arrow-right"
-                              size="16"
-                              class="activity-detail-arrow"
-                            />
-                            <span v-if="change.newValue !== null" class="activity-detail-new">{{ change.newValue }}</span>
-                            <span v-else class="activity-detail-muted">Borttagen</span>
+                            <template v-if="isBillingDetailRenderType(change)">
+                              <div v-if="change.oldValue !== null" class="activity-detail-old activity-detail-rich">
+                                <div class="billing-detail-tooltip">
+                                  <table
+                                    v-if="getBillingDetailRows(change.oldRawValue).length"
+                                    class="billing-detail-table"
+                                  >
+                                    <tbody>
+                                      <tr
+                                        v-for="(row, rowIndex) in getBillingDetailRows(change.oldRawValue)"
+                                        :key="`old-${rowIndex}`"
+                                      >
+                                        <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                        <template v-else>
+                                          <td>{{ row.values[1] ?? '-' }}</td>
+                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                        </template>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                  <span v-else>Ingen detaljinformation</span>
+                                </div>
+                              </div>
+                              <VIcon
+                                v-if="change.oldValue !== null && change.newValue !== null"
+                                icon="custom-arrow-right"
+                                size="16"
+                                class="activity-detail-arrow activity-detail-arrow-rich"
+                              />
+                              <div v-if="change.newValue !== null" class="activity-detail-new activity-detail-rich">
+                                <div class="billing-detail-tooltip">
+                                  <table
+                                    v-if="getBillingDetailRows(change.newRawValue).length"
+                                    class="billing-detail-table"
+                                  >
+                                    <tbody>
+                                      <tr
+                                        v-for="(row, rowIndex) in getBillingDetailRows(change.newRawValue)"
+                                        :key="`new-${rowIndex}`"
+                                      >
+                                        <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                        <template v-else>
+                                          <td>{{ row.values[1] ?? '-' }}</td>
+                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                        </template>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                  <span v-else>Ingen detaljinformation</span>
+                                </div>
+                              </div>
+                              <span v-else class="activity-detail-muted">Borttagen</span>
+                            </template>
+                            <template v-else>
+                              <span v-if="change.oldValue !== null" class="activity-detail-old">{{ change.oldValue }}</span>
+                              <VIcon
+                                v-if="change.oldValue !== null && change.newValue !== null"
+                                icon="custom-arrow-right"
+                                size="16"
+                                class="activity-detail-arrow"
+                              />
+                              <span v-if="change.newValue !== null" class="activity-detail-new">{{ change.newValue }}</span>
+                              <span v-else class="activity-detail-muted">Borttagen</span>
+                            </template>
                           </template>
                         </div>
                       </div>
@@ -1217,6 +1503,11 @@ onBeforeUnmount(() => {
         gap: 8px;
     }
 
+    .activity-detail-item--rich {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .activity-detail-label {
         color: #878787;
         font-weight: 400;
@@ -1231,6 +1522,13 @@ onBeforeUnmount(() => {
         flex-wrap: wrap;
         gap: 4px;
         line-height: 1.5;
+    }
+
+    .activity-detail-values.is-rich {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
     }
 
     .activity-detail-old {
@@ -1269,9 +1567,106 @@ onBeforeUnmount(() => {
         color: #454545 !important;
     }
 
+    .activity-detail-arrow-rich {
+      margin: 2px 0 2px 12px;
+    }
+
+    .activity-detail-rich {
+      display: block;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    .billing-detail-tooltip {
+      background-color: transparent;
+      border: 0;
+      border-radius: 0;
+      color: #454545;
+      max-width: 100%;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .billing-detail-table {
+      border-collapse: collapse;
+      color: #454545;
+      font-size: 12px;
+      letter-spacing: 0;
+      line-height: 16px;
+      table-layout: auto;
+      width: 100%;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table td {
+      height: auto !important;
+      border-bottom: 1px solid #E7E7E7 !important;
+      color: #454545 !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+      padding: 8px 16px 8px 0 !important;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table td:first-child {
+      color: #878787 !important;
+      min-width: 132px;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table td:last-child {
+      padding-right: 0 !important;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table tr:first-child td {
+      padding-top: 0;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table tr:last-child td {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .activities-table .activity-detail-row .billing-detail-table td[colspan='5'] {
+      color: #878787;
+      padding-right: 0;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td,
+    .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td {
+      border-bottom-color: rgba(0, 140, 145, 0.18) !important;
+      color: #008C91 !important;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td,
+    .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td {
+      border-bottom-color: rgba(240, 98, 98, 0.18) !important;
+      color: #F06262 !important;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td:first-child,
+    .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td:first-child {
+      color: #008C91 !important;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td:first-child,
+    .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td:first-child {
+      color: #F06262 !important;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td[colspan='5'],
+    .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td[colspan='5'] {
+      color: #008C91 !important;
+    }
+
+    .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td[colspan='5'],
+    .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td[colspan='5'] {
+      color: #F06262 !important;
+    }
+
     .activity-detail-muted,
     .activity-detail-empty {
         color: #8A948F;
+        font-size: 12px;
     }
 
     .activity-empty-state {

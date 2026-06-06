@@ -1,12 +1,85 @@
+import { formatDateTime, formatDateYMD, formatNumber } from '@/@core/utils/formatters'
+
+const resolveFormatterOptions = (defaultFormatter, formatterOrOptions, options = {}) => {
+  if (typeof formatterOrOptions === 'function') {
+    return {
+      formatter: formatterOrOptions,
+      ...options,
+    }
+  }
+
+  return {
+    formatter: defaultFormatter,
+    ...(formatterOrOptions ?? {}),
+  }
+}
+
+export const fieldConfig = (key, options = {}) => ({
+  key,
+  ...options,
+})
+
+export const textField = (key, options = {}) => fieldConfig(key, options)
+
+export const customField = (key, formatter, options = {}) => fieldConfig(key, {
+  formatter,
+  ...options,
+})
+
+export const relationField = (key, options = {}) => fieldConfig(`${key}_name`, options)
+
+export const dateField = (key, formatterOrOptions = formatDateYMD, options = {}) => fieldConfig(
+  key,
+  resolveFormatterOptions(formatDateYMD, formatterOrOptions, options),
+)
+
+export const dateTimeField = (key, formatterOrOptions = formatDateTime, options = {}) => fieldConfig(
+  key,
+  resolveFormatterOptions(formatDateTime, formatterOrOptions, options),
+)
+
+export const currencyField = (key, options = {}) => fieldConfig(key, {
+  formatter: formatNumber,
+  suffix: ' kr',
+  ...options,
+})
+
+export const suffixField = (key, suffix, options = {}) => fieldConfig(key, {
+  suffix,
+  ...options,
+})
+
+export const prefixField = (key, prefix, options = {}) => fieldConfig(key, {
+  prefix,
+  ...options,
+})
+
+export const percentField = (key, options = {}) => suffixField(key, ' %', options)
+
+export const booleanField = (key, trueLabel = 'Ja', falseLabel = 'Nej', options = {}) => fieldConfig(key, {
+  formatter: value => {
+    const normalizedValue = typeof value === 'string' ? value.trim().toLowerCase() : value
+
+    if (normalizedValue === true || normalizedValue === 1 || normalizedValue === '1' || normalizedValue === 'true')
+      return trueLabel
+
+    if (normalizedValue === false || normalizedValue === 0 || normalizedValue === '0' || normalizedValue === 'false')
+      return falseLabel
+
+    return value
+  },
+  ...options,
+})
+
 export const activityVisibleFieldsByModule = {
   agreements: [
     'agreement_id',
-    'amount',
+    currencyField('amount'),
     'comments',
     'description',
     'email',
     'fullname',
-    'installment_amount',
+    currencyField('installment_amount'),
     'notes',
     'offer_id',
     'payment_method',
@@ -17,22 +90,27 @@ export const activityVisibleFieldsByModule = {
     'title',
   ],
   billings: [
-    'amount',
-    'billing_id',
-    'comments',
-    'description',
-    'email',
-    'payment_method',
+    'invoice_id',
+    relationField('client'),
     'reference',
-    'state_id',
-    'title',
+    relationField('state'),
+    'invoice_date',
+    'due_date',
+    suffixField('payment_terms', ' dagar netto'),
+    fieldConfig('detail', { renderType: 'billing-detail' }),
+    percentField('discount'),
+    currencyField('amount_discount'),
+    currencyField('amount_tax'),
+    percentField('tax'),
+    currencyField('subtotal'),
+    currencyField('total')
   ],
   clients: [
     'fullname',
     'email',
-    'client_type_name',
+    relationField('client_type'),
     'organization_number',
-    'country_name',
+    relationField('country'),
     'num_iva',
     'phone',
     'landline',
@@ -60,7 +138,7 @@ export const activityVisibleFieldsByModule = {
   ],
   payouts: [
     'account',
-    'amount',
+    currencyField('amount'),
     'comments',
     'description',
     'reference',
@@ -68,7 +146,7 @@ export const activityVisibleFieldsByModule = {
     'title',
   ],
   vehicles: [
-    'amount',
+    currencyField('amount'),
     'comments',
     'description',
     'notes',

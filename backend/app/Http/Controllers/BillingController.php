@@ -133,6 +133,16 @@ class BillingController extends Controller
         try {
 
             $billing = Billing::createBilling($request);
+            $activityFields = [
+                'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                'payment_terms', 'terms_and_conditions', 'reference',
+                'subtotal', 'tax', 'total', 'rabatt', 'discount',
+                'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
+                'amount_tax', 'sent_at'
+            ];
+            $activityNewValues = $billing->only($activityFields);
+            $activityNewValues['state_id'] = $billing->state_id;
+            $activityNewValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
 
             $total = $billing->total + $billing->amount_discount;
 
@@ -146,12 +156,7 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'new_values' => $request->only([
-                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'terms_and_conditions', 'reference', 
-                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                        'amount_discount', 'detail'
-                    ])
+                    'new_values' => $activityNewValues,
                 ])
             ]);
 
@@ -237,14 +242,19 @@ class BillingController extends Controller
                 'client_id', 'invoice_id', 'invoice_date', 'due_date',
                 'payment_terms', 'terms_and_conditions', 'reference', 
                 'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                'amount_discount', 'detail'
+                'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
+                'amount_tax', 'sent_at'
             ];
 
             $oldValues = $billing->only($billingFields);
+            $oldValues['state_id'] = $billing->state_id;
+            $oldValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
 
-            $billing->updateBilling($request, $billing);
+            $billing = $billing->updateBilling($request, $billing);
 
-            $newValues = $request->only($billingFields);
+            $newValues = $billing->only($billingFields);
+            $newValues['state_id'] = $billing->state_id;
+            $newValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
 
             $total = $billing->total + $billing->amount_discount;
 
@@ -446,7 +456,8 @@ class BillingController extends Controller
                         'client_id', 'invoice_id', 'invoice_date', 'due_date',
                         'payment_terms', 'terms_and_conditions', 'reference', 
                         'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                        'amount_discount', 'detail'
+                        'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
+                        'amount_tax', 'sent_at', 'state_id'
                     ])
                 ])
             ]);
@@ -498,7 +509,8 @@ class BillingController extends Controller
                         'client_id', 'invoice_id', 'invoice_date', 'due_date',
                         'payment_terms', 'terms_and_conditions', 'reference', 
                         'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                        'amount_discount', 'detail'
+                        'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
+                        'amount_tax', 'sent_at', 'state_id'
                     ])
                 ])
             ]);
