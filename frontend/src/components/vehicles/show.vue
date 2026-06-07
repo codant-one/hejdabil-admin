@@ -50,6 +50,7 @@ const color = ref(null)
 const fuel = ref(null)
 const gearbox = ref(null)
 const engine = ref(null)
+const chassis = ref(null)
 const purchase_price = ref(null)
 const iva_purchase = ref(null)
 const iva_sale = ref(null)
@@ -119,6 +120,7 @@ watchEffect(async () => {
             fuel.value = props.vehicle.fuel?.name
             gearbox.value = props.vehicle.gearbox?.name
             engine.value = props.vehicle.engine
+            chassis.value = props.vehicle.chassis
             purchase_price.value = props.vehicle.purchase_price
             iva_purchase.value = props.vehicle.iva_purchase?.name
             iva_sale.value = props.vehicle.iva_sale?.name
@@ -390,6 +392,10 @@ const setThumbsSwiper = (swiper) => {
                                                 <div class="d-flex flex-column gap-2" v-if="purchase_date">
                                                     <span class="title-detail"> Inköpsdatum </span>
                                                     <span class="subtitle-detail">{{ purchase_date }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="chassis">
+                                                    <span class="title-detail"> Chassinummer </span>
+                                                    <span class="subtitle-detail">{{ chassis }}</span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">

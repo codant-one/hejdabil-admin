@@ -77,7 +77,7 @@ const activityModuleSingularLabels = {
 const activityActionLabels = {
   cancelled: 'annullerad',
   create: 'skapad',
-  delete: 'raderad',
+  delete: 'borttaget',
   delivered: 'levererad',
   paid: 'markerad som betald',
   reminder: 'påminnelse skickad',
@@ -85,6 +85,8 @@ const activityActionLabels = {
   resend: 'skickad igen',
   reviewed: 'granskad',
   send: 'skickad',
+  sell: 'såld',
+  cancel: 'avbruten',
   signed: 'signerad',
   unpaid: 'markerad som obetald',
   update: 'uppdaterad',
@@ -109,15 +111,41 @@ const activityFieldLabels = {
   detail: 'Detaljer',
   subtotal: 'Netto',
   total: 'Summa att betala',
-  discount: 'Preliminär skattereduktion',
+  discount: 'Preliminär skattereduktion (Rabatt)',
   amount_discount: 'Rabatt',
   amount_tax: 'Belopp Skatt',
-  comments: 'Kommentar',
+  comments: 'Anteckningar',
   country_id: 'Land',
   description: 'Beskrivning',
   email: 'E-post',
   fullname: 'Namn',
   installment_amount: 'Belopp',
+  model_id: 'Modell',
+  brand_id: 'Märke',
+  year: 'Årsmodell',
+  mileage: 'Miltal',
+  car_body_id: 'Kaross',
+  purchase_date: 'Inköpsdatum',
+  control_inspection: 'Kontrollbesiktning gäller tom',
+  fuel_id: 'Drivmedel',
+  gearbox_id: 'Växellåda',
+  engine: 'Motor',
+  number_keys: 'Antal nycklar',
+  service_book: 'Servicebok finns?',
+  summer_tire: 'Sommardäck finns?',
+  winter_tire: 'Vinterdäck finns?',
+  dist_belt: 'Kamrem bytt?',
+  purchase_price: 'Inköpspris',
+  iva_purchase_id: 'VMB / Moms',
+  iva_sale_id: 'VMB / Moms',
+  sale_price: 'Försäljningspris',
+  sale_date: 'Försäljningsdag',
+  chassis: 'Chassinummer',
+  sale_comments: 'Comments',
+  iva_sale_amount: 'Varav moms',
+  iva_sale_exclusive: 'Prix ex moms',
+  registration_fee: 'Registreringsavgift',
+  total_sale: 'Total försäljning',
   name: 'Namn',
   notes: 'Anteckning',
   num_iva: 'Momsnummer',
@@ -127,7 +155,7 @@ const activityFieldLabels = {
   phone: 'Telefon',
   postal_code: 'Postnummer',
   reference: 'Referens',
-  reg_num: 'Reg. nr.',
+  reg_num: 'Reg nr',
   state_id: 'Status',
   address: 'Adress',
   street: 'Stad',
@@ -150,8 +178,12 @@ const displayActivities = computed(() => {
   if (!Array.isArray(activities.value))
     return []
 
-  return activities.value.map(activity => {
+  return activities.value
+    .map(activity => {
     const { changes, detailMode } = getActivityChangeSummary(activity)
+
+    if (detailMode === 'updated' && !changes.length)
+      return null
 
     return {
       ...activity,
@@ -166,7 +198,8 @@ const displayActivities = computed(() => {
       userInitials: getActivityUserInitials(activity),
       userName: getActivityUserName(activity),
     }
-  })
+    })
+    .filter(Boolean)
 })
 
 watchEffect(fetchData)
@@ -292,7 +325,7 @@ function formatActivityValue(value, fieldEntry = null) {
   if (normalizedValue === null || normalizedValue === undefined || normalizedValue === '')
     return 'Tomt'
 
-  if (typeof fieldEntry?.formatter === 'function' && !Array.isArray(normalizedValue) && typeof normalizedValue !== 'object') {
+  if (typeof fieldEntry?.formatter === 'function') {
     return applyActivityFieldFormatting(fieldEntry.formatter(normalizedValue), fieldEntry)
   }
 
@@ -448,12 +481,16 @@ function getActivityRecipientSummary(activity) {
 function resolveConfiguredActivityField(field) {
   if (field && typeof field === 'object') {
     const displayKey = String(field.displayKey ?? field.key ?? field.sourceKey ?? '')
-    const sourceKey = String(field.sourceKey ?? (displayKey.endsWith('_name') ? displayKey.replace(/_name$/g, '_id') : displayKey))
+    const sourceKeys = Array.isArray(field.sourceKeys) && field.sourceKeys.length
+      ? field.sourceKeys.map(source => String(source))
+      : [String(field.sourceKey ?? (displayKey.endsWith('_name') ? displayKey.replace(/_name$/g, '_id') : displayKey))]
+    const sourceKey = sourceKeys[0]
 
     return {
       ...field,
       displayKey,
       sourceKey,
+      sourceKeys,
     }
   }
 
@@ -463,13 +500,42 @@ function resolveConfiguredActivityField(field) {
     return {
       displayKey: normalizedField,
       sourceKey: normalizedField.replace(/_name$/g, '_id'),
+      sourceKeys: [normalizedField.replace(/_name$/g, '_id')],
     }
   }
 
   return {
     displayKey: normalizedField,
     sourceKey: normalizedField,
+    sourceKeys: [normalizedField],
   }
+}
+
+function getActivityFieldSourceKeys(fieldEntry) {
+  return Array.isArray(fieldEntry?.sourceKeys) && fieldEntry.sourceKeys.length
+    ? fieldEntry.sourceKeys
+    : [fieldEntry?.sourceKey].filter(Boolean)
+}
+
+function getActivityFieldRawValue(values, fieldEntry) {
+  const sourceKeys = getActivityFieldSourceKeys(fieldEntry)
+
+  if (sourceKeys.length <= 1)
+    return values[fieldEntry.sourceKey]
+
+  return sourceKeys.reduce((accumulator, sourceKey) => {
+    accumulator[sourceKey] = values[sourceKey] ?? null
+
+    return accumulator
+  }, {})
+}
+
+function hasRenderableActivityFieldValue(values, fieldEntry) {
+  return getActivityFieldSourceKeys(fieldEntry).some(sourceKey => hasRenderableActivityValue(values[sourceKey]))
+}
+
+function hasActivityFieldKey(values, fieldEntry) {
+  return getActivityFieldSourceKeys(fieldEntry).some(sourceKey => Object.prototype.hasOwnProperty.call(values, sourceKey))
 }
 
 function getActivityVisibleFieldEntries(activity, availableKeys) {
@@ -481,7 +547,7 @@ function getActivityVisibleFieldEntries(activity, availableKeys) {
 
   return visibleFields
     .map(field => resolveConfiguredActivityField(field))
-    .filter(({ sourceKey }) => availableKeys.includes(sourceKey))
+    .filter(fieldEntry => getActivityFieldSourceKeys(fieldEntry).some(sourceKey => availableKeys.includes(sourceKey)))
 }
 
 function getActivityDetailMode(activity, oldValues, newValues) {
@@ -509,28 +575,36 @@ function getActivityDetailMode(activity, oldValues, newValues) {
 
 function buildCreatedActivityChanges(activity, newValues) {
   return getActivityVisibleFieldEntries(activity, Object.keys(newValues))
-    .filter(fieldEntry => hasRenderableActivityValue(newValues[fieldEntry.sourceKey]))
-    .map(fieldEntry => ({
+    .filter(fieldEntry => hasRenderableActivityFieldValue(newValues, fieldEntry))
+    .map(fieldEntry => {
+      const rawValue = getActivityFieldRawValue(newValues, fieldEntry)
+
+      return ({
       key: fieldEntry.displayKey,
       label: formatActivityFieldLabel(fieldEntry),
       renderType: fieldEntry.renderType ?? null,
-      rawValue: newValues[fieldEntry.sourceKey],
+      rawValue,
       type: 'created',
-      value: formatActivityValue(newValues[fieldEntry.sourceKey], fieldEntry),
-    }))
+      value: formatActivityValue(rawValue, fieldEntry),
+    })
+    })
 }
 
 function buildDeletedActivityChanges(activity, oldValues) {
   return getActivityVisibleFieldEntries(activity, Object.keys(oldValues))
-    .filter(fieldEntry => hasRenderableActivityValue(oldValues[fieldEntry.sourceKey]))
-    .map(fieldEntry => ({
+    .filter(fieldEntry => hasRenderableActivityFieldValue(oldValues, fieldEntry))
+    .map(fieldEntry => {
+      const rawValue = getActivityFieldRawValue(oldValues, fieldEntry)
+
+      return ({
       key: fieldEntry.displayKey,
       label: formatActivityFieldLabel(fieldEntry),
       renderType: fieldEntry.renderType ?? null,
-      rawValue: oldValues[fieldEntry.sourceKey],
+      rawValue,
       type: 'deleted',
-      value: formatActivityValue(oldValues[fieldEntry.sourceKey], fieldEntry),
-    }))
+      value: formatActivityValue(rawValue, fieldEntry),
+    })
+    })
 }
 
 function buildUpdatedActivityChanges(activity, oldValues, newValues) {
@@ -538,18 +612,18 @@ function buildUpdatedActivityChanges(activity, oldValues, newValues) {
 
   return getActivityVisibleFieldEntries(activity, keys)
     .map(fieldEntry => {
-      const hasOldValue = Object.prototype.hasOwnProperty.call(oldValues, fieldEntry.sourceKey)
-      const hasNewValue = Object.prototype.hasOwnProperty.call(newValues, fieldEntry.sourceKey)
-      const rawOldValue = hasOldValue ? oldValues[fieldEntry.sourceKey] : null
-      const rawNewValue = hasNewValue ? newValues[fieldEntry.sourceKey] : null
+      const hasOldValue = hasActivityFieldKey(oldValues, fieldEntry)
+      const hasNewValue = hasActivityFieldKey(newValues, fieldEntry)
+      const rawOldValue = hasOldValue ? getActivityFieldRawValue(oldValues, fieldEntry) : null
+      const rawNewValue = hasNewValue ? getActivityFieldRawValue(newValues, fieldEntry) : null
       const hasRenderableOldValue = hasRenderableActivityValue(rawOldValue)
       const hasRenderableNewValue = hasRenderableActivityValue(rawNewValue)
 
       if (!hasRenderableOldValue && !hasRenderableNewValue)
         return null
 
-      const oldValue = hasOldValue ? formatActivityValue(oldValues[fieldEntry.sourceKey], fieldEntry) : null
-      const newValue = hasNewValue ? formatActivityValue(newValues[fieldEntry.sourceKey], fieldEntry) : null
+      const oldValue = hasOldValue ? formatActivityValue(rawOldValue, fieldEntry) : null
+      const newValue = hasNewValue ? formatActivityValue(rawNewValue, fieldEntry) : null
 
       if (oldValue === newValue)
         return null
@@ -627,7 +701,7 @@ function getActivityModuleSingularLabel(entityType) {
 
 function resolveActivityActionKey(actionType) {
   const normalizedAction = String(actionType ?? '').toLowerCase()
-  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send']
+  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel']
 
   return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
 }
@@ -1459,7 +1533,7 @@ onBeforeUnmount(() => {
     }
 
     .activity-toggle-btn {
-        color: #008C91 !important;
+        color: #006D5C !important;
     }
 
     .activity-toggle-icon {
@@ -1536,7 +1610,7 @@ onBeforeUnmount(() => {
         font-size: 12px;
         line-height: 16px;
         letter-spacing: 0;
-        color: #F06262;
+        color: #FF4D4F;
     }
 
     .activity-detail-deleted {
@@ -1544,11 +1618,11 @@ onBeforeUnmount(() => {
         font-size: 12px;
         line-height: 16px;
         letter-spacing: 0;
-        color: #F06262;
+        color: #FF4D4F;
     }
 
     .activity-detail-new {
-        color: #008C91;
+        color: #006D5C;
         font-weight: 400;
         font-size: 12px;
         line-height: 16px;
@@ -1560,7 +1634,7 @@ onBeforeUnmount(() => {
         font-size: 12px;
         line-height: 16px;
         letter-spacing: 0;
-        color: #008C91;
+        color: #006D5C;
     }
 
     .activity-detail-arrow {
@@ -1634,33 +1708,33 @@ onBeforeUnmount(() => {
     .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td,
     .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td {
       border-bottom-color: rgba(0, 140, 145, 0.18) !important;
-      color: #008C91 !important;
+      color: #006D5C !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td,
     .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td {
       border-bottom-color: rgba(240, 98, 98, 0.18) !important;
-      color: #F06262 !important;
+      color: #FF4D4F !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td:first-child,
     .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td:first-child {
-      color: #008C91 !important;
+      color: #006D5C !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td:first-child,
     .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td:first-child {
-      color: #F06262 !important;
+      color: #FF4D4F !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td[colspan='5'],
     .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td[colspan='5'] {
-      color: #008C91 !important;
+      color: #006D5C !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td[colspan='5'],
     .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td[colspan='5'] {
-      color: #F06262 !important;
+      color: #FF4D4F !important;
     }
 
     .activity-detail-muted,

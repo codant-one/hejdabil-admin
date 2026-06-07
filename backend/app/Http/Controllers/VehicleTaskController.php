@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
+use App\Models\SupplierActivity;
+use App\Models\Vehicle;
 use App\Models\VehicleTask;
 
 class VehicleTaskController extends Controller
@@ -24,8 +26,19 @@ class VehicleTaskController extends Controller
     public function store(Request $request)
     {
         try {
+            $vehicle = Vehicle::find($request->vehicle_id);
+            $oldValues = $vehicle ? $this->getVehicleCostActivityValues($vehicle) : [];
 
             $task = VehicleTask::createTask($request);
+
+            if ($vehicle) {
+                $updatedVehicle = Vehicle::find($vehicle->id);
+
+                if ($updatedVehicle) {
+                    $newValues = $this->getVehicleCostActivityValues($updatedVehicle);
+                    $this->createVehicleCostActivity($updatedVehicle, $oldValues, $newValues);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -66,7 +79,19 @@ class VehicleTaskController extends Controller
                     'message' => 'Uppgift hittades inte'
                 ], 404);
 
+            $vehicle = Vehicle::find($task->vehicle_id);
+            $oldValues = $vehicle ? $this->getVehicleCostActivityValues($vehicle) : [];
+
             $task->updateTask($request, $task); 
+
+            if ($vehicle) {
+                $updatedVehicle = Vehicle::find($vehicle->id);
+
+                if ($updatedVehicle) {
+                    $newValues = $this->getVehicleCostActivityValues($updatedVehicle);
+                    $this->createVehicleCostActivity($updatedVehicle, $oldValues, $newValues);
+                }
+            }
 
             return response()->json([
                 'success' => true
@@ -96,8 +121,20 @@ class VehicleTaskController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Uppgift hittades inte'
                 ], 404);
+
+            $vehicle = Vehicle::find($task->vehicle_id);
+            $oldValues = $vehicle ? $this->getVehicleCostActivityValues($vehicle) : [];
             
             $task->deleteTask($id);
+
+            if ($vehicle) {
+                $updatedVehicle = Vehicle::find($vehicle->id);
+
+                if ($updatedVehicle) {
+                    $newValues = $this->getVehicleCostActivityValues($updatedVehicle);
+                    $this->createVehicleCostActivity($updatedVehicle, $oldValues, $newValues);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -184,7 +221,19 @@ class VehicleTaskController extends Controller
                     'message' => 'Uppgift hittades inte'
                 ], 404);
 
+            $vehicle = Vehicle::find($task->vehicle_id);
+            $oldValues = $vehicle ? $this->getVehicleCostActivityValues($vehicle) : [];
+
             $task->updateType($task); 
+
+            if ($vehicle) {
+                $updatedVehicle = Vehicle::find($vehicle->id);
+
+                if ($updatedVehicle) {
+                    $newValues = $this->getVehicleCostActivityValues($updatedVehicle);
+                    $this->createVehicleCostActivity($updatedVehicle, $oldValues, $newValues);
+                }
+            }
 
             return response()->json([
                 'success' => true
@@ -197,5 +246,44 @@ class VehicleTaskController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function getVehicleCostActivityValues(Vehicle $vehicle): array
+    {
+        $vehicle->load('tasks');
+
+        return [
+            'costs' => $vehicle->tasks
+                ->filter(fn ($task) => (int) $task->is_cost === 1)
+                ->sum(fn ($task) => (float) $task->cost),
+        ];
+    }
+
+    private function createVehicleCostActivity(Vehicle $vehicle, array $oldValues, array $newValues): void
+    {
+        if (($oldValues['costs'] ?? null) === ($newValues['costs'] ?? null))
+            return;
+
+        SupplierActivity::createActivity([
+            'entity_id' => $vehicle->id,
+            'entity_type' => 'vehicles',
+            'action_type' => 'update_vehicle',
+            'title' => 'Fordon uppdaterat',
+            'description' => 'Fordon ' . $vehicle->reg_num . ' har uppdaterats.',
+            'icon' => 'custom-car',
+            'route' => $this->resolveVehicleRoute($vehicle),
+            'metadata' => json_encode([
+                'vehicle_id' => $vehicle->id,
+                'old_values' => $oldValues,
+                'new_values' => $newValues,
+            ])
+        ]);
+    }
+
+    private function resolveVehicleRoute(Vehicle $vehicle): string
+    {
+        return (int) $vehicle->state_id === 12
+            ? '/dashboard/admin/sold?vehicle_id=' . $vehicle->id
+            : '/dashboard/admin/stock?vehicle_id=' . $vehicle->id;
     }
 }

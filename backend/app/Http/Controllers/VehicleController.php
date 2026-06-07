@@ -166,6 +166,8 @@ class VehicleController extends Controller
             }
             
             $vehicle = Vehicle::createVehicle($request);
+            $activityFields = $this->getVehicleActivityFields();
+            $activityNewValues = $this->getVehicleActivityValues($vehicle, $activityFields);
 
             SupplierActivity::createActivity([
                 'entity_id' => $vehicle->id,
@@ -177,17 +179,7 @@ class VehicleController extends Controller
                 'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
                 'metadata' => json_encode([
                     'vehicle_id' => $vehicle->id,
-                    'new_values' => $request->only([
-                        'supplier_id', 'reg_num', 'year', 'generation',
-                        'brand_id', 'model_id', 'model', 'car_body_id',
-                        'fuel_id', 'gearbox_id', 'color', 'mileage',
-                        'control_inspection', 'purchase_price', 'purchase_date', 'iva_purchase_id',
-                        'currency_id', 'state_id', 'number_keys', 'service_book',
-                        'summer_tire', 'winter_tire', 'last_service', 'last_service_date',
-                        'dist_belt', 'last_dist_belt', 'last_dist_belt_date', 'comments',
-                        'chassis', 'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
-                        'type', 'client_id', 'tasks', 'documents'
-                    ])
+                    'new_values' => $activityNewValues,
                 ])
             ]);
 
@@ -279,7 +271,7 @@ class VehicleController extends Controller
     public function update(VehicleRequest $request, $id): JsonResponse
     {
         try {
-            $vehicle = Vehicle::find($id);
+            $vehicle = Vehicle::with('model:id,brand_id')->find($id);
         
             if (!$vehicle)
                 return response()->json([
@@ -288,25 +280,14 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            $vehicleFields = [
-                'supplier_id', 'reg_num', 'model_id', 'car_body_id',
-                'gearbox_id', 'iva_purchase_id', 'currency_purchase_id', 'currency_sale_id',
-                'fuel_id', 'state_id', 'mileage', 'generation',
-                'year', 'control_inspection', 'color', 'purchase_price',
-                'purchase_date', 'number_keys', 'service_book', 'summer_tire',
-                'winter_tire', 'last_service', 'last_service_date', 'dist_belt',
-                'last_dist_belt', 'last_dist_belt_date', 'comments', 'chassis',
-                'engine', 'car_name', 'sale_price', 'sale_date',
-                'iva_sale_id', 'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
-                'iva_purchase_amount', 'iva_purchase_exclusive', 'total_sale', 'discount',
-                'registration_fee'
-            ];
+            $vehicleFields = $this->getVehicleActivityFields();
 
-            $oldValues = $vehicle->only($vehicleFields);
+            $oldValues = $this->getVehicleActivityValues($vehicle, $vehicleFields);
 
-            $vehicle->updateVehicle($request, $vehicle); 
+            $vehicle->updateVehicle($request, $vehicle);
+            $vehicle->refresh()->load('model:id,brand_id');
 
-            $newValues = $request->only($vehicleFields);
+            $newValues = $this->getVehicleActivityValues($vehicle, $vehicleFields);
 
             SupplierActivity::createActivity([
                 'entity_id' => $vehicle->id,
@@ -346,7 +327,7 @@ class VehicleController extends Controller
     {
         try {
 
-            $vehicle = Vehicle::find($id);
+            $vehicle = Vehicle::with('model:id,brand_id')->find($id);
         
             if (!$vehicle)
                 return response()->json([
@@ -355,10 +336,7 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            $oldValues = $vehicle->only([
-                'supplier_id', 'reg_num', 'state_id', 'model_id',
-                'purchase_price', 'purchase_date', 'sale_price', 'sale_date'
-            ]);
+            $oldValues = $this->getVehicleActivityValues($vehicle, $this->getVehicleActivityFields());
 
             $isSaleEdition = (int) $vehicle->state_id === 12;
 
@@ -416,25 +394,20 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            $sendFields = [
-                'state_id', 'chassis', 'sale_price', 'sale_date',
-                'iva_sale_id', 'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
-                'iva_purchase_amount', 'iva_purchase_exclusive', 'total_sale', 'discount',
-                'registration_fee'
-            ];
+            $sendFields = $this->getVehicleActivityFields();
 
-            $oldValues = $vehicle->only($sendFields);
+            $oldValues = $this->getVehicleActivityValues($vehicle, $sendFields);
 
             $isSaleEdition = (int) $vehicle->state_id === 12;
 
             $vehicle = $vehicle->sendVehicle($request, $vehicle); 
 
-            $newValues = $vehicle->only($sendFields);
+            $newValues = $this->getVehicleActivityValues($vehicle, $sendFields);
 
             SupplierActivity::createActivity([
                 'entity_id' => $vehicle->id,
                 'entity_type' => 'vehicles',
-                'action_type' => 'send_vehicle',
+                'action_type' => 'sell_vehicle',
                 'title' => $isSaleEdition
                     ? 'Fordon '.$vehicle->reg_num.' - försäljning uppdaterad'
                     : 'Fordon sålt',
@@ -483,17 +456,13 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            $cancelFields = [
-                'state_id', 'sale_price', 'sale_date', 'iva_sale_id',
-                'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
-                'total_sale', 'discount', 'registration_fee'
-            ];
+            $cancelFields = $this->getVehicleActivityFields();
 
-            $oldValues = $vehicle->only($cancelFields);
+            $oldValues = $this->getVehicleActivityValues($vehicle, $cancelFields);
 
             $vehicle->cancelVehicle($vehicle); 
 
-            $newValues = $vehicle->only($cancelFields);
+            $newValues = $this->getVehicleActivityValues($vehicle, $cancelFields);
 
             SupplierActivity::createActivity([
                 'entity_id' => $vehicle->id,
@@ -658,5 +627,64 @@ class VehicleController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function getVehicleActivityFields(): array
+    {
+        return [
+            'supplier_id', 'reg_num', 'year', 'generation',
+            'model_id', 'car_body_id', 'fuel_id', 'gearbox_id',
+            'color', 'mileage', 'control_inspection', 'purchase_price',
+            'purchase_date', 'iva_purchase_id', 'currency_purchase_id', 'currency_sale_id',
+            'state_id', 'number_keys', 'service_book', 'summer_tire',
+            'winter_tire', 'last_service', 'last_service_date', 'dist_belt',
+            'last_dist_belt', 'last_dist_belt_date', 'comments', 'chassis',
+            'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
+            'sale_price', 'sale_date', 'iva_sale_id', 'sale_comments',
+            'iva_sale_amount', 'iva_sale_exclusive', 'discount', 'registration_fee',
+            'total_sale', 'costs', 'purchase_client', 'sale_client'
+        ];
+    }
+
+    private function getVehicleActivityValues(Vehicle $vehicle, array $fields): array
+    {
+        $vehicle->load([
+            'model:id,brand_id',
+            'tasks',
+            'client_purchase.client',
+            'client_sale.client',
+        ]);
+
+        $values = $vehicle->only($fields);
+        $values['brand_id'] = $vehicle->model?->brand_id;
+
+        if (in_array('costs', $fields, true)) {
+            $values['costs'] = $vehicle->tasks
+                ->filter(fn ($task) => (int) $task->is_cost === 1)
+                ->sum(fn ($task) => (float) $task->cost);
+        }
+
+        if (in_array('purchase_client', $fields, true))
+            $values['purchase_client'] = $this->resolveVehicleClientLabel($vehicle->client_purchase);
+
+        if (in_array('sale_client', $fields, true))
+            $values['sale_client'] = $this->resolveVehicleClientLabel($vehicle->client_sale);
+
+        return $values;
+    }
+
+    private function resolveVehicleClientLabel($vehicleClient): ?string
+    {
+        if (!$vehicleClient)
+            return null;
+
+        $fullname = trim((string) ($vehicleClient->fullname ?? ''));
+
+        if ($fullname !== '')
+            return $fullname;
+
+        $relatedClientName = trim((string) ($vehicleClient->client?->fullname ?? ''));
+
+        return $relatedClientName !== '' ? $relatedClientName : null;
     }
 }

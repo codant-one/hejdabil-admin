@@ -64,6 +64,7 @@ const state = ref(null)
 const state_id = ref(null)
 const sale_price = ref(null)
 const purchase_date = ref(null)
+const chassis = ref(null)
 const sale_date = ref(null)
 const number_keys = ref(null)
 const service_book = ref(0)
@@ -133,6 +134,7 @@ watchEffect(async () => {
             state_id.value = props.vehicle.state_id
             sale_price.value = props.vehicle.sale_price
             purchase_date.value = props.vehicle.purchase_date
+            chassis.value = props.vehicle.chassis
             sale_date.value = props.vehicle.sale_date
             number_keys.value = props.vehicle.number_keys
             service_book.value = props.vehicle.service_book
@@ -393,6 +395,10 @@ const setThumbsSwiper = (swiper) => {
                                                 <div class="d-flex flex-column gap-2" v-if="purchase_date">
                                                     <span class="title-detail"> Inköpsdatum </span>
                                                     <span class="subtitle-detail">{{ purchase_date }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="chassis">
+                                                    <span class="title-detail"> Chassinummer </span>
+                                                    <span class="subtitle-detail">{{ chassis }}</span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
