@@ -95,6 +95,8 @@ class ActivityMetadataResolver
             'model_id', 'model_id_interchange' => $this->resolveFromCatalog(CacheService::getCarModels(), $value, ['name', 'model', 'brand.name']),
             'offer_id' => $this->resolveOfferValue($value),
             'payment_type_id' => $this->resolveFromCatalog(CacheService::getPaymentTypes(), $value),
+            'payout_state_id' => $this->resolveFromCatalog(CacheService::getPayoutStates(), $value),
+            'user_id' => $this->resolveUserValue($value),
             'state_id' => $this->resolveFromCatalog(CacheService::getStates(), $value),
             default => $value,
         };
@@ -121,12 +123,68 @@ class ActivityMetadataResolver
         return $value;
     }
 
+    private function resolveUserValue(mixed $value): mixed
+    {
+        $resolvedUser = CacheService::getUsers()->first(function ($user) use ($value) {
+            return (string) data_get($user, 'id') === (string) $value;
+        });
+
+        if (!$resolvedUser) {
+            return $value;
+        }
+
+        $fullName = trim(implode(' ', array_filter([
+            data_get($resolvedUser, 'name'),
+            data_get($resolvedUser, 'last_name'),
+        ], fn ($namePart) => is_scalar($namePart) && trim((string) $namePart) !== '')));
+
+        if ($fullName !== '') {
+            return $fullName;
+        }
+
+        $email = data_get($resolvedUser, 'email');
+
+        return is_scalar($email) && trim((string) $email) !== '' ? $email : $value;
+    }
+
     private function resolveOfferValue(mixed $value): mixed
     {
         $offer = Offer::query()
-            ->select(['id', 'reg_num'])
+            ->with(['model.brand', 'fuel', 'gearbox', 'carbody'])
             ->find($value);
 
-        return $offer?->reg_num ?: $value;
+        if (!$offer) {
+            return $value;
+        }
+
+        return [
+            'id' => $offer->id,
+            'offer_id' => $offer->offer_id,
+            'reg_num' => $offer->reg_num,
+            'car_name' => $offer->car_name,
+            'brand_name' => $offer->model?->brand?->name,
+            'model_name' => $offer->model?->name,
+            'year' => $offer->year,
+            'color' => $offer->color,
+            'mileage' => $offer->mileage,
+            'generation' => $offer->generation,
+            'car_body' => $offer->carbody?->name,
+            'purchase_date' => $offer->date,
+            'chassis' => $offer->chassis,
+            'control_inspection' => $offer->control_inspection,
+            'fuel_name' => $offer->fuel?->name,
+            'gearbox_name' => $offer->gearbox?->name,
+            'engine' => $offer->engine,
+            'number_keys' => $offer->number_keys,
+            'service_book' => $offer->service_book,
+            'summer_tire' => $offer->summer_tire,
+            'winter_tire' => $offer->winter_tire,
+            'dist_belt' => $offer->dist_belt,
+            'last_service' => $offer->last_service,
+            'last_service_date' => $offer->last_service_date,
+            'last_dist_belt' => $offer->last_dist_belt,
+            'last_dist_belt_date' => $offer->last_dist_belt_date,
+            'comment' => $offer->comment,
+        ];
     }
 }

@@ -139,3 +139,15 @@ export const formatNumberInteger = (value) => {
 
   return formattedInteger;
 }
+
+export const formatCommentDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const months = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'dec']
+    const day = date.getDate()
+    const month = months[date.getMonth()]
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day} ${month} ${year}, ${hours}:${minutes}`
+}

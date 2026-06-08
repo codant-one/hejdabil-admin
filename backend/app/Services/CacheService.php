@@ -24,7 +24,9 @@ use App\Models\{
     Supplier,
     Invoice,
     Client,
-    Country
+    Country,
+    PayoutState,
+    User
 };
 use Spatie\Permission\Models\{Permission, Role};
 
@@ -102,6 +104,26 @@ class CacheService
     {
         return Cache::remember('states.all', self::CACHE_DURATION, function () {
             return State::all();
+        });
+    }
+
+    /**
+     * Get all payout states
+     */
+    public static function getPayoutStates()
+    {
+        return Cache::remember('payout_states.all', self::CACHE_DURATION, function () {
+            return PayoutState::all();
+        });
+    }
+    
+    /**
+     * Get all users
+     */
+    public static function getUsers()
+    {
+        return Cache::remember('users.all', self::CACHE_DURATION, function () {
+            return User::all();
         });
     }
 
@@ -312,6 +334,7 @@ class CacheService
             'ivas.all',
             'fuels.all',
             'states.all',
+            'payout_states.all',
             'states.vehicles',
             'guaranty_types.all',
             'insurance_types.all',

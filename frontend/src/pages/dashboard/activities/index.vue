@@ -59,8 +59,9 @@ const activityModuleLabels = {
   billings: 'Fakturor',
   clients: 'Kunder',
   documents: 'Dokument',
-  notes: 'Anteckningar',
-  payouts: 'Utbetalningar',
+  notes: 'Mina Värderingar',
+  comment_notes: 'Mina Värderingar',
+  payouts: 'Swish',
   vehicles: 'Fordonslager',
 }
 
@@ -70,6 +71,7 @@ const activityModuleSingularLabels = {
   clients: 'Kund',
   documents: 'Dokument',
   notes: 'Anteckning',
+  comment_notes: 'Kommentar',
   payouts: 'Utbetalning',
   vehicles: 'Fordon',
 }
@@ -90,6 +92,7 @@ const activityActionLabels = {
   signed: 'signerad',
   unpaid: 'markerad som obetald',
   update: 'uppdaterad',
+  revoke: 'återkallad',
 }
 
 const activityDetailTitles = {
@@ -113,7 +116,7 @@ const activityFieldLabels = {
   total: 'Summa att betala',
   discount: 'Preliminär skattereduktion (Rabatt)',
   amount_discount: 'Rabatt',
-  amount_tax: 'Belopp Skatt',
+  amount_tax: 'Belopp skatt',
   comments: 'Anteckningar',
   country_id: 'Land',
   description: 'Beskrivning',
@@ -149,7 +152,6 @@ const activityFieldLabels = {
   name: 'Namn',
   notes: 'Anteckning',
   num_iva: 'Momsnummer',
-  offer_id: 'Offert-ID',
   organization_number: 'Org.nr',
   payment_method: 'Betalsätt',
   phone: 'Telefon',
@@ -160,6 +162,25 @@ const activityFieldLabels = {
   address: 'Adress',
   street: 'Stad',
   title: 'Titel',
+  order_id: 'ID',
+  signature_status: 'Signera status',
+  payee_alias: 'Mobilnummer',
+  payee_ssn: 'Personnummer',
+  message: 'Meddelande',
+  error_message: 'Felmeddelande',
+  error_code: 'Felkod',
+  payout_state_id: 'Status',
+  comment: 'Kommentar',
+  phone: 'Mobilnummer',
+  landline: 'Telefon',
+  comments_note: 'Kommentarer',
+  user_id: 'Användare',
+  comments_date: 'Datum',
+  agreement_type_id: 'Avtalstyp',
+  residual_debt: 'Restskulden löses av',
+  price: 'Totalpris',
+  client_id: 'Kund',
+  terms_other_conditions: 'Övriga villkor',
 }
 
 // 👉 Computing pagination data
@@ -538,7 +559,22 @@ function hasActivityFieldKey(values, fieldEntry) {
   return getActivityFieldSourceKeys(fieldEntry).some(sourceKey => Object.prototype.hasOwnProperty.call(values, sourceKey))
 }
 
-function getActivityVisibleFieldEntries(activity, availableKeys) {
+function shouldRenderActivityField(fieldEntry, activity, oldValues = {}, newValues = {}) {
+  if (typeof fieldEntry?.visibleWhen !== 'function')
+    return true
+
+  return fieldEntry.visibleWhen({
+    activity,
+    oldValues,
+    newValues,
+    values: {
+      ...oldValues,
+      ...newValues,
+    },
+  }) !== false
+}
+
+function getActivityVisibleFieldEntries(activity, availableKeys, oldValues = {}, newValues = {}) {
   const visibleFields = getActivityVisibleFields(activity?.entity_type)
 
   if (!Array.isArray(visibleFields)) {
@@ -548,6 +584,7 @@ function getActivityVisibleFieldEntries(activity, availableKeys) {
   return visibleFields
     .map(field => resolveConfiguredActivityField(field))
     .filter(fieldEntry => getActivityFieldSourceKeys(fieldEntry).some(sourceKey => availableKeys.includes(sourceKey)))
+    .filter(fieldEntry => shouldRenderActivityField(fieldEntry, activity, oldValues, newValues))
 }
 
 function getActivityDetailMode(activity, oldValues, newValues) {
@@ -574,7 +611,7 @@ function getActivityDetailMode(activity, oldValues, newValues) {
 }
 
 function buildCreatedActivityChanges(activity, newValues) {
-  return getActivityVisibleFieldEntries(activity, Object.keys(newValues))
+  return getActivityVisibleFieldEntries(activity, Object.keys(newValues), {}, newValues)
     .filter(fieldEntry => hasRenderableActivityFieldValue(newValues, fieldEntry))
     .map(fieldEntry => {
       const rawValue = getActivityFieldRawValue(newValues, fieldEntry)
@@ -591,7 +628,7 @@ function buildCreatedActivityChanges(activity, newValues) {
 }
 
 function buildDeletedActivityChanges(activity, oldValues) {
-  return getActivityVisibleFieldEntries(activity, Object.keys(oldValues))
+  return getActivityVisibleFieldEntries(activity, Object.keys(oldValues), oldValues, {})
     .filter(fieldEntry => hasRenderableActivityFieldValue(oldValues, fieldEntry))
     .map(fieldEntry => {
       const rawValue = getActivityFieldRawValue(oldValues, fieldEntry)
@@ -610,7 +647,7 @@ function buildDeletedActivityChanges(activity, oldValues) {
 function buildUpdatedActivityChanges(activity, oldValues, newValues) {
   const keys = [...new Set([...Object.keys(oldValues), ...Object.keys(newValues)])]
 
-  return getActivityVisibleFieldEntries(activity, keys)
+  return getActivityVisibleFieldEntries(activity, keys, oldValues, newValues)
     .map(fieldEntry => {
       const hasOldValue = hasActivityFieldKey(oldValues, fieldEntry)
       const hasNewValue = hasActivityFieldKey(newValues, fieldEntry)
@@ -701,7 +738,7 @@ function getActivityModuleSingularLabel(entityType) {
 
 function resolveActivityActionKey(actionType) {
   const normalizedAction = String(actionType ?? '').toLowerCase()
-  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel']
+  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel', 'revoke']
 
   return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
 }
@@ -1160,11 +1197,11 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td>{{ row.values[1] ?? '-' }}</td>
-                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
-                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
-                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
-                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
                                         </template>
                                       </tr>
                                     </tbody>
@@ -1191,11 +1228,11 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td>{{ row.values[1] ?? '-' }}</td>
-                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
-                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
-                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
-                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
                                         </template>
                                       </tr>
                                     </tbody>
@@ -1222,11 +1259,11 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td>{{ row.values[1] ?? '-' }}</td>
-                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
-                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
-                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
-                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
                                         </template>
                                       </tr>
                                     </tbody>
@@ -1253,11 +1290,11 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td>{{ row.values[1] ?? '-' }}</td>
-                                          <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
-                                          <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
-                                          <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
-                                          <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                          <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                          <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
                                         </template>
                                       </tr>
                                     </tbody>

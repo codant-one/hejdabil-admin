@@ -1087,6 +1087,16 @@ class SignatureController extends Controller
                 'metadata' => json_encode([
                     'agreement_id' => $agreement->id,
                     'token_id' => $token->id,
+                    'new_values' => $this->agreementSignatureActivityValues(
+                        $token,
+                        null,
+                        $recipientPhone,
+                        null,
+                        [
+                            'resend' => true,
+                            'sms' => true,
+                        ]
+                    ),
                     'recipient_phone' => $recipientPhone,
                     'signature_status' => $token->signature_status,
                     'resend' => true,
@@ -2025,6 +2035,17 @@ class SignatureController extends Controller
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
+                'new_values' => $this->agreementSignatureActivityValues(
+                    $token,
+                    $recipientEmail,
+                    $recipientPhone,
+                    $isStaticSignature,
+                    [
+                        'sms_error' => $smsError,
+                    ]
+                ),
+                'email' => $recipientEmail,
+                'phone' => $recipientPhone,
                 'recipient_email' => $recipientEmail,
                 'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
@@ -2069,6 +2090,18 @@ class SignatureController extends Controller
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
+                'new_values' => $this->agreementSignatureActivityValues(
+                    $token,
+                    $recipientEmail,
+                    $recipientPhone,
+                    is_null($token->placement_x) && is_null($token->placement_y),
+                    [
+                        'resend' => true,
+                        'sms_error' => $smsError,
+                    ]
+                ),
+                'email' => $recipientEmail,
+                'phone' => $recipientPhone,
                 'recipient_email' => $recipientEmail,
                 'recipient_phone' => $recipientPhone,
                 'signature_status' => $token->signature_status,
@@ -2092,12 +2125,42 @@ class SignatureController extends Controller
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
+                'new_values' => $this->agreementSignatureActivityValues(
+                    $token,
+                    $token->recipient_email,
+                    null,
+                    is_null($token->placement_x) && is_null($token->placement_y),
+                    [
+                        'cancelled' => true,
+                    ]
+                ),
+                'email' => $token->recipient_email,
                 'recipient_email' => $token->recipient_email,
                 'signature_status' => $token->signature_status,
                 'cancelled' => true,
                 'static_signature' => is_null($token->placement_x) && is_null($token->placement_y),
             ])
         ]);
+    }
+
+    private function agreementSignatureActivityValues(Token $token, ?string $recipientEmail = null, ?string $recipientPhone = null, ?bool $isStaticSignature = null, array $extra = []): array
+    {
+        $values = [
+            'agreement_id' => $token->agreement_id,
+            'token_id' => $token->id,
+            'signature_status' => $token->signature_status,
+        ];
+
+        if (!is_null($recipientEmail) && $recipientEmail !== '')
+            $values['email'] = $recipientEmail;
+
+        if (!is_null($recipientPhone) && $recipientPhone !== '')
+            $values['phone'] = $recipientPhone;
+
+        if (!is_null($isStaticSignature))
+            $values['static_signature'] = $isStaticSignature;
+
+        return array_merge($values, $extra);
     }
 
     private function agreementActivityRoute(int $agreementId): string

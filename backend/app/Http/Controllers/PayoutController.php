@@ -189,6 +189,7 @@ class PayoutController extends Controller
                 $payout = Payout::createPayout($request);
 
                 SupplierActivity::createActivity([
+                    'supplier_id' => $payout->supplier_id,
                     'entity_id' => $payout->id,
                     'entity_type' => 'payouts',
                     'action_type' => 'create_payout',
@@ -198,12 +199,7 @@ class PayoutController extends Controller
                     'route' => $this->payoutActivityRoute($payout->id),
                     'metadata' => json_encode([
                         'payout_id' => $payout->id,
-                        'new_values' => $payout->only([
-                            'supplier_id', 'payout_state_id', 'fullname', 'reference', 'amount',
-                            'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
-                            'instruction_date', 'payout_instruction_uuid', 'message',
-                            'error_message', 'error_code'
-                        ]),
+                        'new_values' => $this->payoutActivityValues($payout),
                         'master_password_valid' => false,
                     ])
                 ]);
@@ -266,6 +262,7 @@ class PayoutController extends Controller
                 $errorPayout = Payout::createPayout($request);
 
                 SupplierActivity::createActivity([
+                    'supplier_id' => $errorPayout->supplier_id,
                     'entity_id' => $errorPayout->id,
                     'entity_type' => 'payouts',
                     'action_type' => 'create_payout',
@@ -275,12 +272,7 @@ class PayoutController extends Controller
                     'route' => $this->payoutActivityRoute($errorPayout->id),
                     'metadata' => json_encode([
                         'payout_id' => $errorPayout->id,
-                        'new_values' => $errorPayout->only([
-                            'supplier_id', 'payout_state_id', 'fullname', 'reference', 'amount',
-                            'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
-                            'instruction_date', 'payout_instruction_uuid', 'message',
-                            'error_message', 'error_code'
-                        ]),
+                        'new_values' => $this->payoutActivityValues($errorPayout),
                         'swish_error' => true,
                         'error_code' => $errorCode,
                         'error_message' => $errorMessage,
@@ -334,6 +326,7 @@ class PayoutController extends Controller
             $payout = Payout::createPayout($request);
 
             SupplierActivity::createActivity([
+                'supplier_id' => $payout->supplier_id,
                 'entity_id' => $payout->id,
                 'entity_type' => 'payouts',
                 'action_type' => 'create_payout',
@@ -343,12 +336,7 @@ class PayoutController extends Controller
                 'route' => $this->payoutActivityRoute($payout->id),
                 'metadata' => json_encode([
                     'payout_id' => $payout->id,
-                    'new_values' => $payout->only([
-                        'supplier_id', 'payout_state_id', 'swish_id', 'fullname', 'reference', 'amount',
-                        'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
-                        'instruction_date', 'payout_instruction_uuid', 'message',
-                        'location_url', 'error_message', 'error_code'
-                    ]),
+                    'new_values' => $this->payoutActivityValues($payout),
                     'swish_response' => $response->json(),
                 ])
             ]);
@@ -553,6 +541,7 @@ class PayoutController extends Controller
                 ]);
 
                 SupplierActivity::createActivity([
+                    'supplier_id' => $payout->supplier_id,
                     'entity_id' => $payout->id,
                     'entity_type' => 'payouts',
                     'action_type' => 'update_payout',
@@ -563,7 +552,7 @@ class PayoutController extends Controller
                     'metadata' => json_encode([
                         'payout_id' => $payout->id,
                         'old_values' => $oldValues,
-                        'new_values' => $payout->only($payoutFields),
+                        'new_values' => $this->payoutActivityValues($payout),
                         'swish_error' => true,
                         'error_code' => $errorCode,
                         'error_message' => $errorMessage,
@@ -614,6 +603,7 @@ class PayoutController extends Controller
             ]);
 
             SupplierActivity::createActivity([
+                'supplier_id' => $payout->supplier_id,
                 'entity_id' => $payout->id,
                 'entity_type' => 'payouts',
                 'action_type' => 'update_payout',
@@ -624,7 +614,7 @@ class PayoutController extends Controller
                 'metadata' => json_encode([
                     'payout_id' => $payout->id,
                     'old_values' => $oldValues,
-                    'new_values' => $payout->only($payoutFields),
+                    'new_values' => $this->payoutActivityValues($payout),
                     'swish_response' => $response->json(),
                 ])
             ]);
@@ -733,6 +723,7 @@ class PayoutController extends Controller
             $payout->refresh();
 
             SupplierActivity::createActivity([
+                'supplier_id' => $payout->supplier_id,
                 'entity_id' => $payout->id,
                 'entity_type' => 'payouts',
                 'action_type' => 'cancel_payout',
@@ -743,9 +734,7 @@ class PayoutController extends Controller
                 'metadata' => json_encode([
                     'payout_id' => $payout->id,
                     'old_values' => $oldValues,
-                    'new_values' => $payout->only([
-                        'payout_state_id', 'reference', 'amount', 'message', 'swish_id', 'location_url'
-                    ])
+                    'new_values' => $this->payoutActivityValues($payout)
                 ])
             ]);
 
@@ -838,6 +827,7 @@ class PayoutController extends Controller
             if ($result) {
                 foreach ($payouts as $payout) {
                     SupplierActivity::createActivity([
+                        'supplier_id' => $payout->supplier_id,
                         'entity_id' => $payout->id,
                         'entity_type' => 'payouts',
                         'action_type' => 'send_payout_email',
@@ -847,10 +837,16 @@ class PayoutController extends Controller
                         'route' => $this->payoutActivityRoute($payout->id),
                         'metadata' => json_encode([
                             'payout_id' => $payout->id,
-                            'recipient_email' => $validated['email'],
-                            'reference' => $payout->reference,
-                            'amount' => $payout->amount,
-                            'payout_state_id' => $payout->payout_state_id,
+                            'new_values' => array_merge(
+                                $this->payoutActivityValues($payout), 
+                                [
+                                    'email' => $validated['email'],
+                                    'recipient_email' => $validated['email'],
+                                    'reference' => $payout->reference,
+                                    'amount' => $payout->amount,
+                                    'payout_state_id' => $payout->payout_state_id,
+                                ]
+                            ),                          
                         ])
                     ]);
                 }
@@ -895,5 +891,15 @@ class PayoutController extends Controller
         }
 
         return '#' . $payout->id;
+    }
+
+    private function payoutActivityValues(Payout $payout): array
+    {
+        return $payout->only([
+            'supplier_id', 'payout_state_id', 'fullname', 'reference', 'amount',
+            'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
+            'instruction_date', 'payout_instruction_uuid', 'message',
+            'error_message', 'error_code'
+        ]);
     }
 }

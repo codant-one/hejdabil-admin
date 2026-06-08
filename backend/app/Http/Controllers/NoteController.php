@@ -98,10 +98,6 @@ class NoteController extends Controller
     {
         try {
 
-            $noteFields = [
-                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
-            ];
-
             $note = Note::createNote($request);
 
             SupplierActivity::createActivity([
@@ -114,7 +110,7 @@ class NoteController extends Controller
                 'route' => '/dashboard/admin/notes',
                 'metadata' => json_encode([
                     'note_id' => $note->id,
-                    'new_values' => $note->only($noteFields),
+                    'new_values' => $this->noteActivityValues($note),
                 ])
             ]);
 
@@ -172,11 +168,8 @@ class NoteController extends Controller
     public function update(NoteRequest $request, $id): JsonResponse
     {
         try {
-            $note = Note::with(['user'])->find($id);
 
-            $noteFields = [
-                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
-            ];
+            $note = Note::with(['user'])->find($id);
         
             if (!$note)
                 return response()->json([
@@ -185,9 +178,11 @@ class NoteController extends Controller
                     'message' => 'Egen värdering hittades inte'
                 ], 404);
 
-            $oldValues = $note->only($noteFields);
+            $oldValues = $this->noteActivityValues($note);
 
             $note->updateNote($request, $note); 
+
+            $newValues = $this->noteActivityValues($note);
 
             SupplierActivity::createActivity([
                 'entity_id' => $note->id,
@@ -200,7 +195,7 @@ class NoteController extends Controller
                 'metadata' => json_encode([
                     'note_id' => $note->id,
                     'old_values' => $oldValues,
-                    'new_values' => $note->only($noteFields),
+                    'new_values' => $newValues,
                 ])
             ]);
 
@@ -228,10 +223,6 @@ class NoteController extends Controller
         try {
 
             $note = Note::with(['user'])->find($id);
-
-            $noteFields = [
-                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
-            ];
         
             if (!$note)
                 return response()->json([
@@ -240,7 +231,7 @@ class NoteController extends Controller
                     'message' => 'Egen värdering hittades inte'
                 ], 404);
 
-            $oldValues = $note->only($noteFields);
+            $oldValues = $this->noteActivityValues($note);
 
             SupplierActivity::createActivity([
                 'entity_id' => $note->id,
@@ -295,7 +286,7 @@ class NoteController extends Controller
 
             SupplierActivity::createActivity([
                 'entity_id' => $note->id,
-                'entity_type' => 'notes',
+                'entity_type' => 'comment_notes',
                 'action_type' => 'send_comment_note',
                 'title' => $this->noteActivityTitle($note, ' - kommentar tillagd'),
                 'description' => 'Lades till.',
@@ -303,7 +294,11 @@ class NoteController extends Controller
                 'route' => '/dashboard/admin/notes',
                 'metadata' => json_encode([
                     'note_id' => $note->id,
-                    'comment' => $request->comment,
+                    'new_values' => [
+                        'user_id' => $note->comments()->latest()->first()->user_id ?? null,
+                        'comments_note' => $request->comment,
+                        'comments_date' => $note->comments()->latest()->first()->created_at ?? null,
+                    ],
                 ])
             ]);
 
@@ -344,14 +339,14 @@ class NoteController extends Controller
 
             $oldValues = [
                 'comment_id' => $existingComment->id,
-                'comment' => $existingComment->comment,
+                'comments_note' => $existingComment->comment
             ];
 
             $updatedComment = Note::updateComment($request, $id);
 
             SupplierActivity::createActivity([
                 'entity_id' => $note->id,
-                'entity_type' => 'notes',
+                'entity_type' => 'comment_notes',
                 'action_type' => 'update_comment_note',
                 'title' => $this->noteActivityTitle($note, ' - kommentar uppdaterad'),
                 'description' => 'Uppdaterades.',
@@ -362,7 +357,7 @@ class NoteController extends Controller
                     'old_values' => $oldValues,
                     'new_values' => [
                         'comment_id' => $updatedComment?->id ?? $id,
-                        'comment' => $updatedComment?->comment ?? $request->comment,
+                        'comments_note' => $updatedComment?->comment ?? $request->comment
                     ],
                 ])
             ]);
@@ -404,14 +399,14 @@ class NoteController extends Controller
 
             $oldValues = [
                 'comment_id' => $existingComment->id,
-                'comment' => $existingComment->comment,
+                'comments_note' => $existingComment->comment
             ];
 
             Note::deleteComment($id);
 
             SupplierActivity::createActivity([
                 'entity_id' => $note->id,
-                'entity_type' => 'notes',
+                'entity_type' => 'comment_notes',
                 'action_type' => 'delete_comment_note',
                 'title' => $this->noteActivityTitle($note, ' - kommentar borttagen'),
                 'description' => 'Togs bort.',
@@ -452,5 +447,15 @@ class NoteController extends Controller
         }
 
         return '#' . $note->id;
+    }
+
+    private function noteActivityValues(Note $note): array
+    {
+        $noteValues = $note->only([
+            'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'landline', 'comment'
+        ]);
+
+
+        return $noteValues;
     }
 }

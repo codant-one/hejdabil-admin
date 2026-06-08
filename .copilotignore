@@ -1,0 +1,47 @@
+# ====================================================
+# .copilotignore - FINANCIAL OPTIMIZATION (Monorepo)
+# ====================================================
+
+# 1. Dependencies (Critical token lockup)
+frontend/node_modules/
+backend/vendor/
+
+# 2. Compiled frontend files (Vue)
+# Prevents you from reading obfuscated or minified code
+frontend/dist/
+frontend/build/
+frontend/.output/
+
+#3. Backend Cache, Logs, and Temporary Files (Laravel)
+backend/storage/framework/
+backend/storage/logs/
+backend/storage/debugbar/
+backend/bootstrap/cache/
+
+#4. Databases and Static Migrations
+backend/*.sqlite
+backend/*.sqlite3
+backend/*.sql
+
+#5. Code maps and assets
+*.map
+*.min.js
+*.min.css
+
+#6. Security (Credential Protection)
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+*.pem
+*.key
+
+# 7. Entorno de desarrollo
+.git/
+.idea/
+.vscode/
+
+#8. Others
+frontend/src/api/
+frontend/src/stores/
+frontend/src/assets/

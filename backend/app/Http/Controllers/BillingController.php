@@ -133,18 +133,6 @@ class BillingController extends Controller
         try {
 
             $billing = Billing::createBilling($request);
-            $activityFields = [
-                'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                'payment_terms', 'terms_and_conditions', 'reference',
-                'subtotal', 'tax', 'total', 'rabatt', 'discount',
-                'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
-                'amount_tax', 'sent_at'
-            ];
-            $activityNewValues = $billing->only($activityFields);
-            $activityNewValues['state_id'] = $billing->state_id;
-            $activityNewValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
-
-            $total = $billing->total + $billing->amount_discount;
 
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
@@ -156,7 +144,7 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'new_values' => $activityNewValues,
+                    'new_values' => $this->billingActivityValues($billing),
                 ])
             ]);
 
@@ -238,25 +226,19 @@ class BillingController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
 
-            $billingFields = [
+            $fields = [
                 'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                'payment_terms', 'terms_and_conditions', 'reference', 
-                'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
+                'payment_terms', 'terms_and_conditions', 'reference',
+                'subtotal', 'tax', 'total', 'rabatt', 'discount',
+                'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
                 'amount_tax', 'sent_at'
             ];
 
-            $oldValues = $billing->only($billingFields);
-            $oldValues['state_id'] = $billing->state_id;
-            $oldValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
+            $oldValues = $this->billingActivityValues($billing);
 
             $billing = $billing->updateBilling($request, $billing);
 
-            $newValues = $billing->only($billingFields);
-            $newValues['state_id'] = $billing->state_id;
-            $newValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
-
-            $total = $billing->total + $billing->amount_discount;
+            $newValues = $this->billingActivityValues($billing);
 
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
@@ -440,8 +422,6 @@ class BillingController extends Controller
             
             $billing = Billing::createCredit($billing);
 
-            $total = $billing->total + $billing->amount_discount;
-
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
                 'entity_type' => 'billings',
@@ -452,13 +432,7 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'new_values' => $billing->only([
-                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'terms_and_conditions', 'reference', 
-                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                        'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
-                        'amount_tax', 'sent_at', 'state_id'
-                    ])
+                    'new_values' => $this->billingActivityValues($billing),
                 ])
             ]);
 
@@ -493,8 +467,6 @@ class BillingController extends Controller
             
             $billing = Billing::createReminder($billing);
 
-            $total = $billing->total + $billing->amount_discount;
-
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
                 'entity_type' => 'billings',
@@ -505,13 +477,7 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'new_values' => $billing->only([
-                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'terms_and_conditions', 'reference', 
-                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
-                        'amount_discount', 'detail', 'credit_id', 'is_sent', 'is_credit', 
-                        'amount_tax', 'sent_at', 'state_id'
-                    ])
+                    'new_values' => $this->billingActivityValues($billing),
                 ])
             ]);
 
@@ -653,8 +619,6 @@ class BillingController extends Controller
                 $allEmails->prepend($billing->client->email);
             }
 
-            $total = $billing->total + $billing->amount_discount;
-
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
                 'entity_type' => 'billings',
@@ -665,8 +629,7 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'emails' => $allEmails->values()->all(),
-                    'email_default' => $request->emailDefault ?? false
+                    'new_values' => ['email' => $allEmails->values()->all()]
                 ])
             ]);
 
@@ -773,9 +736,10 @@ class BillingController extends Controller
                 'route' => '/dashboard/admin/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
-                    'phones' => $sentRecipients,
-                    'phone_default' => $request->boolean('phoneDefault'),
-                    'failed' => $failedRecipients,
+                    'new_values' => [
+                        'phone' => $sentRecipients,
+                        'failed' => $failedRecipients
+                    ]                    
                 ])
             ]);
 
@@ -849,6 +813,22 @@ class BillingController extends Controller
             return $fallbackMessage;
 
         return str_replace('{Företagsnamn}', $resolvedCompanyName, $normalizedMessage);
+    }
+
+    private function billingActivityValues(Billing $billing): array
+    {
+        $billingValues = $billing->only([
+            'client_id', 'invoice_id', 'invoice_date', 'due_date',
+            'payment_terms', 'terms_and_conditions', 'reference',
+            'subtotal', 'tax', 'total', 'rabatt', 'discount',
+            'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
+            'amount_tax', 'sent_at'
+        ]);
+
+        $billingValues['state_id'] = $billing->state_id;
+        $billingValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
+
+        return $billingValues;
     }
 
     public function info() {

@@ -167,13 +167,7 @@ class DocumentController extends Controller
                 'route' => $this->documentActivityRoute($document->id),
                 'metadata' => json_encode([
                     'document_id' => $document->id,
-                    'title' => $document->title,
-                    'description' => $document->description,
-                    'supplier_id' => $document->supplier_id,
-                    'file' => $document->file,
-                    'order_id' => $document->order_id,
-                    'token_id' => $token->id,
-                    'signature_status' => $token->signature_status,
+                    'new_values' => $this->documentActivityValues($document, $token),
                 ])
             ]);
 
@@ -260,11 +254,7 @@ class DocumentController extends Controller
                 'icon' => 'custom-signature',
                 'metadata' => json_encode([
                     'document_id' => $document->id,
-                    'title' => $document->title,
-                    'description' => $document->description,
-                    'supplier_id' => $document->supplier_id,
-                    'file' => $document->file,
-                    'signature_status' => $document->token?->signature_status,
+                    'old_values' => $this->documentActivityValues($document, $document->token),
                 ])
             ]);
 
@@ -319,9 +309,11 @@ class DocumentController extends Controller
                         'route' => $this->documentActivityRoute($document->id),
                         'metadata' => json_encode([
                             'document_id' => $document->id,
-                            'title' => $document->title,
-                            'recipient_email' => $validated['email'],
-                            'signature_status' => $document->token?->signature_status,
+                            'new_values' => [ 
+                                'email' => $validated['email'],
+                                'phone' => $validated['phone'] ?? null,
+                                'description' => $document->description
+                            ]
                         ])
                     ]);
                 }
@@ -634,16 +626,14 @@ class DocumentController extends Controller
                 'route' => $this->documentActivityRoute($document->id),
                 'metadata' => json_encode([
                     'document_id' => $document->id,
-                    'title' => $document->title,
-                    'token_id' => $token->id,
-                    'recipient_email' => $validated['email'],
-                    'recipient_phone' => $recipientPhone,
-                    'signature_status' => $token->signature_status,
-                    'placement_x' => $token->placement_x,
-                    'placement_y' => $token->placement_y,
-                    'placement_page' => $token->placement_page,
-                    'signature_alignment' => $token->signature_alignment,
-                    'sms_error' => $smsError,
+                    'new_values' => 
+                        [
+                            'email' => $validated['email'],
+                            'phone' => $recipientPhone,
+                            'description' => $document->description,
+                            'sms_error' => $smsError,
+                        ]
+                    
                 ])
             ]);
             
@@ -878,15 +868,7 @@ class DocumentController extends Controller
                 'route' => $this->documentActivityRoute($document->id),
                 'metadata' => json_encode([
                     'document_id' => $document->id,
-                    'title' => $document->title,
-                    'token_id' => $token->id,
-                    'recipient_email' => $recipientEmail,
-                    'signature_status' => $token->signature_status,
-                    'placement_x' => $token->placement_x,
-                    'placement_y' => $token->placement_y,
-                    'placement_page' => $token->placement_page,
-                    'signature_alignment' => $token->signature_alignment,
-                    'resend' => true,
+                    'new_values' => [ 'email' => $recipientEmail ]
                 ])
             ]);
             
@@ -1070,12 +1052,10 @@ class DocumentController extends Controller
                 'route' => $this->documentActivityRoute($document->id),
                 'metadata' => json_encode([
                     'document_id' => $document->id,
-                    'title' => $document->title,
-                    'token_id' => $token->id,
-                    'recipient_phone' => $recipientPhone,
-                    'recipient_email' => $token->recipient_email,
-                    'signature_status' => $token->signature_status,
-                    'resend_sms' => true,
+                    'new_values' => 
+                        [
+                            'phone' => $recipientPhone,
+                        ]
                 ])
             ]);
 
@@ -1157,22 +1137,19 @@ class DocumentController extends Controller
         SupplierActivity::createActivity([
             'entity_id' => $document->id,
             'entity_type' => 'documents',
-            'action_type' => 'cancel_signature_document',
+            'action_type' => 'revoke_signature_document',
             'title' => $this->documentActivityTitle($document, ' - signering återkallad'),
             'description' => 'Signeringsförfrågan återkallades.',
             'icon' => 'custom-signature',
             'route' => $this->documentActivityRoute($document->id),
             'metadata' => json_encode([
                 'document_id' => $document->id,
-                'title' => $document->title,
-                'token_id' => $token->id,
-                'recipient_email' => $token->recipient_email,
-                'signature_status' => $token->signature_status,
-                'cancelled' => true,
-                'placement_x' => $token->placement_x,
-                'placement_y' => $token->placement_y,
-                'placement_page' => $token->placement_page,
-                'signature_alignment' => $token->signature_alignment,
+                'old_values' =>
+                    [
+                        'description' => $document->description,
+                        'email' => $token->recipient_email,
+                        'phone' => $token->recipient_phone,
+                    ]
             ])
         ]);
 
@@ -1185,6 +1162,19 @@ class DocumentController extends Controller
     private function documentActivityRoute(int $documentId): string
     {
         return '/dashboard/admin/documents?file_id=' . $documentId;
+    }
+
+    private function documentActivityValues(Document $document, ?Token $token = null): array
+    {
+        $resolvedToken = $token ?? $document->token;
+
+        return [
+            'id' => $document->id,
+            'order_id' => $document->order_id,
+            'title' => $document->title,
+            'description' => $document->description,
+            'signature_status' => $resolvedToken?->signature_status,
+        ];
     }
 
     private function syncDocumentTokenDispatchStatus(\App\Models\Token $token): string

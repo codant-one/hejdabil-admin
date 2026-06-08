@@ -186,7 +186,7 @@ class AgreementController extends Controller
                     'route' => $this->agreementActivityRoute($agreement->id),
                     'metadata' => json_encode([
                         'agreement_id' => $agreement->id,
-                        'new_values' => $request->only($this->agreementActivityRequestFields())
+                        'new_values' => $this->agreementActivityStoredValues($agreement)
                     ])
                 ]);
 
@@ -286,7 +286,8 @@ class AgreementController extends Controller
             
             return DB::transaction(function () use ($request, $agreement, $oldValues) {
                 $agreement->updateAgreement($request, $agreement); 
-
+                $agreement->refresh();
+                
                 SupplierActivity::createActivity([
                     'entity_id' => $agreement->id,
                     'entity_type' => 'agreements',
@@ -298,7 +299,7 @@ class AgreementController extends Controller
                     'metadata' => json_encode([
                         'agreement_id' => $agreement->id,
                         'old_values' => $oldValues,
-                        'new_values' => $request->only($this->agreementActivityRequestFields())
+                        'new_values' => $this->agreementActivityStoredValues($agreement)
                     ])
                 ]);
 
@@ -585,10 +586,13 @@ class AgreementController extends Controller
                 'route' => $this->agreementActivityRoute($agreement->id),
                 'metadata' => json_encode([
                     'agreement_id' => $agreement->id,
-                    'emailDefault' => $request->emailDefault,
-                    'emails' => $request->emails,
-                    'agreement_client_email' => $agreement->agreement_client?->email,
-                    'signature_status' => $agreement->token?->signature_status,
+                    'new_values' => 
+                        [
+                            'emailDefault' => $request->emailDefault,
+                            'emails' => $request->emails,
+                            'agreement_client_email' => $agreement->agreement_client?->email,
+                            'signature_status' => $agreement->token?->signature_status,
+                        ]                    
                 ])
             ]);
 
@@ -692,11 +696,15 @@ class AgreementController extends Controller
                 'route' => $this->agreementActivityRoute($agreement->id),
                 'metadata' => json_encode([
                     'agreement_id' => $agreement->id,
-                    'phones' => $sentRecipients,
-                    'phone_default' => $request->boolean('phoneDefault'),
-                    'agreement_client_phone' => $agreement->agreement_client?->phone,
-                    'signature_status' => $agreement->token?->signature_status,
-                    'failed' => $failedRecipients,
+                    'new_values' =>
+                        [
+                            'signature_status' => $agreement->token?->signature_status,
+                            'phones' => $sentRecipients,
+                            'phone_default' => $request->boolean('phoneDefault'),
+                            'agreement_client_phone' => $agreement->agreement_client?->phone,
+                            'signature_status' => $agreement->token?->signature_status,
+                            'failed' => $failedRecipients,
+                        ] 
                 ])
             ]);
 
@@ -847,47 +855,10 @@ class AgreementController extends Controller
         };
     }
 
-    private function agreementActivityRequestFields(): array
-    {
-        return [
-            'agreement_type_id', 'vehicle_client_id', 'vehicle_interchange_id', 'guaranty_type_id',
-            'insurance_type_id', 'currency_id', 'payment_type_id', 'iva_id',
-            'offer_id', 'offerId', 'commission_id', 'commissionId', 'agreement_id',
-            'sale_date', 'residual_debt', 'residual_price', 'fair_value',
-            'price', 'iva_sale_amount', 'iva_sale_exclusive', 'iva_purchase_amount',
-            'iva_purchase_exclusive', 'discount', 'registration_fee', 'total_sale',
-            'advance_id', 'vehicle_payment_id', 'middle_price', 'payment_type',
-            'payment_received', 'payment_method_forcash', 'installment_amount', 'installment_contract_upon_delivery',
-            'guaranty', 'guaranty_description', 'insurance_company', 'insurance_company_description',
-            'payment_description', 'terms_other_conditions', 'terms_other_information', 'client_id',
-            'client_type_id', 'country_id', 'fullname', 'email',
-            'organization_number', 'address', 'street', 'postal_code',
-            'phone', 'reg_num', 'brand_id', 'model_id',
-            'model', 'year', 'color', 'chassis',
-            'car_name', 'engine', 'mileage', 'vehicle_id',
-            'purchase_date', 'purchase_price', 'iva_purchase_id', 'gearbox_id',
-            'number_keys', 'service_book', 'summer_tire', 'winter_tire',
-            'fuel_id', 'comments', 'comment', 'car_body_id',
-            'generation', 'control_inspection', 'last_service', 'last_service_date',
-            'dist_belt', 'last_dist_belt', 'last_dist_belt_date', 'interchange',
-            'reg_num_interchange', 'brand_id_interchange', 'model_id_interchange', 'model_interchange',
-            'car_body_id_interchange', 'iva_purchase_id_interchange', 'year_interchange', 'color_interchange',
-            'purchase_price_interchange', 'chassis_interchange', 'car_name_interchange', 'engine_interchange',
-            'mileage_interchange', 'generation_interchange', 'control_inspection_interchange', 'fuel_id_interchange',
-            'gearbox_id_interchange', 'number_keys_interchange', 'service_book_interchange', 'summer_tire_interchange',
-            'winter_tire_interchange', 'dist_belt_interchange', 'last_dist_belt_interchange', 'last_dist_belt_date_interchange',
-            'last_service_interchange', 'last_service_date_interchange', 'comments_interchange', 'purchase_date_interchange',
-            'is_loan', 'loan_amount', 'lessor', 'remaining_amount',
-            'settled_by', 'bank', 'account', 'description',
-            'type', 'save_client', 'commission_type_id', 'commission_fee',
-            'start_date', 'end_date', 'outstanding_debt', 'remaining_debt',
-            'paid_bank', 'selling_price', 'payment_days'
-        ];
-    }
-
     private function agreementActivityStoredValues(Agreement $agreement): array
     {
-        $agreement->loadMissing('agreement_client');
+        // Cargamos las relaciones para asegurar que la info esté disponible
+        $agreement->loadMissing(['agreement_client', 'vehicle_client.vehicle', 'offer', 'commission.vehicle']);
 
         $agreementValues = $agreement->only([
             'agreement_type_id', 'vehicle_client_id', 'vehicle_interchange_id', 'guaranty_type_id',
@@ -911,7 +882,29 @@ class AgreementController extends Controller
             ? $agreement->agreement_client->only($clientFields)
             : array_fill_keys($clientFields, null);
 
-        return array_merge($agreementValues, $clientValues);
+        $vehicleFields = [
+            'supplier_id', 'reg_num', 'year', 'generation',
+            'model_id', 'car_body_id', 'fuel_id', 'gearbox_id',
+            'color', 'mileage', 'control_inspection', 'purchase_price',
+            'purchase_date', 'iva_purchase_id', 'currency_purchase_id', 'currency_sale_id',
+            'state_id', 'number_keys', 'service_book', 'summer_tire',
+            'winter_tire', 'last_service', 'last_service_date', 'dist_belt',
+            'last_dist_belt', 'last_dist_belt_date', 'comments', 'chassis',
+            'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
+            'sale_price', 'sale_date', 'iva_sale_id', 'sale_comments',
+            'iva_sale_amount', 'iva_sale_exclusive', 'discount', 'registration_fee',
+            'total_sale', 'costs', 'purchase_client', 'sale_client'
+        ];
+
+        $vehicleSource = $agreement->vehicle_client ? $agreement->vehicle_client->vehicle
+            : ($agreement->offer ? $agreement->offer 
+            : ($agreement->commission ? $agreement->commission->vehicle : null));
+
+        $vehicleValues = $vehicleSource
+            ? $vehicleSource->only($vehicleFields)
+            : array_fill_keys($vehicleFields, null);
+
+        return array_merge($agreementValues, $clientValues, $vehicleValues);
     }
 
 }
