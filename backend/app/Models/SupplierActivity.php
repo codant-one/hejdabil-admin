@@ -32,6 +32,10 @@ class SupplierActivity extends Model
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
             $q->where('description', 'LIKE', '%' . $search . '%')
+              ->orWhere('entity_type', 'LIKE', '%' . $search . '%')
+              ->orWhere('action_type', 'LIKE', '%' . $search . '%')
+              ->orWhere('title', 'LIKE', '%' . $search . '%')
+              ->orWhere('metadata', 'LIKE', '%' . $search . '%')
               ->orWhereHas('user', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
@@ -58,8 +62,12 @@ class SupplierActivity extends Model
             $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
+        if ($filters->get('user_id') !== null) {
+            $query->where('user_id', $filters->get('user_id'));
+        }
+
         if ($filters->get('search')) {
-            $query->whereSearch($filters->get('search'));
+             $query->whereSearch($filters->get('search'));
         }
 
         if ($filters->get('date_from') && $filters->get('date_to')) {

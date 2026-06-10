@@ -252,11 +252,17 @@ class CacheService
     /**
      * Get active users suppliers with relationships (cache por 5 minutos)
      */
-    public static function getActiveUsersSuppliers($bossId)
+    public static function getActiveUsersSuppliers($bossId = null)
     {
-        return Cache::remember('suppliers.active_users.' . $bossId, 300, function () use ($bossId) {
+        // Creamos una llave de caché dinámica dependiendo de si hay bossId o no
+        $cacheKey = $bossId ? 'suppliers.active_users.' . $bossId : 'suppliers.active_users.all';
+
+        return Cache::remember($cacheKey, 300, function () use ($bossId) {
             return Supplier::with(['user.userDetail', 'billings'])
-                ->where('boss_id', $bossId)
+                // El método 'when' solo ejecuta la función si $bossId tiene un valor (no es null)
+                ->when($bossId, function ($query, $bossId) {
+                    return $query->where('boss_id', $bossId);
+                })
                 ->get();
         });
     }

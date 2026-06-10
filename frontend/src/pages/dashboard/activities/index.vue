@@ -3,13 +3,14 @@
 import { themeConfig } from '@themeConfig'
 import { useDisplay } from 'vuetify'
 import { useActivitiesStore } from '@/stores/useActivities'
+import { formatNumber } from '@/@core/utils/formatters'
+import { getActivityVisibleFields } from './activityVisibleFields'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DefaultLayoutWithoutVerticalNav from '@/layouts/components/DefaultLayoutWithoutVerticalNav.vue'
 import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
-import { formatNumber } from '@/@core/utils/formatters'
-import { getActivityVisibleFields } from './activityVisibleFields'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import { ref } from 'vue'
 
 const activitiesStore = useActivitiesStore()
 const emitter = inject('emitter')
@@ -28,11 +29,18 @@ const totalActivities = ref(0)
 const isRequestOngoing = ref(true)
 const expandedActivityId = ref(null)
 
+const filtreraMobile = ref(false);
+const isFilterDialogVisible = ref(false)
+
 const userData = ref(null)
 const user_id = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const users = ref([])
+const userId = ref(null)
+const modules = ref([])
+const module_id = ref(null)
 const mode = ref('Lista')
 
 const modeOptions = [
@@ -246,7 +254,9 @@ async function fetchData(cleanFilters = false) {
         searchQuery.value = ''
         rowPerPage.value = 10
         currentPage.value = 1;
+        supplier_id.value = null;
         user_id.value = null;
+        userId.value = null;
     }
 
     let data = {
@@ -255,7 +265,8 @@ async function fetchData(cleanFilters = false) {
         orderBy: 'desc',
         limit: rowPerPage.value,
         page: currentPage.value,
-        supplier_id: supplier_id.value
+        supplier_id: supplier_id.value,
+        user_id: userId.value,
     }
 
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
@@ -269,11 +280,14 @@ async function fetchData(cleanFilters = false) {
     expandedActivityId.value = activities.value.some(activity => activity.id === expandedActivityId.value)
         ? expandedActivityId.value
         : activities.value[0]?.id ?? null
+    
     isRequestOngoing.value = false
 
     if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
         suppliers.value = activitiesStore.getSuppliers
     }
+
+    users.value = activitiesStore.getUsers
 }
 
 watchEffect(registerEvents)
@@ -902,22 +916,6 @@ onBeforeUnmount(() => {
 
             <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-            <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-                <AppAutocomplete
-                    v-if="role !== 'Supplier' && role !== 'User'"
-                    prepend-icon="custom-profile"
-                    v-model="supplier_id"
-                    placeholder="Leverantörer"
-                    :items="suppliers"
-                    :item-title="(item) => item.full_name"
-                    :item-value="(item) => item.id"
-                    autocomplete="off"
-                    clearable
-                    clear-icon="tabler-x"
-                    class="selector-user selector-truncate"
-                />
-            </div>
-
             <div
                 v-if="!$vuetify.display.mdAndDown"
                 class="d-flex align-center empty-select"
@@ -957,100 +955,20 @@ onBeforeUnmount(() => {
 
             <VBtn
                 class="btn-transparent px-3"
-                @click="filtreraMobile = true"
-                v-if="$vuetify.display.mdAndDown"
+                :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+                @click="isFilterDialogVisible = true"
                 >
                 <VIcon icon="custom-filter" size="24" />
-                <span class="d-none d-md-block">Filtrera efter</span>
+                <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
             </VBtn>
 
-            <VMenu v-if="!$vuetify.display.mdAndDown">
-                <template #activator="{ props }">
-                    <VBtn class="btn-transparent px-2" v-bind="props">
-                    <VIcon icon="custom-filter" size="24" />
-                    <span class="d-none d-md-block">Filtrera efter</span>
-                    </VBtn>
-                </template>
-                <VList>
-                    <VListItem @click="updateStatus('created')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'created'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Skapad</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem @click="updateStatus('delivered')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'delivered'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Levererad</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem @click="updateStatus('delivery_issues')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'delivery_issues'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Leveransproblem</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem @click="updateStatus('reviewed')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'reviewed'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Granskad</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem @click="updateStatus('signed')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'signed'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Signerad</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem @click="updateStatus('cancelled')">
-                    <template #prepend>
-                        <VListItemAction>
-                        <VCheckbox
-                            :model-value="status === 'cancelled'"
-                            class="ml-3"
-                            true-icon="custom-checked-checkbox"
-                            false-icon="custom-unchecked-checkbox"
-                        /></VListItemAction>
-                    </template>
-                    <VListItemTitle>Annullerad</VListItemTitle>
-                    </VListItem>
-                </VList>
-            </VMenu>
+            <VBtn 
+              class="btn-white-2 px-3"
+              :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+              @click="filtreraMobile = true"
+            >
+              <VIcon icon="custom-filter" size="24" />
+            </VBtn>
 
             <div
                 v-if="!$vuetify.display.mdAndDown"
@@ -1372,6 +1290,88 @@ onBeforeUnmount(() => {
       </div>
     </VCard>
   </section>
+
+    <!-- Filter Dialog -->
+  <VDialog
+    v-model="isFilterDialogVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isFilterDialogVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard flat class="card-form">
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-filter" class="action-icon" />
+        <div class="dialog-title">
+          Filtrera
+        </div>
+      </VCardText>
+      
+      <VCardText class="pt-0">
+        <VRow class="pt-3">
+          <VCol 
+            cols="12" md="12" 
+            v-if="role === 'SuperAdmin' || role === 'Administrator'"
+            class="pb-0">
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="supplier_id"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="item => item.full_name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate"
+            />
+          </VCol>
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Användare" />
+             <AppAutocomplete
+              v-model="userId"
+              :items="users"
+              :item-title="item => item.user_name"
+              :item-value="item => item.user_id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              :menu-props="{ maxHeight: '300px' }"
+            />
+          </VCol>
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
+            <AppAutocomplete
+              v-model="module_id"
+              :items="modules"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              :menu-props="{ maxHeight: '300px' }"/>
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+        <VBtn
+          class="btn-light"
+          @click="fetchData(true); isFilterDialogVisible = false">
+            Rensa filter
+        </VBtn>
+        <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Visa resultat
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 
   <MobileBottomBar :nav-items="navItems" />
 </template>

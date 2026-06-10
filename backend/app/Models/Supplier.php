@@ -18,7 +18,7 @@ class Supplier extends Model
     use HasFactory, SoftDeletes;
 
     protected $guarded = [];
-    protected $appends = ['full_name'];
+    protected $appends = ['full_name', 'user_name'];
 
     /**** Relationship ****/
     public function user() {
@@ -419,6 +419,14 @@ class Supplier extends Model
     {
         if ($this->user)
             return "{$this->user->name} {$this->user->last_name} - {$this->user->userDetail->company}";
+        else
+            return "";
+    }
+
+    public function getUserNameAttribute()
+    {
+        if ($this->user)
+            return "{$this->user->name} {$this->user->last_name}";
         else
             return "";
     }

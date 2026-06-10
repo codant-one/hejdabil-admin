@@ -36,7 +36,8 @@ class ActivitiesController extends Controller
                                     'search',
                                     'orderByField',
                                     'orderBy',
-                                    'supplier_id'
+                                    'supplier_id',
+                                    'user_id'
                                 ])
                             );
 
@@ -56,12 +57,21 @@ class ActivitiesController extends Controller
                 $activityMetadataResolver->enrichCollection($activities->getCollection())
             );
 
+            $supplier_id = null;
+
+            if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $supplier_id = Auth::user()->supplier->id;
+            } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+                $supplier_id = Auth::user()->supplier->boss_id;
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'activities' => $activities,
                     'activitiesTotalCount' => $activities->total(),
                     'suppliers' => CacheService::getActiveSuppliers(),
+                    'users' => CacheService::getActiveUsersSuppliers($supplier_id)
                 ]
             ]);
 

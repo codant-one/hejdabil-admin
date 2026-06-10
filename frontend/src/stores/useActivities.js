@@ -5,6 +5,7 @@ export const useActivitiesStore = defineStore('activities', {
     state: () => ({
         activities: {},
         suppliers: {},
+        users: {},
         loading: false,
         last_page: 1,
         activitiesTotalCount: 0
@@ -15,6 +16,9 @@ export const useActivitiesStore = defineStore('activities', {
         },
         getSuppliers(){
             return this.suppliers
+        },
+        getUsers(){
+            return this.users
         }
     },
     actions: {
@@ -33,6 +37,7 @@ export const useActivitiesStore = defineStore('activities', {
 
                     this.activities = activityRows
                     this.suppliers = response.data.data.suppliers
+                    this.users = response.data.data.users
                     this.last_page = activitiesPayload?.last_page ?? 1
                     this.activitiesTotalCount = response.data.data.activitiesTotalCount ?? activitiesPayload?.total ?? activityRows.length
                 })
