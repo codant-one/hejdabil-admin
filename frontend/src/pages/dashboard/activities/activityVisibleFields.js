@@ -265,113 +265,24 @@ const noteActivityFields = [
 ]
 
 export const activityVisibleFieldsByModule = {
-  /*agreements: [
-    'agreement_type_id',
-    'vehicle_client_id',
-    'vehicle_interchange_id',
-    agreementTypeField('guaranty_type_id', [1]),
-    agreementTypeField('insurance_type_id', [1]),
-    'payment_type_id',
-    'iva_id',
-    'advance_id',
-    'vehicle_payment_id',
-    objectPropertyField('offer_number', 'offer_id', { sourceKey: 'offer_id', label: 'Offertnummer' }),
-    relationField('client'),
-    objectPropertyField('offer_reg_num', 'reg_num', { sourceKey: 'offer_id', label: 'Reg nr' }),
-    objectPropertyField('offer_car_name', 'car_name', { sourceKey: 'offer_id', label: 'Bilnamn' }),
-    objectPropertyField('offer_brand_name', 'brand_name', { sourceKey: 'offer_id', label: 'Märke' }),
-    objectPropertyField('offer_model_name', 'model_name', { sourceKey: 'offer_id', label: 'Modell' }),
-    objectPropertyField('offer_year', 'year', { sourceKey: 'offer_id', label: 'Årsmodell' }),
-    objectPropertyField('offer_color', 'color', { sourceKey: 'offer_id', label: 'Färg' }),
-    objectPropertyField('offer_mileage', 'mileage', { sourceKey: 'offer_id', label: 'Miltal', formatter: formatNumberInteger, suffix: ' Mil' }),
-    objectPropertyField('offer_generation', 'generation', { sourceKey: 'offer_id', label: 'Generation' }),
-    objectPropertyField('offer_car_body', 'car_body', { sourceKey: 'offer_id', label: 'Kaross' }),
-    objectPropertyField('offer_purchase_date', 'purchase_date', { sourceKey: 'offer_id', label: 'Inköpsdatum' }),
-    objectPropertyField('offer_chassis', 'chassis', { sourceKey: 'offer_id', label: 'Chassinummer' }),
-    objectPropertyField('offer_control_inspection', 'control_inspection', { sourceKey: 'offer_id', label: 'Kontrollbesiktning gäller tom' }),
-    objectPropertyField('offer_fuel_name', 'fuel_name', { sourceKey: 'offer_id', label: 'Drivmedel' }),
-    objectPropertyField('offer_gearbox_name', 'gearbox_name', { sourceKey: 'offer_id', label: 'Växellåda' }),
-    objectPropertyField('offer_engine', 'engine', { sourceKey: 'offer_id', label: 'Motor' }),
-    objectPropertyField('offer_number_keys', 'number_keys', { sourceKey: 'offer_id', label: 'Antal nycklar' }),
-    objectOptionField('offer_service_book', 'service_book', ['Ja', 'Nej'], { sourceKey: 'offer_id', label: 'Servicebok finns?' }),
-    objectOptionField('offer_summer_tire', 'summer_tire', ['Ja', 'Nej'], { sourceKey: 'offer_id', label: 'Sommardäck finns?' }),
-    objectOptionField('offer_winter_tire', 'winter_tire', ['Ja', 'Nej'], { sourceKey: 'offer_id', label: 'Vinterdäck finns?' }),
-    objectOptionField('offer_dist_belt', 'dist_belt', ['Ja', 'Nej', 'Kamkedja', 'Vet ej'], { sourceKey: 'offer_id', label: 'Kamrem bytt?' }),
-    compoundField('offer_last_service_info', ['last_service', 'last_service_date'], value => {
-      const mileage = value?.last_service
-      const rawServiceDate = value?.last_service_date
-      const serviceDate = typeof rawServiceDate === 'string' && ['null', 'undefined', ''].includes(rawServiceDate.trim().toLowerCase())
-        ? null
-        : rawServiceDate
-
-      if ((mileage === null || mileage === undefined || mileage === '') && !serviceDate)
-        return null
-
-      return `${String(mileage ?? 0).replace(/,/g, '')} Mil / ${serviceDate ?? '0000-00-00'}`
-    }, { label: 'Senaste service Mil/datum', sourceKey: 'offer_id' }), // <-- Aquí está el sourceKey en lugar de usar objectPropertyField
-
-    compoundField('offer_last_dist_belt_info', ['last_dist_belt', 'last_dist_belt_date'], value => {
-      const mileage = value?.last_dist_belt
-      const rawDistBeltDate = value?.last_dist_belt_date
-      const distBeltDate = typeof rawDistBeltDate === 'string' && ['null', 'undefined', ''].includes(rawDistBeltDate.trim().toLowerCase())
-        ? null
-        : rawDistBeltDate
-
-      if ((mileage === null || mileage === undefined || mileage === '') && !distBeltDate)
-        return null
-
-      return `${String(mileage ?? 0).replace(/,/g, '')} Mil / ${distBeltDate ?? '0000-00-00'}`
-    }, { label: 'Kamrem bytt vid Mil/datum', sourceKey: 'offer_id' }), // <-- sourceKey mapeado a offer_id
-    objectPropertyField('offer_comment', 'comment', { sourceKey: 'offer_id', label: 'Anmärkning' }),
-
-    'commission_id',
-    fieldConfig('agreement_id', { sourceKey: 'agreement_id', label: 'asdasd' }),
-    'send_reminder',
-    'sale_date',
-    'trade_price',
-    agreementTypeField('residual_debt', [1, 3]),
-    'residual_price',
-    'fair_value',
-    currencyField('price'),
-    'iva_sale_amount',
-    'iva_sale_exclusive',
-    'iva_purchase_amount',
-    'iva_purchase_exclusive',
-    'discount',
-    'registration_fee',
-    'total_sale',
-    'middle_price',
-    'payment_type',
-    'payment_received',
-    'payment_method_forcash',
-    'installment_amount',
-    'installment_contract_upon_delivery',
-    agreementTypeField('guaranty', [1]),
-    agreementTypeField('guaranty_description', [1]),
-    agreementTypeField('insurance_company', [1]),
-    agreementTypeField('insurance_company_description', [1]),
-    'payment_description',
-    'terms_other_conditions',
-    'terms_other_information',
-  ],*/
    agreements: [
     'agreement_type_id',
-    'vehicle_client_id',
-    'vehicle_interchange_id',
-    agreementTypeField('guaranty_type_id', [1]),
-    agreementTypeField('insurance_type_id', [1]),
-    'payment_type_id',
-    'iva_id',
-    'advance_id',
-    'vehicle_payment_id',
     
     objectPropertyField('offer_number', 'offer_id', { sourceKey: 'offer_id', label: 'Offertnummer' }),
+    objectPropertyField('commission_id', 'commission_id', { sourceKey: 'commission_id', label: 'Avtalsnummer' }),
+    //fieldConfig('agreement_id', { label: 'Avtalsnummer' }),
+
+    conditionalField('agreement_id', context => {
+      const actionType = String(context?.activity?.action_type || '').toLowerCase();
+      return !actionType.includes('send');
+    }, { label: 'Avtalsnummer' }),
+
     // Datos del Cliente (se leen directo del nivel principal)
     relationField('client'),
-    
+
     // Datos del Vehículo / Oferta (se leen directo del nivel principal)
+    fieldConfig('car_name', { sourceKey: 'car_name', label: 'Bilnamn' }),
     fieldConfig('reg_num', { label: 'Reg nr' }),
-    fieldConfig('car_name', { label: 'Bilnamn' }),
     fieldConfig('brand_name', { label: 'Märke' }),
     fieldConfig('model_name', { label: 'Modell' }),
     fieldConfig('year', { label: 'Årsmodell' }),
@@ -386,9 +297,9 @@ export const activityVisibleFieldsByModule = {
     fieldConfig('gearbox_name', { label: 'Växellåda' }),
     fieldConfig('engine', { label: 'Motor' }),
     fieldConfig('number_keys', { label: 'Antal nycklar' }),
-    booleanField('service_book', 'Ja', 'Nej', { label: 'Servicebok finns?' }),
-    booleanField('summer_tire', 'Ja', 'Nej', { label: 'Sommardäck finns?' }),
-    booleanField('winter_tire', 'Ja', 'Nej', { label: 'Vinterdäck finns?' }),
+    booleanField('service_book', ['Ja', 'Nej'], { label: 'Servicebok finns?' }),
+    booleanField('summer_tire', ['Ja', 'Nej'], { label: 'Sommardäck finns?' }),
+    booleanField('winter_tire', ['Ja', 'Nej'], { label: 'Vinterdäck finns?' }),
     optionField('dist_belt', ['Ja', 'Nej', 'Kamkedja', 'Vet ej'], { label: 'Kamrem bytt?' }),
     
     compoundField('last_service_info', ['last_service', 'last_service_date'], value => {
@@ -418,37 +329,59 @@ export const activityVisibleFieldsByModule = {
     }, { label: 'Kamrem bytt vid Mil/datum' }),
     
     fieldConfig('comment', { label: 'Anmärkning' }),
+    fieldConfig('comments', { label: 'Anmärkning' }),
 
     // Resto de campos del acuerdo
-    'commission_id',
-    fieldConfig('agreement_id', { label: 'Avtals-ID' }),
     'send_reminder',
     'sale_date',
-    'trade_price',
-    agreementTypeField('residual_debt', [1, 3]),
+    currencyField('trade_price'),
     'residual_price',
-    'fair_value',
+    currencyField('fair_value'),
     currencyField('price'),
-    'iva_sale_amount',
-    'iva_sale_exclusive',
-    'iva_purchase_amount',
-    'iva_purchase_exclusive',
-    'discount',
-    'registration_fee',
-    'total_sale',
-    'middle_price',
+    'iva_id',
+    currencyField('iva_sale_amount'),
+    currencyField('iva_sale_exclusive'),
+    currencyField('iva_purchase_amount'),
+    currencyField('iva_purchase_exclusive'),
+    currencyField('discount'),
+
+    agreementTypeField(booleanField('guaranty', ['Ingen garanti', 'Ja'], { label: 'Garanti' }), [1]),
+    agreementTypeField(fieldConfig('guaranty_description', { label: 'Garantibeskrivning' }), [1]),
+    agreementTypeField(fieldConfig('guaranty_type_id', { label: 'Typ av garanti' }), [1]),
+    agreementTypeField(booleanField('insurance_company', ['Ingen försäkring', 'Ja'], { label: 'Försäkring' }), [1]),
+    agreementTypeField(fieldConfig('insurance_company_description', { label: 'Beskrivning av försäkringsbolag' }), [1]),
+    agreementTypeField(fieldConfig('insurance_type_id', { label: 'Försäkringstyp' }), [1]),
+
+    agreementTypeField(currencyField('registration_fee'), [1]),
+    currencyField('total_sale'),
+    currencyField('middle_price'),
     'payment_type',
-    'payment_received',
+    currencyField('payment_received'),
     'payment_method_forcash',
-    'installment_amount',
-    'installment_contract_upon_delivery',
-    agreementTypeField('guaranty', [1]),
-    agreementTypeField('guaranty_description', [1]),
-    agreementTypeField('insurance_company', [1]),
-    agreementTypeField('insurance_company_description', [1]),
+    currencyField('installment_amount'),
+  
+    fieldConfig('payment_type_id', { label: 'Typ av utbetalning till säljaren' }),
+
+    'advance_id',
+    'vehicle_payment_id',
+      
+    objectPropertyField('commission_number', 'commission_id', { sourceKey: 'commission_type_id', label: 'Typ av provision' }),
+    objectPropertyField('commision_fee', 'commission_fee', { sourceKey: 'commission_fee', label: 'Provisionsavgift', formatter: formatNumber, suffix: ' kr' }),
+    booleanField('outstanding_debt', ['Ja', 'Nej'], { label: 'Har fordonet restskuld' }),
+    agreementTypeField(booleanField('residual_debt', ['Bilhandlare', 'Kund'], { label: 'Restskulden löses av' }), [1, 3]),
+    objectPropertyField('remaining_debt', 'remaining_debt', { sourceKey: 'remaining_debt', label: 'Restskuld', formatter: formatNumber, suffix: ' kr' }),
+    objectPropertyField('paid_bank', 'paid_bank', { sourceKey: 'paid_bank', label: 'Restskuld betalas till'}),
+    objectPropertyField('bank_name', 'paid_bank', { sourceKey: 'bank_name', label: 'Bankens namn'}),
+    objectPropertyField('account_number', 'account_number', { sourceKey: 'account_number', label: 'Kontonummer'}),
+    objectPropertyField('payment_days', 'payment_days', { sourceKey: 'payment_days', label: 'Utbetalning antal bankdagar efter försäljning'}),
     'payment_description',
+    fieldConfig('start_date', { label: 'Startdatum' }),
+    fieldConfig('end_date', { label: 'Slutdatum' }),
+
     'terms_other_conditions',
     'terms_other_information',
+    'email',
+    'phone'
   ],
   billings: [
     'invoice_id',

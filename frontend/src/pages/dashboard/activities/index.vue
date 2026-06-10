@@ -180,9 +180,19 @@ const activityFieldLabels = {
   residual_debt: 'Restskulden löses av',
   price: 'Totalpris',
   client_id: 'Kund',
-  terms_other_conditions: 'Övriga villkor',
+  terms_other_conditions: 'Övriga upplysningar',
+  terms_other_information: 'Övriga villkor',
   client_type_id: 'Kundtyp',
-  payment_terms: 'Betalningsvillkor'
+  payment_terms: 'Betalningsvillkor',
+  payment_description: 'Betalningsbeskrivning',
+  iva_purchase_amount: 'Varav moms',
+  iva_purchase_exclusive: 'Prix ex moms',
+  iva_id: 'Moms / VMB',
+  fair_value: 'Inbytespris',
+  middle_price: 'Mellanpris',
+  payment_received: 'Summa kontant / handpenning',
+  payment_method_forcash: 'Betalsätt för kontant / handpenning',
+  installment_amount: 'Avbetalningsbelopp (kreditbelopp/leasing)',
 }
 
 // 👉 Computing pagination data

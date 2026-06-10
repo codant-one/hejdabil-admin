@@ -260,7 +260,6 @@ class Vehicle extends Model
             'currency_purchase_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'currency_sale_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'state_id' => $request->state_id === 'null' ? 10 : $request->state_id,
-            'purchase_date' => $request->purchase_date === 'null' ? null : $request->purchase_date,
             'number_keys' => $request->number_keys === 'null' ? null : $request->number_keys,
             'service_book' => ( $request->service_book === 'null' || empty($request->service_book) ) ? 0 : $request->service_book,
             'summer_tire' => ( $request->summer_tire === 'null' || empty($request->summer_tire) ) ? 0 : $request->summer_tire,

@@ -889,7 +889,7 @@ class AgreementController extends Controller
             'purchase_date', 'iva_purchase_id', 'currency_purchase_id', 'currency_sale_id',
             'state_id', 'number_keys', 'service_book', 'summer_tire',
             'winter_tire', 'last_service', 'last_service_date', 'dist_belt',
-            'last_dist_belt', 'last_dist_belt_date', 'comments', 'chassis',
+            'last_dist_belt', 'last_dist_belt_date', 'comments', 'comment', 'chassis',
             'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
             'sale_price', 'sale_date', 'iva_sale_id', 'sale_comments',
             'iva_sale_amount', 'iva_sale_exclusive', 'discount', 'registration_fee',
@@ -904,7 +904,16 @@ class AgreementController extends Controller
             ? $vehicleSource->only($vehicleFields)
             : array_fill_keys($vehicleFields, null);
 
-        return array_merge($agreementValues, $clientValues, $vehicleValues);
+        $commission = $agreement->commission ? $agreement->commission->toArray() : [];
+        $commission['commissionId'] = $commission['commission_id'] ?? null;
+        unset($commission['commission_id']);
+
+        return array_merge(
+            $agreementValues, 
+            $clientValues, 
+            $vehicleValues,
+            $commission
+        );
     }
 
 }

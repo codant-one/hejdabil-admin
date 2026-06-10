@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Collection;
+
 use App\Models\Offer;
 use App\Models\SupplierActivity;
-use Illuminate\Support\Collection;
+use App\Models\Commission;
 
 class ActivityMetadataResolver
 {
@@ -94,6 +96,7 @@ class ActivityMetadataResolver
             'iva_id', 'iva_purchase_id', 'iva_sale_id', 'iva_purchase_id_interchange', 'iva_sale_id_interchange' => $this->resolveFromCatalog(CacheService::getIvas(), $value, ['name', 'value']),
             'model_id', 'model_id_interchange' => $this->resolveFromCatalog(CacheService::getCarModels(), $value, ['name', 'model', 'brand.name']),
             'offer_id' => $this->resolveOfferValue($value),
+            'commission_id' => $this->resolveCommissionValue($value),
             'payment_type_id' => $this->resolveFromCatalog(CacheService::getPaymentTypes(), $value),
             'payout_state_id' => $this->resolveFromCatalog(CacheService::getPayoutStates(), $value),
             'user_id' => $this->resolveUserValue($value),
@@ -185,6 +188,31 @@ class ActivityMetadataResolver
             'last_dist_belt' => $offer->last_dist_belt,
             'last_dist_belt_date' => $offer->last_dist_belt_date,
             'comment' => $offer->comment,
+        ];
+    }
+
+    private function resolveCommissionValue(mixed $value): mixed
+    {
+        $commission = Commission::query()->find($value);
+
+        if (!$commission) {
+            return $value;
+        }
+
+        return [
+            'id' => $commission->id,
+            'commission_type_id' => $commission->commission_type_id,
+            'commission_id' => $commission->commission_id,
+            'commission_fee' => $commission->commission_fee,
+            'start_date' => $commission->start_date,
+            'end_date' => $commission->end_date,
+            'outstanding_debt' => $commission->outstanding_debt,
+            'remaining_debt' => $commission->remaining_debt,
+            'residual_debt' => $commission->residual_debt,
+            'paid_bank' => $commission->paid_bank,
+            'selling_price' => $commission->selling_price,
+            'payment_days' => $commission->payment_days,
+            'payment_description' => $commission->payment_description
         ];
     }
 }
