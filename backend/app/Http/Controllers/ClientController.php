@@ -120,7 +120,7 @@ class ClientController extends Controller
                     'new_values' => $request->only([
                         'client_type_id', 'country_id', 'email', 'fullname',
                         'organization_number', 'address', 'street', 'postal_code',
-                        'phone', 'reference', 'num_iva', 'comments'
+                        'phone', 'reference', 'num_iva', 'comments', 'landline'
                     ])
                 ])
             ]);
@@ -225,7 +225,7 @@ class ClientController extends Controller
             $fields = [
                 'client_type_id', 'country_id', 'email', 'fullname',
                 'organization_number', 'address', 'street', 'postal_code',
-                'phone', 'reference', 'num_iva', 'comments'
+                'phone', 'reference', 'num_iva', 'comments', 'landline'
             ];
 
             $oldValues = $client->only($fields);
@@ -307,7 +307,7 @@ class ClientController extends Controller
             $fields = [
                 'client_type_id', 'country_id', 'email', 'fullname',
                 'organization_number', 'address', 'street', 'postal_code',
-                'phone', 'reference', 'num_iva', 'comments'
+                'phone', 'reference', 'num_iva', 'comments', 'landline'
             ];
 
             $oldValues = $client->only($fields);

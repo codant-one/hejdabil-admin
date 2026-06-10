@@ -181,6 +181,8 @@ const activityFieldLabels = {
   price: 'Totalpris',
   client_id: 'Kund',
   terms_other_conditions: 'Övriga villkor',
+  client_type_id: 'Kundtyp',
+  payment_terms: 'Betalningsvillkor'
 }
 
 // 👉 Computing pagination data

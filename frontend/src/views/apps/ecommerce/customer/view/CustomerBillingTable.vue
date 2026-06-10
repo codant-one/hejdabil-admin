@@ -2048,7 +2048,7 @@ onBeforeUnmount(() => {
                           <template #prepend>
                             <VIcon icon="custom-signature" class="mr-2" />
                           </template>
-                          <VListItemTitle>Signera</VListItemTitle>
+                          <VListItemTitle>Skicka för e-signering</VListItemTitle>
                         </VListItem>
                         <VListItem 
                           v-if="$can('edit','agreements') && (agreement.token?.signature_status === 'delivered' || agreement.token?.signature_status ==='delivery_issues' || agreement.token?.signature_status === 'reviewed')"
@@ -2534,7 +2534,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
             </template>
-            <VListItemTitle>Signera</VListItemTitle>
+            <VListItemTitle>Skicka för e-signering</VListItemTitle>
           </VListItem>
           <VListItem 
             v-if="$can('edit','agreements') && (selectedAgreementForAction.token?.signature_status === 'delivered' || selectedAgreementForAction.token?.signature_status === 'delivery_issues' || selectedAgreementForAction.token?.signature_status === 'reviewed')" 
