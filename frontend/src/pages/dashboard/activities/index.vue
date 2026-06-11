@@ -5,6 +5,7 @@ import { useDisplay } from 'vuetify'
 import { useActivitiesStore } from '@/stores/useActivities'
 import { formatNumber } from '@/@core/utils/formatters'
 import { getActivityVisibleFields } from './activityVisibleFields'
+import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DefaultLayoutWithoutVerticalNav from '@/layouts/components/DefaultLayoutWithoutVerticalNav.vue'
 import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
@@ -39,9 +40,25 @@ const suppliers = ref([])
 const supplier_id = ref(null)
 const users = ref([])
 const userId = ref(null)
-const modules = ref([])
-const module_id = ref(null)
+const module = ref(null)
+const filterDateRange = ref(null)
 const mode = ref('Lista')
+
+const activitiesFilterDatePickerConfig = {
+  inline: true,
+  mode: 'range',
+  rangePresets: true,
+}
+
+const modules = [
+  { name: 'Kunder', id: 'clients' },
+  { name: 'Fakturor', id: 'billings' },
+  { name: 'Fordonslager', id: 'vehicles' },
+  { name: 'Avtal', id: 'agreements' },
+  { name: 'Dokument', id: 'documents' },
+  { name: 'Swish', id: 'payouts' },
+  { name: 'Mina Värderingar', id: 'notes' },
+]
 
 const modeOptions = [
   {
@@ -223,9 +240,6 @@ const displayActivities = computed(() => {
     .map(activity => {
     const { changes, detailMode } = getActivityChangeSummary(activity)
 
-    if (detailMode === 'updated' && !changes.length)
-      return null
-
     return {
       ...activity,
       changes,
@@ -240,10 +254,31 @@ const displayActivities = computed(() => {
       userName: getActivityUserName(activity),
     }
     })
-    .filter(Boolean)
 })
 
 watchEffect(fetchData)
+
+function normalizeRangeValue(value) {
+  if (!value)
+    return null
+
+  if (Array.isArray(value)) {
+    const start = value[0] ?? null
+    const end = value[1] ?? value[0] ?? null
+
+    return start && end ? [start, end] : null
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return [chunks[0], chunks[1]]
+
+    return null
+  }
+
+  return null
+}
 
 async function fetchData(cleanFilters = false) {
 
@@ -257,7 +292,11 @@ async function fetchData(cleanFilters = false) {
         supplier_id.value = null;
         user_id.value = null;
         userId.value = null;
+        module.value = null;
+        filterDateRange.value = null;
     }
+
+      const dateRange = normalizeRangeValue(filterDateRange.value)
 
     let data = {
         search: searchQuery.value,
@@ -267,10 +306,15 @@ async function fetchData(cleanFilters = false) {
         page: currentPage.value,
         supplier_id: supplier_id.value,
         user_id: userId.value,
+        module: module.value,
+        date_from: dateRange?.[0] ?? null,
+        date_to: dateRange?.[1] ?? null,
     }
 
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value?.roles?.[0]?.name ?? null
+
+    isRequestOngoing.value = true
 
     await activitiesStore.fetchActivities(data)
 
@@ -1284,18 +1328,28 @@ onBeforeUnmount(() => {
 
       <div
         v-if="!isRequestOngoing && !displayActivities.length"
-        class="activity-empty-state margin-activities"
+        class="empty-state margin-activities pa-6"
       >
-        Inga aktiviteter hittades.
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-activities"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Ingen aktivitet registrerad än</div>
+          <div class="empty-state-text">
+            När du eller ditt team utför åtgärder i Billogg - som att uppdatera ett fordon, skapa en faktura eller ändra en kunds uppgifter - visas allt här.
+          </div>
+        </div>
       </div>
     </VCard>
   </section>
 
-    <!-- Filter Dialog -->
+  <!-- Filter Dialog -->
   <VDialog
     v-model="isFilterDialogVisible"
     persistent
     class="action-dialog"
+    width="550"
   >
     <VBtn
       icon
@@ -1314,7 +1368,7 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <VCardText class="pt-0">
-        <VRow class="pt-3">
+        <VRow class="pt-0">
           <VCol 
             cols="12" md="12" 
             v-if="role === 'SuperAdmin' || role === 'Administrator'"
@@ -1348,7 +1402,7 @@ onBeforeUnmount(() => {
           <VCol cols="12" md="12" class="pb-0">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
             <AppAutocomplete
-              v-model="module_id"
+              v-model="module"
               :items="modules"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -1357,10 +1411,20 @@ onBeforeUnmount(() => {
               clear-icon="tabler-x"
               :menu-props="{ maxHeight: '300px' }"/>
           </VCol>
+
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Filtrera efter datum" />
+            <AppDateTimePicker
+              v-model="filterDateRange"
+              :config="activitiesFilterDatePickerConfig"
+              :is-mobile="windowWidth < 1024"
+              placeholder="Välj datum"
+            />
+          </VCol>
         </VRow>
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-3">
         <VBtn
           class="btn-light"
           @click="fetchData(true); isFilterDialogVisible = false">
@@ -1377,6 +1441,99 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+    .card-form {
+      .v-list {
+        padding: 28px 24px 40px !important;
+
+        .v-list-item {
+          margin-bottom: 0px;
+          padding: 4px 0 !important;
+          gap: 0px !important;
+
+          .v-input--density-compact {
+            --v-input-control-height: 48px !important;
+          }
+
+          .v-select .v-field,
+          .v-autocomplete .v-field {
+
+            .v-select__selection, .v-autocomplete__selection {
+              align-items: center;
+            }
+
+            .v-field__input > input {
+              top: 0px;
+              left: 0px;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .selector-user {
+            .v-input__control {
+              background: white !important;
+              padding-top: 0 !important;
+            }
+            .v-input__prepend, .v-input__append {
+              padding-top: 12px !important;
+            }
+          }
+
+          .v-text-field {
+            .v-input__control {
+              padding-top: 0;
+              input {
+                min-height: 48px;
+                padding: 12px 16px;
+              }
+            }
+          }
+        }
+      }
+      & .v-input {
+        .v-input__prepend {
+          padding-top: 12px !important;
+        }
+        & .v-input__control {
+          .v-field {
+            background-color: #f6f6f6;
+            min-height: 48px !important;
+
+            .v-text-field__suffix {
+              padding: 12px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 48px !important;
+              padding: 12px 16px !important;
+
+              input {
+                  min-height: 48px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+        }
+      }
+    }
+
+    .dialog-bottom-full-width {
+      .v-card {
+        border-radius: 24px 24px 0 0 !important;
+      }
+    }
 
     .navigation-bar {
         background: linear-gradient(90deg, #eafff1 0%, #eafff8 50%, #ecffff 100%) !important;

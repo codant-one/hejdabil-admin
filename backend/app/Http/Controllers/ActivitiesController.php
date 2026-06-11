@@ -37,9 +37,21 @@ class ActivitiesController extends Controller
                                     'orderByField',
                                     'orderBy',
                                     'supplier_id',
-                                    'user_id'
+                                    'user_id',
+                                    'module',
+                                    'date_from',
+                                    'date_to',
                                 ])
-                            );
+                            )
+                            ->where(function ($activitiesQuery) {
+                                $activitiesQuery
+                                    ->whereRaw("LOWER(action_type) NOT LIKE ?", ['%update%'])
+                                    ->orWhereNull('metadata')
+                                    ->orWhereRaw('JSON_VALID(metadata) = 0')
+                                    ->orWhereRaw("JSON_EXTRACT(metadata, '$.old_values') IS NULL")
+                                    ->orWhereRaw("JSON_EXTRACT(metadata, '$.new_values') IS NULL")
+                                    ->orWhereRaw("JSON_EXTRACT(metadata, '$.old_values') <> JSON_EXTRACT(metadata, '$.new_values')");
+                            });
 
             if ($limit == -1) {
                 $allActivities = $query->get();

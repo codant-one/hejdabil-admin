@@ -66,6 +66,10 @@ class SupplierActivity extends Model
             $query->where('user_id', $filters->get('user_id'));
         }
 
+        if ($filters->get('module') !== null) {
+            $query->where('entity_type', $filters->get('module'));
+        }
+
         if ($filters->get('search')) {
              $query->whereSearch($filters->get('search'));
         }

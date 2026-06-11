@@ -23,6 +23,25 @@ import Pusher from 'pusher-js';
 // Asegúrate de que Pusher esté disponible globalmente (a menudo ya lo está, pero es una buena práctica)
 window.Pusher = Pusher;
 
+const isUnloadBlockedByPolicy = () => {
+  const permissionsPolicy = document?.permissionsPolicy || document?.featurePolicy;
+
+  if (!permissionsPolicy || typeof permissionsPolicy.allowsFeature !== 'function') {
+    return false;
+  }
+
+  try {
+    return permissionsPolicy.allowsFeature('unload') === false;
+  } catch (error) {
+    return false;
+  }
+};
+
+if (isUnloadBlockedByPolicy() && Pusher?.Runtime?.addUnloadListener) {
+  // In restricted documents, Pusher's unload listener triggers a browser policy violation warning.
+  Pusher.Runtime.addUnloadListener = () => {};
+}
+
 // ----------------------------------------------------------------------
 // Configuración de Laravel Echo
 // ----------------------------------------------------------------------
