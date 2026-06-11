@@ -256,6 +256,28 @@ const displayActivities = computed(() => {
     })
 })
 
+const cardActivityGroups = computed(() => {
+  if (!Array.isArray(displayActivities.value) || !displayActivities.value.length)
+    return []
+
+  const groupedActivities = new Map()
+
+  displayActivities.value.forEach(activity => {
+    const [rawDateLabel] = String(activity.createdAtLabel ?? '').split(',')
+    const groupLabel = rawDateLabel?.trim() || 'Övrigt'
+
+    if (!groupedActivities.has(groupLabel))
+      groupedActivities.set(groupLabel, [])
+
+    groupedActivities.get(groupLabel).push(activity)
+  })
+
+  return Array.from(groupedActivities, ([label, items]) => ({
+    label,
+    items,
+  }))
+})
+
 watchEffect(fetchData)
 
 function normalizeRangeValue(value) {
@@ -878,7 +900,7 @@ function formatActivityDateTime(dateString) {
   yesterday.setDate(now.getDate() - 1)
 
   const rawDateLabel = date.toDateString() === now.toDateString()
-    ? 'Idag'
+    ? 'Today'
     : date.toDateString() === yesterday.toDateString()
       ? 'Igår'
       : date.toLocaleDateString('sv-SE', {
@@ -894,6 +916,12 @@ function formatActivityDateTime(dateString) {
   })
 
   return `${dateLabel}, ${timeLabel}`
+}
+
+function getActivityTimeLabel(activity) {
+  const [, rawTimeLabel] = String(activity?.createdAtLabel ?? '').split(',')
+
+  return rawTimeLabel?.trim() || activity?.createdAtLabel || '-'
 }
 
 function resizeSectionToRemainingViewport() {
@@ -1032,7 +1060,7 @@ onBeforeUnmount(() => {
         v-if="!$vuetify.display.mdAndDown"
         v-show="displayActivities.length"
       >
-        <VTable class="activities-table margin-activities mt-4">
+        <VTable v-if="mode === 'Lista'" class="activities-table margin-activities mt-4">
           <colgroup>
             <col style="width: 190px">
             <col style="width: 190px">
@@ -1303,6 +1331,206 @@ onBeforeUnmount(() => {
             </template>
           </tbody>
         </VTable>
+
+        <div v-else class="activities-cards margin-activities mt-4">
+          <div
+            v-for="group in cardActivityGroups"
+            :key="`card-group-${group.label}`"
+            class="activities-card-group"
+          >
+            <div class="activities-card-group-title">{{ group.label }}</div>
+
+            <div class="activities-card-group-list">
+              <div
+                v-for="activity in group.items"
+                :key="`card-${activity.id}`"
+                class="activity-card"
+              >
+                <div class="activity-card-top">
+                  <div class="activity-card-main">
+                    <VAvatar variant="outlined" size="32">
+                      <VImg
+                        v-if="activity.user?.avatar"
+                        style="border-radius: 50%"
+                        :src="themeConfig.settings.urlStorage + activity.user.avatar"
+                      />
+                      <PresetAvatarImage
+                        v-else
+                        :avatar-id="activity.user?.user_detail?.avatar_id"
+                      />
+                    </VAvatar>
+
+                    <div class="activity-card-copy">
+                      <div class="activity-card-title">
+                        {{ activity.userName }} - {{ activity.eventLabel }}
+                      </div>
+                      <div v-if="activity.descriptionTitle" class="activity-card-subtitle">
+                        {{ activity.descriptionTitle }}
+                      </div>
+                      <div v-if="activity.descriptionSubtitle" class="activity-card-subtitle-muted">
+                        {{ activity.descriptionSubtitle }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="activity-card-meta">
+                    <div class="activity-module-pill">
+                      <VIcon :icon="activity.icon || 'custom-circle-help'" size="16" />
+                      <span>{{ activity.moduleLabel }}</span>
+                    </div>
+                    <span class="activity-card-date">{{ getActivityTimeLabel(activity) }}</span>
+                  </div>
+                </div>
+
+                <div class="activity-card-detail-title">{{ activity.detailTitle }}</div>
+
+                <div v-if="activity.changes?.length" class="activity-card-changes">
+                  <div
+                    v-for="(change, changeIndex) in activity.changes"
+                    :key="`card-change-${activity.id}-${change.key}-${changeIndex}`"
+                    class="activity-card-change"
+                  >
+                    <span class="activity-card-change-label">{{ change.label }}:</span>
+
+                    <div class="activity-card-change-values" :class="{ 'is-rich': isBillingDetailRenderType(change) }">
+                      <template v-if="change.type === 'created'">
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div class="activity-card-change-new activity-card-change-rich">
+                            <table
+                              v-if="getBillingDetailRows(change.rawValue).length"
+                              class="billing-detail-table"
+                            >
+                              <tbody>
+                                <tr
+                                  v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                  :key="rowIndex"
+                                >
+                                  <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                  <template v-else>
+                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                    <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                  </template>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <span v-else>Ingen detaljinformation</span>
+                          </div>
+                        </template>
+                        <span v-else class="activity-card-change-new">{{ change.value }}</span>
+                      </template>
+
+                      <template v-else-if="change.type === 'deleted'">
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div class="activity-card-change-old activity-card-change-rich">
+                            <table
+                              v-if="getBillingDetailRows(change.rawValue).length"
+                              class="billing-detail-table"
+                            >
+                              <tbody>
+                                <tr
+                                  v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                  :key="rowIndex"
+                                >
+                                  <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                  <template v-else>
+                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                    <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                  </template>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <span v-else>Ingen detaljinformation</span>
+                          </div>
+                        </template>
+                        <span v-else class="activity-card-change-old">{{ change.value }}</span>
+                      </template>
+
+                      <template v-else>
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div v-if="change.oldValue !== null" class="activity-card-change-old activity-card-change-rich">
+                            <table
+                              v-if="getBillingDetailRows(change.oldRawValue).length"
+                              class="billing-detail-table"
+                            >
+                              <tbody>
+                                <tr
+                                  v-for="(row, rowIndex) in getBillingDetailRows(change.oldRawValue)"
+                                  :key="`card-old-${rowIndex}`"
+                                >
+                                  <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                  <template v-else>
+                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                    <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                  </template>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <span v-else>Ingen detaljinformation</span>
+                          </div>
+
+                          <span
+                            v-if="change.oldValue !== null && change.newValue !== null"
+                            class="activity-card-change-arrow"
+                          >
+                            →
+                          </span>
+
+                          <div v-if="change.newValue !== null" class="activity-card-change-new activity-card-change-rich">
+                            <table
+                              v-if="getBillingDetailRows(change.newRawValue).length"
+                              class="billing-detail-table"
+                            >
+                              <tbody>
+                                <tr
+                                  v-for="(row, rowIndex) in getBillingDetailRows(change.newRawValue)"
+                                  :key="`card-new-${rowIndex}`"
+                                >
+                                  <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                  <template v-else>
+                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                    <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                    <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                  </template>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <span v-else>Ingen detaljinformation</span>
+                          </div>
+                          <span v-else class="activity-detail-muted">Borttagen</span>
+                        </template>
+
+                        <template v-else>
+                          <span v-if="change.oldValue !== null" class="activity-card-change-old">{{ change.oldValue }}</span>
+                          <span
+                            v-if="change.oldValue !== null && change.newValue !== null"
+                            class="activity-card-change-arrow"
+                          >
+                            →
+                          </span>
+                          <span v-if="change.newValue !== null" class="activity-card-change-new">{{ change.newValue }}</span>
+                          <span v-else class="activity-detail-muted">Borttagen</span>
+                        </template>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="activity-card-empty">{{ activity.descriptionText }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <VCardText
           v-if="displayActivities.length"
@@ -1589,6 +1817,161 @@ onBeforeUnmount(() => {
     .activity-mode-option .v-icon,
     .activity-mode-item-icon {
       color: #454545 !important;
+    }
+
+    .activities-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .activities-card-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .activities-card-group-title {
+      color: #5D5D5D;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 16px;
+      text-transform: none;
+    }
+
+    .activities-card-group-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .activity-card {
+      background: #FFFFFF;
+      border: 1px solid #E7E7E7;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .activity-card-top {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .activity-card-main {
+      display: flex;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .activity-card-copy {
+      min-width: 0;
+    }
+
+    .activity-card-title {
+      color: #454545;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 16px;
+      letter-spacing: 0;
+    }
+
+    .activity-card-subtitle {
+      color: #878787;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 16px;
+      letter-spacing: 0;
+    }
+
+    .activity-card-subtitle-muted {
+      color: #878787;
+      font-size: 12px;
+      line-height: 18px;
+    }
+
+    .activity-card-meta {
+      align-items: center;
+      display: flex;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+
+    .activity-card-date {
+      color: #878787;
+      font-size: 13px;
+      line-height: 16px;
+      white-space: nowrap;
+    }
+
+    .activity-card-detail-title {
+      color: #BFBFBF;
+      font-size: 12px;
+      line-height: 16px;
+      margin-top: 8px;
+      padding-left: 40px;
+    }
+
+    .activity-card-changes {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+      padding-left: 40px;
+    }
+
+    .activity-card-change {
+      align-items: flex-start;
+      color: #5D5D5D;
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 13px;
+      gap: 4px;
+      line-height: 16px;
+    }
+
+    .activity-card-change-values {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      line-height: 16px;
+    }
+
+    .activity-card-change-values.is-rich {
+      align-items: stretch;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .activity-card-change-rich {
+      max-width: 100%;
+      width: 100%;
+    }
+
+    .activity-card-change-label {
+      color: #878787;
+    }
+
+    .activity-card-change-old {
+      color: #FF4D4F;
+    }
+
+    .activity-card-change-new {
+      color: #006D5C;
+    }
+
+    .activity-card-change-arrow {
+      color: #454545;
+      font-weight: 600;
+    }
+
+    .activity-card-empty {
+      color: #8A948F;
+      font-size: 12px;
+      margin-top: 8px;
+      padding-left: 50px;
     }
 
     .activities-table {
