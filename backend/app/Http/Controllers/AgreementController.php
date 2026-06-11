@@ -858,7 +858,7 @@ class AgreementController extends Controller
     private function agreementActivityStoredValues(Agreement $agreement): array
     {
         // Cargamos las relaciones para asegurar que la info esté disponible
-        $agreement->loadMissing(['agreement_client', 'vehicle_client.vehicle', 'offer', 'commission.vehicle']);
+        $agreement->loadMissing(['agreement_client', 'vehicle_client.vehicle', 'vehicle_interchange', 'offer', 'commission.vehicle']);
 
         $agreementValues = $agreement->only([
             'agreement_type_id', 'vehicle_client_id', 'vehicle_interchange_id', 'guaranty_type_id',
@@ -874,8 +874,9 @@ class AgreementController extends Controller
         ]);
 
         $clientFields = [
-            'client_id', 'client_type_id', 'country_id', 'fullname', 'email',
-            'organization_number', 'address', 'street', 'postal_code', 'phone'
+            'client_id', 'client_type_id', 'country_id', 'email', 'fullname',
+            'organization_number', 'address', 'street', 'postal_code',
+            'phone', 'num_iva', 'landline'
         ];
 
         $clientValues = $agreement->agreement_client
@@ -904,6 +905,14 @@ class AgreementController extends Controller
             ? $vehicleSource->only($vehicleFields)
             : array_fill_keys($vehicleFields, null);
 
+        $vehicleInterchangeValues = [];
+
+        if ($agreement->vehicle_interchange) {
+            foreach ($agreement->vehicle_interchange->only($vehicleFields) as $key => $value) {
+                $vehicleInterchangeValues[$key.'_interchange'] = $value;
+            }
+        }
+
         $commission = $agreement->commission ? $agreement->commission->toArray() : [];
         $commission['commissionId'] = $commission['commission_id'] ?? null;
         unset($commission['commission_id']);
@@ -912,6 +921,7 @@ class AgreementController extends Controller
             $agreementValues, 
             $clientValues, 
             $vehicleValues,
+            $vehicleInterchangeValues,
             $commission
         );
     }

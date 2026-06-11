@@ -67,6 +67,7 @@ const iva_sale_id = ref(null)
 const sale_comments = ref(null)
 const purchase_date = ref(null)
 const currency_id = ref(null)
+const chassis = ref(null)
 
 const iva_sale_amount = ref(0)
 const iva_sale_exclusive = ref(0)
@@ -123,7 +124,8 @@ const currentData = computed(() => ({
     phone: phone.value,
     landline: landline.value,
     email: email.value,
-    purchase_price: purchase_price.value
+    purchase_price: purchase_price.value,
+    chassis: chassis.value
 }))
 
 const isDirty = computed(() => {
@@ -278,6 +280,7 @@ async function fetchData() {
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         purchase_date.value = vehicle.value.purchase_date
         currency_id.value = vehicle.value.currency_purchase_id ?? 1
+        chassis.value = vehicle.value.chassis
 
         sale_price.value = formatDecimal(vehicle.value.sale_price)
         sale_date.value = vehicle.value.sale_date ?? formatDate(new Date())
@@ -815,6 +818,7 @@ const onSubmit = async () => {
                 formData.append('iva_sale_id', iva_sale_id.value);
                 formData.append('sale_comments', sale_comments.value);
                 formData.append('purchase_price', purchase_price.value)
+                formData.append('chassis', chassis.value)
 
                 formData.append('client_type_id', client_type_id.value);
                 formData.append('country_id', normalizedCountryId)

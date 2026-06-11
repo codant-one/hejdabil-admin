@@ -279,6 +279,16 @@ export const activityVisibleFieldsByModule = {
 
     // Datos del Cliente (se leen directo del nivel principal)
     relationField('client'),
+    'email',
+    relationField('client_type'),
+    'organization_number',
+    relationField('country'),
+    'num_iva',
+    'phone',
+    'landline',
+    'address',
+    'street',
+    'postal_code',
 
     // Datos del Vehículo / Oferta (se leen directo del nivel principal)
     fieldConfig('car_name', { sourceKey: 'car_name', label: 'Bilnamn' }),
@@ -327,9 +337,55 @@ export const activityVisibleFieldsByModule = {
 
       return `${String(mileage ?? 0).replace(/,/g, '')} Mil / ${distBeltDate ?? '0000-00-00'}`
     }, { label: 'Kamrem bytt vid Mil/datum' }),
-    
+
     fieldConfig('comment', { label: 'Anmärkning' }),
     fieldConfig('comments', { label: 'Anmärkning' }),
+
+    // Inbytesfordon (snapshot från vehicle_interchange)
+    fieldConfig('car_name_interchange', { label: 'Bilnamn (inbytesfordon)' }),
+    fieldConfig('reg_num_interchange', { label: 'Reg nr (inbytesfordon)' }),
+    fieldConfig('model_name_interchange', { sourceKey: 'model_id_interchange', label: 'Modell (inbytesfordon)' }),
+    fieldConfig('year_interchange', { label: 'Årsmodell (inbytesfordon)' }),
+    fieldConfig('color_interchange', { label: 'Färg (inbytesfordon)' }),
+    fieldConfig('mileage_interchange', { label: 'Miltal (inbytesfordon)', formatter: formatNumberInteger, suffix: ' Mil' }),
+    fieldConfig('generation_interchange', { label: 'Generation (inbytesfordon)' }),
+    fieldConfig('car_body_interchange', { sourceKey: 'car_body_id_interchange', label: 'Kaross (inbytesfordon)' }),
+    fieldConfig('purchase_date_interchange', { label: 'Inköpsdatum (inbytesfordon)' }),
+    fieldConfig('chassis_interchange', { label: 'Chassinummer (inbytesfordon)' }),
+    fieldConfig('control_inspection_interchange', { label: 'Kontrollbesiktning (inbytesfordon)' }),
+    fieldConfig('fuel_name_interchange', { sourceKey: 'fuel_id_interchange', label: 'Drivmedel (inbytesfordon)' }),
+    fieldConfig('gearbox_name_interchange', { sourceKey: 'gearbox_id_interchange', label: 'Växellåda (inbytesfordon)' }),
+    fieldConfig('engine_interchange', { label: 'Motor (inbytesfordon)' }),
+    fieldConfig('number_keys_interchange', { label: 'Antal nycklar (inbytesfordon)' }),
+    booleanField('service_book_interchange', ['Ja', 'Nej'], { label: 'Servicebok finns? (inbytesfordon)' }),
+    booleanField('summer_tire_interchange', ['Ja', 'Nej'], { label: 'Sommardäck finns? (inbytesfordon)' }),
+    booleanField('winter_tire_interchange', ['Ja', 'Nej'], { label: 'Vinterdäck finns? (inbytesfordon)' }),
+    optionField('dist_belt_interchange', ['Ja', 'Nej', 'Kamkedja', 'Vet ej'], { label: 'Kamrem bytt? (inbytesfordon)' }),
+    compoundField('last_service_info_interchange', ['last_service_interchange', 'last_service_date_interchange'], value => {
+      const mileage = value?.last_service_interchange
+      const rawServiceDate = value?.last_service_date_interchange
+      const serviceDate = typeof rawServiceDate === 'string' && ['null', 'undefined', ''].includes(rawServiceDate.trim().toLowerCase())
+        ? null
+        : rawServiceDate
+
+      if ((mileage === null || mileage === undefined || mileage === '') && !serviceDate)
+        return null
+
+      return `${String(mileage ?? 0).replace(/,/g, '')} Mil / ${serviceDate ?? '0000-00-00'}`
+    }, { label: 'Senaste service Mil/datum (inbytesfordon)' }),
+    compoundField('last_dist_belt_info_interchange', ['last_dist_belt_interchange', 'last_dist_belt_date_interchange'], value => {
+      const mileage = value?.last_dist_belt_interchange
+      const rawDistBeltDate = value?.last_dist_belt_date_interchange
+      const distBeltDate = typeof rawDistBeltDate === 'string' && ['null', 'undefined', ''].includes(rawDistBeltDate.trim().toLowerCase())
+        ? null
+        : rawDistBeltDate
+
+      if ((mileage === null || mileage === undefined || mileage === '') && !distBeltDate)
+        return null
+
+      return `${String(mileage ?? 0).replace(/,/g, '')} Mil / ${distBeltDate ?? '0000-00-00'}`
+    }, { label: 'Kamrem bytt vid Mil/datum (inbytesfordon)' }),
+    fieldConfig('comments_interchange', { sourceKey: 'comments_interchange', label: 'Anteckningar (inbytesfordon)' }),
 
     // Resto de campos del acuerdo
     'send_reminder',
@@ -380,8 +436,6 @@ export const activityVisibleFieldsByModule = {
 
     'terms_other_conditions',
     'terms_other_information',
-    'email',
-    'phone'
   ],
   billings: [
     'invoice_id',
@@ -488,8 +542,6 @@ export const activityVisibleFieldsByModule = {
     currencyField('costs', { label: 'Kostnader' }),
     'iva_purchase_name',
     'state_name',
-    fieldConfig('purchase_client', { sourceKey: 'purchase_client', label: 'Säljaren' }),
-    fieldConfig('sale_client', { sourceKey: 'sale_client', label: 'Köparen' }),
     'iva_sale_name',
     currencyField('sale_price'),
     'sale_date',
@@ -501,6 +553,29 @@ export const activityVisibleFieldsByModule = {
     currencyField('discount'),
     currencyField('registration_fee'),
     currencyField('total_sale'),
+    fieldConfig('purchase_client', { sourceKey: 'purchase_client', label: 'Säljaren' }),
+    fieldConfig('purchase_email', { label: 'E-post (säljare)' }),
+    fieldConfig('purchase_client_type_id', { label: 'Klienttyp (säljare)' }),
+    fieldConfig('purchase_organization_number', { label: 'Org.nr (säljare)' }),
+    fieldConfig('purchase_country_id', { label: 'Land (säljare)' }),
+    fieldConfig('purchase_num_iva', { label: 'Momsnummer (säljare)' }),
+    fieldConfig('purchase_phone', { label: 'Mobilnummer (säljare)' }),
+    fieldConfig('purchase_landline', { label: 'Telefon (säljare)' }),
+    fieldConfig('purchase_address', { label: 'Adress (säljare)' }),
+    fieldConfig('purchase_street', { label: 'Stad (säljare)' }),
+    fieldConfig('purchase_postal_code', { label: 'Postnummer (säljare)' }),
+    fieldConfig('sale_client', { sourceKey: 'sale_client', label: 'Köparen' }),
+    fieldConfig('sale_email', { label: 'E-post (köpare)' }),
+    fieldConfig('sale_client_type_id', { label: 'Klienttyp (köpare)' }),    
+    fieldConfig('sale_organization_number', { label: 'Org.nr (köpare)' }),
+    fieldConfig('sale_country_id', { label: 'Land (köpare)' }),
+    fieldConfig('sale_num_iva', { label: 'Momsnummer (köpare)' }),
+    fieldConfig('sale_phone', { label: 'Mobilnummer (köpare)' }),
+    fieldConfig('sale_landline', { label: 'Telefon(köpare)' }),
+    fieldConfig('sale_address', { label: 'Adress (köpare)' }),
+    fieldConfig('sale_street', { label: 'Stad (köpare)' }),
+    fieldConfig('sale_postal_code', { label: 'Postnummer (köpare)' }),
+    
   ],
 }
 

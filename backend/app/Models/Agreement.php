@@ -968,6 +968,10 @@ class Agreement extends Model
         $request->request->add([
             'offer_id' => $offer->id
         ]);
+
+        //Update Agreement Client.
+        $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
+        $agreementClient->updateClient($request, $agreementClient);
     }
 
     public static function createCommission($request) {
@@ -1006,6 +1010,10 @@ class Agreement extends Model
     public static function updateCommission($request, $agreement) {
         $commission = Commission::find($agreement->commission_id);
         $commission->updateCommission($request, $commission);
+
+        //Update Agreement Client.
+        $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
+        $agreementClient->updateClient($request, $agreementClient);
     }
 
     public static function createReminder($agreement, int $delaySeconds = 0) {

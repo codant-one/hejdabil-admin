@@ -2125,15 +2125,11 @@ class SignatureController extends Controller
             'metadata' => json_encode([
                 'agreement_id' => $agreement->id,
                 'token_id' => $token->id,
-                'new_values' => $this->agreementSignatureActivityValues(
-                    $token,
-                    $token->recipient_email,
-                    null,
-                    is_null($token->placement_x) && is_null($token->placement_y),
+                'old_values' =>
                     [
-                        'cancelled' => true,
-                    ]
-                ),
+                        'email' => $token->recipient_email,
+                        'phone' => $token->recipient_phone,
+                    ],
                 'email' => $token->recipient_email,
                 'recipient_email' => $token->recipient_email,
                 'signature_status' => $token->signature_status,

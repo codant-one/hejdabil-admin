@@ -172,6 +172,7 @@ const dist_belt_interchange = ref(0)
 const last_dist_belt_interchange = ref(null)
 const last_dist_belt_date_interchange = ref(null)
 const comments_interchange = ref(null)
+const purchase_date_interchange = ref(null)
 const purchase_date = ref(null)
 
 //const tab 3
@@ -315,7 +316,7 @@ watch(() => reg_num_interchange.value, (val) => {
         last_dist_belt_interchange.value = null
         last_dist_belt_date_interchange.value = null
         comments_interchange.value = null
-        purchase_date.value = formatDate(new Date())
+        purchase_date_interchange.value = formatDate(new Date())
         modelsByBrandInterchange.value = []
         
         nextTick(() => {
@@ -425,6 +426,7 @@ async function fetchData() {
         dist_belt.value = agreement.value.vehicle_client.vehicle.dist_belt
         last_dist_belt.value = agreement.value.vehicle_client.vehicle.last_dist_belt
         last_dist_belt_date.value = agreement.value.vehicle_client.vehicle.last_dist_belt_date
+        purchase_date.value = agreement.value.vehicle_client.vehicle.purchase_date
 
         if(agreement.value.vehicle_client.vehicle.model_id !== null) {
             let modelId = agreement.value.vehicle_client.vehicle.model_id
@@ -447,7 +449,7 @@ async function fetchData() {
             residual_debt.value = agreement.value.residual_debt
             residual_price.value = agreement.value.residual_price ? formatDecimal(agreement.value.residual_price) : null
             iva_purchase_id_interchange.value = agreement.value.vehicle_interchange.iva_purchase_id
-            purchase_date.value = agreement.value.vehicle_interchange.purchase_date === null ? formatDate(new Date()) : agreement.value.vehicle_interchange.purchase_date
+            purchase_date_interchange.value = agreement.value.vehicle_interchange.purchase_date === null ? formatDate(new Date()) : agreement.value.vehicle_interchange.purchase_date
 
             number_keys_interchange.value = agreement.value.vehicle_interchange.number_keys
             fuel_id_interchange.value = agreement.value.vehicle_interchange.fuel_id ?? fuel_id_interchange.value
@@ -1329,7 +1331,7 @@ const onSubmit = async (forceSave = false) => {
         // Tab 1 (Inbytesfordon) - Validaciones condicionales si reg_num_interchange tiene valor
         const hasTab1Errors = reg_num_interchange.value && (
                               !mileage_interchange.value ||
-                              !purchase_date.value ||
+                              !purchase_date_interchange.value ||
                               !brand_id_interchange.value ||
                               (model_id_interchange.value !== 0 && !model_id_interchange.value) ||
                               (model_id_interchange.value === 0 && !model_interchange.value) ||
@@ -1632,6 +1634,7 @@ const onSubmit = async (forceSave = false) => {
                 formData.append('dist_belt', dist_belt.value)
                 formData.append('last_dist_belt', last_dist_belt.value)
                 formData.append('last_dist_belt_date', last_dist_belt_date.value)
+                formData.append('purchase_date', purchase_date.value)
 
                 //vehicle interchange
                 formData.append('interchange', reg_num_interchange.value !== null ? true : false)

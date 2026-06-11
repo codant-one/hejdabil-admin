@@ -255,7 +255,7 @@ class Vehicle extends Model
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
             'purchase_price' => $request->purchase_price === 'null' ? null : $request->purchase_price,
-            'purchase_date' => $request->purchase_date === 'null' ? now()->format('Y-m-d') : $request->purchase_date,
+            'purchase_date' => $request->purchase_date === 'null' ? null : $request->purchase_date,
             'iva_purchase_id' => $request->iva_purchase_id === 'null' ? null : $request->iva_purchase_id,
             'currency_purchase_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'currency_sale_id' => $request->currency_id === 'null' ? null : $request->currency_id,
@@ -648,10 +648,10 @@ class Vehicle extends Model
             'registration_fee' => null
         ]);
 
-        /*VehicleClient::where([
+        VehicleClient::where([
             ['vehicle_id', $vehicle->id],
             ['type', 1]
-        ])->delete(); */// eliminar el cliente de la venta
+        ])->delete(); // eliminar el cliente de la venta
 
         return $vehicle;
     }

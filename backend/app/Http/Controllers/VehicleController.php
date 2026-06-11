@@ -642,7 +642,13 @@ class VehicleController extends Controller
             'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
             'sale_price', 'sale_date', 'iva_sale_id', 'sale_comments',
             'iva_sale_amount', 'iva_sale_exclusive', 'discount', 'registration_fee',
-            'total_sale', 'costs', 'purchase_client', 'sale_client'
+            'total_sale', 'costs', 'purchase_client', 'sale_client',
+            'purchase_client_type_id', 'purchase_country_id', 'purchase_email', 'purchase_fullname',
+            'purchase_organization_number', 'purchase_address', 'purchase_street', 'purchase_postal_code',
+            'purchase_phone', 'purchase_num_iva', 'purchase_landline',
+            'sale_client_type_id', 'sale_country_id', 'sale_email', 'sale_fullname',
+            'sale_organization_number', 'sale_address', 'sale_street', 'sale_postal_code',
+            'sale_phone', 'sale_num_iva', 'sale_landline'
         ];
     }
 
@@ -670,7 +676,34 @@ class VehicleController extends Controller
         if (in_array('sale_client', $fields, true))
             $values['sale_client'] = $this->resolveVehicleClientLabel($vehicle->client_sale);
 
-        return $values;
+        $clientFields = [
+            'client_id', 'client_type_id', 'country_id', 'email', 'fullname',
+            'organization_number', 'address', 'street', 'postal_code',
+            'phone', 'num_iva', 'landline'
+        ];
+
+        $purchaseClientValues = [];
+        $saleClientValues = [];
+
+        if ($vehicle->client_purchase) {
+            foreach ($vehicle->client_purchase->only($clientFields) as $key => $value) {
+                if ($key === 'client_id')
+                    continue;
+
+                $purchaseClientValues['purchase_'.$key] = $value;
+            }
+        }
+
+        if ($vehicle->client_sale) {
+            foreach ($vehicle->client_sale->only($clientFields) as $key => $value) {
+                if ($key === 'client_id')
+                    continue;
+
+                $saleClientValues['sale_'.$key] = $value;
+            }
+        }
+
+        return array_merge($values, $purchaseClientValues, $saleClientValues);
     }
 
     private function resolveVehicleClientLabel($vehicleClient): ?string

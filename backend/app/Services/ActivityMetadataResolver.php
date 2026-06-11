@@ -85,10 +85,10 @@ class ActivityMetadataResolver
             'brand_id', 'brand_id_interchange' => $this->resolveFromCatalog(CacheService::getBrands(), $value),
             'car_body_id', 'car_body_id_interchange' => $this->resolveFromCatalog(CacheService::getCarBodies(), $value),
             'client_id' => $this->resolveFromCatalog(CacheService::getClients(), $value, ['fullname', 'name']),
-            'client_type_id' => $this->resolveFromCatalog(CacheService::getClientTypes(), $value),
+            'client_type_id', 'purchase_client_type_id', 'sale_client_type_id' => $this->resolveFromCatalog(CacheService::getClientTypes(), $value),
             'commission_type_id' => $this->resolveFromCatalog(CacheService::getCommissionTypes(), $value),
-            'country_id' => $this->resolveFromCatalog(CacheService::getCountries(), $value),
-            'currency_id', 'currency_purchase_id', 'currency_sale_id' => $this->resolveFromCatalog(CacheService::getCurrencies(), $value, ['name', 'code']),
+            'country_id', 'purchase_country_id', 'sale_country_id' => $this->resolveFromCatalog(CacheService::getCountries(), $value),
+            'currency_id', 'currency_purchase_id', 'currency_sale_id', 'currency_purchase_id_interchange', 'currency_sale_id_interchange' => $this->resolveFromCatalog(CacheService::getCurrencies(), $value, ['name', 'code']),
             'fuel_id', 'fuel_id_interchange' => $this->resolveFromCatalog(CacheService::getFuels(), $value),
             'gearbox_id', 'gearbox_id_interchange' => $this->resolveFromCatalog(CacheService::getGearboxes(), $value),
             'guaranty_type_id' => $this->resolveFromCatalog(CacheService::getGuarantyTypes(), $value),
@@ -100,7 +100,7 @@ class ActivityMetadataResolver
             'payment_type_id' => $this->resolveFromCatalog(CacheService::getPaymentTypes(), $value),
             'payout_state_id' => $this->resolveFromCatalog(CacheService::getPayoutStates(), $value),
             'user_id' => $this->resolveUserValue($value),
-            'state_id' => $this->resolveFromCatalog(CacheService::getStates(), $value),
+            'state_id', 'state_id_interchange' => $this->resolveFromCatalog(CacheService::getStates(), $value),
             default => $value,
         };
     }

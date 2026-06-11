@@ -1505,7 +1505,7 @@ const onSubmit = async () => {
                 formData.append('last_service_interchange', last_service_interchange.value)
                 formData.append('last_service_date_interchange', last_service_date_interchange.value)
                 formData.append('comments_interchange', comments_interchange.value)
-                formData.append('purchase_date_interchange', purchase_date.value)
+                formData.append('purchase_date_interchange', reg_num_interchange.value !== null ? purchase_date.value : null)
 
                 //agreement
                 formData.append('agreement_type_id', 1)

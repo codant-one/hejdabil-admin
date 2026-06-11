@@ -1699,7 +1699,7 @@ const onTabChange = async (targetTab) => {
     currentTab.value = nextTab
 }
 
-const onSubmit = async () => {
+const onSubmit = async (forceSave = false) => {
     const {
         hasTab0Errors,
         hasTab1Errors,
@@ -1707,7 +1707,9 @@ const onSubmit = async () => {
         hasTab3Errors,
     } = getTabValidationErrors()
 
-    if (currentTab.value === 0) {
+    const shouldSubmitAll = forceSave === true || Number(currentTab.value) === 4
+
+    if (!shouldSubmitAll && currentTab.value === 0) {
         const isTabValid = await validateTabByIndex(0, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
         if (!isTabValid) return
 
@@ -1715,7 +1717,7 @@ const onSubmit = async () => {
         return
     }
 
-    if (currentTab.value === 1) {
+    if (!shouldSubmitAll && currentTab.value === 1) {
         const isTabValid = await validateTabByIndex(1, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
         if (!isTabValid) return
 
@@ -1723,7 +1725,7 @@ const onSubmit = async () => {
         return
     }
 
-    if (currentTab.value === 2) {
+    if (!shouldSubmitAll && currentTab.value === 2) {
         const isTabValid = await validateTabByIndex(2, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
         if (!isTabValid) return
 
@@ -1731,12 +1733,12 @@ const onSubmit = async () => {
         return
     }
 
-    if (currentTab.value === 3) {
+    if (!shouldSubmitAll && currentTab.value === 3) {
         currentTab.value++
         return
     }
 
-    if (currentTab.value === 4) {
+    if (shouldSubmitAll) {
         if (hasTab0Errors) {
             currentTab.value = 0
             await nextTick()
@@ -3022,7 +3024,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                         <VBtn
                             v-if="currentTab > 0"
-                            class="btn-light"
+                            class="btn-ghost"
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                             :block="windowWidth < 1024"
                             @click="currentTab--"
@@ -3033,8 +3035,10 @@ onBeforeRouteLeave((to, from, next) => {
                         <VBtn 
                             type="button" 
                             :block="windowWidth < 1024"
-                            class="btn-gradient"
-                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            :class="[
+                                windowWidth < 1024 ? 'w-40' : 'w-auto',
+                                currentTab !== 4 ? 'btn-light' : 'btn-gradient'
+                            ]"
                             @click="onSubmit"
                         >
                             <VIcon v-if="currentTab === 4" icon="custom-save"  size="24" />
@@ -3045,7 +3049,7 @@ onBeforeRouteLeave((to, from, next) => {
                             v-if="currentTab !== 4"
                             type="button" 
                             class="btn-gradient w-auto"
-                            @click="onSubmit"
+                            @click="onSubmit(true)"
                         >
                             <VIcon v-if="currentTab !== 4" icon="custom-save"  size="24" />
                             <span :class="windowWidth < 1024 ? 'd-none' : ''">Uppdatering</span>
