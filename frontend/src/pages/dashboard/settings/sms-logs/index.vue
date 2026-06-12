@@ -1,5 +1,6 @@
 <script setup>
 
+import { themeConfig } from '@themeConfig'
 import { formatDateTimeShortMonth } from '@/@core/utils/formatters'
 import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -441,31 +442,31 @@ onBeforeUnmount(() => {
                     size="38"
                   >
                     <VImg
-                      v-if="item.supplier?.user?.avatar"
+                      v-if="item.user.avatar"
                       style="border-radius: 50%"
-                      :src="themeConfig.settings.urlStorage + item.supplier.user.avatar"
+                      :src="themeConfig.settings.urlStorage + item.user.avatar"
                     />
                     <PresetAvatarImage
                       v-else
-                      :avatar-id="item.supplier?.user?.user_detail?.avatar_id"
+                      :avatar-id="item.user.user_detail?.avatar_id"
                     />
                   </VAvatar>
                   <div class="d-flex flex-column">
                     <span class="font-weight-medium">
-                      {{ item.supplier?.user?.name || 'Sin usuario' }} {{ item.supplier?.user?.last_name ?? "" }}
+                      {{ item.user.name || 'Sin usuario' }} {{ item.user.last_name ?? "" }}
                     </span>
                     <span class="text-sm text-disabled">
                       <VTooltip 
-                        v-if="item.supplier?.user?.email && item.supplier.user.email.length > 20"
+                        v-if="item.user.email && item.user.email.length > 20"
                         location="bottom">
                         <template #activator="{ props }">
                           <span v-bind="props" class="cursor-pointer">
-                            {{ truncateText(item.supplier.user.email, 20) }}
+                            {{ truncateText(item.user.email, 20) }}
                           </span>
                         </template>
-                        <span>{{ item.supplier.user.email }}</span>
+                        <span>{{ item.user.email }}</span>
                       </VTooltip>
-                      <span class="text-sm text-disabled"v-else>{{ item.supplier?.user?.email || '---' }}</span>
+                      <span class="text-sm text-disabled"v-else>{{ item.user.email || '---' }}</span>
                     </span>
                   </div>
                 </div>
@@ -508,7 +509,7 @@ onBeforeUnmount(() => {
                 >
                   {{ item?.billable_count > 0 ? 'Skickat' : 'Misslyckat' }}
                 </div>
-                <span class="card-mobile-sms__user">{{ item.supplier?.user?.name || 'Sin usuario' }} {{ item.supplier?.user?.last_name ?? "" }}</span>
+                <span class="card-mobile-sms__user">{{ item.user.name || 'Sin usuario' }} {{ item.user.last_name ?? "" }}</span>
               </div>
             </div>
           </div>

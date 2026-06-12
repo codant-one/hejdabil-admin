@@ -49,9 +49,9 @@ class SmsMessageController extends Controller
                         ]);
                 },
                 'user' => function ($userQuery) {
-                    $userQuery->select('id', 'name', 'last_name', 'email', 'deleted_at')
+                    $userQuery->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')
                         ->withTrashed()
-                        ->with(['userDetail:user_id,company']);
+                        ->with(['userDetail:user_id,company,avatar_id,logo']);
                 },
             ]);
 
