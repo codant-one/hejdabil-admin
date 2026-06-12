@@ -19,7 +19,6 @@ import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import { languages } from "prismjs";
 
 const { width: windowWidth } = useWindowSize();
 

@@ -77,6 +77,27 @@ export const formatDateTime = (dateString) => {
 };
 
 /**
+ * Format date to DD mmm YYYY, HH:mm using Swedish short month names
+ * @param {String} dateString - Date string to format (ISO format or any valid Date string)
+ * @returns {String} Formatted date (e.g., "04 jun 2026, 14:32") or empty string if invalid
+ */
+export const formatDateTimeShortMonth = (dateString) => {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
+};
+
+/**
  * Return short human friendly month representation of date
  * Can also convert date to only time if date is of today (Better UX)
  * @param {String} value date to format

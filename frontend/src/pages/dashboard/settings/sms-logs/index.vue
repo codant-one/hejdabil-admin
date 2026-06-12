@@ -1,11 +1,13 @@
 <script setup>
 
+import { formatDateTimeShortMonth } from '@/@core/utils/formatters'
 import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import SmsMessages from '@/api/smsMessages'
-import { Spanish } from 'flatpickr/dist/l10n/es.js'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize()
+
 const sectionEl = ref(null)
 const isRequestOngoing = ref(false)
 const currentPage = ref(1)
@@ -34,64 +36,56 @@ const filterSupplierScope = ref('all')
 const filterDateRange = ref(resolveCurrentDateRange())
 
 const statusOptions = [
-  { title: 'Todos', value: 'all' },
-  { title: 'Validos', value: 'accepted' },
-  { title: 'Fallidos', value: 'failed' },
-]
-
-const supplierScopeOptions = [
-  { title: 'Todos', value: 'all' },
-  { title: 'Con supplier asignado', value: 'with_supplier' },
-  { title: 'Sin supplier asignado', value: 'without_supplier' },
+  { title: 'Alla', value: 'all' },
+  { title: 'Skickade', value: 'accepted' },
+  { title: 'Misslyckade', value: 'failed' },
 ]
 
 const dateFilterConfig = {
   altInput: true,
-  altFormat: 'd/m/Y',
+  altFormat: 'd M Y',
   dateFormat: 'Y-m-d',
   inline: false,
-  locale: {
-    ...Spanish,
-    rangeSeparator: ' a ',
-    time_24hr: true,
-  },
   mode: 'range',
+  locale: {
+    rangeSeparator: ' - ',
+  },
   rangePresets: false,
 }
 
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
-const paginationData = computed(() => `${totalItems.value} resultados`)
-
-const scopeDescription = computed(() => {
-  if (responseScope.value === 'supplier_account')
-    return 'Muestra los registros de SMS que pertenecen a tu cuenta supplier.'
-
-  if (responseScope.value === 'with_supplier')
-    return 'Muestra los registros de SMS vinculados a cuentas supplier.'
-
-  if (responseScope.value === 'without_supplier')
-    return 'Muestra los registros de SMS donde supplier_id es null.'
-
-  return 'Muestra todos los registros de SMS segun los filtros seleccionados.'
-})
+// 👉 Computing pagination data
+const paginationData = computed(() => {
+  return `${totalItems.value} resultat`;
+  // return `Visar ${firstIndex} till ${lastIndex} av ${totalBillings.value} fakturor`;
+});
 
 const summaryCards = computed(() => [
   {
-    title: 'Total',
+    title: 'Totalt',
     value: summary.value.total_count,
-    tone: 'default',
+    color: '#111827',
+    bg: '#FFFFFF',
+    border: '#E7E7E7',
+    show: false
   },
   {
-    title: 'Validos',
+    title: 'Skickade',
     value: summary.value.accepted_count,
-    tone: 'success',
+    color: '#006D5C',
+    bg: '#FFFFFF',
+    border: '#E7E7E7',
+    show: false
   },
   {
-    title: 'Fallidos',
+    title: 'Misslyckade',
     value: summary.value.failed_count,
-    tone: 'error',
+    color: '#9B191B',
+    bg: '#FEF2F2',
+    border: '#FECACA',
+    show: true
   },
 ])
 
@@ -147,7 +141,7 @@ function getDateRangePayload() {
   }
 
   if (typeof filterDateRange.value === 'string') {
-    const splitByRange = filterDateRange.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    const splitByRange = filterDateRange.value.split(/\s+-\s+|\s+to\s+|\s+till\s+|\s+a\s+/i)
 
     if (splitByRange.length >= 2) {
       const from = toYmd(splitByRange[0])
@@ -249,16 +243,11 @@ function resetFilters() {
   applyFilters()
 }
 
-function resolveStatusColor(item) {
-  return Number(item?.billable_count) > 0 ? 'success' : 'error'
-}
-
-function resolveStatusLabel(item) {
-  return Number(item?.billable_count) > 0 ? 'Valido' : 'Fallido'
-}
-
-function resolveRawStatus(item) {
-  return String(item?.status || '').trim() || 'desconocido'
+const resolveStatus = item => {
+  if (Number(item?.billable_count) > 0)
+    return { class: 'success' }
+  if (Number(item?.billable_count) === 0)
+    return { class: 'error' }
 }
 
 function resolveSourceLabel(item) {
@@ -266,48 +255,20 @@ function resolveSourceLabel(item) {
   const sourceId = item?.source_id ? `#${item.source_id}` : ''
 
   const labels = {
-    billing: 'Factura',
-    agreement: 'Contrato',
-    document: 'Documento',
+    billing: 'Fakturor',
+    agreement: 'Avtal',
+    document: 'Dokument',
   }
 
   return `${labels[sourceType] || 'Otro'} ${sourceId}`.trim()
 }
 
-function resolveActionLabel(actionType) {
-  const labels = {
-    send_billing_sms: 'Envio de factura por SMS',
-    send_agreement_sms: 'Envio de contrato por SMS',
-    send_document_signature_sms: 'Firma de documento',
-    resend_document_signature_sms: 'Reenvio de firma de documento',
-    send_agreement_signature_sms: 'Firma de contrato',
-    resend_agreement_signature_sms: 'Reenvio de firma de contrato',
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + "...";
   }
-
-  return labels[actionType] || actionType || 'Sin especificar'
-}
-
-function resolveUserLabel(item) {
-  const fullName = `${item?.user?.name || ''} ${item?.user?.last_name || ''}`.trim()
-
-  if (fullName)
-    return fullName
-
-  return item?.user?.email || 'Usuario desconocido'
-}
-
-function formatDateTime(value) {
-  if (!value)
-    return '---'
-
-  return new Intl.DateTimeFormat('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
+  return text;
+};
 
 onMounted(() => {
   const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
@@ -346,258 +307,454 @@ onBeforeUnmount(() => {
             :to="{ name: 'dashboard-settings' }"
           >
             <VIcon icon="custom-return" size="24" />
-            Volver
+            Tillbaka
           </VBtn>
 
           <span class="title-settings pb-4 border-bottom-settings">
-            Registros de SMS
+            SMS-översikt
           </span>
         </div>
       </VCardText>
 
       <VCardText class="pb-0">
-        <div class="settings-layout border-bottom-settings pb-6">
+        <div :class="windowWidth < 1024 ? 'pb-4' : 'pb-6'">
           <div class="settings-layout__sidebar">
             <div class="d-flex flex-column gap-4">
-              <span class="subtitle-settings">Monitoreo de SMS</span>
+              <span class="subtitle-settings">SMS-översikt</span>
               <span class="text-settings">
-                Muestra los SMS validos y fallidos enviados desde esta cuenta, con su estado, destinatario, origen y usuario responsable.
+                Visa dina skickade SMS — inklusive status, mottagare, ursprung och vem i teamet som skickade.
               </span>
             </div>
           </div>
+          <div class="settings-layout__content"> </div>
+        </div>
+      </VCardText>
 
-          <div class="settings-layout__content">
-            <div class="d-flex flex-column gap-6 card-form">
-              <div class="sms-filter-grid">
-                <div class="sms-filter-grid__range">
-                  <AppDateTimePicker
-                    :model-value="filterDateRange"
-                    @update:modelValue="filterDateRange = $event"
-                    label="Rango de fechas"
-                    placeholder="Selecciona un rango de fechas"
-                    :config="dateFilterConfig"
-                  />
-                </div>
+      <VCardText class="pt-0 pb-6 card-form d-flex flex-column gap-8 border-bottom-settings">
+        <VRow>
+          <VCol cols="12" md="6">
+            <VLabel
+              class="mb-1 text-body-2 text-high-emphasis"
+              text="Datumintervall"
+            />
+            <AppDateTimePicker
+              :model-value="filterDateRange"
+              @update:modelValue="filterDateRange = $event"
+              :config="dateFilterConfig"
+            />
+          </VCol>
+          <VCol cols="12" md="6">
+            <AppAutocomplete
+              v-model="filterStatus"
+              label="Status"
+              :items="statusOptions"
+              :item-title="(item) => item.title"
+              :item-value="(item) => item.value"
+              autocomplete="off"
+            />
+          </VCol>
+        </VRow>
+        <div class="d-flex gap-4 text-end">
+          <VSpacer :class="windowWidth < 1024 ? 'd-none' : ''"/>
+          <VBtn 
+            class="btn-light w-auto"
+            :block="windowWidth < 1024"
+            @click="resetFilters"
+          >
+            Återställ
+          </VBtn>
+          <VBtn 
+            class="btn-gradient" 
+            :block="windowWidth < 1024"
+            @click="applyFilters"
+          >
+            Tillämpa filter
+          </VBtn>
+        </div>
 
-                <div>
-                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Estado" />
-                  <VSelect
-                    v-model="filterStatus"
-                    :items="statusOptions"
-                    item-title="title"
-                    item-value="value"
-                    density="compact"
-                  />
-                </div>
-
-                <div v-if="isAdminRole">
-                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Asignacion de supplier" />
-                  <VSelect
-                    v-model="filterSupplierScope"
-                    :items="supplierScopeOptions"
-                    item-title="title"
-                    item-value="value"
-                    density="compact"
-                  />
-                </div>
-              </div>
-
-              <div class="d-flex flex-wrap gap-3 align-center">
-                <VBtn class="btn-gradient" @click="applyFilters">
-                  Aplicar filtros
-                </VBtn>
-                <VBtn class="btn-light" @click="resetFilters">
-                  Restablecer
-                </VBtn>
-                <span class="text-settings sms-scope-hint">
-                  {{ scopeDescription }}
-                </span>
-              </div>
-
-              <div class="sms-summary-grid">
-                <div
-                  v-for="card in summaryCards"
-                  :key="card.title"
-                  class="sms-summary-card"
-                >
-                  <span class="sms-summary-card__label">{{ card.title }}</span>
-                  <span class="sms-summary-card__value">{{ card.value }}</span>
-                </div>
-              </div>
+        <div class="d-flex flex-column gap-6 card-form">
+          <div class="sms-summary-grid">
+            <div
+              v-for="card in summaryCards"
+              :key="card.title"
+              class="sms-summary-card"
+              :style="{
+                backgroundColor: card.bg,
+                border: `1px solid ${card.border}`,
+              }"
+            >
+              <span class="sms-summary-card__label">{{ card.title }}</span>
+              <span class="sms-summary-card__value" :style="{ color: card.color }">{{ card.value }}</span>
+              <span class="sms-summary-card__text">Filtrerat period</span>
+              <span class="sms-summary-card__info" v-if="card.show">
+                <VIcon icon="custom-alert" size="13" />
+                Granska misslyckade
+              </span>
             </div>
           </div>
         </div>
       </VCardText>
 
       <VCardText class="pb-0">
-        <div class="settings-layout pb-4">
-          <div class="settings-layout__sidebar">
-            <div class="d-flex flex-column gap-4">
-              <span class="subtitle-settings">Ultimos registros</span>
-              <span class="text-settings">
-                Cada fila muestra quien envio el SMS, a que numero se envio y desde que flujo del sistema se genero.
-              </span>
+        <VTable
+          v-if="!$vuetify.display.mdAndDown"
+          v-show="smsMessages.length"
+          class="px-0 pb-6 text-no-wrap"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Datum & tid</th>
+              <th scope="col" class="text-center">Status</th>
+              <th scope="col" class="text-center">Mottagare</th>
+              <th scope="col" class="text-center">Källa</th>
+              <th scope="col">Skapad av</th>
+            </tr>
+          </thead>
+
+          <tbody v-show="smsMessages.length">
+            <tr v-for="item in smsMessages" :key="item.id">
+              <td>
+                {{ formatDateTimeShortMonth(item.sent_at || item.failed_at || item.created_at) }}
+              </td>
+
+              <td class="text-center text-wrap d-flex justify-center align-center">
+                <div
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(item)?.class}`"
+                >
+                  {{ item?.billable_count > 0 ? 'Skickat' : 'Misslyckat' }}
+                </div>
+              </td>
+
+              <td class="text-center">
+                <span>{{ item.to_number }}</span>
+              </td>
+
+              <td class="text-center">
+                <span>{{ resolveSourceLabel(item) }}</span>
+              </td>
+
+              <td style="width: 1%; white-space: nowrap">
+                <div class="d-flex align-center gap-x-1">
+                  <VAvatar
+                    variant="outlined"
+                    size="38"
+                  >
+                    <VImg
+                      v-if="item.supplier?.user?.avatar"
+                      style="border-radius: 50%"
+                      :src="themeConfig.settings.urlStorage + item.supplier.user.avatar"
+                    />
+                    <PresetAvatarImage
+                      v-else
+                      :avatar-id="item.supplier?.user?.user_detail?.avatar_id"
+                    />
+                  </VAvatar>
+                  <div class="d-flex flex-column">
+                    <span class="font-weight-medium">
+                      {{ item.supplier?.user?.name || 'Sin usuario' }} {{ item.supplier?.user?.last_name ?? "" }}
+                    </span>
+                    <span class="text-sm text-disabled">
+                      <VTooltip 
+                        v-if="item.supplier?.user?.email && item.supplier.user.email.length > 20"
+                        location="bottom">
+                        <template #activator="{ props }">
+                          <span v-bind="props" class="cursor-pointer">
+                            {{ truncateText(item.supplier.user.email, 20) }}
+                          </span>
+                        </template>
+                        <span>{{ item.supplier.user.email }}</span>
+                      </VTooltip>
+                      <span class="text-sm text-disabled"v-else>{{ item.supplier?.user?.email || '---' }}</span>
+                    </span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </VTable>
+
+        <div
+          v-if="!isRequestOngoing && !smsMessages.length"
+          class="empty-state"
+          :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+        >
+          <VIcon
+            :size="$vuetify.display.mdAndDown ? 80 : 120"
+            icon="custom-f-sms"
+          />
+          <div class="empty-state-content">
+            <div class="empty-state-title">Inga SMS har skickats ännu</div>
+            <div class="empty-state-text">
+              SMS skickas automatiskt när du sänder fakturor, avtal och kontrakt till dina kunder via Billogg. Dina poster visas här.
             </div>
           </div>
+        </div>
 
-          <div class="settings-layout__content">
-            <VDivider />
-
-            <VTable class="text-no-wrap sms-log-table">
-              <thead class="text-uppercase">
-                <tr>
-                  <th scope="col">Fecha</th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">Destinatario</th>
-                  <th scope="col">Origen</th>
-                  <th scope="col">Enviado por</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr
-                  v-for="item in smsMessages"
-                  :key="item.id"
-                  style="height: 3.5rem;"
+        <div
+          class="d-flex flex-column gap-2 pb-6" 
+          v-if="smsMessages.length && $vuetify.display.mdAndDown">
+          <div v-for="item in smsMessages" :key="item.id">
+            <div class="card-mobile-sms d-flex justify-between">
+              <div class="d-flex flex-column gap-4">
+                <span class="card-mobile-sms__date">{{ formatDateTimeShortMonth(item.sent_at || item.failed_at || item.created_at) }}</span>
+                <span class="card-mobile-sms__number">{{ item.to_number }}</span>
+                <span class="card-mobile-sms__description">{{ resolveSourceLabel(item) }}</span>
+              </div>
+              <div class="d-flex flex-column justify-between align-end">
+                <div
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(item)?.class}`"
                 >
-                  <td>
-                    {{ formatDateTime(item.sent_at || item.failed_at || item.created_at) }}
-                  </td>
-
-                  <td>
-                    <div class="d-flex flex-column gap-1">
-                      <VChip
-                        label
-                        size="small"
-                        :color="resolveStatusColor(item)"
-                      >
-                        {{ resolveStatusLabel(item) }}
-                      </VChip>
-                      <span class="sms-log-table__muted">Twilio: {{ resolveRawStatus(item) }}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div class="d-flex flex-column gap-1">
-                      <span>{{ item.to_number }}</span>
-                      <span class="sms-log-table__muted" v-if="item.provider_message_sid">
-                        SID: {{ item.provider_message_sid }}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div class="d-flex flex-column gap-1">
-                      <span>{{ resolveSourceLabel(item) }}</span>
-                      <span class="sms-log-table__muted">{{ resolveActionLabel(item.action_type) }}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div class="d-flex flex-column gap-1">
-                      <span>{{ resolveUserLabel(item) }}</span>
-                      <span class="sms-log-table__muted">{{ item.user?.email || '---' }}</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-
-              <tfoot v-show="!smsMessages.length">
-                <tr>
-                  <td colspan="5" class="text-center text-body-1">
-                    No hay registros de SMS para los filtros seleccionados.
-                  </td>
-                </tr>
-              </tfoot>
-            </VTable>
-
-            <VDivider />
-
-            <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3 px-0">
-              <span class="text-sm text-disabled">
-                {{ paginationData }}
-              </span>
-
-              <VSpacer class="d-none d-md-block" />
-
-              <VPagination
-                v-model="currentPage"
-                size="small"
-                :total-visible="4"
-                :length="totalPages"
-                @update:model-value="fetchSmsMessages"
-              />
-            </VCardText>
+                  {{ item?.billable_count > 0 ? 'Skickat' : 'Misslyckat' }}
+                </div>
+                <span class="card-mobile-sms__user">{{ item.supplier?.user?.name || 'Sin usuario' }} {{ item.supplier?.user?.last_name ?? "" }}</span>
+              </div>
+            </div>
           </div>
         </div>
+
+      </VCardText>
+
+      <VCardText
+        v-if="smsMessages.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
+
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+          @update:model-value="fetchSmsMessages"
+        />
       </VCardText>
     </VCard>
   </section>
 </template>
 
 <style lang="scss">
-.sms-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
 
-.sms-filter-grid__range {
-  grid-column: span 2;
-}
-
-.sms-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.sms-summary-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border: 1px solid #E7E7E7;
-  border-radius: 10px;
-  background: #FAFAFA;
-}
-
-.sms-summary-card__label {
-  color: #737373;
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.sms-summary-card__value {
-  color: #141414;
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 32px;
-}
-
-.sms-log-table__muted,
-.sms-scope-hint {
-  color: #737373;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-@media (max-width: 1279px) {
-  .sms-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .card-mobile-sms {
+    gap: 24px;
+    opacity: 1;
+    border-radius: 16px;
+    padding: 16px;
+    background: #F6F6F6;
   }
-}
 
-@media (max-width: 1023px) {
-  .sms-filter-grid,
-  .sms-summary-grid {
-    grid-template-columns: 1fr;
+  .card-mobile-sms__date {
+    color: #878787;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+  }
+
+  .card-mobile-sms__number {
+    color: #454545;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 16px;
+    letter-spacing: 0;
+  }
+
+  .card-mobile-sms__description {
+    color: #878787;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+  }
+
+  .card-mobile-sms__user {
+    color: #878787;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+  }
+
+  .h-40 {
+    height: 40px !important;
+  }
+
+  .v-btn.h-40 {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  @media (min-width: 1024px) {
+    .card-form.client-desktop {
+      .v-input:not(.v-textarea) {
+        .v-input__control {
+          .v-field {
+            background-color: #f6f6f6 !important;
+            min-height: 40px !important;
+            /*height: 40px !important;*/
+
+            .v-text-field__suffix {
+              padding: 8px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 40px !important;
+              /*height: 40px !important;*/
+              padding: 8px 16px !important;
+
+              input {
+                min-height: 40px !important;
+                height: 40px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+
+            .v-text-field__prefix {
+              height: 40px;
+            }
+          }
+        }
+      }
+
+      .v-input.always-show-prefix {
+        .v-input__control {
+          .v-field {
+            .v-field__input {
+              padding: 8px 0 !important;
+            }
+          }
+        }
+      }
+
+      .v-select .v-field {
+        .v-select__selection {
+            align-items: center;
+            color: #454545;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 18px;
+
+        }
+
+        .v-field__input input::placeholder,
+        input.v-field__input::placeholder,
+        .v-field__input textarea::placeholder,
+        textarea.v-field__input::placeholder {
+            color: #454545 !important;
+            opacity: 1 !important;
+          }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
+        }
+      }
+
+    }
+  }
+
+  .sms-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .sms-filter-grid__range {
-    grid-column: span 1;
+    grid-column: span 2;
   }
-}
+
+  .sms-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sms-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .sms-summary-card__label {
+    color: #5D5D5D;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 16.5px;
+    letter-spacing: 0.77px;
+    vertical-align: middle;
+    text-transform: capitalize;
+  }
+
+  .sms-summary-card__value {
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 34px;
+    letter-spacing: -1.5px;
+    vertical-align: middle;
+  }
+
+  .sms-summary-card__text {
+    color: #878787;
+    font-weight: 400;
+    font-size: 11.5px;
+    line-height: 17.25px;
+    letter-spacing: 0%;
+    vertical-align: middle;
+  }
+
+  .sms-summary-card__info {
+    color: #9B191B;
+    font-weight: 600;
+    font-size: 11.5px;
+    line-height: 17.25px;
+    letter-spacing: 0%;
+    vertical-align: middle;
+  }
+
+  .sms-log-table__muted,
+  .sms-scope-hint {
+    color: #737373;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  @media (max-width: 1279px) {
+    .sms-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .sms-filter-grid,
+    .sms-summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sms-filter-grid__range {
+      grid-column: span 1;
+    }
+  }
 </style>
 
 <route lang="yaml">

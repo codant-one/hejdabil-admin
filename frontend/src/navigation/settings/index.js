@@ -49,8 +49,8 @@ export default [
     subject: 'dashboard'
   },
   {
-    title: 'SMS-loggar',
-    icon: { icon: 'tabler-message-2' },
+    title: 'SMS-översikt',
+    icon: { icon: 'custom-sms' },
     to: 'dashboard-settings-sms-logs',
     action: 'view',
     subject: 'dashboard'
