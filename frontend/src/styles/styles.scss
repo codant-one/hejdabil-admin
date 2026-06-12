@@ -745,6 +745,10 @@ body {
   flex-shrink: 0;
   min-width: fit-content;
 
+  @media (max-width: 1023px) {
+    width: 0px;
+  }
+
   .v-input {
     padding-left: 0 !important;
     padding-right: 0 !important;

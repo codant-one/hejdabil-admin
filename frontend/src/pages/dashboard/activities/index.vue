@@ -957,10 +957,7 @@ onBeforeUnmount(() => {
       {{ advisor.message }}
     </VSnackbar>
 
-    <VCard 
-      class="page-activities card-fill pa-6 d-flex flex-column" 
-      :class="windowWidth < 1024 ? '' : ''"
-    >
+    <VCard class="page-activities card-fill pa-6 d-flex flex-column">
       
       <DefaultLayoutWithoutVerticalNav />
 
@@ -980,7 +977,9 @@ onBeforeUnmount(() => {
           <span class="title-activities">Aktivitetshistorik</span>
         </div>
 
-        <VCardText class="d-flex align-center justify-space-between gap-2 margin-activities p-0">
+        <VCardText 
+          class="d-flex align-center justify-space-between margin-activities p-0"
+          :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
             <!-- 👉 Search  -->
             <div class="search">
                 <VTextField v-model="searchQuery" placeholder="Sök" clearable />
@@ -988,32 +987,29 @@ onBeforeUnmount(() => {
 
             <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-            <div
-                v-if="!$vuetify.display.mdAndDown"
-                class="d-flex align-center empty-select"
-                >
-                <VSelect
-                    v-model="mode"
-                    class="custom-select-hover activity-mode-select"
-                    :items="modeOptions"
-                    item-title="title"
-                    item-value="value"
-                >
-                    <template #selection="{ item }">
-                        <div class="activity-mode-option">
-                            <VIcon :icon="item.raw.icon" size="24" />
-                            <span>{{ item.raw.title }}</span>
-                        </div>
-                    </template>
+            <div class="d-flex align-center empty-select" >
+              <VSelect
+                  v-model="mode"
+                  class="custom-select-hover"
+                  :items="modeOptions"
+                  item-title="title"
+                  item-value="value"
+              >
+                  <template #selection="{ item }">
+                      <div class="activity-mode-option">
+                          <VIcon :icon="item.raw.icon" size="24" />
+                          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">{{ item.raw.title }}</span>
+                      </div>
+                  </template>
 
-                    <template #item="{ props, item }">
-                        <VListItem v-bind="props">
-                            <template #prepend>
-                            <VIcon :icon="item.raw.icon" size="24" class="activity-mode-item-icon" />
-                            </template>
-                        </VListItem>
-                    </template>
-                </VSelect>
+                  <template #item="{ props, item }">
+                    <VListItem v-bind="props">
+                        <template #prepend>
+                          <VIcon :icon="item.raw.icon" size="24" class="activity-mode-item-icon" />
+                        </template>
+                    </VListItem>
+                  </template>
+              </VSelect>
             </div>
 
             <VBtn
@@ -1035,7 +1031,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn 
-              class="btn-white-2 px-3"
+              class="btn-transparent px-3"
               :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
               @click="filtreraMobile = true"
             >
@@ -1331,8 +1327,228 @@ onBeforeUnmount(() => {
             </template>
           </tbody>
         </VTable>
+      </div>
 
-        <div v-else class="activities-cards margin-activities mt-4">
+      <VExpansionPanels
+        class="expansion-panels pt-4"
+        v-if="displayActivities.length && $vuetify.display.smAndDown && mode === 'Lista'"
+      >
+        <VExpansionPanel v-for="activity in displayActivities" :key="activity.id" class="px-3">
+          <VExpansionPanelTitle
+            collapse-icon="custom-chevron-right"
+            expand-icon="custom-chevron-down"
+            class="p-0"
+          >
+            <span class="order-id">
+              <VAvatar
+                variant="outlined"
+                size="38"
+              >
+                <VImg
+                    v-if="activity.user.avatar"
+                    style="border-radius: 50%"
+                    :src="themeConfig.settings.urlStorage + activity.user.avatar"
+                />
+                <PresetAvatarImage
+                    v-else
+                    :avatar-id="activity.user?.user_detail?.avatar_id"
+                />
+              </VAvatar>
+            </span>
+            <div class="order-title-box px-1">
+              <span class="title-panel">
+                {{ activity.eventLabel }}
+              </span>
+              <div class="gap-2 title-organization">
+                <span>
+                 {{ activity.user.name }} {{ activity.user.last_name ?? "" }} - {{ activity.createdAtLabel }}
+                </span>
+              </div>
+            </div>
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Modul</div>
+              <div class="expansion-panel-item-value">
+                <div class="activity-module-pill">
+                    <VIcon :icon="activity.icon || 'custom-circle-help'" size="16" />
+                    <span>{{ activity.moduleLabel }}</span>
+                  </div>
+              </div>
+            </div>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Beskrivning</div>
+              <div class="expansion-panel-item-value">
+                <div class="activity-description-text">
+                  <span class="activity-description-title">{{ activity.descriptionTitle }}</span>
+                  <span v-if="activity.descriptionSubtitle" class="activity-description-subtitle">{{ activity.descriptionSubtitle }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 p-4 bg-neutral-2 activity-expansion-pill">
+              <div class="expansion-panel-item-label">{{ activity.detailTitle }}</div>
+              <div class="expansion-panel-item-value">
+
+                <div v-if="activity.changes.length" class="activity-detail-list">
+                  <div
+                    v-for="change in activity.changes"
+                    :key="`${activity.id}-${change.key}`"
+                    class="activity-detail-item"
+                    :class="{ 'activity-detail-item--rich': isBillingDetailRenderType(change) }"
+                  >
+                    <div class="activity-detail-label">{{ change.label }}:</div>
+
+                    <div class="activity-detail-values" :class="{ 'is-rich': isBillingDetailRenderType(change) }">
+                      <template v-if="change.type === 'created'">
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div class="activity-detail-created activity-detail-rich">
+                            <div class="billing-detail-tooltip">
+                              <table
+                                v-if="getBillingDetailRows(change.rawValue).length"
+                                class="billing-detail-table"
+                              >
+                                <tbody>
+                                  <tr
+                                    v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                    :key="rowIndex"
+                                  >
+                                    <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                    <template v-else>
+                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                      <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              <span v-else>Ingen detaljinformation</span>
+                            </div>
+                          </div>
+                        </template>
+                        <span v-else class="activity-detail-created">{{ change.value }}</span>
+                      </template>
+
+                      <template v-else-if="change.type === 'deleted'">
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div class="activity-detail-deleted activity-detail-rich">
+                            <div class="billing-detail-tooltip">
+                              <table
+                                v-if="getBillingDetailRows(change.rawValue).length"
+                                class="billing-detail-table"
+                              >
+                                <tbody>
+                                  <tr
+                                    v-for="(row, rowIndex) in getBillingDetailRows(change.rawValue)"
+                                    :key="rowIndex"
+                                  >
+                                    <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                    <template v-else>
+                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                      <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              <span v-else>Ingen detaljinformation</span>
+                            </div>
+                          </div>
+                        </template>
+                        <span v-else class="activity-detail-deleted">{{ change.value }}</span>
+                      </template>
+
+                      <template v-else>
+                        <template v-if="isBillingDetailRenderType(change)">
+                          <div v-if="change.oldValue !== null" class="activity-detail-old activity-detail-rich">
+                            <div class="billing-detail-tooltip">
+                              <table
+                                v-if="getBillingDetailRows(change.oldRawValue).length"
+                                class="billing-detail-table"
+                              >
+                                <tbody>
+                                  <tr
+                                    v-for="(row, rowIndex) in getBillingDetailRows(change.oldRawValue)"
+                                    :key="`old-${rowIndex}`"
+                                  >
+                                    <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                    <template v-else>
+                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                      <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              <span v-else>Ingen detaljinformation</span>
+                            </div>
+                          </div>
+                          <VIcon
+                            v-if="change.oldValue !== null && change.newValue !== null"
+                            icon="custom-arrow-right"
+                            size="16"
+                            class="activity-detail-arrow activity-detail-arrow-rich"
+                          />
+                          <div v-if="change.newValue !== null" class="activity-detail-new activity-detail-rich">
+                            <div class="billing-detail-tooltip">
+                              <table
+                                v-if="getBillingDetailRows(change.newRawValue).length"
+                                class="billing-detail-table"
+                              >
+                                <tbody>
+                                  <tr
+                                    v-for="(row, rowIndex) in getBillingDetailRows(change.newRawValue)"
+                                    :key="`new-${rowIndex}`"
+                                  >
+                                    <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                                    <template v-else>
+                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                      <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                      <td v-if="row.values[5] > 0" class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              <span v-else>Ingen detaljinformation</span>
+                            </div>
+                          </div>
+                          <span v-else class="activity-detail-muted">Borttagen</span>
+                        </template>
+                        <template v-else>
+                          <span v-if="change.oldValue !== null" class="activity-detail-old">{{ change.oldValue }}</span>
+                          <VIcon
+                            v-if="change.oldValue !== null && change.newValue !== null"
+                            icon="custom-arrow-right"
+                            size="16"
+                            class="activity-detail-arrow"
+                          />
+                          <span v-if="change.newValue !== null" class="activity-detail-new">{{ change.newValue }}</span>
+                          <span v-else class="activity-detail-muted">Borttagen</span>
+                        </template>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="activity-detail-empty">
+                  {{ activity.descriptionText }}
+                </div>
+              </div>
+            </div>
+           
+          </VExpansionPanelText>
+        </VExpansionPanel>
+      </VExpansionPanels>
+      
+      <div v-if="mode === 'Tabell'">
+        <div class="activities-cards margin-activities mt-4">
           <div
             v-for="group in cardActivityGroups"
             :key="`card-group-${group.label}`"
@@ -1373,7 +1589,7 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
 
-                  <div class="activity-card-meta">
+                  <div class="activity-card-meta" v-if="windowWidth >= 1024">
                     <div class="activity-module-pill">
                       <VIcon :icon="activity.icon || 'custom-circle-help'" size="16" />
                       <span>{{ activity.moduleLabel }}</span>
@@ -1527,32 +1743,41 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div v-else class="activity-card-empty">{{ activity.descriptionText }}</div>
+
+                <div class="activity-card-meta mt-4" v-if="windowWidth < 1024">
+                  <div class="activity-module-pill">
+                    <VIcon :icon="activity.icon || 'custom-circle-help'" size="16" />
+                    <span>{{ activity.moduleLabel }}</span>
+                  </div>
+                  <span class="activity-card-date">{{ getActivityTimeLabel(activity) }}</span>
+                </div>
+
               </div>
             </div>
           </div>
         </div>
-
-        <VCardText
-          v-if="displayActivities.length"
-          :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-          class="align-center flex-wrap gap-4 mt-6 p-0 margin-activities"
-        >
-          <span class="text-pagination-results">
-            {{ paginationData }}
-          </span>
-
-          <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
-
-          <VPagination
-            v-model="currentPage"
-            size="small"
-            :total-visible="4"
-            :length="totalPages"
-            next-icon="custom-chevron-right"
-            prev-icon="custom-chevron-left"
-          />
-        </VCardText>
       </div>
+
+      <VCardText
+        v-if="displayActivities.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 mt-6 p-0 margin-activities"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
+
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
 
       <div
         v-if="!isRequestOngoing && !displayActivities.length"
@@ -1665,10 +1890,91 @@ onBeforeUnmount(() => {
     </VCard>
   </VDialog>
 
+   <!-- 👉 Mobile Filter Dialog -->
+  <VDialog
+    v-model="filtreraMobile"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard class="card-form">
+      <VList>
+        <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+          <AppAutocomplete
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="item => item.full_name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </VListItem>
+        <VListItem class="form">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Användare" />            
+          <AppAutocomplete
+              v-model="userId"
+              :items="users"
+              :item-title="item => item.user_name"
+              :item-value="item => item.user_id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              :menu-props="{ maxHeight: '300px' }"
+            />
+        </VListItem>
+        <VListItem class="form pt-6">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
+          <AppAutocomplete
+              v-model="module"
+              :items="modules"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              :menu-props="{ maxHeight: '300px' }"/>
+        </VListItem>
+        <VListItem class="form pt-6 d-none">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Filtrera efter datum" />
+          <AppDateTimePicker
+            v-model="filterDateRange"
+            :config="activitiesFilterDatePickerConfig"
+            :is-mobile="windowWidth < 1024"
+            placeholder="Välj datum"
+          />
+        </VListItem>
+        <VListItem class="form mt-5">
+          <VBtn class="btn-gradient w-100" @click="filtreraMobile = false">
+              Visa resultat
+          </VBtn>
+        </VListItem>
+      </VList>
+    </VCard>
+  </VDialog>
+
   <MobileBottomBar :nav-items="navItems" />
 </template>
 
 <style lang="scss">
+
+  .title-panel{
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .activity-expansion-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    border-radius: 8px;
+  }
 
     .card-form {
       .v-list {
@@ -2342,23 +2648,52 @@ onBeforeUnmount(() => {
         margin-top: 80px;
         background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
 
-        @media (max-width: 1023px) {
-        padding-bottom: 120px !important;
+        @media (max-width: 1023px) { 
+          background: white;
+          padding-bottom: 80px !important;
         }
     }
 
     @media (max-width: 1400px) {
-        .activities-table thead th,
-        .activity-summary-row td,
-        .activity-detail-row td {
-            padding-left: 18px !important;
-            padding-right: 18px !important;
-        }
+      .activities-table thead th,
+      .activity-summary-row td,
+      .activity-detail-row td {
+          padding-left: 18px !important;
+          padding-right: 18px !important;
+      }
 
-        .activity-description-text {
+      .activity-description-text {
             max-width: 320px;
+      }
+
+      .activity-card-detail-title, .activity-card-changes {
+        padding: 0;
+      }
+
+      .activity-card-main {
+        align-items: center;
+      }
+
+      .activity-card-title {
+        font-size: 14px;
+      }
+      .activity-card-subtitle {
+        font-size: 12px;
+      }
+
+      .activity-detail-item:not(:last-child) {
+        border-bottom: 1px solid #BFBFBF;
+        padding-bottom: 2px;
+      }
+
+      .activity-detail-list {
+        gap: 6px;
+      }
+
+      .activity-description-title {
+        font-size: 14px;
+      }
     }
-}
 </style>
 
 <route lang="yaml">
