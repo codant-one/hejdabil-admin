@@ -280,7 +280,7 @@ class SignatureController extends Controller
                     $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
                         'supplier_id' => $agreement->supplier_id,
                         'source_type' => 'agreement',
-                        'source_id' => $agreement->id,
+                        'source_id' => $this->agreementSourceId($agreement),
                         'action_type' => 'send_agreement_signature_sms',
                     ]);
 
@@ -612,7 +612,7 @@ class SignatureController extends Controller
                     $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
                         'supplier_id' => $agreement->supplier_id,
                         'source_type' => 'agreement',
-                        'source_id' => $agreement->id,
+                        'source_id' => $this->agreementSourceId($agreement),
                         'action_type' => 'send_agreement_signature_sms',
                     ]);
 
@@ -1021,7 +1021,7 @@ class SignatureController extends Controller
             $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender, [
                 'supplier_id' => $agreement->supplier_id,
                 'source_type' => 'agreement',
-                'source_id' => $agreement->id,
+                'source_id' => $this->agreementSourceId($agreement),
                 'action_type' => 'resend_agreement_signature_sms',
             ]);
 
@@ -2191,6 +2191,17 @@ class SignatureController extends Controller
             4 => $agreement->offer?->reg_num ?? (string) $agreement->agreement_id,
             3 => $agreement->commission?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
             default => $agreement->vehicle_client?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
+        };
+    }
+
+    private function agreementSourceId(Agreement $agreement): ?int
+    {
+        $agreement->loadMissing(['offer', 'commission']);
+
+        return match ((int) $agreement->agreement_type_id) {
+            4 => $agreement->offer?->offer_id,
+            3 => $agreement->commission?->commission_id,
+            default => $agreement->agreement_id,
         };
     }
 

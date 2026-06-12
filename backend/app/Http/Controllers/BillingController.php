@@ -697,7 +697,7 @@ class BillingController extends Controller
                 $result = $twilioSms->sendMessage($phoneNumber, $message, $smsSender, [
                     'supplier_id' => $billing->supplier_id,
                     'source_type' => 'billing',
-                    'source_id' => $billing->id,
+                    'source_id' => $billing->invoice_id,
                     'action_type' => 'send_billing_sms',
                 ]);
 

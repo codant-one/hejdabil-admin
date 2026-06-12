@@ -70,9 +70,18 @@ const datepickerConfig = computed(() => {
 
   config.disableMobile = true
 
+  const defaultLocale = {
+    ...svLocale.sv,
+    time_24hr: Boolean(config.time_24hr),
+  }
+
   if (config.locale === undefined) {
-    svLocale.sv.time_24hr = Boolean(config.time_24hr)
-    config.locale = svLocale.sv
+    config.locale = defaultLocale
+  } else if (typeof config.locale === 'object' && config.locale !== null) {
+    config.locale = {
+      ...defaultLocale,
+      ...config.locale,
+    }
   }
 
   config.monthSelectorType = config.monthSelectorType ?? 'dropdown'

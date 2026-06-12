@@ -549,7 +549,7 @@ class DocumentController extends Controller
                     $smsResult = $twilioSms->sendMessage($smsPhone, $smsMessage, $smsSender, [
                         'supplier_id' => $document->supplier_id,
                         'source_type' => 'document',
-                        'source_id' => $document->id,
+                        'source_id' => $document->order_id,
                         'action_type' => 'send_document_signature_sms',
                     ]);
 
@@ -987,7 +987,7 @@ class DocumentController extends Controller
             $smsResult = $twilioSms->sendMessage($recipientPhone, $smsMessage, $smsSender, [
                 'supplier_id' => $document->supplier_id,
                 'source_type' => 'document',
-                'source_id' => $document->id,
+                'source_id' => $document->order_id,
                 'action_type' => 'resend_document_signature_sms',
             ]);
 
