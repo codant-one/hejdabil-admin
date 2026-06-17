@@ -70,6 +70,7 @@ const purchase_price = ref(null)
 
 //const tab 1
 const brand_id = ref(null)
+const brand = ref(null)
 const model_id = ref(null)
 const model = ref(null)
 const modelsByBrand = ref([])
@@ -140,6 +141,7 @@ const endDateTimePickerConfig = computed(() => {
 //const tab 2
 const brands = ref([])
 const brand_id_interchange = ref(null)
+const brand_interchange = ref(null)
 const models = ref([])
 const modelsByBrandInterchange = ref([])
 const model_id_interchange = ref(null)
@@ -672,6 +674,19 @@ const onClearBrand = () => {
     modelsByBrand.value = []
 }
 
+const getBrands = computed(() => {
+  const brands_ = brands.value.map((brand) => ({
+      title: brand.name,
+      value: brand.id
+  }))
+
+  if (brands.value.length > 0) {
+      brands_.push({ title: 'En annan..', value: 0 })
+  }
+
+  return brands_
+})
+
 const getModels = computed(() => {
     const models = modelsByBrand.value.map((model) => ({
         title: model.name,
@@ -683,6 +698,19 @@ const getModels = computed(() => {
     }
 
     return models
+})
+
+const getBrandsInterchange = computed(() => {
+  const brands_ = brands.value.map((brand) => ({
+      title: brand.name,
+      value: brand.id
+  }))
+
+  if (brands.value.length > 0) {
+      brands_.push({ title: 'En annan..', value: 0 })
+  }
+
+  return brands_
 })
 
 const getModelsInterchange = computed(() => {
@@ -968,6 +996,12 @@ const searchVehicleByPlate = async (type) => {
             if (carRes.result.brand_id) {
                 brand_id.value = carRes.result.brand_id
                 selectBrand(brand_id.value)
+            } else if (carRes.result.brand_name) {
+                // Si no se encontró la brand en la DB, usar el campo de texto libre
+                brand_id.value = 0
+                brand.value = carRes.result.brand_name
+
+                getModels.value.push({ title: 'En annan..', value: 0 })
             }
             
             // Actualizar modelo (Modell)
@@ -1033,8 +1067,14 @@ const searchVehicleByPlate = async (type) => {
             if (carRes.result.brand_id) {
                 brand_id_interchange.value = carRes.result.brand_id
                 selectBrandInterchange(brand_id_interchange.value)
+            } else if (carRes.result.brand_name) {
+                // Si no se encontró la brand en la DB, usar el campo de texto libre
+                brand_id_interchange.value = 0
+                brand_interchange.value = carRes.result.brand_name
+
+                getModelsInterchange.value.push({ title: 'En annan..', value: 0 })
             }
-            
+
             // Actualizar modelo (Modell)
             if (carRes.result.model_id) {
                 model_id_interchange.value = carRes.result.model_id
@@ -1176,9 +1216,10 @@ const getTabValidationErrors = () => {
     const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
 
     const hasTab0Errors = !reg_num.value || 
-                          !brand_id.value || 
-                          (model_id.value !== 0 && !model_id.value) ||
-                          (model_id.value === 0 && !model.value) ||
+                          (brand_id.value !== 0 && !brand_id.value) || // si no es 0 y está vacío → error
+                          (brand_id.value === 0 && !brand.value) || //
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                           !car_body_id.value ||
                           !year.value ||
                           !mileage.value || 
@@ -1195,7 +1236,8 @@ const getTabValidationErrors = () => {
     const hasTab1Errors = reg_num_interchange.value && (
                           !mileage_interchange.value ||
                           !purchase_date.value ||
-                          !brand_id_interchange.value ||
+                          (brand_id_interchange.value !== 0 && !brand_id_interchange.value) || // si no es 0 y está vacío → error
+                          (brand_id_interchange.value === 0 && !brand_interchange.value) || //
                           (model_id_interchange.value !== 0 && !model_id_interchange.value) ||
                           (model_id_interchange.value === 0 && !model_interchange.value) ||
                           !car_body_id_interchange.value ||
@@ -1448,6 +1490,7 @@ const onSubmit = async () => {
                 //vehicle
                 formData.append('reg_num', reg_num.value)
                 formData.append('brand_id', brand_id.value)
+                formData.append('brand', brand.value)
                 formData.append('model_id', model_id.value)
                 formData.append('model', model.value)
                 formData.append('year', year.value)
@@ -1480,6 +1523,7 @@ const onSubmit = async () => {
                 formData.append('interchange', reg_num_interchange.value !== null ? true : false)
                 formData.append('reg_num_interchange', reg_num_interchange.value)
                 formData.append('brand_id_interchange', brand_id_interchange.value)
+                formData.append('brand_interchange', brand_interchange.value)
                 formData.append('model_id_interchange', model_id_interchange.value)
                 formData.append('model_interchange', model_interchange.value)
                 formData.append('car_body_id_interchange', car_body_id_interchange.value)
@@ -1575,6 +1619,7 @@ const currentData = computed(() => ({
     reg_num: reg_num.value,
     agreement_id: agreement_id.value,
     brand_id: brand_id.value,
+    brand: brand.value,
     model_id: model_id.value,
     model: model.value,
     year: year.value,
@@ -1609,6 +1654,7 @@ const currentData = computed(() => ({
     // Tab 1: Inbytesfordon
     reg_num_interchange: reg_num_interchange.value,
     brand_id_interchange: brand_id_interchange.value,
+    brand_interchange: brand_interchange.value,
     model_id_interchange: model_id_interchange.value,
     model_interchange: model_interchange.value,
     year_interchange: year_interchange.value,
@@ -1886,19 +1932,24 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : brand_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
                                                 :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id"
-                                                :items="brands"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
+                                                :items="getBrands"
                                                 autocomplete="off"
                                                 clearable
                                                 clear-icon="tabler-x"
                                                 @update:modelValue="selectBrand"
                                                 @click:clear="onClearBrand"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div v-if="brand_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märkets namn*" />
+                                            <VTextField
+                                                v-model="brand"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -2280,15 +2331,13 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @keydown="handlePhoneKeydown"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : brand_id_interchange !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
                                             <AppAutocomplete
                                                 :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id_interchange"
-                                                :items="brands"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
+                                                :items="getBrandsInterchange"
                                                 autocomplete="off"
                                                 clearable
                                                 clear-icon="tabler-x"
@@ -2296,6 +2345,13 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @click:clear="onClearBrandInterchange"
                                                 :rules="reg_num_interchange ? [requiredValidator] : []"
                                             /> 
+                                        </div>
+                                        <div v-if="brand_id_interchange === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märkets namn*" />
+                                            <VTextField
+                                                v-model="brand_interchange"
+                                                :rules="[requiredValidator]"
+                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id_interchange !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />

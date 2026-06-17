@@ -25,7 +25,7 @@ class CarInfo
     }
 
     /**
-     * Buscar vehículo por matrícula (license plate)
+     * Search for a vehicle by license plate
      */
     public function getByLicensePlate(string $licensePlate)
     {
@@ -34,7 +34,7 @@ class CarInfo
     }
 
     /**
-     * Buscar vehículo por VIN
+     * Search for a vehicle by VIN
      */
     public function getByVin(string $vin)
     {
@@ -43,7 +43,7 @@ class CarInfo
     }
 
     /**
-     * Realizar la petición HTTP a la API
+     * Send the HTTP request to the API
      */
     protected function makeRequest(string $url)
     {
@@ -57,7 +57,7 @@ class CarInfo
 
             $data = $response->json();
 
-            // Si la respuesta es exitosa, procesamos y mapeamos los datos
+            // If the response is successful, process and map the data
             if ($response->successful() && isset($data['success']) && $data['success'] && isset($data['result'])) {
                 return $this->processResponse($data);
             }
@@ -80,39 +80,39 @@ class CarInfo
     }
 
     /**
-     * Procesar y mapear la respuesta de la API a los campos de nuestra aplicación
+     * Process and map the API response to the fields in our application
      * 
-     * Campos de la API:
-     * - brand: Marca del vehículo
-     * - model: Modelo del vehículo  
-     * - generation: Generación
-     * - chassis: Tipo de carrocería (SUV, Sedan, etc.) -> mapea a car_body_id
-     * - engine_type: Tipo de combustible (Bensin, Diesel, etc.) -> mapea a fuel_id
-     * - model_year: Año del modelo
-     * - vin: Número de chasis/VIN
+     * API fields:
+     * - brand: Vehicle brand
+     * - model: Vehicle model  
+     * - generation: Generation
+     * - chassis: Body type (SUV, Sedan, etc.) -> maps to car_body_id
+     * - engine_type: Fuel type (Gasoline, Diesel, etc.) -> maps to fuel_id
+     * - model_year: Model year
+     * - vin: Chassis number/VIN
      */
     protected function processResponse(array $data): array
     {
         $result = $data['result'] ?? [];
         
-        // Mapear fuel_id basado en engine_type
+        // Map fuel_id based on engine_type
         $fuelId = $this->mapFuelType($result['engine_type'] ?? null);
         
-        // Mapear car_body_id basado en chassis (que en la API es el body type)
+        // Map car_body_id based on the chassis (which is the body type in the API)
         $carBodyId = $this->mapCarBodyType($result['chassis'] ?? null);
         
-        // Mapear brand_id y model_id
+        // Map brand_id and model_id
         $brandData = $this->mapBrandAndModel(
             $result['brand'] ?? null,
             $result['model'] ?? null
         );
 
-        // Mapear gearbox_id basado en attributes
+        // Map gearbox_id based on attributes
         $gearboxId = $this->mapGearboxType($result['attributes'] ?? []);
 
         $latestInspection = $this->mapLatestInspection($result['latest_inspection'] ?? null);
         
-        // Agregar los IDs mapeados al resultado
+        // Add the mapped IDs to the result
         $data['result']['fuel_id'] = $fuelId;
         $data['result']['mileage'] = $latestInspection['inspection_km'];
         $data['result']['control_inspection'] = $latestInspection['next_inspection'];
@@ -124,7 +124,7 @@ class CarInfo
         $data['result']['gearbox_id'] = $gearboxId;
         $data['result']['engine'] = $result['engine'] ?? null;
         $data['result']['car_name'] = $result['car_name'] ?? null;
-        // El VIN es el número de chasis real
+        // The VIN is the actual chassis number
         $data['result']['chassis_number'] = $result['vin'] ?? null;
         $data['result']['color'] = $result['basic_color'] ?? null;
 
@@ -132,7 +132,7 @@ class CarInfo
     }
 
     /**
-     * Mapear el tipo de combustible de la API al fuel_id de nuestra DB
+     * Map the API fuel type to our DB fuel_id
      */
     protected function mapFuelType(?string $engineType): ?int
     {
@@ -142,7 +142,7 @@ class CarInfo
 
         $engineTypeLower = strtolower($engineType);
 
-        // Mapeo de engine_type a labels de fuel en nuestra DB
+        // Map engine_type to fuel labels in our DB
         $fuelMapping = [
             'diesel' => 'diesel',
             'bensin' => 'gasoline',
@@ -156,7 +156,7 @@ class CarInfo
             'elhybrid' => 'hybrid_gasoline',
         ];
 
-        // Buscar coincidencia en el mapeo
+        // Search for a match in the mapping
         foreach ($fuelMapping as $key => $label) {
             if (str_contains($engineTypeLower, $key)) {
                 $fuel = Fuel::firstOrCreate(
@@ -167,10 +167,10 @@ class CarInfo
             }
         }
 
-        // Intentar búsqueda directa por nombre
+        // Attempt direct search by name
         $fuel = Fuel::whereRaw('LOWER(name) LIKE ?', ['%' . $engineTypeLower . '%'])->first();
         
-        // Si no se encuentra, crear un nuevo registro con el nombre original
+        // If not found, create a new record with the original name
         if (!$fuel) {
             $fuel = Fuel::create([
                 'label' => strtolower(str_replace(' ', '_', $engineType)),
@@ -182,8 +182,8 @@ class CarInfo
     }
 
     /**
-     * Mapear el tipo de carrocería de la API al car_body_id de nuestra DB
-     * En la API, el campo "chassis" contiene el tipo de carrocería (SUV, Sedan, etc.)
+     * Map the API body type to our DB car_body_id
+     * In the API, the "chassis" field contains the body type (SUV, Sedan, etc.)
      */
     protected function mapCarBodyType(?string $bodyType): ?int
     {
@@ -193,7 +193,7 @@ class CarInfo
 
         $bodyTypeLower = strtolower($bodyType);
 
-        // Mapeo de body_type a nombres de car_body en nuestra DB
+        // Map body_type to car_body names in our DB
         $bodyMapping = [
             'sedan' => 'Sedan',
             'kombi' => 'Kombi',
@@ -211,7 +211,7 @@ class CarInfo
             'mpv' => 'Minibuss',
         ];
 
-        // Buscar coincidencia en el mapeo
+        // Search for a match in the mapping
         foreach ($bodyMapping as $key => $name) {
             if (str_contains($bodyTypeLower, $key)) {
                 $carBody = CarBody::firstOrCreate(
@@ -222,10 +222,10 @@ class CarInfo
             }
         }
 
-        // Intentar búsqueda directa por nombre
+        // Attempt direct search by name
         $carBody = CarBody::whereRaw('LOWER(name) LIKE ?', ['%' . $bodyTypeLower . '%'])->first();
         
-        // Si no se encuentra, crear un nuevo registro con el nombre original
+        // If not found, create a new record with the original name
         if (!$carBody) {
             $carBody = CarBody::create([
                 'name' => ucfirst($bodyType)
@@ -236,7 +236,7 @@ class CarInfo
     }
 
     /**
-     * Mapear marca y modelo de la API a brand_id y model_id de nuestra DB
+     * Map the API brand and model to our DB brand_id and model_id
      */
     protected function mapBrandAndModel(?string $brandName, ?string $modelName): array
     {
@@ -249,13 +249,13 @@ class CarInfo
             return $result;
         }
 
-        // Buscar la marca
+        // Search for the brand
         $brand = Brand::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($brandName) . '%'])->first();
         
         if ($brand) {
             $result['brand_id'] = $brand->id;
 
-            // Si encontramos la marca, buscar el modelo
+            // If we find the brand, search for the model
             if ($modelName) {
                 $model = CarModel::where('brand_id', $brand->id)
                     ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($modelName) . '%'])
@@ -269,11 +269,11 @@ class CarInfo
     }
 
     /**
-     * Mapear la caja de cambios desde los attributes de la API
+     * Map the gearbox type from the API attributes
      */
     protected function mapGearboxType(array $attributes): ?int
     {
-        // Buscar el atributo de växellåda (caja de cambios)
+        // Search for the växellåda (gearbox) attribute
         foreach ($attributes as $attr) {
             if (isset($attr['id']) && $attr['id'] === 'g7' && isset($attr['attributes'])) {
                 foreach ($attr['attributes'] as $gearAttr) {
@@ -290,8 +290,8 @@ class CarInfo
     }
 
     /**
-     * Mapear la última inspección desde la API
-     * Retorna un array con los campos: type, date, km (dividido entre 10), next_inspection
+     * Map the latest inspection from the API
+     * Returns an array with the fields: type, date, km (divided by 10), next_inspection
      */
     protected function mapLatestInspection(?array $latestInspection): array
     {
