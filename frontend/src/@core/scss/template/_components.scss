@@ -372,11 +372,16 @@ body .v-btn {
 
     &:hover,
     &:focus {
-      background-color: #0fd84e !important;
+      background: linear-gradient(
+        90deg,
+        #57f287 0%,
+        #00eeb0 50%,
+        #00ffff 100%
+      ) !important;
     }
 
     &:active {
-      background-color: #0d6e2d !important;
+      background: #009875 !important;
 
       .v-btn__content {
         color: #1c2925 !important;
