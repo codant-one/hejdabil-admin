@@ -68,6 +68,14 @@ class CommissionVehicle extends Model
      /**** Public methods ****/
      public static function createVehicle($request) {
 
+        // Si brand_id es 0, crear nueva marca
+        if ($request->brand_id === '0' && $request->brand) {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
+
         if($request->model_id === '0') {
             $model = CarModel::create([
                 'name' => $request->model,
@@ -111,6 +119,14 @@ class CommissionVehicle extends Model
     }
 
     public static function updateVehicle($request, $vehicle) {
+
+        // Si brand_id es 0, crear nueva marca
+        if ($request->brand_id === '0' && $request->brand) {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
 
         if($request->model_id === '0') {
             $model = CarModel::create([

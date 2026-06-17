@@ -98,6 +98,7 @@ const vehicle_id = ref(null)
 const reg_num = ref('')
 const mileage = ref(null)
 const brand_id = ref(null)
+const brand = ref(null)
 const model_id = ref(null)
 const model = ref(null)
 const generation = ref(null)
@@ -432,6 +433,19 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`
 }
 
+const getBrands = computed(() => {
+  const brands_ = brands.value.map((brand) => ({
+      title: brand.name,
+      value: brand.id
+  }))
+
+  if (brands.value.length > 0) {
+      brands_.push({ title: 'En annan..', value: 0 })
+  }
+
+  return brands_
+})
+
 const getModels = computed(() => {
     const models = modelsByBrand.value.map((model) => ({
         title: model.name,
@@ -620,6 +634,12 @@ const searchVehicleByPlate = async () => {
             if (carRes.result.brand_id) {
                 brand_id.value = carRes.result.brand_id
                 selectBrand(brand_id.value)
+            } else if (carRes.result.brand_name) {
+                // Si no se encontró la brand en la DB, usar el campo de texto libre
+                brand_id.value = 0
+                brand.value = carRes.result.brand_name
+
+                getModels.value.push({ title: 'En annan..', value: 0 })
             }
             
             // Actualizar modelo (Modell)
@@ -1529,7 +1549,8 @@ const getTabValidationErrors = () => {
 
     const hasTab0Errors = !reg_num.value ||
                           !mileage.value ||
-                          !brand_id.value ||
+                          (brand_id.value !== 0 && !brand_id.value) || // si no es 0 y está vacío → error
+                          (brand_id.value === 0 && !brand.value) || //
                           (model_id.value !== 0 && !model_id.value) ||
                           (model_id.value === 0 && !model.value) ||
                           !car_body_id.value ||
@@ -1685,6 +1706,7 @@ const onSubmit = async () => {
                 formData.append('_method', 'POST')
                 formData.append('reg_num', reg_num.value)
                 formData.append('brand_id', brand_id.value)
+                formData.append('brand', brand.value)
                 formData.append('model_id', model_id.value)
                 formData.append('model', model.value)
                 formData.append('car_body_id', car_body_id.value)
@@ -1989,20 +2011,25 @@ onBeforeRouteLeave((to, from, next) => {
                                         :rules="[requiredValidator]"
                                     />
                                 </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
+                                <div :style="windowWidth < 1024 ? 'width: 100%;' : brand_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                     <AppAutocomplete
+                                        :menu-props="{ maxHeight: '300px' }"
                                         v-model="brand_id"
-                                        :items="brands"
-                                        :item-title="item => item.name"
-                                        :item-value="item => item.id"
+                                        :items="getBrands"
                                         autocomplete="off"
                                         clearable
                                         clear-icon="tabler-x"
                                         @update:modelValue="selectBrand"
                                         @click:clear="onClearBrand"
                                         :rules="[requiredValidator]"
-                                        :menu-props="{ maxHeight: '300px' }"
+                                    />
+                                </div>
+                                <div v-if="brand_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märkets namn*" />
+                                    <VTextField
+                                        v-model="brand"
+                                        :rules="[requiredValidator]"
                                     />
                                 </div>
                                 <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">

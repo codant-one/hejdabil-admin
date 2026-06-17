@@ -75,6 +75,14 @@ class Offer extends Model
     /**** Public methods ****/
     public static function createOffer($request) {
 
+        // Si brand_id es 0, crear nueva marca
+        if ($request->brand_id === '0' && $request->brand) {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
+
         if($request->model_id === '0') {//other model
             $model = CarModel::create([
                 'name' => $request->model,
@@ -131,6 +139,14 @@ class Offer extends Model
     }
 
     public static function updateOffer($request, $offer) {
+
+        // Si brand_id es 0, crear nueva marca
+        if ($request->brand_id === '0' && $request->brand) {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
 
         if($request->model_id === '0') {//other model
             $model = CarModel::create([

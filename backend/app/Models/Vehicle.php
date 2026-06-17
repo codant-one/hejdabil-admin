@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
+use App\Models\Brand;
 use App\Models\CarModel;
 use App\Models\Client;
 use App\Models\VehicleClient;
@@ -218,7 +219,7 @@ class Vehicle extends Model
     }
 
     /**** Public methods ****/
-    public static function createVehicle($request) {
+    public static function createVehicle($request) {        
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
         $isUser = Auth::user()->getRoleNames()[0] === 'User';
@@ -229,6 +230,14 @@ class Vehicle extends Model
             default => $request->supplier_id,
         };
 
+        // Si brand_id es 0, crear nueva marca
+        if ($request->brand_id === '0' && $request->brand) {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
+
         // Si model_id es 0, crear nuevo modelo
         $model_id = null;
         if ($request->model_id === '0' && $request->model && $request->brand_id) {
@@ -237,6 +246,8 @@ class Vehicle extends Model
                 'brand_id' => $request->brand_id
             ]);
             $model_id = $model->id;
+
+            $request->merge(['model_id' => $model->id]);
         } elseif ($request->model_id && $request->model_id !== 'null' && $request->model_id !== '0') {
             $model_id = $request->model_id;
         }
@@ -398,6 +409,14 @@ class Vehicle extends Model
 
     public static function updateVehicle($request, $vehicle) {
 
+        // Si brand_id es 0
+        if ($request->brand_id === '0') {
+            $brand = Brand::create([
+                'name' => $request->brand
+            ]);
+            $request->merge(['brand_id' => $brand->id]);
+        }
+
         if($request->model_id === '0') {//other model
             $model = CarModel::create([
                 'name' => $request->model,
@@ -405,6 +424,7 @@ class Vehicle extends Model
             ]);
 
             $model_id = $model->id;
+            $request->merge(['model_id' => $model->id]);
         } else 
             $model_id = $request->model_id === 'null' ? null : $request->model_id;
 

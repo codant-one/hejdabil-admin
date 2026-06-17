@@ -661,6 +661,7 @@ class Agreement extends Model
         if ($request->has("interchange") && $request->interchange === 'true') {
             $request->merge(['reg_num' => $request->reg_num_interchange ]);
             $request->merge(['brand_id' => $request->brand_id_interchange ]);
+            $request->merge(['brand' => $request->brand_interchange ]);
             $request->merge(['model_id' => $request->model_id_interchange ]);
             $request->merge(['model' => $request->model_interchange ]);
             $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
@@ -745,6 +746,7 @@ class Agreement extends Model
         if ($request->has("interchange") && $request->interchange === 'true') {
             $request->merge(['reg_num' => $request->reg_num_interchange ]);
             $request->merge(['brand_id' => $request->brand_id_interchange ]);
+            $request->merge(['brand' => $request->brand_interchange ]);
             $request->merge(['model_id' => $request->model_id_interchange ]);
             $request->merge(['model' => $request->model_interchange ]);
             $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
@@ -873,6 +875,11 @@ class Agreement extends Model
 
             $vehicle = Vehicle::createVehicle($vehicleRequest);
             $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
+
+            $request->merge([
+                'brand_id' => $vehicleRequest->brand_id,
+                'model_id' => $vehicleRequest->model_id
+            ]);
 
         } else {// existe pero no tiene contrato
             $vehicle = Vehicle::find($request->vehicle_id);
