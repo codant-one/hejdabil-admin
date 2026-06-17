@@ -372,13 +372,9 @@ body .v-btn {
 
     &:hover,
     &:focus {
-      border: none !important;
-      background: linear-gradient(
-        90deg,
-        #57f287 0%,
-        #00eeb0 50%,
-        #00ffff 100%
-      ) !important;
+      background:
+      linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%) padding-box,
+      linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%) border-box !important;
     }
 
     &:active {
