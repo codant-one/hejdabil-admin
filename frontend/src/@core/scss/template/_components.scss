@@ -372,6 +372,7 @@ body .v-btn {
 
     &:hover,
     &:focus {
+      border: none !important;
       background: linear-gradient(
         90deg,
         #57f287 0%,
