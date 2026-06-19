@@ -209,11 +209,11 @@ class Agreement extends Model
         if ($filters->get('client_id') !== null) {
             $query->where(function($q) use ($filters) {
                 // Client through commission (Type 3 - Commission)
-                $q->whereHas('commission.client', function($subQ) use ($filters) {
+                /*$q->whereHas('commission.client', function($subQ) use ($filters) {
                     $subQ->where('id', $filters->get('client_id'));
-                })
+                })*/
                 // Client through agreement_client (All types)
-                ->orWhereHas('agreement_client.client', function($subQ) use ($filters) {
+                $q->whereHas('agreement_client.client', function($subQ) use ($filters) {
                     $subQ->where('id', $filters->get('client_id'));
                 })
                 // Client through vehicle_client (Type 1 - Sales, Type 2 - Purchase)

@@ -702,6 +702,12 @@ function getActivityDetailMode(activity, oldValues, newValues) {
   return 'default'
 }
 
+function isCreateOrDeleteActivity(activity) {
+  const normalizedAction = String(activity?.action_type ?? '').toLowerCase()
+
+  return normalizedAction.includes('create') || normalizedAction.includes('delete') || normalizedAction.includes('sell') || normalizedAction.includes('cancel')
+}
+
 function buildCreatedActivityChanges(activity, newValues) {
   return getActivityVisibleFieldEntries(activity, Object.keys(newValues), {}, newValues)
     .filter(fieldEntry => hasRenderableActivityFieldValue(newValues, fieldEntry))
@@ -775,6 +781,16 @@ function getActivityChangeSummary(activity) {
   const metadata = parseActivityMetadata(activity)
   const oldValues = normalizeActivityValueMap(metadata.old_values)
   const newValues = normalizeActivityValueMap(metadata.new_values)
+  const normalizedAction = String(activity?.action_type ?? '').toLowerCase()
+  const isCreateOrDeleteAction = normalizedAction.includes('create') || normalizedAction.includes('delete') || normalizedAction.includes('sell') || normalizedAction.includes('cancel')
+
+  if (isCreateOrDeleteAction) {
+    return {
+      detailMode: 'default',
+      changes: [],
+    }
+  }
+
   const detailMode = getActivityDetailMode(activity, oldValues, newValues)
 
   if (detailMode === 'created') {
@@ -845,7 +861,13 @@ function getActivityEventLabel(activity) {
 }
 
 function getActivityDescription(activity) {
-  return activity?.title || activity?.description || '-'
+  const title = normalizeActivityValue(activity?.title)
+  const description = normalizeActivityValue(activity?.description)
+
+  if (title && description && title !== description)
+    return `${title} - ${description}`
+
+  return title || description || '-'
 }
 
 function getActivityTitle(activity) {
@@ -1195,7 +1217,7 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1226,7 +1248,7 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1257,7 +1279,7 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1288,7 +1310,7 @@ onBeforeUnmount(() => {
                                       >
                                         <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                         <template v-else>
-                                          <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                          <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                           <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1376,7 +1398,7 @@ onBeforeUnmount(() => {
                   </div>
               </div>
             </div>
-            <div class="mb-6">
+            <div :class="!isCreateOrDeleteActivity(activity) ? 'mb-6' : ''">
               <div class="expansion-panel-item-label">Beskrivning</div>
               <div class="expansion-panel-item-value">
                 <div class="activity-description-text">
@@ -1385,7 +1407,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-            <div class="mb-6 p-4 bg-neutral-2 activity-expansion-pill">
+            <div v-if="!isCreateOrDeleteActivity(activity)" class="p-4 bg-neutral-2 activity-expansion-pill">
               <div class="expansion-panel-item-label">{{ activity.detailTitle }}</div>
               <div class="expansion-panel-item-value">
 
@@ -1414,7 +1436,7 @@ onBeforeUnmount(() => {
                                   >
                                     <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                     <template v-else>
-                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1445,7 +1467,7 @@ onBeforeUnmount(() => {
                                   >
                                     <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                     <template v-else>
-                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1476,7 +1498,7 @@ onBeforeUnmount(() => {
                                   >
                                     <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                     <template v-else>
-                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1507,7 +1529,7 @@ onBeforeUnmount(() => {
                                   >
                                     <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                     <template v-else>
-                                      <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                      <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                       <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1583,9 +1605,7 @@ onBeforeUnmount(() => {
                       <div v-if="activity.descriptionTitle" class="activity-card-subtitle">
                         {{ activity.descriptionTitle }}
                       </div>
-                      <div v-if="activity.descriptionSubtitle" class="activity-card-subtitle-muted">
-                        {{ activity.descriptionSubtitle }}
-                      </div>
+                 
                     </div>
                   </div>
 
@@ -1623,7 +1643,7 @@ onBeforeUnmount(() => {
                                 >
                                   <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                   <template v-else>
-                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1652,7 +1672,7 @@ onBeforeUnmount(() => {
                                 >
                                   <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                   <template v-else>
-                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1681,7 +1701,7 @@ onBeforeUnmount(() => {
                                 >
                                   <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                   <template v-else>
-                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -1712,7 +1732,7 @@ onBeforeUnmount(() => {
                                 >
                                   <td v-if="row.note" colspan="5">{{ row.note }}</td>
                                   <template v-else>
-                                    <td class="w-40">{{ row.values[1] ?? '-' }}</td>
+                                    <td class="w-30">{{ row.values[1] ?? '-' }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[2] ?? '0.00') }}</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
                                     <td class="text-right" :class="row.values[5] > 0 ? 'w-15' : 'w-20'">{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
@@ -2249,6 +2269,7 @@ onBeforeUnmount(() => {
       align-items: stretch;
       flex-direction: column;
       width: 100%;
+      gap: 0 !important;
     }
 
     .activity-card-change-rich {
@@ -2277,7 +2298,7 @@ onBeforeUnmount(() => {
       color: #8A948F;
       font-size: 12px;
       margin-top: 8px;
-      padding-left: 50px;
+      padding-left: 40px;
     }
 
     .activities-table {
@@ -2315,7 +2336,7 @@ onBeforeUnmount(() => {
 
     .activity-summary-row td {
         background-color: #FFFFFF;
-        border-bottom: 1px solid #E7E7E7 !important;
+        border-bottom: 1px solid transparent !important;
         line-height: 16px;
         letter-spacing: 0;
         color: #1C2925 !important;
@@ -2496,7 +2517,7 @@ onBeforeUnmount(() => {
     .activity-detail-values.is-rich {
       align-items: stretch;
       flex-direction: column;
-      gap: 4px;
+      gap: 0;
       width: 100%;
     }
 
@@ -2568,18 +2589,18 @@ onBeforeUnmount(() => {
 
     .activities-table .activity-detail-row .billing-detail-table td {
       height: auto !important;
-      border-bottom: 1px solid #E7E7E7 !important;
+      border-bottom: 1px solid transparent !important;
       color: #454545 !important;
       font-size: 12px !important;
       font-weight: 400 !important;
-      padding: 8px 16px 8px 0 !important;
+      padding: 8px 0 8px 0 !important;
       text-align: left;
       vertical-align: top;
     }
 
     .activities-table .activity-detail-row .billing-detail-table td:first-child {
       color: #878787 !important;
-      min-width: 132px;
+      //min-width: 132px;
     }
 
     .activities-table .activity-detail-row .billing-detail-table td:last-child {
@@ -2602,13 +2623,11 @@ onBeforeUnmount(() => {
 
     .activities-table .activity-detail-row .activity-detail-created .billing-detail-table td,
     .activities-table .activity-detail-row .activity-detail-new .billing-detail-table td {
-      border-bottom-color: rgba(0, 140, 145, 0.18) !important;
       color: #006D5C !important;
     }
 
     .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td,
     .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td {
-      border-bottom-color: rgba(240, 98, 98, 0.18) !important;
       color: #FF4D4F !important;
     }
 
@@ -2629,6 +2648,128 @@ onBeforeUnmount(() => {
 
     .activities-table .activity-detail-row .activity-detail-deleted .billing-detail-table td[colspan='5'],
     .activities-table .activity-detail-row .activity-detail-old .billing-detail-table td[colspan='5'] {
+      color: #FF4D4F !important;
+    }
+
+    .activity-card .billing-detail-table td {
+      height: auto !important;
+      border-bottom: 1px solid transparent !important;
+      color: #454545 !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+      padding: 8px 0 8px 0 !important;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .activity-card .billing-detail-table td:first-child {
+      color: #878787 !important;
+      //min-width: 132px;
+    }
+
+    .activity-card .billing-detail-table td:last-child {
+      padding-right: 0 !important;
+    }
+
+    .activity-card .billing-detail-table tr:first-child td {
+      padding-top: 0;
+    }
+
+    .activity-card .billing-detail-table tr:last-child td {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .activity-card .billing-detail-table td[colspan='5'] {
+      color: #878787;
+      padding-right: 0;
+    }
+
+    .activity-card .activity-card-change-new .billing-detail-table td {
+      color: #006D5C !important;
+    }
+
+    .activity-card .activity-card-change-old .billing-detail-table td {
+      color: #FF4D4F !important;
+    }
+
+    .activity-card .activity-card-change-new .billing-detail-table td:first-child {
+      color: #006D5C !important;
+    }
+
+    .activity-card .activity-card-change-old .billing-detail-table td:first-child {
+      color: #FF4D4F !important;
+    }
+
+    .activity-card .activity-card-change-new .billing-detail-table td[colspan='5'] {
+      color: #006D5C !important;
+    }
+
+    .activity-card .activity-card-change-old .billing-detail-table td[colspan='5'] {
+      color: #FF4D4F !important;
+    }
+
+    .activity-expansion-pill .billing-detail-table td {
+      height: auto !important;
+      border-bottom: 1px solid transparent !important;
+      color: #454545 !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+      padding: 8px 0 8px 0 !important;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .activity-expansion-pill .billing-detail-table td:first-child {
+      color: #878787 !important;
+      //min-width: 132px;
+    }
+
+    .activity-expansion-pill .billing-detail-table td:last-child {
+      padding-right: 0 !important;
+    }
+
+    .activity-expansion-pill .billing-detail-table tr:first-child td {
+      padding-top: 0;
+    }
+
+    .activity-expansion-pill .billing-detail-table tr:last-child td {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .activity-expansion-pill .billing-detail-table td[colspan='5'] {
+      color: #878787;
+      padding-right: 0;
+    }
+
+    .activity-expansion-pill .activity-detail-created .billing-detail-table td,
+    .activity-expansion-pill .activity-detail-new .billing-detail-table td {
+      color: #006D5C !important;
+    }
+
+    .activity-expansion-pill .activity-detail-deleted .billing-detail-table td,
+    .activity-expansion-pill .activity-detail-old .billing-detail-table td {
+      color: #FF4D4F !important;
+    }
+
+    .activity-expansion-pill .activity-detail-created .billing-detail-table td:first-child,
+    .activity-expansion-pill .activity-detail-new .billing-detail-table td:first-child {
+      color: #006D5C !important;
+    }
+
+    .activity-expansion-pill .activity-detail-deleted .billing-detail-table td:first-child,
+    .activity-expansion-pill .activity-detail-old .billing-detail-table td:first-child {
+      color: #FF4D4F !important;
+    }
+
+    .activity-expansion-pill .activity-detail-created .billing-detail-table td[colspan='5'],
+    .activity-expansion-pill .activity-detail-new .billing-detail-table td[colspan='5'] {
+      color: #006D5C !important;
+    }
+
+    .activity-expansion-pill .activity-detail-deleted .billing-detail-table td[colspan='5'],
+    .activity-expansion-pill .activity-detail-old .billing-detail-table td[colspan='5'] {
       color: #FF4D4F !important;
     }
 
@@ -2666,7 +2807,11 @@ onBeforeUnmount(() => {
             max-width: 320px;
       }
 
-      .activity-card-detail-title, .activity-card-changes {
+      .activity-card {
+        padding: 16px;
+      }
+
+      .activity-card-detail-title, .activity-card-changes, .activity-card-empty {
         padding: 0;
       }
 

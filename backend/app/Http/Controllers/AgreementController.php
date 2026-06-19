@@ -103,8 +103,7 @@ class AgreementController extends Controller
                             'orderBy',
                             'supplier_id',
                             'status',
-                            'agreement_type_id',
-                            'client_id'
+                            'agreement_type_id'
                         ])
                     );
 
