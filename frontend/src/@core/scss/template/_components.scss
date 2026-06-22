@@ -400,6 +400,23 @@ body .v-btn {
 
   &.btn-transparent {
     background-color: transparent !important;
+
+    &:hover,
+    &:focus {
+      background-color: #BDD2C8 !important;
+    }
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    &:active {
+      background-color: #1C2925 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
   }
   
   &.btn-ghost {

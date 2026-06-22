@@ -5,13 +5,12 @@ import { useDisplay } from 'vuetify'
 import { useActivitiesStore } from '@/stores/useActivities'
 import { formatNumber } from '@/@core/utils/formatters'
 import { getActivityVisibleFields } from './activityVisibleFields'
-import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DefaultLayoutWithoutVerticalNav from '@/layouts/components/DefaultLayoutWithoutVerticalNav.vue'
 import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import { ref } from 'vue'
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
 const activitiesStore = useActivitiesStore()
 const emitter = inject('emitter')
@@ -31,7 +30,8 @@ const isRequestOngoing = ref(true)
 const expandedActivityId = ref(null)
 
 const filtreraMobile = ref(false);
-const isFilterDialogVisible = ref(false)
+const isFilterDialogVisible = ref(false);
+const isFilterDateVisible = ref(false)
 
 const userData = ref(null)
 const user_id = ref(null)
@@ -43,12 +43,6 @@ const userId = ref(null)
 const module = ref(null)
 const filterDateRange = ref(null)
 const mode = ref('Lista')
-
-const activitiesFilterDatePickerConfig = {
-  inline: true,
-  mode: 'range',
-  rangePresets: true,
-}
 
 const modules = [
   { name: 'Kunder', id: 'clients' },
@@ -999,9 +993,7 @@ onBeforeUnmount(() => {
           <span class="title-activities">Aktivitetshistorik</span>
         </div>
 
-        <VCardText 
-          class="d-flex align-center justify-space-between margin-activities p-0"
-          :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
+        <VCardText class="d-flex align-center justify-space-between margin-activities p-0 gap-2">
             <!-- 👉 Search  -->
             <div class="search">
                 <VTextField v-model="searchQuery" placeholder="Sök" clearable />
@@ -1019,8 +1011,8 @@ onBeforeUnmount(() => {
               >
                   <template #selection="{ item }">
                       <div class="activity-mode-option">
-                          <VIcon :icon="item.raw.icon" size="24" />
-                          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">{{ item.raw.title }}</span>
+                        <VIcon :icon="item.raw.icon" size="24" />
+                        {{ item.raw.title }}
                       </div>
                   </template>
 
@@ -1049,15 +1041,16 @@ onBeforeUnmount(() => {
                 @click="isFilterDialogVisible = true"
                 >
                 <VIcon icon="custom-filter" size="24" />
-                <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+                Filtrera efter
             </VBtn>
 
-            <VBtn 
+            <VBtn
+              id="activities-filter-button"
               class="btn-transparent px-3"
-              :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
-              @click="filtreraMobile = true"
-            >
-              <VIcon icon="custom-filter" size="24" />
+              :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+              @click="isFilterDateVisible = true">
+                <VIcon icon="custom-calendar-2" size="24" />
+                <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Datum</span>
             </VBtn>
 
             <div
@@ -1072,6 +1065,44 @@ onBeforeUnmount(() => {
                 />
             </div>
         </VCardText>
+
+        <VCardText 
+          class=" align-center margin-activities p-0 gap-2 mt-4"
+          :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+          >
+
+          <VBtn 
+            class="btn-transparent px-3"
+            :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+            @click="filtreraMobile = true"
+          >
+            <VIcon icon="custom-filter" size="24" />
+            Filtrera efter
+          </VBtn>
+
+          <VBtn 
+            class="btn-transparent px-3"
+            :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+            @click="isFilterDateVisible = true"
+          >
+            <VIcon icon="custom-calendar-2" size="24" />
+            Datum
+          </VBtn>
+        </VCardText>
+
+        <ExportDateMenu
+          v-model="filterDateRange"
+          v-model:menuVisible="isFilterDateVisible"
+          :show-activator="false"
+          :is-mobile="windowWidth < 1024"
+          :reset-on-open="false"
+          activator="#activities-filter-button"
+          button-text="Tillämpa"
+          button-icon="custom-filter"
+          picker-label="Filtrera efter datum"
+          picker-placeholder="Välj datum"
+          :show-clear="true"
+        />
       </div>
 
       <div
@@ -1884,16 +1915,6 @@ onBeforeUnmount(() => {
               clear-icon="tabler-x"
               :menu-props="{ maxHeight: '300px' }"/>
           </VCol>
-
-          <VCol cols="12" md="12" class="pb-0">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Filtrera efter datum" />
-            <AppDateTimePicker
-              v-model="filterDateRange"
-              :config="activitiesFilterDatePickerConfig"
-              :is-mobile="windowWidth < 1024"
-              placeholder="Välj datum"
-            />
-          </VCol>
         </VRow>
       </VCardText>
 
@@ -1956,15 +1977,6 @@ onBeforeUnmount(() => {
               clearable
               clear-icon="tabler-x"
               :menu-props="{ maxHeight: '300px' }"/>
-        </VListItem>
-        <VListItem class="form pt-6 d-none">
-          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Filtrera efter datum" />
-          <AppDateTimePicker
-            v-model="filterDateRange"
-            :config="activitiesFilterDatePickerConfig"
-            :is-mobile="windowWidth < 1024"
-            placeholder="Välj datum"
-          />
         </VListItem>
         <VListItem class="form mt-5">
           <VBtn class="btn-gradient w-100" @click="filtreraMobile = false">

@@ -52,6 +52,14 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showClear: {
+    type: Boolean,
+    default: false,
+  },
+  buttonClear: {
+    type: String,
+    default: 'Remsa',
+  },
 })
 
 const emit = defineEmits([
@@ -169,6 +177,14 @@ const applyFilter = () => {
   emit('update:filtrera', true)
 }
 
+const clearFilter = () => {
+  pendingValue.value = null
+  validationError.value = ''
+  filtrera.value = false
+  emit('update:modelValue', null)
+  emit('update:filtrera', false)
+}
+
 const resolvedMenuVisible = computed({
   get: () => (props.menuVisible === undefined ? internalMenuVisible.value : props.menuVisible),
   set: value => {
@@ -245,7 +261,7 @@ const onPickerUpdate = value => {
         {{ validationError }}
       </div>
 
-      <div :class="isSingleDateTimePickerMode ? 'd-flex mt-3' : 'd-flex justify-end mt-2'">
+      <div v-if="!showClear" :class="isSingleDateTimePickerMode ? 'd-flex mt-3' : 'd-flex justify-end mt-2'">
         <VBtn
           :class="isSingleDateTimePickerMode ? 'btn-light px-3 w-100' : 'btn-light px-3'"
           @click="applyFilter"
@@ -254,6 +270,27 @@ const onPickerUpdate = value => {
           <VIcon :icon="buttonIcon" size="24" />
           <span :class="isSingleDateTimePickerMode ? '' : 'd-none d-md-block'">{{ buttonText }}</span>
         </VBtn>
+      </div>
+
+      <div v-else class="d-flex gap-2">
+        <div :class="isSingleDateTimePickerMode ? 'd-flex mt-3' : 'd-flex justify-end mt-2'">
+          <VBtn
+            :class="isSingleDateTimePickerMode ? 'btn-light px-3 w-100' : 'btn-light px-3'"
+            @click="clearFilter"
+            :style="isSingleDateTimePickerMode ? undefined : 'width: 264px;'"
+          >
+            <span :class="isSingleDateTimePickerMode ? '' : 'd-none d-md-block'">{{ buttonClear }}</span>
+          </VBtn>
+        </div>
+        <div :class="isSingleDateTimePickerMode ? 'd-flex mt-3' : 'd-flex justify-end mt-2'">
+          <VBtn
+            :class="isSingleDateTimePickerMode ? 'btn-gradient px-3 w-100' : 'btn-gradient px-3'"
+            @click="applyFilter"
+            :style="isSingleDateTimePickerMode ? undefined : 'width: 264px;'"
+          >
+            <span :class="isSingleDateTimePickerMode ? '' : 'd-none d-md-block'">{{ buttonText }}</span>
+          </VBtn>
+        </div>
       </div>
     </VCard>
   </VMenu>
@@ -296,13 +333,30 @@ const onPickerUpdate = value => {
           {{ validationError }}
         </div>
 
-        <div class="d-flex justify-end mt-2 mt-auto">
+        <div v-if="!showClear" class="d-flex justify-end mt-2 mt-auto">
           <VBtn
             class="btn-light px-3"
             block
             @click="applyFilter"
           >
             <VIcon :icon="buttonIcon" size="24" />
+            {{ buttonText }}
+          </VBtn>
+        </div>
+
+        <div v-else class="d-flex gap-2 mt-2 mt-auto">
+          <VBtn
+            class="btn-light px-3"
+            block
+            @click="clearFilter"
+          >
+            {{ buttonClear }}
+          </VBtn>
+          <VBtn
+            class="btn-gradient px-3"
+            block
+            @click="applyFilter"
+          >
             {{ buttonText }}
           </VBtn>
         </div>
