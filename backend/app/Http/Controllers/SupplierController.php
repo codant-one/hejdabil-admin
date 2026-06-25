@@ -59,6 +59,7 @@ class SupplierController extends Controller
                     ])
                     ->withTrashed()
                     ->clientsCount()
+                    ->acceptedSmsCount()
                     ->whereNull('boss_id')
                     ->applyFilters(
                     $request->only([

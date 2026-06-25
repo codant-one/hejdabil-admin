@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 use App\Events\ForceLogoutUserEvent;
@@ -82,6 +83,20 @@ class Supplier extends Model
                         ->join('clients as c', 'c.supplier_id', '=', 's.id')
                         ->whereColumn('s.id', 'suppliers.id');
                 }]);
+    }
+
+    public function scopeAcceptedSmsCount($query)
+    {
+        $startOfMonth = Carbon::now()->startOfMonth()->toDateTimeString();
+        $endOfToday = Carbon::now()->endOfDay()->toDateTimeString();
+
+        return $query->addSelect(['sms_accepted_count' => function ($q) use ($startOfMonth, $endOfToday) {
+            $q->selectRaw('COUNT(*)')
+                ->from('sms_messages')
+                ->whereColumn('sms_messages.supplier_id', 'suppliers.id')
+                ->where('sms_messages.billable_count', '>', 0)
+                ->whereBetween('sms_messages.created_at', [$startOfMonth, $endOfToday]);
+        }]);
     }
 
     public function scopeWhereSearch($query, $search) {

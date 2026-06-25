@@ -567,7 +567,7 @@ const downloadCSV = async () => {
                   {{ supplier.sms_sender ?? '' }}
                 </td>
                 <td class="text-wrap w-15">
-                  {{ supplier.sms_sender ?? '' }}
+                  {{ supplier.sms_accepted_count ?? 0 }}
                 </td>
                 <td class="text-wrap w-15">
                   {{ supplier.client_count }}
