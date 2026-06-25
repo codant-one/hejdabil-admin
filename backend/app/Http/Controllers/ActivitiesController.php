@@ -70,11 +70,14 @@ class ActivitiesController extends Controller
             );
 
             $supplier_id = null;
+            $current_supplier_id = null;
 
             if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
                 $supplier_id = Auth::user()->supplier->id;
+                $current_supplier_id = Auth::user()->supplier->id;
             } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
                 $supplier_id = Auth::user()->supplier->boss_id;
+                $current_supplier_id = Auth::user()->supplier->id;
             }
 
             return response()->json([
@@ -83,7 +86,7 @@ class ActivitiesController extends Controller
                     'activities' => $activities,
                     'activitiesTotalCount' => $activities->total(),
                     'suppliers' => CacheService::getActiveSuppliers(),
-                    'users' => CacheService::getActiveUsersSuppliers($supplier_id)
+                    'users' => CacheService::getActiveUsersSuppliers($supplier_id, $current_supplier_id)
                 ]
             ]);
 
