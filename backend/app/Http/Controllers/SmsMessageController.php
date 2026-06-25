@@ -124,13 +124,10 @@ class SmsMessageController extends Controller
         }
 
         if ($user->hasAnyRole(['SuperAdmin', 'Administrator'])) {
-            $supplierScope = trim((string) $request->input('supplier_scope', 'all'));
-
-            return match ($supplierScope) {
-                'with_supplier' => ['type' => 'with_supplier'],
-                'without_supplier' => ['type' => 'without_supplier'],
-                default => ['type' => 'all'],
-            };
+            return [
+                'type' => 'supplier_account',
+                'supplier_id' => $user->supplier?->boss_id ?? $user->supplier?->id,
+            ];
         }
 
         return ['type' => 'without_supplier'];
@@ -146,7 +143,7 @@ class SmsMessageController extends Controller
                 return;
             }
 
-            $query->whereRaw('1 = 0');
+            $query->whereNull('supplier_id');
             return;
         }
 
