@@ -1131,10 +1131,13 @@ onBeforeUnmount(() => {
           </thead>
 
           <tbody class="activities-table-body">
-            <template v-for="activity in displayActivities" :key="activity.id">
+            <template v-for="(activity, activityIndex) in displayActivities" :key="activity.id">
               <tr
                 class="activity-summary-row"
-                :class="{ 'is-expanded': isActivityExpanded(activity.id) }"
+                :class="{
+                  'is-expanded': isActivityExpanded(activity.id),
+                  'is-last-summary-row': activityIndex === displayActivities.length - 1,
+                }"
                 @click="toggleActivity(activity.id)"
               >
                 <td class="text-center">
@@ -2343,12 +2346,12 @@ onBeforeUnmount(() => {
     }
 
     .activity-summary-row {
-        cursor: pointer;
+      cursor: pointer;
     }
 
     .activity-summary-row td {
         background-color: #FFFFFF;
-        border-bottom: 1px solid transparent !important;
+        border-bottom: 1px solid #E7E7E7 !important;
         line-height: 16px;
         letter-spacing: 0;
         color: #1C2925 !important;
@@ -2363,6 +2366,18 @@ onBeforeUnmount(() => {
 
     .activity-summary-row.is-expanded td {
         border-bottom-color: transparent !important;
+    }
+
+    .activity-summary-row.is-expanded {
+        border-bottom-color: transparent !important;
+    }
+
+    .activity-summary-row.is-last-summary-row {
+      border-bottom: none !important;
+    }
+
+    .activity-summary-row.is-last-summary-row td {
+      border-bottom: none !important;
     }
 
     .activity-module-pill {

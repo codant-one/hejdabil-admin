@@ -492,6 +492,7 @@ const downloadCSV = async () => {
                 <th scope="col"> STATUS </th>
                 <th scope="col"> SWISH </th>
                 <th scope="col"> SENDER </th>
+                <th scope="col"> SMS </th>
                 <th scope="col"> # KUNDER </th>
                 <th scope="col"> SKAPAD AV </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
@@ -561,6 +562,9 @@ const downloadCSV = async () => {
                   <span v-if="supplier.is_payout === 1">
                     {{ supplier.payout_number ?? '' }}
                   </span>
+                </td>
+                <td class="text-wrap w-15">
+                  {{ supplier.sms_sender ?? '' }}
                 </td>
                 <td class="text-wrap w-15">
                   {{ supplier.sms_sender ?? '' }}
