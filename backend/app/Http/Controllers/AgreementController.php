@@ -968,7 +968,17 @@ class AgreementController extends Controller
                 ], 422);
             }
 
-            $agreements = $this->agreementInfoSupplierScopedQuery(Agreement::query())
+            $query = Agreement::query();
+            $user = Auth::user();
+
+            // Keep visibility parity with list selection: restrict supplier/user,
+            // but do not force admin/superadmin to whereNull('supplier_id').
+            if ($user?->hasRole('Supplier'))
+                $query->where('supplier_id', $user->supplier->id);
+            elseif ($user?->hasRole('User'))
+                $query->where('supplier_id', $user->supplier->boss_id);
+
+            $agreements = $query
                 ->whereIn('id', $ids)
                 ->get(['id', 'file']);
 
