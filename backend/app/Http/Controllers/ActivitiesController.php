@@ -53,6 +53,8 @@ class ActivitiesController extends Controller
                                     ->orWhereRaw("JSON_EXTRACT(metadata, '$.old_values') <> JSON_EXTRACT(metadata, '$.new_values')");
                             });
 
+            $this->applyPermissionFilters($query);
+
             if ($limit == -1) {
                 $allActivities = $query->get();
                 $activities = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -141,5 +143,68 @@ class ActivitiesController extends Controller
             'User' => $user?->supplier?->boss_id,
             default => $user?->supplier?->id,
         };
+    }
+
+    private function applyPermissionFilters($query): void
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where(function ($permissionQuery) use ($user) {
+            $hasVisibilityCondition = false;
+
+            $allowEntityType = function (string $entityType) use ($permissionQuery, &$hasVisibilityCondition) {
+                $permissionQuery->orWhere('entity_type', $entityType);
+                $hasVisibilityCondition = true;
+            };
+
+            if ($user->can('view agreements'))
+                $allowEntityType('agreements');
+
+            if ($user->can('view billings'))
+                $allowEntityType('billings');
+
+            if ($user->can('view clients'))
+                $allowEntityType('clients');
+
+            if ($user->can('view payouts'))
+                $allowEntityType('payouts');
+
+            if ($user->can('view notes')) {
+                $allowEntityType('notes');
+                $allowEntityType('comment_notes');
+            }
+
+            if ($user->can('view signed-documents'))
+                $allowEntityType('documents');
+
+            if ($user->can('view sold')) {
+                $permissionQuery->orWhere(function ($vehicleQuery) {
+                    $vehicleQuery
+                        ->where('entity_type', 'vehicles')
+                        ->whereRaw("LOWER(COALESCE(action_type, '')) = ?", ['sell_vehicle']);
+                });
+
+                $hasVisibilityCondition = true;
+            }
+
+            if ($user->can('view stock')) {
+                $permissionQuery->orWhere(function ($vehicleQuery) {
+                    $vehicleQuery
+                        ->where('entity_type', 'vehicles')
+                        ->whereRaw("LOWER(COALESCE(action_type, '')) <> ?", ['sell_vehicle']);
+                });
+
+                $hasVisibilityCondition = true;
+            }
+
+            if (!$hasVisibilityCondition)
+                $permissionQuery->whereRaw('1 = 0');
+        });
     }
 }
