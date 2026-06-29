@@ -286,37 +286,87 @@ const hasDateRangeFilter = computed(() => {
   return Boolean(dateRange?.[0] && dateRange?.[1])
 })
 
+const buildAgreementListParams = (overrides = {}) => {
+  const dateRange = resolveAgreementDateRange(filterDateRange.value)
+
+  return {
+    search: searchQuery.value,
+    orderByField: 'created_at',
+    orderBy: 'desc',
+    limit: rowPerPage.value,
+    page: currentPage.value,
+    supplier_id: supplier_id.value,
+    agreement_type_id: agreement_type_id_select.value,
+    status: agreementsStores.getStatus ?? status.value,
+    date_from: dateRange?.[0] ?? null,
+    date_to: dateRange?.[1] ?? null,
+    ...overrides,
+  }
+}
+
+const fetchAllFilteredAgreementIds = async () => {
+  const response = await AgreementsApi.get(buildAgreementListParams({
+    limit: -1,
+    page: 1,
+  }))
+
+  const items = response?.data?.data?.agreements?.data ?? []
+
+  return items
+    .map(item => Number(item?.id))
+    .filter(id => Number.isInteger(id) && id > 0)
+}
+
 const allAgreementsSelected = computed({
   get: () => {
-    const ids = visibleAgreementIds.value
-
-    if (!ids.length)
+    if (!totalAgreements.value)
       return false
 
-    return ids.every(id => selectedAgreementIds.value.includes(id))
+    return selectedAgreementIds.value.length >= Number(totalAgreements.value)
   },
   set: value => {
-    selectedAgreementIds.value = value ? [...visibleAgreementIds.value] : []
+    if (!value) {
+      selectedAgreementIds.value = []
+      return
+    }
+
+    void (async () => {
+      isRequestOngoing.value = true
+
+      try {
+        const allIds = await fetchAllFilteredAgreementIds()
+        selectedAgreementIds.value = [...new Set(allIds)]
+      } catch (error) {
+        advisor.value = {
+          type: 'error',
+          message: 'Det gick inte att markera alla avtal.',
+          show: true,
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+          }
+        }, 3000)
+      } finally {
+        isRequestOngoing.value = false
+      }
+    })()
   },
 })
 
 const hasSelectedAgreements = computed(() => selectedAgreementIds.value.length > 0)
 
 const syncAgreementSelection = () => {
-  const ids = visibleAgreementIds.value
-
-  if (!ids.length) {
+  if (!totalAgreements.value) {
     selectedAgreementIds.value = []
     return
   }
 
-  if (hasDateRangeFilter.value) {
-    selectedAgreementIds.value = [...ids]
-    return
-  }
-
-  // Keep only selected IDs that exist in the currently visible page.
-  selectedAgreementIds.value = selectedAgreementIds.value.filter(id => ids.includes(id))
+  // Preserve cross-page selections and remove duplicates.
+  selectedAgreementIds.value = [...new Set(selectedAgreementIds.value)]
 }
 
 // 👉 Computing pagination data
@@ -345,20 +395,7 @@ const hasActiveAgreements = computed(() => {
 // Verificación silenciosa de cambios sin activar spinner
 const checkForUpdates = async () => {
   try {
-    const dateRange = resolveAgreementDateRange(filterDateRange.value)
-
-    let data = {
-      search: searchQuery.value,
-      orderByField: 'created_at',
-      orderBy: 'desc',
-      limit: rowPerPage.value,
-      page: currentPage.value,
-      supplier_id: supplier_id.value,
-      agreement_type_id: agreement_type_id_select.value,
-      status: agreementsStores.getStatus ?? status.value,
-      date_from: dateRange?.[0] ?? null,
-      date_to: dateRange?.[1] ?? null,
-    }
+    const data = buildAgreementListParams()
 
     // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
     await agreementsStores.fetchAgreements(data)
@@ -498,20 +535,7 @@ async function fetchData(cleanFilters = false) {
     selectedAgreementIds.value = []
   }
 
-  const dateRange = resolveAgreementDateRange(filterDateRange.value)
-
-  let data = {
-    search: searchQuery.value,
-    orderByField: 'created_at',
-    orderBy: 'desc',
-    limit: rowPerPage.value,
-    page: currentPage.value,
-    supplier_id: supplier_id.value,
-    agreement_type_id: agreement_type_id_select.value,
-    status: agreementsStores.getStatus ?? status.value,
-    date_from: dateRange?.[0] ?? null,
-    date_to: dateRange?.[1] ?? null,
-  }
+  const data = buildAgreementListParams()
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
   isFilterDialogVisible.value = false;
@@ -1149,10 +1173,17 @@ const onDateFilterUpdate = async (isFiltered) => {
   currentPage.value = 1
   isFilterDateVisible.value = false
 
-  if (!isFiltered)
+  if (!isFiltered) {
     selectedAgreementIds.value = []
 
+    await fetchData()
+    return
+  }
+
   await fetchData()
+
+  // When a date filter is active, auto-select all filtered agreements across pages.
+  allAgreementsSelected.value = true
 }
 
 const setSkapa = (newSkapa) => {
