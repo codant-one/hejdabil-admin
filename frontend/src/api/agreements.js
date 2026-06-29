@@ -59,6 +59,12 @@ class Agreements {
             responseType: 'blob'
         })
     }
+
+    downloadZip(data) {
+        return axios.post('/agreements/downloadZip', data, {
+            responseType: 'blob'
+        })
+    }
 }
 
 const agreements = new Agreements();

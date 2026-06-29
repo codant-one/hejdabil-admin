@@ -259,6 +259,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/{agreement}/resend-signature-sms', [SignatureController::class, 'resendSignatureSms'])->name('agreements.resendSignatureSms');
         Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
+        Route::post('/downloadZip', [AgreementController::class, 'downloadZip']);
     });
 
     //Billing

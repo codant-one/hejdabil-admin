@@ -248,6 +248,19 @@ export const useAgreementsStores = defineStore('agreements', {
                 .finally(() => {
                     this.setLoading(false)
                 })
-        }
+        },
+
+        downloadZip(data) {
+            this.setLoading(true)
+            
+            return Agreements.downloadZip(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
     }
 })

@@ -16,6 +16,8 @@ import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import AgreementsApi from '@/api/agreements'
 
 const { width: windowWidth } = useWindowSize();
 
@@ -60,6 +62,10 @@ const supplier_id = ref(null)
 const canShowAgreementSmsAction = ref(false)
 const isAgreementSmsActionVisibilityLoading = ref(true)
 const agreementSmsVisibilityCacheKey = ref('')
+
+const isFilterDateVisible = ref(false)
+const filterDateRange = ref(null)
+const selectedAgreementIds = ref([])
 
 const loadAgreementSmsActionVisibility = async currentUserData => {
   const resolvedUserData = currentUserData ?? userData.value
@@ -187,6 +193,79 @@ const advisor = ref({
   show: false
 })
 
+const toYmd = value => {
+  if (!value)
+    return null
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime()))
+      return null
+
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+
+    if (!normalized)
+      return null
+
+    const ymdMatch = normalized.match(/\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+
+    const parsed = new Date(normalized)
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear()
+      const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+      const day = `${parsed.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+  }
+
+  return null
+}
+
+const resolveAgreementDateRange = value => {
+  if (!value)
+    return null
+
+  if (Array.isArray(value)) {
+    const from = toYmd(value[0])
+    const to = toYmd(value[1] ?? value[0])
+
+    return from && to ? [from, to] : null
+  }
+
+  if (typeof value === 'string') {
+    const splitByRange = value.split(/\s+-\s+|\s+to\s+|\s+till\s+|\s+a\s+/i)
+
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+
+      return from && to ? [from, to] : null
+    }
+
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  if (value instanceof Date) {
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  return null
+}
+
 const states = [
   { name: 'Skapad', id: 'created' },
   { name: 'Levererad', id: 'delivered' },
@@ -195,6 +274,50 @@ const states = [
   { name: 'Signerad', id: 'signed' },
   { name: 'Annullerad', id: 'cancelled' },
 ]
+
+const visibleAgreementIds = computed(() => {
+  return agreements.value
+    .map(agreement => agreement?.id)
+    .filter(id => id !== null && id !== undefined)
+})
+
+const hasDateRangeFilter = computed(() => {
+  const dateRange = resolveAgreementDateRange(filterDateRange.value)
+  return Boolean(dateRange?.[0] && dateRange?.[1])
+})
+
+const allAgreementsSelected = computed({
+  get: () => {
+    const ids = visibleAgreementIds.value
+
+    if (!ids.length)
+      return false
+
+    return ids.every(id => selectedAgreementIds.value.includes(id))
+  },
+  set: value => {
+    selectedAgreementIds.value = value ? [...visibleAgreementIds.value] : []
+  },
+})
+
+const hasSelectedAgreements = computed(() => selectedAgreementIds.value.length > 0)
+
+const syncAgreementSelection = () => {
+  const ids = visibleAgreementIds.value
+
+  if (!ids.length) {
+    selectedAgreementIds.value = []
+    return
+  }
+
+  if (hasDateRangeFilter.value) {
+    selectedAgreementIds.value = [...ids]
+    return
+  }
+
+  // Keep only selected IDs that exist in the currently visible page.
+  selectedAgreementIds.value = selectedAgreementIds.value.filter(id => ids.includes(id))
+}
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -222,6 +345,8 @@ const hasActiveAgreements = computed(() => {
 // Verificación silenciosa de cambios sin activar spinner
 const checkForUpdates = async () => {
   try {
+    const dateRange = resolveAgreementDateRange(filterDateRange.value)
+
     let data = {
       search: searchQuery.value,
       orderByField: 'created_at',
@@ -230,7 +355,9 @@ const checkForUpdates = async () => {
       page: currentPage.value,
       supplier_id: supplier_id.value,
       agreement_type_id: agreement_type_id_select.value,
-      status: agreementsStores.getStatus ?? status.value
+      status: agreementsStores.getStatus ?? status.value,
+      date_from: dateRange?.[0] ?? null,
+      date_to: dateRange?.[1] ?? null,
     }
 
     // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
@@ -367,7 +494,11 @@ async function fetchData(cleanFilters = false) {
     supplier_id.value = null
     agreement_type_id_select.value = null
     status.value = null;
+    filterDateRange.value = null
+    selectedAgreementIds.value = []
   }
+
+  const dateRange = resolveAgreementDateRange(filterDateRange.value)
 
   let data = {
     search: searchQuery.value,
@@ -377,7 +508,9 @@ async function fetchData(cleanFilters = false) {
     page: currentPage.value,
     supplier_id: supplier_id.value,
     agreement_type_id: agreement_type_id_select.value,
-    status: agreementsStores.getStatus ?? status.value
+    status: agreementsStores.getStatus ?? status.value,
+    date_from: dateRange?.[0] ?? null,
+    date_to: dateRange?.[1] ?? null,
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -392,6 +525,7 @@ async function fetchData(cleanFilters = false) {
   agreements.value = Array.isArray(agreementsStores.getAgreements)
     ? agreementsStores.getAgreements
     : []
+  syncAgreementSelection()
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount
   hasLoaded.value = true
@@ -560,6 +694,59 @@ const download = async(agreement) => {
     console.error('Error:', error);
   }
 };
+
+const downloadSelectedZip = async () => {
+  if (!selectedAgreementIds.value.length)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const response = await AgreementsApi.downloadZip({
+      ids: selectedAgreementIds.value,
+    })
+
+    const zipBlob = new Blob([response.data], { type: 'application/zip' })
+    const zipUrl = URL.createObjectURL(zipBlob)
+    const link = document.createElement('a')
+
+    link.href = zipUrl
+    link.download = 'agreements.zip'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(zipUrl)
+  } catch (error) {
+    let message = 'Det gick inte att ladda ner valda avtal.'
+    const errorPayload = error?.response?.data
+
+    if (errorPayload instanceof Blob) {
+      try {
+        const text = await errorPayload.text()
+        const parsed = JSON.parse(text)
+        message = parsed?.message || message
+      } catch (_) {
+        // Keep fallback message when blob error payload is not JSON.
+      }
+    }
+
+    advisor.value = {
+      type: 'error',
+      message,
+      show: true,
+    }
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
 
 const downloadCSV = async () => {
 
@@ -957,6 +1144,16 @@ const updateStatus = (newStatus) => {
   status.value = newStatus;
   filtreraMobile.value = false;
 };
+
+const onDateFilterUpdate = async (isFiltered) => {
+  currentPage.value = 1
+  isFilterDateVisible.value = false
+
+  if (!isFiltered)
+    selectedAgreementIds.value = []
+
+  await fetchData()
+}
 
 const setSkapa = (newSkapa) => {
   // Si ya está seleccionado, desmarcarlo (poner null)
@@ -1357,25 +1554,47 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-        <div class="d-flex gap-4">
+        <div class="d-flex" :class="windowWidth < 1024 ? 'flex-column gap-2' : 'gap-4'">
+
           <VBtn
-            class="btn-light w-auto"
+            v-if="hasSelectedAgreements"
+            class="btn-blue w-auto"
             block
-            @click="downloadCSV">
-            <VIcon icon="custom-export" size="24" />
-            Exportera
+            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            @click="downloadSelectedZip">
+            <VIcon icon="custom-download" size="24" />
+            Ladda ner
           </VBtn>
 
           <VBtn
-            v-if="$can('create','agreements') && $vuetify.display.mdAndDown"
-            class="btn-gradient"
+            v-if="hasSelectedAgreements"
+            class="btn-blue w-auto"
             block
-            @click="skapaMobile = true"
-          >
-            <VIcon icon="custom-plus" size="24" />
-            Skapa
+            :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+            @click="downloadSelectedZip">
+            <VIcon icon="custom-download" size="24" />
+            Ladda ner
           </VBtn>
+          
+          <div class="d-flex gap-4">
+            <VBtn
+              class="btn-light w-auto"
+              block
+              @click="downloadCSV">
+              <VIcon icon="custom-export" size="24" />
+              Exportera
+            </VBtn>
 
+            <VBtn
+              v-if="$can('create','agreements') && $vuetify.display.mdAndDown"
+              class="btn-gradient"
+              block
+              @click="skapaMobile = true"
+            >
+              <VIcon icon="custom-plus" size="24" />
+              Skapa
+            </VBtn>
+          </div>
           <VMenu v-if="!$vuetify.display.mdAndDown">
             <template #activator="{ props }">
               <VBtn
@@ -1406,6 +1625,21 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <ExportDateMenu
+            v-model="filterDateRange"
+            v-model:menuVisible="isFilterDateVisible"
+            @update:filtrera="onDateFilterUpdate"
+            :show-activator="false"
+            :is-mobile="windowWidth < 1024"
+            :reset-on-open="false"
+            activator="#agreements-download-button"
+            button-text="Tillämpa"
+            button-icon="custom-filter"
+            picker-label="Filtrera efter datum"
+            picker-placeholder="Välj datum"
+            :show-clear="true"
+          />
         </div>
       </VCardTitle>
 
@@ -1421,6 +1655,15 @@ onBeforeUnmount(() => {
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <VBtn 
+          id="agreements-download-button"
+          class="btn-white-2 px-3"
+          @click="isFilterDateVisible = true"
+        >
+          <VIcon icon="custom-calendar-2" size="24" />
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Datum</span>
+        </VBtn>
 
         <VBtn 
           class="btn-white-2 px-3"
@@ -1468,6 +1711,14 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
+            <th scope="col">
+              <VCheckbox
+                :model-value="allAgreementsSelected"
+                @update:model-value="allAgreementsSelected = $event"
+                density="compact"
+                hide-details
+              />
+            </th>
             <th scope="col" v-if="isColVisible('agreement_id')"># ID</th>
             <th scope="col" class="text-center" v-if="isColVisible('reg_num')"> Reg. nr </th>
             <th scope="col" class="text-center" v-if="isColVisible('interchange_reg_num')"> Inbytesfordon Reg. nr </th>
@@ -1497,6 +1748,14 @@ onBeforeUnmount(() => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
+            <td style="min-width: 30px;">
+              <VCheckbox
+                  :value="agreement.id"
+                  v-model="selectedAgreementIds"
+                  density="compact"
+                  hide-details
+              />
+            </td>
             <td v-if="isColVisible('agreement_id')">
               {{ agreement.agreement_type_id === 4 ?
                 agreement.offer.offer_id : 
@@ -1771,7 +2030,14 @@ onBeforeUnmount(() => {
                 expand-icon="custom-chevron-down"
                 style="height: 56px !important;"
               >
-                <span class="order-id">
+                <span class="order-id" @click.stop>
+                  <VCheckbox
+                    :value="agreement.id"
+                    v-model="selectedAgreementIds"
+                    density="compact"
+                    hide-details
+                />
+
                   {{ agreement.agreement_type_id === 4 ?
                     agreement.offer.offer_id : 
                     ( agreement.agreement_type_id === 3 ? 
