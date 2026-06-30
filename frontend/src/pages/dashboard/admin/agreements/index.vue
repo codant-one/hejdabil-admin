@@ -1742,7 +1742,7 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col">
+            <th scope="col" v-if="hasDateRangeFilter">
               <VCheckbox
                 :model-value="allAgreementsSelected"
                 @update:model-value="allAgreementsSelected = $event"
@@ -1779,7 +1779,7 @@ onBeforeUnmount(() => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
-            <td style="min-width: 30px;">
+            <td style="min-width: 30px;" v-if="hasDateRangeFilter">
               <VCheckbox
                   :value="agreement.id"
                   v-model="selectedAgreementIds"
@@ -2063,11 +2063,12 @@ onBeforeUnmount(() => {
               >
                 <span class="order-id" @click.stop>
                   <VCheckbox
+                    v-if="hasDateRangeFilter"
                     :value="agreement.id"
                     v-model="selectedAgreementIds"
                     density="compact"
                     hide-details
-                />
+                  />
 
                   {{ agreement.agreement_type_id === 4 ?
                     agreement.offer.offer_id : 
