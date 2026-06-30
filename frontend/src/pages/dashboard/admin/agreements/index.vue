@@ -1626,6 +1626,7 @@ onBeforeUnmount(() => {
               Skapa
             </VBtn>
           </div>
+          
           <VMenu v-if="!$vuetify.display.mdAndDown">
             <template #activator="{ props }">
               <VBtn

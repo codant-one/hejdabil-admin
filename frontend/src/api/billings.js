@@ -49,6 +49,12 @@ class Billings {
     info(){
         return axios.get(`/billings/info/all`)
     }
+
+    downloadZip(data) {
+        return axios.post('/billings/downloadZip', data, {
+            responseType: 'blob'
+        })
+    }
 }
 
 const billings = new Billings();

@@ -18,6 +18,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import BillingsApi from '@/api/billings'
 
 const billingsStores = useBillingsStores();
 const configsStores = useConfigsStores();
@@ -110,6 +111,10 @@ const setCompany = (value) => {
   localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
 };
 
+const isFilterDateVisible = ref(false)
+const filterDateRange = ref(null)
+const selectedBillingIds = ref([])
+
 const sectionEl = ref(null);
 const billingsListStartEl = ref(null)
 const shouldScrollBillingsListOnMobile = ref(false)
@@ -145,6 +150,128 @@ const paginationData = computed(() => {
   return `${totalBillings.value} resultat`;
   // return `Visar ${firstIndex} till ${lastIndex} av ${totalBillings.value} fakturor`;
 });
+
+const hasSelectedBillings = computed(() => selectedBillingIds.value.length > 0)
+
+const resolveDateRange = value => {
+  if (!value)
+    return null
+
+  if (Array.isArray(value)) {
+    const from = toYmd(value[0])
+    const to = toYmd(value[1] ?? value[0])
+
+    return from && to ? [from, to] : null
+  }
+
+  if (typeof value === 'string') {
+    const splitByRange = value.split(/\s+-\s+|\s+to\s+|\s+till\s+|\s+a\s+/i)
+
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+
+      return from && to ? [from, to] : null
+    }
+
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  if (value instanceof Date) {
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  return null
+}
+
+const hasDateRangeFilter = computed(() => {
+  const dateRange = resolveDateRange(filterDateRange.value)
+  return Boolean(dateRange?.[0] && dateRange?.[1])
+})
+
+const buildBillingsListParams = (overrides = {}) => {
+  const dateRange = resolveDateRange(filterDateRange.value)
+
+  return {
+    search: searchQuery.value,
+    orderByField: "id",
+    orderBy: "desc",
+    limit: rowPerPage.value,
+    page: currentPage.value,
+    supplier_id: supplier_id.value,
+    client_id: client_id.value,
+    state_id: billingsStores.getStateId ?? state_id.value,
+    date_from: dateRange?.[0] ?? null,
+    date_to: dateRange?.[1] ?? null,
+    ...overrides,
+  }
+}
+
+const fetchAllFilteredBillingIds = async () => {
+  const response = await BillingsApi.get(buildBillingsListParams({
+    limit: -1,
+    page: 1,
+  }))
+
+  const items = response?.data?.data?.billings?.data ?? []
+
+  return items
+    .map(item => Number(item?.id))
+    .filter(id => Number.isInteger(id) && id > 0)
+}
+
+const syncBillingSelection = () => {
+  if (!totalBillings.value) {
+    selectedBillingIds.value = []
+    return
+  }
+
+  selectedBillingIds.value = [...new Set(selectedBillingIds.value)]
+}
+
+const allBillingsSelected = computed({
+  get: () => {
+    if (!totalBillings.value)
+      return false
+
+    return selectedBillingIds.value.length >= Number(totalBillings.value)
+  },
+  set: value => {
+    if (!value) {
+      selectedBillingIds.value = []
+      return
+    }
+
+    void (async () => {
+      isRequestOngoing.value = true
+
+      try {
+        const allIds = await fetchAllFilteredBillingIds()
+        selectedBillingIds.value = [...new Set(allIds)]
+      } catch (error) {
+        advisor.value = {
+          type: 'error',
+          message: 'Det gick inte att markera alla fakturor.',
+          show: true,
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+          }
+        }, 3000)
+      } finally {
+        isRequestOngoing.value = false
+      }
+    })()
+  },
+})
 
 // 👉 watching current page
 watchEffect(() => {
@@ -237,18 +364,11 @@ async function fetchData(cleanFilters = false) {
     supplier_id.value = null;
     client_id.value = null;
     state_id.value = null;
+    filterDateRange.value = null;
+    selectedBillingIds.value = [];
   }
 
-  let data = {
-    search: searchQuery.value,
-    orderByField: "id",
-    orderBy: "desc",
-    limit: rowPerPage.value,
-    page: currentPage.value,
-    supplier_id: supplier_id.value,
-    client_id: client_id.value,
-    state_id: billingsStores.getStateId ?? state_id.value,
-  };
+  const data = buildBillingsListParams();
 
   isRequestOngoing.value = searchQuery.value !== "" ? false : true;
   isFilterDialogVisible.value = false;
@@ -256,6 +376,7 @@ async function fetchData(cleanFilters = false) {
   await billingsStores.fetchBillings(data);
 
   billings.value = billingsStores.getBillings;
+  syncBillingSelection()
   totalPages.value = billingsStores.last_page;
   totalBillings.value = billingsStores.billingsTotalCount;
   totalSum.value = billingsStores.totalSum;
@@ -269,6 +390,22 @@ async function fetchData(cleanFilters = false) {
 
   hasLoaded.value = true;
   isRequestOngoing.value = false;
+}
+
+const onDateFilterUpdate = async isFiltered => {
+  currentPage.value = 1
+  isFilterDateVisible.value = false
+
+  if (!isFiltered) {
+    selectedBillingIds.value = []
+    await fetchData()
+    return
+  }
+
+  await fetchData()
+
+  // Match agreements behavior: with date filter active, preselect all filtered items.
+  allBillingsSelected.value = true
 }
 
 watchEffect(registerEvents);
@@ -815,37 +952,68 @@ const toYmd = value => {
 }
 
 const getDateRangePayload = () => {
-  if (!date.value)
+  const dateRange = resolveDateRange(date.value)
+
+  if (!dateRange)
     return {}
 
-  if (Array.isArray(date.value)) {
-    const from = toYmd(date.value[0])
-    const to = toYmd(date.value[1] ?? date.value[0])
-    if (from && to)
-      return { date_from: from, date_to: to }
+  return {
+    date_from: dateRange[0],
+    date_to: dateRange[1],
   }
+}
 
-  if (typeof date.value === 'string') {
-    const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
-    if (splitByRange.length >= 2) {
-      const from = toYmd(splitByRange[0])
-      const to = toYmd(splitByRange[1])
-      if (from && to)
-        return { date_from: from, date_to: to }
+const downloadSelectedZip = async () => {
+  if (!selectedBillingIds.value.length)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const response = await BillingsApi.downloadZip({
+      ids: selectedBillingIds.value,
+    })
+
+    const zipBlob = new Blob([response.data], { type: 'application/zip' })
+    const zipUrl = URL.createObjectURL(zipBlob)
+    const link = document.createElement('a')
+
+    link.href = zipUrl
+    link.download = 'billings.zip'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(zipUrl)
+  } catch (error) {
+    let message = 'Det gick inte att ladda ner valda fakturor.'
+    const errorPayload = error?.response?.data
+
+    if (errorPayload instanceof Blob) {
+      try {
+        const text = await errorPayload.text()
+        const parsed = JSON.parse(text)
+        message = parsed?.message || message
+      } catch (_) {
+        // Keep fallback message when blob error payload is not JSON.
+      }
     }
 
-    const single = toYmd(date.value)
-    if (single)
-      return { date_from: single, date_to: single }
-  }
+    advisor.value = {
+      type: 'error',
+      message,
+      show: true,
+    }
 
-  if (date.value instanceof Date) {
-    const single = toYmd(date.value)
-    if (single)
-      return { date_from: single, date_to: single }
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+  } finally {
+    isRequestOngoing.value = false
   }
-
-  return {}
 }
 
 const downloadPDF = async () => {
@@ -1191,7 +1359,30 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-        <div class="d-flex gap-4">
+        <div class="d-flex" :class="windowWidth < 1024 ? 'flex-column gap-2' : 'gap-4'">
+           
+          <VBtn
+            v-if="hasSelectedBillings"
+            class="btn-blue w-auto"
+            block
+            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            @click="downloadSelectedZip"
+            >
+            <VIcon icon="custom-download" size="24" />
+            Ladda ner
+          </VBtn>
+
+          <VBtn
+            v-if="hasSelectedBillings"
+            class="btn-blue w-auto"
+            block
+            :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+            @click="downloadSelectedZip"
+            >
+            <VIcon icon="custom-download" size="24" />
+            Ladda ner
+          </VBtn>
+
           <VMenu 
             v-if="windowWidth >= 1024"
             v-model="isExportTypeMenuVisible">
@@ -1217,16 +1408,28 @@ onBeforeUnmount(() => {
             </VList>
           </VMenu>
 
-          <VBtn
-            v-if="windowWidth < 1024"
-            id="payout-export-button"
-            class="btn-light w-auto"
-            block
-            @click="exporteraMobile = true"
-          >
-            <VIcon icon="custom-export" size="24" />
-            Exportera
-          </VBtn>
+          <div class="d-flex gap-4">
+            <VBtn
+              v-if="windowWidth < 1024"
+              id="payout-export-button"
+              class="btn-light w-auto"
+              block
+              @click="exporteraMobile = true"
+            >
+              <VIcon icon="custom-export" size="24" />
+              Exportera
+            </VBtn>
+
+            <VBtn
+              v-if="$can('create', 'billings')"
+              class="btn-gradient"
+              block
+              @click="addInvoice"
+            >
+              <VIcon icon="custom-plus" size="24" />
+              Ny faktura
+            </VBtn>
+          </div>
 
           <ExportDateMenu
             v-model="date"
@@ -1237,15 +1440,20 @@ onBeforeUnmount(() => {
             @update:modelValue="onDatePickerUpdate"
           />
 
-          <VBtn
-            v-if="$can('create', 'billings')"
-            class="btn-gradient"
-            block
-            @click="addInvoice"
-          >
-            <VIcon icon="custom-plus" size="24" />
-            Ny faktura
-          </VBtn>
+          <ExportDateMenu
+            v-model="filterDateRange"
+            v-model:menuVisible="isFilterDateVisible"
+            @update:filtrera="onDateFilterUpdate"
+            :show-activator="false"
+            :is-mobile="windowWidth < 1024"
+            :reset-on-open="false"
+            activator="#billings-download-button"
+            button-text="Tillämpa"
+            button-icon="custom-filter"
+            picker-label="Filtrera efter datum"
+            picker-placeholder="Välj datum"
+            :show-clear="true"
+          />
         </div>
       </VCardTitle>
 
@@ -1253,60 +1461,74 @@ onBeforeUnmount(() => {
 
       <VCardText
         class="d-flex align-center justify-space-between gap-1"
-        :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
+        :class="$vuetify.display.mdAndDown ? 'p-6 pb-0 flex-column' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
-        <div class="search" style="width: 480px !important">
+        <div class="search" :style="windowWidth < 1024 ? '' : 'width: 480px !important'">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-          <AppAutocomplete
-            v-if="role !== 'Supplier' && role !== 'User' && hasLoaded"
-            prepend-icon="custom-profile"
-            v-model="supplier_id"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="(item) => item.full_name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user selector-truncate"
-          />
+        <div class="d-flex gap-1" :class="windowWidth < 1024 ? 'w-100' : ''">
+          <VSpacer :class="windowWidth < 1024 ? 'd-block' : 'd-none'" />
+          
+          <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+            <AppAutocomplete
+              v-if="role !== 'Supplier' && role !== 'User' && hasLoaded"
+              prepend-icon="custom-profile"
+              v-model="supplier_id"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="(item) => item.full_name"
+              :item-value="(item) => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate"
+            />
 
-          <AppAutocomplete
-            prepend-icon="custom-profile"
-            v-model="client_id"
-            :items="clients"
-            :item-title="(item) => item.fullname"
-            :item-value="(item) => item.id"
-            placeholder="Kunder"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user selector-truncate"
-          />
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="client_id"
+              :items="clients"
+              :item-title="(item) => item.fullname"
+              :item-value="(item) => item.id"
+              placeholder="Kunder"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate"
+            />
+          </div>
+
+          <VBtn
+            class="btn-white-2 px-3"
+            @click="isFilterDialogVisible = true"
+            :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+          >
+            <VIcon icon="custom-profile" size="24" />
+          </VBtn>
+
+          <VBtn 
+            id="billings-download-button"
+            class="btn-white-2 px-3"
+            @click="isFilterDateVisible = true"
+          >
+            <VIcon icon="custom-calendar-2" size="24" />
+            <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Datum</span>
+          </VBtn>
+
+          <VBtn
+            class="btn-white-2 px-3"
+            @click="filtreraMobile = true"
+            v-if="$vuetify.display.mdAndDown"
+          >
+            <VIcon icon="custom-filter" size="24" />
+            <span class="d-none d-md-block">Filtrera efter</span>
+          </VBtn>
+
         </div>
-
-        <VBtn
-          class="btn-white-2 px-3"
-          @click="isFilterDialogVisible = true"
-          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
-        >
-          <VIcon icon="custom-profile" size="24" />
-        </VBtn>
-
-        <VBtn
-          class="btn-white-2 px-3"
-          @click="filtreraMobile = true"
-          v-if="$vuetify.display.mdAndDown"
-        >
-          <VIcon icon="custom-filter" size="24" />
-          <span class="d-none d-md-block">Filtrera efter</span>
-        </VBtn>
 
         <VMenu v-if="!$vuetify.display.mdAndDown">
           <template #activator="{ props }">
@@ -1434,6 +1656,14 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
+            <th scope="col" v-if="hasDateRangeFilter">
+              <VCheckbox
+                :model-value="allBillingsSelected"
+                @update:model-value="allBillingsSelected = $event"
+                density="compact"
+                hide-details
+              />
+            </th>
             <th class="text-center"># Faktura</th>            
             <th scope="col">Kund</th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'">Leverantör</th>
@@ -1453,6 +1683,14 @@ onBeforeUnmount(() => {
             :key="billing.id"
             style="height: 3rem"
           >
+            <td style="min-width: 30px;" v-if="hasDateRangeFilter">
+              <VCheckbox
+                :value="billing.id"
+                v-model="selectedBillingIds"
+                density="compact"
+                hide-details
+              />
+            </td>
             <td class="text-center">{{ billing.invoice_id }}</td>
             <td class="text-wrap">
               <span
@@ -1789,7 +2027,16 @@ onBeforeUnmount(() => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <span class="order-id">{{ billing.invoice_id }}</span>
+            <span class="order-id" @click.stop>
+              <VCheckbox
+                v-if="hasDateRangeFilter"
+                :value="billing.id"
+                v-model="selectedBillingIds"
+                density="compact"
+                hide-details
+              />
+              {{ billing.invoice_id }}
+            </span>
             <div class="order-title-box flex-row justify-space-between align-center w-100">
               <div>
                 <span class="title-panel">

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
+use ZipArchive;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Billing;
@@ -883,5 +884,117 @@ class BillingController extends Controller
             ], 500);
         }
 
+    }
+
+    public function downloadZip(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'ids' => ['required', 'array', 'min:1'],
+                'ids.*' => ['required', 'integer'],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $ids = collect($request->input('ids', []))
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn ($id) => $id > 0)
+                ->unique()
+                ->values();
+
+            if ($ids->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inga avtal valdes för nedladdning.',
+                ], 422);
+            }
+
+            $query = Billing::query();
+            $user = Auth::user();
+
+            // Keep visibility parity with list selection: restrict supplier/user,
+            // but do not force admin/superadmin to whereNull('supplier_id').
+            if ($user?->hasRole('Supplier'))
+                $query->where('supplier_id', $user->supplier->id);
+            elseif ($user?->hasRole('User'))
+                $query->where('supplier_id', $user->supplier->boss_id);
+
+            $billings = $query
+                ->whereIn('id', $ids)
+                ->get(['id', 'file']);
+
+            if ($billings->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inga fakturor hittades för nedladdning.',
+                ], 404);
+            }
+
+            $tmpDir = storage_path('app/tmp');
+            if (!is_dir($tmpDir))
+                mkdir($tmpDir, 0775, true);
+
+            $zipPath = $tmpDir.DIRECTORY_SEPARATOR.'agreements_'.Str::uuid().'.zip';
+            $zip = new ZipArchive();
+
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kunde inte skapa zip-filen.',
+                ], 500);
+            }
+
+            $addedFiles = 0;
+            $usedEntryNames = [];
+
+            foreach ($billings as $billing) {
+                $relativeFilePath = ltrim((string) ($billing->file ?? ''), '/');
+
+                if ($relativeFilePath === '')
+                    continue;
+
+                $absoluteFilePath = storage_path('app/public/'.$relativeFilePath);
+
+                if (!is_file($absoluteFilePath))
+                    continue;
+
+                $entryName = basename($relativeFilePath);
+
+                if (isset($usedEntryNames[$entryName]))
+                    $entryName = $billing->id.'_'.$entryName;
+
+                $usedEntryNames[$entryName] = true;
+                $zip->addFile($absoluteFilePath, $entryName);
+                $addedFiles++;
+            }
+
+            $zip->close();
+
+            if ($addedFiles === 0) {
+                if (is_file($zipPath))
+                    @unlink($zipPath);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inga PDF-filer hittades för valda avtal.',
+                ], 404);
+            }
+
+            return response()->download($zipPath, 'billings.zip', [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
+        } catch (\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 }

@@ -207,5 +207,17 @@ export const useBillingsStores = defineStore('billings', {
                     this.setLoading(false)
                 })  
         },
+        downloadZip(data) {
+            this.setLoading(true)
+            
+            return Billings.downloadZip(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
     }
 })

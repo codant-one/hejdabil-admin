@@ -168,6 +168,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/credit/{id}', [BillingController::class, 'credit']);
         Route::get('/reminder/{id}', [BillingController::class, 'reminder']);
         Route::get('/info/all', [BillingController::class, 'info']);
+        Route::post('/downloadZip', [BillingController::class, 'downloadZip']);
     });
 
     //Suppliers
