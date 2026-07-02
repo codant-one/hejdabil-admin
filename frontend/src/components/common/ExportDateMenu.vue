@@ -58,7 +58,7 @@ const props = defineProps({
   },
   buttonClear: {
     type: String,
-    default: 'Remsa',
+    default: 'Rensa',
   },
 })
 
