@@ -1,16 +1,22 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate';
+import html2pdf from 'html2pdf.js';
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
+const { width: windowWidth } = useWindowSize();
 const suppliersStores = useSuppliersStores()
 const emitter = inject("emitter")
+const exporteraMobile = ref(false);
 
 const suppliers = ref([])
 const searchQuery = ref('')
@@ -36,6 +42,7 @@ const deleteInfo = ref({
     notes: 0,
   },
 })
+const hasLoaded = ref(false);
 const isDeleteInfoLoading = ref(false)
 const csr_url = ref(null)
 const pem_url = ref(null)
@@ -46,6 +53,21 @@ const swishStep = ref(1)
 const state_id = ref(null)
 const refForm = ref(null)
 const isFormValid = ref(false)
+
+const selectedSupplierForAction = ref({});
+const isMobileActionDialogVisible = ref(false);
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const sectionEl = ref(null);
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+});
 
 const states = ref ([
   { id: 2, name: "Aktiv" },
@@ -63,7 +85,9 @@ const paginationData = computed(() => {
   const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
+  return `${totalSuppliers.value} resultat`;
+
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
 })
 
 // 👉 watching current page
@@ -101,6 +125,7 @@ async function fetchData(cleanFilters = false) {
   totalSuppliers.value = suppliersStores.suppliersTotalCount
 
   isRequestOngoing.value = false
+  hasLoaded.value = true;
 
 }
 
@@ -374,8 +399,132 @@ const activateSupplier = async () => {
   return true
 }
 
-const downloadCSV = async () => {
+const downloadPDF = async () => {
+  exporteraMobile.value = false
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1 ,
+      orderByField: "id",
+      orderBy: "desc"
+    }
+
+    await suppliersStores.fetchSuppliers(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const rows = suppliersStores.getSuppliers.map(element => ({
+      id: element.id,
+      fullname: element.user.name + ' ' + (element.user.last_name ?? ''),
+      email: element.user.email,
+      company: element.company ?? "",
+      phone: element.user.user_detail.phone ?? "",
+      organizationNumber: element.user.user_detail.organization_number ?? "",
+      clients: element.client_count,
+      status: element.state.name
+    }))
+
+    //const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+    const columnWidth = '23%'
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      //company: company.value,
+      title: 'Leverantörer',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      ${(() => {
+        const contactLines = [item.fullname, item.email].filter(Boolean)
+        const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
+
+        const phoneLines = [item.phone].filter(Boolean)
+        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
+      <tr style="height: 48px;">
+        <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.organizationNumber)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.clients)}</td>
+      </tr>
+    `
+      })()}
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Organisationsnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kunders</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'clients.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
+}
+
+const downloadCSV = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
 
   let data = { limit: -1 }
@@ -391,7 +540,7 @@ const downloadCSV = async () => {
       KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
       E_POST: element.user.email,
       FÖRETAG: element.company ?? '',
-      ORGANISATIONSNUMMER: element.organization_number ?? '',
+      ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
       REGISTRERADE_KUNDER:  element.client_count,
       STATU: element.state.name
     }
@@ -405,315 +554,535 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <section>
-    <VRow>
-      <LoadingOverlay :is-loading="isRequestOngoing" />
+  <section class="page-section" ref="sectionEl">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            
-          {{ advisor.message }}
-        </VAlert>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>  
 
-        <Toaster />
+    <VCard class="card-fill">
+      <VCardTitle
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
+      >
+        <div class="align-center font-blauer">
+          <h2>Leverantörer <span v-if="hasLoaded">({{ totalSuppliers }})</span></h2>
+        </div>
 
-        <VCard title="">
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                variant="outlined"
-                class="w-100"
-                :items="[10, 20, 30, 50]"/>
-            </div>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-            <VBtn
-              variant="tonal"
-              color="secondary"
-              prepend-icon="tabler-file-export"
-              class="w-100 w-md-auto"
-              @click="downloadCSV">
-              Exportera
-            </VBtn>
-
-            <VSpacer class="d-none d-md-block"/>
-
-            <div class="d-flex align-center w-100 w-md-10">
-              <VSelect
-                  v-model="state_id"
-                  placeholder="Status"
-                  :items="states"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-            </div>
-
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök"
-                  density="compact"
-                  clearable
-                />
-              </div>
-
-              <!-- 👉 Add user button -->
+        <div class="d-flex gap-4">
+          <VMenu v-if="windowWidth >= 1024">
+            <template #activator="{ props }">
               <VBtn
-                v-if="$can('create','suppliers')"
-                class="w-100 w-md-auto"
-                prepend-icon="tabler-plus"
-                :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Skapa leverantör
+                id="payout-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
               </VBtn>
+            </template>
+
+            <VList>
+              <VListItem @click="downloadPDF">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="downloadCSV">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
+
+          <VBtn
+            v-if="$can('create', 'clients') && windowWidth >= 1024"
+            class="btn-gradient"
+            block
+            :to="{ name: 'dashboard-admin-suppliers-add' }"
+          >
+            <VIcon icon="custom-plus" size="24" />
+            Skapa leverantör
+          </VBtn>
+
+          <VBtn
+            v-if="windowWidth < 1024 && $can('create', 'suppliers')"
+            class="btn-gradient"
+            block
+            :to="{ name: 'dashboard-admin-suppliers-add' }"
+          >
+            <VIcon icon="custom-plus" size="24" />
+            Skapa leverantör
+          </VBtn>
+        </div>
+      </VCardTitle>
+
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
+
+      <VCardText
+        class="d-flex align-center justify-space-between gap-1"
+        :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
+      >
+        <!-- 👉 Search  -->
+        <div class="search">
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+        </div>
+
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
+        <div class="d-flex align-center empty-select" >
+          <VSelect
+              v-model="state_id"
+              placeholder="Status"
+              class="custom-select-hover"
+              :items="states"
+              item-title="name"
+              item-value="id"
+          >
+              <template #selection="{ item }">
+                  <div class="activity-mode-option">
+                    {{ item.raw.name }}
+                  </div>
+              </template>
+          </VSelect>
+        </div>
+
+        <div
+          v-if="!$vuetify.display.mdAndDown"
+          class="d-flex align-center visa-select"
+        >
+          <span class="text-no-wrap pr-4">Visa</span>
+          <VSelect
+            v-model="rowPerPage"
+            class="custom-select-hover"
+            :items="[10, 20, 30, 50]"
+          />
+        </div>
+      </VCardText>
+
+      <VTable
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="suppliers.length"
+        class="px-4 pb-6 text-no-wrap"
+      >
+        <!-- 👉 table head -->
+        <thead>
+          <tr>
+            <th scope="col"> #ID </th>
+            <th scope="col"> Företag </th>
+            <th scope="col"> Kontakt </th>
+            <th scope="col"> Status </th>
+            <th scope="col"> Swish </th>
+            <th scope="col"> Sender </th>
+            <th scope="col"> SMS </th>
+            <th scope="col"> # Kunder </th>
+            <th scope="col"> Skapad Av </th>
+            <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
+          </tr>
+        </thead>
+        <!-- 👉 table body -->
+        <tbody>
+          <tr 
+            v-for="supplier in suppliers"
+            :key="supplier.id"
+            style="height: 3rem;">
+
+            <td> {{ supplier.id }} </td>
+            <td class="text-wrap">
+              <div class="d-flex align-center gap-x-3">
+                <VAvatar
+                  :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
+                  size="38"
+                  >
+                  <VImg
+                    v-if="supplier.user.user_detail.logo"
+                    style="border-radius: 50%;"
+                    :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
+                  />
+                    <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
+                    {{ supplier.user.user_detail.company }}
+                  </span>
+                  <span class="text-sm text-disabled">
+                    Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td class="text-wrap">
+              <div class="d-flex align-center gap-x-3">
+                <VAvatar
+                  :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
+                  size="38"
+                  >
+                  <VImg
+                    v-if="supplier.user.avatar"
+                    style="border-radius: 50%;"
+                    :src="themeConfig.settings.urlStorage + supplier.user.avatar"
+                  />
+                    <span v-else>{{ avatarText(supplier.user.name) }}</span>
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium">
+                    {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
+                  </span>
+                  <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td> 
+              <VChip
+                label
+                :color="resolveStatus(supplier.state.id)?.color"
+              >
+                {{ supplier.state.name }}
+              </VChip>
+            </td>
+            <td class="text-wrap w-15">
+              <span v-if="supplier.is_payout === 1">
+                {{ supplier.payout_number ?? '' }}
+              </span>
+            </td>
+            <td class="text-wrap w-15">
+              {{ supplier.sms_sender ?? '' }}
+            </td>
+            <td class="text-wrap w-15">
+              {{ supplier.sms_accepted_count ?? 0 }}
+            </td>
+            <td class="text-wrap w-15">
+              {{ supplier.client_count }}
+            </td>
+            <td class="text-wrap">
+              <div class="d-flex align-center gap-x-3">
+                <VAvatar
+                  :variant="supplier.creator.avatar ? 'outlined' : 'tonal'"
+                  size="38"
+                  >
+                  <VImg
+                    v-if="supplier.creator.avatar"
+                    style="border-radius: 50%;"
+                    :src="themeConfig.settings.urlStorage + supplier.creator.avatar"
+                  />
+                    <span v-else>{{ avatarText(supplier.creator.name) }}</span>
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium">
+                    {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
+                  </span>
+                  <span class="text-sm text-disabled">{{ supplier.creator.email }}</span>
+                </div>
+              </div>
+            </td>
+            <!-- 👉 Actions -->
+            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+              <VMenu>
+                <template #activator="{ props }">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                    <VIcon icon="custom-dots-vertical" size="22" />
+                  </VBtn>
+                </template>
+
+                <VList>
+                  <VListItem 
+                    v-if="$can('view', 'suppliers')"
+                    @click="seeSupplier(supplier)">
+                    <template #prepend>
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Visa</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
+                      @click="editSupplier(supplier)">
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('view', 'suppliers') && supplier.state_id !== 1 && supplier.user.full_profile === 1"
+                    @click="showSwishDialog(supplier)">
+                    <template #prepend>
+                      <VIcon icon="custom-swish" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Swish</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('edit', 'suppliers') && supplier.state_id === 2 && supplier.user.full_profile === 0"
+                    @click="resendInvitation(supplier)">
+                    <template #prepend>
+                      <VIcon icon="tabler-mail-forward" />
+                    </template>
+                    <VListItemTitle>Skicka om inbjudan</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                    @click="showDeleteDialog(supplier)">
+                    <template #prepend>
+                      <VIcon icon="custom-waste" size="24" />
+                    </template>
+                    <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                    @click="showActivateDialog(supplier)">
+                    <template #prepend>
+                      <VIcon icon="tabler-rosette-discount-check" />
+                    </template>
+                    <VListItemTitle>Aktivera</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </td>
+          </tr>
+        </tbody>
+        <!-- 👉 table footer  -->
+        <tfoot v-show="!suppliers.length">
+          <tr>
+            <td
+              colspan="6"
+              class="text-center">
+              Uppgifter ej tillgängliga
+            </td>
+          </tr>
+        </tfoot>
+      </VTable>
+
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !suppliers.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-user"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Du har inga leverantörer än</div>
+          <div class="empty-state-text">
+            Lägg till dina leverantörer  här för att snabbt skapa fakturor och hålla
+            ordning på dina kontakter.
+          </div>
+        </div>
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'suppliers') && !$vuetify.display.mdAndDown"
+          :to="{ name: 'dashboard-admin-suppliers-add' }"
+        >
+          Lägg till ny leverantör
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'suppliers')"
+          :to="{ name: 'dashboard-admin-suppliers-add' }"
+        >
+          Lägg till ny leverantör
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
+
+      <VExpansionPanels
+        class="expansion-panels pb-6 px-6"
+        v-if="suppliers.length && $vuetify.display.mdAndDown"
+      >
+        <VExpansionPanel v-for="supplier in suppliers" :key="supplier.id">
+          <VExpansionPanelTitle
+            collapse-icon="custom-chevron-right"
+            expand-icon="custom-chevron-down"
+          >
+            <div class="d-flex align-center gap-x-3">
+              <VAvatar
+                :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
+                size="38"
+                >
+                <VImg
+                  v-if="supplier.user.user_detail.logo"
+                  style="border-radius: 50%;"
+                  :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
+                />
+                  <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
+              </VAvatar>
+              <div class="d-flex flex-column">
+                <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
+                  {{ supplier.user.user_detail.company }}
+                </span>
+                <span class="text-sm text-disabled">
+                  Org.Nr. {{ supplier.user.user_detail.organization_number }}
+                </span>
+              </div>
             </div>
-          </VCardText>
-
-          <VDivider />
-
-          <VTable class="text-no-wrap">
-            <!-- 👉 table head -->
-            <thead>
-              <tr>
-                <th scope="col"> #ID </th>
-                <th scope="col"> FÖRETAG </th>
-                <th scope="col"> KONTAKT </th>
-                <th scope="col"> STATUS </th>
-                <th scope="col"> SWISH </th>
-                <th scope="col"> SENDER </th>
-                <th scope="col"> SMS </th>
-                <th scope="col"> # KUNDER </th>
-                <th scope="col"> SKAPAD AV </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
-              </tr>
-            </thead>
-            <!-- 👉 table body -->
-            <tbody>
-              <tr 
-                v-for="supplier in suppliers"
-                :key="supplier.id"
-                style="height: 3rem;">
-
-                <td> {{ supplier.id }} </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.user.user_detail.logo"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
-                      />
-                        <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
-                        {{ supplier.user.user_detail.company }}
-                      </span>
-                      <span class="text-sm text-disabled">
-                        Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(supplier.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td> 
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Kontakt:</div>
+              <div class="expansion-panel-item-value">
+                {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}
+              </div>
+              <div class="expansion-panel-item-value">
+                {{ supplier.user.email }}
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Status:</div>
+                <div class="expansion-panel-item-value">
                   <VChip
                     label
                     :color="resolveStatus(supplier.state.id)?.color"
                   >
                     {{ supplier.state.name }}
                   </VChip>
-                </td>
-                <td class="text-wrap w-15">
-                  <span v-if="supplier.is_payout === 1">
-                    {{ supplier.payout_number ?? '' }}
-                  </span>
-                </td>
-                <td class="text-wrap w-15">
-                  {{ supplier.sms_sender ?? '' }}
-                </td>
-                <td class="text-wrap w-15">
-                  {{ supplier.sms_accepted_count ?? 0 }}
-                </td>
-                <td class="text-wrap w-15">
-                  {{ supplier.client_count }}
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.creator.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.creator.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.creator.avatar"
-                      />
-                        <span v-else>{{ avatarText(supplier.creator.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ supplier.creator.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <!-- 👉 Actions -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
-                      </VBtn>
-                    </template>
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Swish:</div>
+                <div class="expansion-panel-item-value">
+                  {{ supplier.payout_number ?? "" }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Sender:</div>
+                <div class="expansion-panel-item-value">
+                  {{ supplier.sms_sender ?? "" }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Kunder:</div>
+                <div class="expansion-panel-item-value">
+                  {{ supplier.client_count ?? "" }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Skapad Av:</div>
+                <div class="expansion-panel-item-value">
+                  {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-4">
+              <VBtn class="btn-light flex-1" @click="seeSupplier(supplier)"
+              >
+                <VIcon icon="custom-eye" size="24" />
+                Se detaljer
+              </VBtn>
+              
+              <VBtn class="btn-light" icon @click="selectedSupplierForAction = supplier; isMobileActionDialogVisible = true">
+                <VIcon icon="custom-dots-vertical" size="24" />
+              </VBtn>
+            </div>
+          </VExpansionPanelText>
+        </VExpansionPanel>
+      </VExpansionPanels>
+    
+      <VCardText
+        v-if="suppliers.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
 
-                    <VList>
-                      <VListItem 
-                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1 && supplier.user.full_profile === 1"
-                        @click="showSwishDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="mdi-payment" />
-                        </template>
-                        <VListItemTitle>Swish</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('view', 'suppliers')"
-                        @click="seeSupplier(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-eye" />
-                        </template>
-                        <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
-                         @click="editSupplier(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                        v-if="$can('edit', 'suppliers') && supplier.state_id === 2 && supplier.user.full_profile === 0"
-                        @click="resendInvitation(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-mail-forward" />
-                        </template>
-                        <VListItemTitle>Skicka om inbjudan</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                        @click="showDeleteDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-trash" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                        v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                        @click="showActivateDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-rosette-discount-check" />
-                        </template>
-                        <VListItemTitle>Aktivera</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-              </tr>
-            </tbody>
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!suppliers.length">
-              <tr>
-                <td
-                  colspan="6"
-                  class="text-center">
-                  Uppgifter ej tillgängliga
-                </td>
-              </tr>
-            </tfoot>
-          </VTable>
-        
-          <VDivider />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
-            <span class="text-sm text-disabled">
-              {{ paginationData }}
-            </span>
-
-            <VSpacer class="d-none d-md-block"/>
-            
-            <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="4"
-              :length="totalPages"/>
-          
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
+    </VCard>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
       persistent
-      class="v-dialog-sm" >
+      class="action-dialog" >
       <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+        
       <!-- Dialog Content -->
-      <VCard title="Ta bort leverantör">
-        <VDivider class="mt-4"/>
-        <VCardText class="pb-0">
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Ta bort leverantör
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
           Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
         </VCardText>
 
-        <VCardText class="pt-2">
+        <VCardText class="dialog-text mt-2">
           Leverantören tas bort från aktiva register.
         </VCardText>
 
-        <VCardText v-if="deleteInfo.total_associations > 0" class="pt-0">
+        <VCardText v-if="deleteInfo.total_associations > 0" class="dialog-text mt-4">
           <div>Associerade poster:</div>
           <div v-if="deleteInfo.associations?.clients">Kunder: {{ deleteInfo.associations.clients }}</div>
           <div v-if="deleteInfo.associations?.billings">Faktureringar: {{ deleteInfo.associations.billings }}</div>
@@ -724,16 +1093,11 @@ const downloadCSV = async () => {
           <div v-if="deleteInfo.associations?.notes">Noteringar: {{ deleteInfo.associations.notes }}</div>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmDeleteDialogVisible = false">
-              Avbryt
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
+            Avbryt
           </VBtn>
-          <VBtn @click="removeSupplier">
-              Acceptera
-          </VBtn>
+          <VBtn class="btn-gradient" @click="removeSupplier"> Ja, radera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -742,15 +1106,27 @@ const downloadCSV = async () => {
     <VDialog
       v-model="isConfirmSwishDialogVisible"
       persistent
-      class="v-dialog-sm" >
+      class="action-dialog" >
       <!-- Dialog close btn -->
         
-      <DialogCloseBtn @click="closeSwishDialog" />
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeSwishDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Swish">
-        <VDivider class="mt-4"/>
-        <VCardText class="pb-0">
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-swish" class="action-icon" />
+          <div class="dialog-title">
+            Swish
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
           Swish för leverantören <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>
         </VCardText>
         
@@ -774,16 +1150,11 @@ const downloadCSV = async () => {
               />
             </VCardText>
 
-            <VCardText class="d-flex justify-end gap-3 flex-wrap">
-              <VBtn
-                color="secondary"
-                variant="tonal"
-                @click="closeSwishDialog">
-                  Avbryt
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+              <VBtn class="btn-light" @click="closeSwishDialog">
+                Avbryt
               </VBtn>
-              <VBtn type="submit">
-                Acceptera
-              </VBtn>
+              <VBtn class="btn-gradient" type="submit"> Acceptera </VBtn>
             </VCardText>
           </template>
 
@@ -847,34 +1218,31 @@ const downloadCSV = async () => {
               />
             </VCardText>
 
-            <VCardText class="d-flex justify-end gap-3 flex-wrap">
-              <VBtn
-                color="secondary"
-                variant="tonal"
-                @click="closeSwishDialog">
-                  Avbryt
-              </VBtn>
-
-              <VBtn
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+              <VBtn class="btn-ghost"
                 v-if="swishStep === 2"
-                variant="tonal"
                 @click="swishStep = 1"
               >
+                <VIcon icon="custom-return" size="24" />
                 Tillbaka
               </VBtn>
 
-              <VBtn
-                v-if="swishStep === 1"
+              <VBtn class="btn-light" @click="closeSwishDialog">
+                Avbryt
+              </VBtn>
+
+              <VBtn v-if="swishStep === 1" 
+                class="btn-gradient" 
                 @click="goToSwishStepTwo"
               >
                 Nästa
               </VBtn>
 
-              <VBtn
-                v-else
+              <VBtn v-else
+                class="btn-gradient" 
                 type="submit"
-              >
-                Spara
+              > 
+                Spara 
               </VBtn>
             </VCardText>
           </template>
@@ -886,33 +1254,123 @@ const downloadCSV = async () => {
     <VDialog
       v-model="isConfirmActiveDialogVisible"
       persistent
-      class="v-dialog-sm" >
+      class="action-dialog" >
       <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
         
-      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
-
       <!-- Dialog Content -->
-      <VCard title="Aktivera leverantör">
-        <VDivider class="mt-4"/>
-        <VCardText>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <!-- <VIcon size="32" icon="custom-swish" class="action-icon" /> -->
+          <div class="dialog-title">
+            Aktivera leverantör
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
           Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmActiveDialogVisible = false">
-              Avbryt
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmActiveDialogVisible = false">
+            Avbryt
           </VBtn>
-          <VBtn @click="activateSupplier">
-              Acceptera
+
+          <VBtn 
+            class="btn-gradient" 
+            @click="activateSupplier"
+          >
+            Acceptera
           </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+              v-if="$can('edit', 'suppliers') && selectedSupplierForAction.state_id === 2"
+              @click="editSupplier(selectedSupplierForAction)">
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('view', 'suppliers') && selectedSupplierForAction.state_id !== 1 && selectedSupplierForAction.user.full_profile === 1"
+            @click="showSwishDialog(selectedSupplierForAction)">
+            <template #prepend>
+              <VIcon icon="custom-swish" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Swish</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'suppliers') && selectedSupplierForAction.state_id === 2 && selectedSupplierForAction.user.full_profile === 0"
+            @click="resendInvitation(selectedSupplierForAction)">
+            <template #prepend>
+              <VIcon icon="tabler-mail-forward" />
+            </template>
+            <VListItemTitle>Skicka om inbjudan</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 2"
+            @click="showDeleteDialog(selectedSupplierForAction)">
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 1"
+            @click="showActivateDialog(selectedSupplierForAction)">
+            <template #prepend>
+              <VIcon icon="tabler-rosette-discount-check" />
+            </template>
+            <VListItemTitle>Aktivera</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="downloadPDF">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="downloadCSV">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
+
+<style lang="scss">
+  .v-select .v-field .v-field__input > input {
+    align-self: center !important;
+  }
+</style>
+
 <route lang="yaml">
   meta:
     action: view
