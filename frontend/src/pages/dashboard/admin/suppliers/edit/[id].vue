@@ -8,6 +8,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import { inject } from 'vue';
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -333,31 +334,30 @@ const onSubmit = async () => {
                             allowNavigation.value = true;
 
                             let data = {
+                                type: 'success',
                                 message: 'Uppdaterad leverantör!',
                                 error: false
                             }
 
                             // Save current state so the dirty-check stops blocking navigation
                             initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                            skapatsDialog.value = true;
+                            //skapatsDialog.value = true;
+                            sessionStorage.setItem('alertMessage', JSON.stringify(data));
                             router.push({ name : 'dashboard-admin-suppliers'})
-                            emitter.emit('toast', data)
                         }
                         isRequestOngoing.value = false
                     })
                     .catch((err) => {
                         
                         let data = {
+                            type: 'error',
                             message: err.message,
                             error: true
                         }
 
                         // Save current state so the dirty-check stops blocking navigation
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                        router.push({ name : 'dashboard-admin-suppliers'})
-                        emitter.emit('toast', data)
+                        router.push({ name : 'dashboard-admin-suppliers', query: { alertMessage: JSON.stringify(data) } })
 
                         isRequestOngoing.value = false
                     })

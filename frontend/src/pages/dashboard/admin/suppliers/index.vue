@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { nextTick } from 'vue'; // Asegúrate de importarlo arriba
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
@@ -12,11 +13,19 @@ import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
 
 const { width: windowWidth } = useWindowSize();
 const suppliersStores = useSuppliersStores()
 const emitter = inject("emitter")
+const snackbarKey = ref(0); // Creamos un contador de renderizado
 const exporteraMobile = ref(false);
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const suppliers = ref([])
 const searchQuery = ref('')
@@ -73,12 +82,6 @@ const states = ref ([
   { id: 2, name: "Aktiv" },
   { id: 1, name: "Inaktiv" }
 ])
-
-const advisor = ref({
-  type: '',
-  message: '',
-  show: false
-})
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -567,10 +570,24 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+
+  //Permite recibir notificaciones para ser mostradas en el VSnackbar
+  var alertMessage = sessionStorage.getItem('alertMessage');
+  if (alertMessage) {
+    alertMessage = JSON.parse(alertMessage);
+    advisor.value = {
+      type: alertMessage.type,
+      message: alertMessage.message,
+      show: true
+    }
+
+    sessionStorage.removeItem('alertMessage');
+  }
 });
 
-onBeforeUnmount(() => {
+onUnmounted (() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  
 });
 </script>
 

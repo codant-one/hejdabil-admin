@@ -344,13 +344,15 @@ const onSubmit = async () => {
                     .then((res) => {
                         if (res.data.success) {
                             allowNavigation.value = true;
+
                             let data = {
+                                type: 'success',
                                 message: 'Leverantör skapad!',
                                 error: false
                             }
-                            skapatsDialog.value = true;
+                            // skapatsDialog.value = true;
+                            sessionStorage.setItem('alertMessage', JSON.stringify(data));
                             router.push({ name : 'dashboard-admin-suppliers'})
-                            emitter.emit('toast', data)
                         }
                         isRequestOngoing.value = false
                     })
@@ -371,22 +373,22 @@ const onSubmit = async () => {
                                     }
 
                                     let data = {
+                                        type: 'error',
                                         message: emailValidationMessage,
                                         error: true
                                     }
-
+                                    sessionStorage.setItem('alertMessage', JSON.stringify(data));
                                     router.push({ name : 'dashboard-admin-suppliers'})
-                                    emitter.emit('toast', data)
                                     isRequestOngoing.value = false
                                 })
                                 .catch(() => {
                                     let data = {
+                                        type: 'error',
                                         message: emailValidationMessage,
                                         error: true
                                     }
-
+                                    sessionStorage.setItem('alertMessage', JSON.stringify(data));
                                     router.push({ name : 'dashboard-admin-suppliers'})
-                                    emitter.emit('toast', data)
                                     isRequestOngoing.value = false
                                 })
 
@@ -394,12 +396,13 @@ const onSubmit = async () => {
                         }
 
                         let data = {
+                            type: 'error',
                             message: err?.response?.data?.message || err.message,
                             error: true
                         }
 
                         router.push({ name : 'dashboard-admin-suppliers'})
-                        emitter.emit('toast', data)
+                        emitter.emit('respAddOrUpdateSuppliers', data)
 
                         isRequestOngoing.value = false
                     })
