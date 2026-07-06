@@ -15,7 +15,7 @@ export default [
   },
   { 
     title: 'Leverantörer', 
-    icon: { icon: 'mdi-account-tie' },
+    icon: { icon: 'custom-supplier' },
     to: 'dashboard-admin-suppliers', 
     action: 'view' , 
     subject: 'suppliers'
