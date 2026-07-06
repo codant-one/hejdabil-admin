@@ -140,9 +140,9 @@ function registerEvents() {
 
 const resolveStatus = state_id => {
   if (state_id === 2)
-    return { color: 'success' }
+    return { class: 'success' }
   if (state_id === 1)
-    return { color: 'error' }
+    return { class: 'error' }
 }
 
 const editSupplier = supplierData => {
@@ -436,10 +436,14 @@ const downloadPDF = async () => {
       id: element.id,
       fullname: element.user.name + ' ' + (element.user.last_name ?? ''),
       email: element.user.email,
-      company: element.company ?? "",
+      company: element.user.user_detail.company ?? "",
+      swish: element.payout_number ?? "",
       phone: element.user.user_detail.phone ?? "",
+      landline: element.user.user_detail.landline ?? "",
+      sender: element.sms_sender ?? '',
       organizationNumber: element.user.user_detail.organization_number ?? "",
       clients: element.client_count,
+      creator: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
       status: element.state.name
     }))
 
@@ -456,19 +460,23 @@ const downloadPDF = async () => {
 
     const rowsMarkup = rows.map(item => `
       ${(() => {
+        const companyLines = [item.company, item.organizationNumber].filter(Boolean)
+        const companyMarkup = companyLines.map(line => escapeHtml(line)).join('<br />')
+
         const contactLines = [item.fullname, item.email].filter(Boolean)
         const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
 
-        const phoneLines = [item.phone].filter(Boolean)
+        const phoneLines = [item.phone, item.landline].filter(Boolean)
         const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
 
         return `
       <tr style="height: 48px;">
         <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${companyMarkup}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
-        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.organizationNumber)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.swish)}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
-        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.clients)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sender)}</td>
       </tr>
     `
       })()}
@@ -487,10 +495,12 @@ const downloadPDF = async () => {
                   <thead>
                     <tr style="height: 48px;">
                       <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Företag</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
-                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Organisationsnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Swish</td>
                       <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
-                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kunders</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Sender</td>
+                      
                     </tr>
                   </thead>
                   <tbody>
@@ -509,7 +519,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'clients.pdf',
+        filename: 'suppliers.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -542,10 +552,13 @@ const downloadCSV = async () => {
       ID: element.id,
       KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
       E_POST: element.user.email,
-      FÖRETAG: element.company ?? '',
+      FÖRETAG: element.user.user_detail.company ?? '',
       ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
+      SWISH: element.payout_number ?? '',
+      SENDER: element.sms_sender ?? '',
       REGISTRERADE_KUNDER:  element.client_count,
-      STATU: element.state.name
+      SKAPAD_AV: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
+      STATUS: element.state.name
     }
 
     dataArray.push(data)
@@ -733,7 +746,6 @@ onUnmounted (() => {
             <th scope="col"> Status </th>
             <th scope="col"> Swish </th>
             <th scope="col"> Sender </th>
-            <th scope="col"> SMS </th>
             <th scope="col"> # Kunder </th>
             <th scope="col"> Skapad Av </th>
             <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
@@ -761,10 +773,10 @@ onUnmounted (() => {
                     <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
                 </VAvatar>
                 <div class="d-flex flex-column">
-                  <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
+                  <span class="font-weight-medium cursor-pointer text-aqua" @click="seeSupplier(supplier)">
                     {{ supplier.user.user_detail.company }}
                   </span>
-                  <span class="text-sm text-disabled">
+                  <span class="text-sm">
                     Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
                   </span>
                 </div>
@@ -787,17 +799,17 @@ onUnmounted (() => {
                   <span class="font-weight-medium">
                     {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
                   </span>
-                  <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
+                  <span class="text-sm">{{ supplier.user.email }}</span>
                 </div>
               </div>
             </td>
             <td> 
-              <VChip
-                label
-                :color="resolveStatus(supplier.state.id)?.color"
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
               >
                 {{ supplier.state.name }}
-              </VChip>
+              </div>
             </td>
             <td class="text-wrap w-15">
               <span v-if="supplier.is_payout === 1">
@@ -806,9 +818,6 @@ onUnmounted (() => {
             </td>
             <td class="text-wrap w-15">
               {{ supplier.sms_sender ?? '' }}
-            </td>
-            <td class="text-wrap w-15">
-              {{ supplier.sms_accepted_count ?? 0 }}
             </td>
             <td class="text-wrap w-15">
               {{ supplier.client_count }}

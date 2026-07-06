@@ -621,6 +621,31 @@ const closeRoleDetailDialog = function(){
                                         :readonly="readonly"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Planera
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view plans"
+                                        value="view plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create plans"
+                                        value="create plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit plans"
+                                        value="edit plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete plans"
+                                        value="delete plans"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>

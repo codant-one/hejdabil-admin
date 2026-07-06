@@ -42,7 +42,8 @@ use App\Http\Controllers\{
     ReminderController,
     SettingController,
     SmsMessageController,
-    ActivitiesController
+    ActivitiesController,
+    PlanController
 };
 
 use App\Http\Controllers\Services\{
@@ -114,6 +115,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('notifications', NotificationController::class);
     Route::apiResource('reminders', ReminderController::class);
     Route::apiResource('activities', ActivitiesController::class);
+    Route::apiResource('plans', PlanController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -246,6 +248,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     //Countries
     Route::group(['prefix' => 'countries'], function () {
         Route::get('/updateState/{id}', [CountryController::class, 'updateState']);
+    });
+
+    //Plans
+    Route::group(['prefix' => 'plans'], function () {
+        Route::get('/updateState/{id}', [PlanController::class, 'updateState']);
     });
 
     //Agreement

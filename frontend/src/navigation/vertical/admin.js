@@ -30,6 +30,13 @@ export default [
         to: 'dashboard-admin-countries', 
         action: 'view',
         subject: 'countries'
+      },
+      { 
+        title: 'Pllanera', 
+        icon: { icon: 'custom-cash' },
+        to: 'dashboard-admin-plans', 
+        action: 'view',
+        subject: 'plans'
       }
     ]
   },

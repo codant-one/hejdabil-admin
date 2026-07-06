@@ -498,6 +498,31 @@ const closeModal = function(){
                                         value="delete countries"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Planera
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="view plans"
+                                        value="view plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="create plans"
+                                        value="create plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="edit plans"
+                                        value="edit plans"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="delete plans"
+                                        value="delete plans"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>
