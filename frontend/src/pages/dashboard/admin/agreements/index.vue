@@ -769,6 +769,7 @@ const downloadSelectedZip = async () => {
     }, 3000)
   } finally {
     isRequestOngoing.value = false
+    filterDateRange.value = null
   }
 }
 
