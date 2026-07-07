@@ -55,6 +55,22 @@ const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
 const initialData = ref(null)
 
+const selectedPlan = ref(null)
+const availablePlans = ref([
+    {
+        id: 1,
+        name: 'Swish',
+        price: 499,
+        icon: 'custom-swish-gray'
+    },
+    {
+        id: 2,
+        name: 'Pro',
+        price: 999,
+        icon: 'custom-fairytale'
+    }
+])
+
 const hasPhoneValue = value => !!String(value ?? '').trim()
 
 const phoneOrLandlineRequiredValidator = value => {
@@ -727,6 +743,89 @@ onBeforeRouteLeave((to, from, next) => {
                                                 disabled
                                             />
                                         </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Välj plan" />
+                                            <div class="d-flex flex-row align-center mb-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                                                <VLabel class="mb-1 mb-1 title-comments me-2" text="Månadsvis" />
+                                                <VSwitch
+                                                    :rules="[emailValidator, requiredValidator]"
+                                                    class="plan-time"
+                                                    hide-details
+                                                    inset
+                                                />
+                                                <VLabel class="mb-1 ms-2 title-comments" text="Årlig" />
+                                            </div>
+                                            <VRadioGroup 
+                                                v-model="selectedPlan"
+                                                hide-details
+                                                false-icon="custom-settings-checkbox-false"
+                                                true-icon="custom-settings-checkbox-true"
+                                                class="delivery-method-group"
+                                            >
+                                                <div class="d-flex flex-wrap gap-4">
+                                                    <VCard
+                                                        v-for="(plan, index) in availablePlans"
+                                                        :key="plan.id"
+                                                        flat
+                                                        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 11px);'"
+                                                        class="readonly-form d-flex flex-column"
+                                                        :class="selectedPlan === plan.id ? 'border-card-comment-selected' : 'border-card-comment'"
+                                                    >
+                                                        <div id="cardContent" 
+                                                            class="py-6 px-8" 
+                                                            :class="selectedPlan === plan.id ? 'card-bg-selected' : ''"
+                                                            style="width: 100%;"
+                                                        >
+                                                            <VCardText 
+                                                                class="d-flex align-center px-0 gap-2" 
+                                                                style="min-height: 48px; max-height: 48px;"
+                                                                > 
+                                                                <VIcon 
+                                                                    :icon="plan.icon"
+                                                                    size="40" 
+                                                                />
+                                                                <span class="title-card" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                                                    {{ plan.name }}
+                                                                </span>
+                                                                <VSpacer />
+                                                                
+                                                                <VRadio
+                                                                    class="mt-4 me-0 cursor-pointer delivery-method-option"
+                                                                    :value="plan.id"
+                                                                />
+                                                            </VCardText>
+
+                                                            <div class="d-block gap-4 px-0 mt-auto">
+                                                                <div class="price-text mt-4">
+                                                                    {{ plan.price }}    
+                                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="kr / mån" />
+                                                                </div>
+                                
+                                                                <div class="d-flex gap-4 my-4">
+                                                                    <span class="small-text">
+                                                                        exkl. moms
+                                                                    </span>
+                                                                </div>
+
+                                                                <VDivider class="border-card-line mb-1" />
+
+                                                                <div class="d-flex gap-4 mt-4 align-center justify-content-center">
+                                                                    <span class="details-text">
+                                                                        Se vad som ingår
+                                                                    </span>
+                                                                    <VIcon 
+                                                                        icon="custom-arrow-right" 
+                                                                        size="24" 
+                                                                        class="cursor-pointer"
+                                                                        style="flex-shrink: 0;"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>    
+                                                    </VCard>
+                                                </div>
+                                            </VRadioGroup>
+                                        </div>
                                     </div>
                                 </VCol>
                             </VRow>
@@ -953,7 +1052,138 @@ onBeforeRouteLeave((to, from, next) => {
     }
   }
 
-  @media (max-width: 776px) {
+    .title-comments {
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .small-text {
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .price-text {
+        font-weight: 600;
+        font-size: 40px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .details-text {
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 100%;
+        color: #6E9383; 
+    }
+
+    .title-card {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .border-card-comment {
+        border: 2px solid #E7E7E7;
+        border-radius: 16px !important;
+    }
+
+    .border-card-line {
+        border: 1px solid transparent;
+        border-image: linear-gradient(to right, #FFFFFF 0%, #1C2925 50%, #FFFFFF 100%) 1;
+    }
+
+    .card-bg-selected {
+        background-color: #F5F8F6; /* Example background color for selected card */
+    }
+
+    .border-card-comment-selected {
+        /* Set your border size and make it transparent */
+        border: 2px solid transparent;
+        border-radius: 16px;
+        
+        /* Layer 1 (top): Solid inner background color */
+        /* Layer 2 (bottom): The actual gradient */
+        background-image: linear-gradient(#ffffff, #ffffff, #ffffff), 
+                            linear-gradient(to right, #57F287, #00BEB0, #00FFFF);
+        
+        /* Map backgrounds to the right boxes */
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+
+        
+    }
+
+
+    .delivery-method-group .v-selection-control {
+        align-items: start !important;
+    }
+
+    .delivery-method-group .v-radio.v-selection-control--dirty .v-selection-control__input .iconify--custom, .v-radio-btn.v-selection-control--dirty .v-selection-control__input .iconify--custom {
+        box-shadow: none !important;
+    }
+
+    .delivery-method-group .v-radio .v-selection-control__input .iconify--custom, .v-radio-btn .v-selection-control__input .iconify--custom {
+        block-size: 24px !important;
+        font-size: 24px !important;
+        inline-size: 24px!important;
+    }
+
+    .delivery-method-group {
+        width: 100%;
+    }
+
+    .delivery-method-group .v-selection-control-group .v-radio {
+        margin-inline-end: 0.9rem !important;
+    }
+
+    .delivery-method-option {
+        margin-bottom: 24px;
+    }
+
+    .delivery-method-option .v-selection-control {
+        align-items: flex-start;
+    }
+
+    .delivery-method-option .v-label {
+        display: block;
+        flex: 1;
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+    }
+
+    .delivery-method-group .v-selection-control-group .v-radio {
+        margin-inline-end: 0 !important;
+    }
+
+    .plan-time .v-label {
+        display: block;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+    }
+
+    .plan-time .v-label {
+      max-width: 100%;
+    }
+
+    .v-switch.v-switch--inset:not(.v-input--disabled) .v-switch__track {
+        border-color: #E7E7E7;
+        background-color: #E7E7E7;
+    }
+
+    .v-switch.v-switch--inset .v-selection-control__input .v-switch__thumb {
+            background: #FFFFFF;
+    }
+
+    @media (max-width: 776px) {
       .v-tabs.agreements-tabs {
           .v-icon {
               display: none !important;
