@@ -5,11 +5,11 @@ import { nextTick } from 'vue';
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useConfigsStores } from '@/stores/useConfigs';
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate';
-import { avatarText } from '@/@core/utils/formatters'
-import company from "@/assets/images/avatars/company.svg";
+import companyAvatar from "@/assets/images/avatars/company.svg";
 import html2pdf from 'html2pdf.js';
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -17,8 +17,9 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 const suppliersStores = useSuppliersStores()
+const configsStores = useConfigsStores();
+
 const emitter = inject("emitter")
-const snackbarKey = ref(0); // Creamos un contador de renderizado
 const exporteraMobile = ref(false);
 
 const advisor = ref({
@@ -66,6 +67,29 @@ const isFormValid = ref(false)
 const selectedSupplierForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const company = ref(readCachedCompany())
+
+const setCompany = (value) => {
+  const normalized = value && typeof value === 'object' ? { ...value } : {};
+  company.value = normalized;
+  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
+};
+
+
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -98,6 +122,27 @@ watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value
 })
+
+
+onMounted(async () => {
+  try {
+    
+    await configsStores.getFeature('company')
+    await configsStores.getFeature('logo')
+
+    const companyConfig = configsStores.getFeaturedConfig('company') ?? {};
+    const logoConfig = configsStores.getFeaturedConfig('logo') ?? {};
+
+    setCompany({
+      ...companyConfig,
+      logo: logoConfig.logo ?? companyConfig.logo ?? '',
+    });
+  
+  } catch (error) {
+    console.error('Failed to load company data:', error);
+  }
+});
+
 
 watchEffect(fetchData)
 
@@ -454,11 +499,8 @@ const downloadPDF = async () => {
       status: element.state.name
     }))
 
-    //const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
-    const columnWidth = '18.4%'
-
     const { headerMarkup } = await buildPdfTopHeader({
-      //company: company.value,
+      company: company.value,
       title: 'Leverantörer',
       themeConfig,
       escapeHtml,
@@ -782,7 +824,7 @@ onUnmounted (() => {
                   <VImg
                     v-else
                     style="border-radius: 50%"
-                    :src="company"
+                    :src="companyAvatar"
                   />
                 </VAvatar>
                 <div class="d-flex flex-column">
@@ -1030,7 +1072,7 @@ onUnmounted (() => {
                 <VImg
                   v-else
                   style="border-radius: 50%"
-                  :src="company"
+                  :src="companyAvatar"
                   contain
                 />
               </VAvatar>
