@@ -28,7 +28,7 @@ const isRequestOngoing = ref(true)
 
 const isFormValid = ref(false)
 const refForm = ref()
-const currentTab = ref('1')
+const currentTab = ref(0)
 const isMobile = ref(false)
 const isReactivateSupplierDialog = ref(false)
 const isReactivatingSupplier = ref(false)
@@ -55,7 +55,7 @@ const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
 const initialData = ref(null)
 
-const selectedPlan = ref(null)
+const selectedPlan = ref(1)
 const availablePlans = ref([
     {
         id: 1,
@@ -226,7 +226,6 @@ const getTabValidationErrors = () => {
 
     const hasTab0Errors = !company.value ||
                             !organization_number.value ||
-                            // !link.value ||
                             !address.value ||
                             !postal_code.value ||
                             !street.value ||
@@ -234,15 +233,16 @@ const getTabValidationErrors = () => {
                             !isLandlineValid
 
     const hasTab1Errors = !bank.value ||
-                            !account_number.value 
+                          !account_number.value 
 
-    // const hasTab2Errors = !name.value ||
-    //                         !last_name.value ||
-    //                         !email.value ||
+    const hasTab2Errors = !name.value ||
+                          !last_name.value ||
+                          !email.value
 
     return {
         hasTab0Errors,
         hasTab1Errors,
+        hasTab2Errors
     }
 }
 
@@ -250,12 +250,13 @@ const validateTabByIndex = async (tabIndex, tabErrors = getTabValidationErrors()
     const tabMessages = {
         0: 'Vänligen fyll i alla obligatoriska fält i fliken Företag',
         1: 'Vänligen fyll i alla obligatoriska fält i fliken Bankuppgifter',
+        2: 'Vänligen fyll i alla obligatoriska fält i fliken Plan och kontakt',
     }
 
     const hasErrorsByTab = {
         0: tabErrors.hasTab0Errors,
         1: tabErrors.hasTab1Errors,
-        //2: tabErrors.hasTab2Errors,
+        2: tabErrors.hasTab2Errors,
     }
 
     if (hasErrorsByTab[tabIndex]) {
@@ -294,10 +295,11 @@ const onSubmit = async () => {
     const {
         hasTab0Errors,
         hasTab1Errors,
+        hasTab2Errors,
     } = getTabValidationErrors()
 
     if (currentTab.value === 0) {
-        const isTabValid = await validateTabByIndex(0, { hasTab0Errors, hasTab1Errors })
+        const isTabValid = await validateTabByIndex(0, { hasTab0Errors, hasTab1Errors, hasTab2Errors })
         if (!isTabValid) return
 
         currentTab.value++
@@ -305,7 +307,7 @@ const onSubmit = async () => {
     }
 
     if (currentTab.value === 1) {
-        const isTabValid = await validateTabByIndex(1, { hasTab0Errors, hasTab1Errors })
+        const isTabValid = await validateTabByIndex(1, { hasTab0Errors, hasTab1Errors, hasTab2Errors })
         if (!isTabValid) return
 
         currentTab.value++
@@ -326,6 +328,13 @@ const onSubmit = async () => {
             await nextTick()
             refForm.value?.validate()
             showTabValidationWarning('Vänligen fyll i alla obligatoriska fält i fliken Bankuppgifter')
+            return
+        }
+
+        if (hasTab2Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            showTabValidationWarning('Vänligen fyll i alla obligatoriska fält i fliken Plan och kontakt')
             return
         }
 
@@ -427,7 +436,6 @@ const onSubmit = async () => {
     }
 }
 
-
 const currentData = computed(() => ({
     //Company
     company: company.value,
@@ -501,7 +509,7 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-    <section class="page-section agreement-page" ref="sectionEl">
+    <section class="page-section suppliers-page" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
         <VSnackbar
@@ -541,7 +549,7 @@ onBeforeRouteLeave((to, from, next) => {
                             :to="{ name: 'dashboard-admin-suppliers' }"
                         >
                             <VIcon icon="custom-return" size="24" />
-                            Tillbaka
+                            Gå ut 
                         </VBtn>
                         
                         <div class="d-flex flex-column gap-4">
@@ -553,15 +561,6 @@ onBeforeRouteLeave((to, from, next) => {
                                 :class="windowWidth < 1024 ? 'd-none' : 'justify-start'"
                             >
                                 Fyll i leverantörens uppgifter för att skapa ett nytt konto.
-                            </span>
-                            <span 
-                                :class="windowWidth >= 1024 ? 'd-none' : 'justify-start'"
-                            >
-                                <div class="d-flex align-center justify-content-between">
-                                    <span class="d-flex subtitle-page">Företag</span>
-                                    <div class="flex-grow-1"></div>
-                                    <span class="d-flex subtitle-page gap-1">Steg {{ currentTab + 1}} av 3</span>
-                                </div>
                             </span>
                         </div>
 
@@ -575,7 +574,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 block
                                 :to="{ name: 'dashboard-admin-suppliers' }">
                                 <VIcon icon="custom-return" size="24" />
-                                Tillbaka
+                                Avbryt
                             </VBtn>
                         </div>
                     </div>
@@ -589,7 +588,7 @@ onBeforeRouteLeave((to, from, next) => {
                     @update:modelValue="onTabChange"
                     grow               
                     :show-arrows="false"
-                    class="agreements-tabs"
+                    class="suppliers-tabs"
                 >
                     <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <div :class="windowWidth < 1024 ? 'd-none' : 'tab-icon'">1</div>
@@ -599,10 +598,9 @@ onBeforeRouteLeave((to, from, next) => {
                         <div :class="windowWidth < 1024 ? 'd-none' : 'tab-icon'">2</div>
                         Bankuppgifter
                     </VTab>
-                    <VTab :value="1" :class="{ 'tab-completed': currentTab > 2 }">
+                    <VTab :value="2" :class="{ 'tab-completed': currentTab > 2 }">
                         <div :class="windowWidth < 1024 ? 'd-none' : 'tab-icon'">3</div>
-                        <span v-if="windowWidth < 1024"> Kontakt </span>
-                        <span v-else> Plan och kontakt </span>
+                        <span>Plan och kontakt</span>
                     </VTab>
                 </MobileScrollTabs>
 
@@ -668,7 +666,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer" />
                                             <VTextField
                                                 v-model="phone"
                                                 type="tel"
@@ -682,7 +680,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
                                             <VTextField
                                                 v-model="landline"
                                                 type="tel"
@@ -789,11 +787,10 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Välj plan" />
+                                            <VLabel class="mb-4 text-body-2 text-high-emphasis" text="Välj plan" />
                                             <div class="d-flex flex-row align-center mb-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
                                                 <VLabel class="mb-1 mb-1 title-comments me-2" text="Månadsvis" />
                                                 <VSwitch
-                                                    :rules="[emailValidator, requiredValidator]"
                                                     class="plan-time"
                                                     hide-details
                                                     inset
@@ -817,7 +814,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         :class="selectedPlan === plan.id ? 'border-card-comment-selected' : 'border-card-comment'"
                                                     >
                                                         <div id="cardContent" 
-                                                            class="py-6 px-8" 
+                                                            class="py-6 px-8 gap-2" 
                                                             :class="selectedPlan === plan.id ? 'card-bg-selected' : ''"
                                                             style="width: 100%;"
                                                         >
@@ -900,7 +897,7 @@ onBeforeRouteLeave((to, from, next) => {
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                             @click="onSubmit"
                         >
-                            {{ (currentTab === 2) ? 'Skicka' : 'Nästa' }}
+                            {{ (currentTab === 2) ? 'Skapa' : 'Nästa' }}
                         </VBtn>
                     </div>
                 </VCardText>
@@ -968,6 +965,7 @@ onBeforeRouteLeave((to, from, next) => {
 </template>
 
 <style scoped>
+
     :deep(.always-show-prefix .v-text-field__prefix) {
         opacity: 1 !important;
         height: 56px;
@@ -997,6 +995,10 @@ onBeforeRouteLeave((to, from, next) => {
 </style>
 
 <style lang="scss">
+    .suppliers-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
+        margin-inline-end: 1.5rem !important;
+    }
+
     .always-show-prefix .v-text-field__prefix {
         opacity: 1 !important;
     }
@@ -1102,7 +1104,7 @@ onBeforeRouteLeave((to, from, next) => {
         }
     }
 
-    .v-tabs.agreements-tabs {
+    .v-tabs.suppliers-tabs {
     .v-btn {
       min-width: 50px !important;
       .v-btn__content {
@@ -1163,7 +1165,7 @@ onBeforeRouteLeave((to, from, next) => {
 
     .border-card-comment {
         border: 2px solid #E7E7E7;
-        border-radius: 16px !important;
+        border-radius: 24px !important;
     }
 
     .border-card-line {
@@ -1178,18 +1180,16 @@ onBeforeRouteLeave((to, from, next) => {
     .border-card-comment-selected {
         /* Set your border size and make it transparent */
         border: 2px solid transparent;
-        border-radius: 16px;
+        border-radius: 24px !important;
         
         /* Layer 1 (top): Solid inner background color */
         /* Layer 2 (bottom): The actual gradient */
-        background-image: linear-gradient(#ffffff, #ffffff, #ffffff), 
+        background-image: linear-gradient( #F5F8F6, #F5F8F6, #F5F8F6), 
                             linear-gradient(to right, #57F287, #00BEB0, #00FFFF);
         
         /* Map backgrounds to the right boxes */
         background-origin: border-box;
-        background-clip: padding-box, border-box;
-
-        
+        background-clip: padding-box, border-box;        
     }
 
 
@@ -1258,7 +1258,7 @@ onBeforeRouteLeave((to, from, next) => {
     }
 
   @media (max-width: 776px) {
-      .v-tabs.agreements-tabs {
+      .v-tabs.suppliers-tabs {
           .v-icon {
               display: none !important;
           }
