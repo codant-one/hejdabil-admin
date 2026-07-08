@@ -1212,7 +1212,7 @@ onBeforeRouteLeave((to, from, next) => {
     }
 
     .delivery-method-group .v-selection-control-group .v-radio {
-        margin-inline-end: 0.9rem !important;
+        margin-inline-end: 0 !important;
     }
 
     .delivery-method-option {
