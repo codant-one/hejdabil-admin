@@ -1349,7 +1349,7 @@ onUnmounted (() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <!-- <VIcon size="32" icon="custom-swish" class="action-icon" /> -->
+          <VIcon size="32" icon="tabler-rosette-discount-check" class="action-icon" />
           <div class="dialog-title">
             Aktivera leverantör
           </div>
@@ -1384,7 +1384,7 @@ onUnmounted (() => {
         <VList>
           <VListItem
               v-if="$can('edit', 'suppliers') && selectedSupplierForAction.state_id === 2"
-              @click="editSupplier(selectedSupplierForAction)">
+              @click="editSupplier(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" class="mr-2" />
             </template>
@@ -1392,7 +1392,7 @@ onUnmounted (() => {
           </VListItem>
           <VListItem 
             v-if="$can('view', 'suppliers') && selectedSupplierForAction.state_id !== 1 && selectedSupplierForAction.user.full_profile === 1"
-            @click="showSwishDialog(selectedSupplierForAction)">
+            @click="showSwishDialog(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-swish" size="24" class="mr-2" />
             </template>
@@ -1400,7 +1400,7 @@ onUnmounted (() => {
           </VListItem>
           <VListItem
             v-if="$can('edit', 'suppliers') && selectedSupplierForAction.state_id === 2 && selectedSupplierForAction.user.full_profile === 0"
-            @click="resendInvitation(selectedSupplierForAction)">
+            @click="resendInvitation(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="tabler-mail-forward" />
             </template>
@@ -1408,7 +1408,7 @@ onUnmounted (() => {
           </VListItem>
           <VListItem 
             v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 2"
-            @click="showDeleteDialog(selectedSupplierForAction)">
+            @click="showDeleteDialog(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-waste" size="24" />
             </template>
@@ -1416,7 +1416,7 @@ onUnmounted (() => {
           </VListItem>
           <VListItem
             v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 1"
-            @click="showActivateDialog(selectedSupplierForAction)">
+            @click="showActivateDialog(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="tabler-rosette-discount-check" />
             </template>
