@@ -1256,7 +1256,7 @@ onBeforeUnmount(() => {
             <div class="order-title-box">
               <span class="title-panel">{{ client.fullname }}</span>
               <div class="title-organization">
-                Org.Nr.
+                Org.nr.
                 <div class="text-black">{{ client.organization_number }}</div>
               </div>
             </div>

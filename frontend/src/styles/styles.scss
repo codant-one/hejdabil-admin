@@ -745,9 +745,9 @@ body {
   flex-shrink: 0;
   min-width: fit-content;
 
-  @media (max-width: 1023px) {
+  /*@media (max-width: 1023px) {
     width: 0px;
-  }
+  }*/
 
   .v-input {
     padding-left: 0 !important;
@@ -757,6 +757,13 @@ body {
   .v-field {
     height: 48px !important;
     padding: 0px !important;
+
+    &:not(.v-field--dirty) {
+      .v-select__selection-text {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+    }
 
     .v-field__append-inner {
       align-items: center;
@@ -773,6 +780,11 @@ body {
       padding-inline-end: 0px !important;
       align-items: center;
       color: #454545;
+
+      input::placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
     }
 
     .v-field__outline__start,

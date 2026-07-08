@@ -53,7 +53,7 @@ class SupplierController extends Controller
             $query = Supplier::with([
                         'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'full_profile', 'deleted_at')->withTrashed(),
                         'user.userDetail:user_id,logo,company,organization_number,phone,landline',
-                        'creator:id,name,last_name,avatar',
+                        'creator:id,name,last_name,email,avatar',
                         'creator.userDetail:user_id,company',
                         'state:id,name'
                     ])

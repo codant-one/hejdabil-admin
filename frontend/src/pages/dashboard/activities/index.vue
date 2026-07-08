@@ -1028,15 +1028,6 @@ onBeforeUnmount(() => {
 
             <VBtn
                 class="btn-transparent px-3"
-                v-if="role !== 'Supplier' && role !== 'User'"
-                @click="isFilterDialogVisible = true"
-                :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
-                >
-                <VIcon icon="custom-profile" size="24" />
-            </VBtn>
-
-            <VBtn
-                class="btn-transparent px-3"
                 :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
                 @click="isFilterDialogVisible = true"
                 >

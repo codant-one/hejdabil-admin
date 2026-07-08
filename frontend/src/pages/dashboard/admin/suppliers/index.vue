@@ -1,19 +1,19 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { nextTick } from 'vue'; // Asegúrate de importarlo arriba
+import { nextTick } from 'vue';
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate';
-import html2pdf from 'html2pdf.js';
 import { avatarText } from '@/@core/utils/formatters'
-import Toaster from "@/components/common/Toaster.vue";
+import company from "@/assets/images/avatars/company.svg";
+import html2pdf from 'html2pdf.js';
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 const suppliersStores = useSuppliersStores()
@@ -402,6 +402,13 @@ const activateSupplier = async () => {
   return true
 }
 
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
+
 const downloadPDF = async () => {
   exporteraMobile.value = false
   isRequestOngoing.value = true
@@ -696,26 +703,27 @@ onUnmounted (() => {
         :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
-        <div class="search">
+        <div class="search" :style="windowWidth < 1024 ? '' : 'width: 480px !important'">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
         
-        <div class="d-flex align-center empty-select" >
+        <div class="d-flex align-center empty-select" :style="windowWidth < 1024 ? 'width: 96px' : ''">
           <VSelect
-              v-model="state_id"
-              placeholder="Status"
-              class="custom-select-hover"
-              :items="states"
-              item-title="name"
-              item-value="id"
+            v-model="state_id"
+            placeholder="Status"
+            class="custom-select-hover"
+            :items="states"
+            item-title="name"
+            item-value="id"
+            clearable
           >
-              <template #selection="{ item }">
-                  <div class="activity-mode-option">
-                    {{ item.raw.name }}
-                  </div>
-              </template>
+            <template #selection="{ item }">
+              <div class="activity-mode-option">
+                {{ item.raw.name }}
+              </div>
+            </template>
           </VSelect>
         </div>
 
@@ -740,13 +748,13 @@ onUnmounted (() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> #ID </th>
+            <th scope="col"> # ID </th>
             <th scope="col"> Företag </th>
             <th scope="col"> Kontakt </th>
-            <th scope="col"> Status </th>
-            <th scope="col"> Swish </th>
-            <th scope="col"> Sender </th>
-            <th scope="col"> # Kunder </th>
+            <th scope="col" class="text-center"> Status </th>
+            <th scope="col" class="text-center"> Swish </th>
+            <th scope="col" class="text-center"> Sender </th>
+            <th scope="col" class="text-center"> # Kunder </th>
             <th scope="col"> Skapad Av </th>
             <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
           </tr>
@@ -759,51 +767,81 @@ onUnmounted (() => {
             style="height: 3rem;">
 
             <td> {{ supplier.id }} </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
-                  >
+                  class="supplier-company-logo-avatar"
+                >
                   <VImg
                     v-if="supplier.user.user_detail.logo"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
                   />
-                    <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
+                  <VImg
+                    v-else
+                    style="border-radius: 50%"
+                    :src="company"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
-                  <span class="font-weight-medium cursor-pointer text-aqua" @click="seeSupplier(supplier)">
-                    {{ supplier.user.user_detail.company }}
+                  <span class="font-weight-medium text-aqua">
+                    {{ supplier.user.name }} {{ supplier.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm">
-                    Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
+                  <span class="text-sm text-disabled">
+                    <VTooltip 
+                      v-if="supplier.user.user_detail.organization_number && supplier.user.user_detail.organization_number.length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          Org.nr {{ truncateText(supplier.user.user_detail.organization_number, 20) }}
+                        </span>
+                      </template>
+                      <span>Org.nr: {{ supplier.user.user_detail.organization_number }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>Org.nr: {{ supplier.user.user_detail.organization_number }}</span>
                   </span>
                 </div>
               </div>
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
-                  >
+                >
                   <VImg
                     v-if="supplier.user.avatar"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + supplier.user.avatar"
                   />
-                    <span v-else>{{ avatarText(supplier.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="supplier.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
+                    {{ supplier.user.name }} {{ supplier.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm">{{ supplier.user.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip 
+                      v-if="supplier.user.email && supplier.user.email.length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ truncateText(supplier.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ supplier.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ supplier.user.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>
-            <td> 
+            <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
@@ -811,38 +849,53 @@ onUnmounted (() => {
                 {{ supplier.state.name }}
               </div>
             </td>
-            <td class="text-wrap w-15">
+            <td class="text-center">
               <span v-if="supplier.is_payout === 1">
                 {{ supplier.payout_number ?? '' }}
               </span>
             </td>
-            <td class="text-wrap w-15">
+            <td class="text-center">
               {{ supplier.sms_sender ?? '' }}
             </td>
-            <td class="text-wrap w-15">
+            <td class="text-center">
               {{ supplier.client_count }}
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="supplier.creator.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
-                  >
+                >
                   <VImg
                     v-if="supplier.creator.avatar"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + supplier.creator.avatar"
                   />
-                    <span v-else>{{ avatarText(supplier.creator.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="supplier.creator?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
+                    {{ supplier.creator.name }} {{ supplier.creator.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ supplier.creator.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip 
+                      v-if="supplier.creator.email && supplier.creator.email.length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ truncateText(supplier.creator.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ supplier.creator.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ supplier.creator.email }}</span>
+                  </span>
                 </div>
               </div>
-            </td>
+            </td> 
             <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
               <VMenu>
@@ -925,13 +978,12 @@ onUnmounted (() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-supplier"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga leverantörer än</div>
+          <div class="empty-state-title">Inga leverantörer än</div>
           <div class="empty-state-text">
-            Lägg till dina leverantörer  här för att snabbt skapa fakturor och hålla
-            ordning på dina kontakter.
+            Skapa din första leverantör för att hålla koll på varifrån dina fordon kommer.
           </div>
         </div>
         <VBtn
@@ -939,7 +991,7 @@ onUnmounted (() => {
           v-if="$can('create', 'suppliers') && !$vuetify.display.mdAndDown"
           :to="{ name: 'dashboard-admin-suppliers-add' }"
         >
-          Lägg till ny leverantör
+          Skapa leverantör
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
 
@@ -948,7 +1000,7 @@ onUnmounted (() => {
           v-if="$vuetify.display.mdAndDown && $can('create', 'suppliers')"
           :to="{ name: 'dashboard-admin-suppliers-add' }"
         >
-          Lägg till ny leverantör
+          Skapa leverantör
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -962,24 +1014,32 @@ onUnmounted (() => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <div class="d-flex align-center gap-x-3">
+            <div class="d-flex align-center w-100">
               <VAvatar
-                :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
-                size="38"
-                >
+                variant="outlined"
+                size="32"
+                class="me-3 supplier-company-logo-avatar"
+                contain
+              >
                 <VImg
                   v-if="supplier.user.user_detail.logo"
-                  style="border-radius: 50%;"
+                  style="border-radius: 50%"
                   :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
+                  contain
                 />
-                  <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
+                <VImg
+                  v-else
+                  style="border-radius: 50%"
+                  :src="company"
+                  contain
+                />
               </VAvatar>
-              <div class="d-flex flex-column">
-                <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
+              <div class="d-flex flex-column gap-1">
+                <span class="text-aqua">
                   {{ supplier.user.user_detail.company }}
                 </span>
-                <span class="text-sm text-disabled">
-                  Org.Nr. {{ supplier.user.user_detail.organization_number }}
+                <span class="text-neutral-3">
+                  Org.nr {{ supplier.user.user_detail.organization_number }}
                 </span>
               </div>
             </div>
@@ -987,23 +1047,19 @@ onUnmounted (() => {
           <VExpansionPanelText>
             <div class="mb-6">
               <div class="expansion-panel-item-label">Kontakt:</div>
-              <div class="expansion-panel-item-value">
-                {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}
-              </div>
-              <div class="expansion-panel-item-value">
-                {{ supplier.user.email }}
+              <div class="expansion-panel-item-value d-flex flex-column gap-2">
+                <span>{{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}</span>
+                <span>{{ supplier.user.email }}</span>
               </div>
             </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Status:</div>
-                <div class="expansion-panel-item-value">
-                  <VChip
-                    label
-                    :color="resolveStatus(supplier.state.id)?.color"
-                  >
-                    {{ supplier.state.name }}
-                  </VChip>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Status:</div>
+              <div class="expansion-panel-item-value">
+                <div
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
+                >
+                  {{ supplier.state.name }}
                 </div>
               </div>
             </div>
@@ -1011,7 +1067,7 @@ onUnmounted (() => {
               <div>
                 <div class="expansion-panel-item-label">Swish:</div>
                 <div class="expansion-panel-item-value">
-                  {{ supplier.payout_number ?? "" }}
+                  {{ supplier.payout_number ?? "---" }}
                 </div>
               </div>
             </div>
@@ -1019,7 +1075,7 @@ onUnmounted (() => {
               <div>
                 <div class="expansion-panel-item-label">Sender:</div>
                 <div class="expansion-panel-item-value">
-                  {{ supplier.sms_sender ?? "" }}
+                  {{ supplier.sms_sender ?? "---" }}
                 </div>
               </div>
             </div>
@@ -1394,6 +1450,12 @@ onUnmounted (() => {
 <style lang="scss">
   .v-select .v-field .v-field__input > input {
     align-self: center !important;
+  }
+
+  .supplier-company-logo-avatar {
+    .v-img__img {
+      object-fit: contain !important;
+    }
   }
 </style>
 
