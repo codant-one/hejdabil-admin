@@ -1,10 +1,7 @@
 <script setup>
 
-import { themeConfig } from '@themeConfig'
 import { useSuppliersStores } from '@/stores/useSuppliers'
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { useClipboard } from '@vueuse/core';
+import { useDisplay } from "vuetify";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from '@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue'
@@ -12,25 +9,22 @@ import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTa
 import CustomerTabSecurity from '@/views/apps/ecommerce/customer/view/CustomerTabSecurity.vue'
 import CustomerTabAddressAndBilling from '@/views/apps/ecommerce/customer/view/CustomerTabAddressAndBilling.vue'
 import CustomerTabCompany from '@/views/apps/ecommerce/customer/view/CustomerTabCompany.vue'
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
+
+defineProps({
+  id: [String, Number],
+});
 
 const route = useRoute()
 const suppliersStores = useSuppliersStores()
-const cp = useClipboard()
 
 const userTab = ref(0)
-
 const supplier = ref(null)
-const online = ref(null)
-
 const isRequestOngoing = ref(true)
+const sectionEl = ref(null)
 
-const tabs = [
-    { icon: 'mdi-cog', title: 'Översikt' },
-    { icon: 'tabler-lock', title: 'Säkerhet' },
-    { icon: 'mdi-invoice-list', title: 'Fakturering' },
-    { icon: 'tabler-building-store', title: 'Företag' }
-]
-const isMobile = ref(false)
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const advisor = ref({
   type: '',
@@ -38,22 +32,12 @@ const advisor = ref({
   show: false
 })
 
-const showAlert = function(alert) {
-  advisor.value.show = alert.value.show
-  advisor.value.type = alert.value.type
-  advisor.value.message = alert.value.message
-}
-
-onMounted(async () => {
-
-    checkIfMobile()
-   
-    window.addEventListener('resize', checkIfMobile);
-})
-
-const checkIfMobile = () => {
-    isMobile.value = window.innerWidth < 768;
-}
+const tabs = [
+    { icon: 'custom-tabler', title: 'Översikt' },
+    { icon: 'custom-password-outlined', title: 'Säkerhet' },
+    { icon: 'custom-facture', title: 'Fakturering' },
+    { icon: 'custom-business', title: 'Företag' }
+]
 
 watchEffect(fetchData)
 
@@ -63,186 +47,161 @@ async function fetchData() {
 
   if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-id') {
     supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
+    //console.log('supplier', supplier.value)
   }
 
   isRequestOngoing.value = false
 }
 
-const handleDownload = async(data) => {
-    if(data.icon === 'pdf' || data.icon === 'docx' || data.icon === 'doc') {
-        try {
-            const link = document.createElement('a');
-            link.href = themeConfig.settings.urlStorage + 'documents/' + data.document
-            link.target = '_blank'
-            document.body.appendChild(link);
-            link.click();
-
-            link.parentNode.removeChild(link);
-
-            advisor.value.type = 'success'
-            advisor.value.show = true
-            advisor.value.message = 'Framgångsrik nedladdning!'
-
-        } catch (error) {
-
-            advisor.value.type = 'error'
-            advisor.value.show = true
-            advisor.value.message = 'Fel vid nedladdning av dokument:' + error
-        }
-    } else {
-        try {
-            const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + 'documents/' + data.document);
-            const blob = await response.blob();
-
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-
-            link.setAttribute('download', 'image.jpg');
-
-            document.body.appendChild(link);
-            link.click();
-
-            window.URL.revokeObjectURL(url);
-
-            advisor.value.type = 'success'
-            advisor.value.show = true
-            advisor.value.message = 'Framgångsrik nedladdning!'
-
-        } catch (error) {
-
-            advisor.value.type = 'error'
-            advisor.value.show = true
-            advisor.value.message = 'Fel vid nedladdning av bild:' + error
-        }
-    }
-
-    setTimeout(() => {
-        advisor.value.show = false
-        advisor.value.type = ''
-        advisor.value.message = ''
-    }, 5000)
+const showAlert = function(alert) {
+  advisor.value.show = alert.value.show
+  advisor.value.type = alert.value.type
+  advisor.value.message = alert.value.message
 }
 
-const handleCopy = (data) => {
-  
-    cp.copy(data)
+const showLoading = function (value) {
+  isRequestOngoing.value = value;
+};
 
-    advisor.value.type = 'success'
-    advisor.value.show = true
-    advisor.value.message = 'Bankkonto kopierat!'
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value
+  if (!el) return
 
-    setTimeout(() => {
-        advisor.value.show = false
-        advisor.value.type = ''
-        advisor.value.message = ''
-    }, 5000)
+  const rect = el.getBoundingClientRect()
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25)
+  el.style.minHeight = `${remaining}px`
 }
+
+onMounted(() => {
+  resizeSectionToRemainingViewport()
+  window.addEventListener('resize', resizeSectionToRemainingViewport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeSectionToRemainingViewport)
+})
 </script>
 
 <template>
-  <div>
-    <VRow>
+    <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
-        <VCol cols="12">
-            <VAlert
-            v-if="advisor.show"
-            :type="advisor.type"
-            class="mb-6">
-                {{ advisor.message }}
-            </VAlert>
-            <Toaster />
-        </VCol>
-    </VRow>
-    
-    <!-- 👉 Header  -->
-    <div v-if="supplier" class="d-block d-md-flex justify-space-between align-center flex-wrap gap-y-4 mb-6">
-        <div>
-            <div class="d-flex gap-2 align-center mb-2 flex-wrap">
-            <h4 class="text-h4 font-weight-medium">
-                Leverantörens ID #{{ route.params.id }}
-            </h4>
-            </div>
-            <div>
-            <span class="text-body-1" v-if="online">
-                {{  format(parseISO(online), 'MMMM d, yyyy, H:mm', { locale: es }).replace(/(^|\s)\S/g, (char) => char.toUpperCase()) }}
-                <span class="text-xs">
-                    (Sista anslutningen)
-                </span>
-            </span>
-            </div>
-        </div>
-        <div class="d-flex gap-4">
-            <VBtn
-                variant="tonal"
-                color="secondary"
-                class="mb-2 w-100 w-md-auto"
+        <VSnackbar
+            v-model="advisor.show"
+            transition="scroll-y-reverse-transition"
+            :location="snackbarLocation"
+            :color="advisor.type"
+            class="snackbar-alert snackbar-dashboard"
+        >
+            <span class="snackbar-message">{{ advisor.message }}</span>
+        </VSnackbar> 
+        
+        <Toaster />
+        
+        <VCard class="client-slug card-fill h-100" v-if="supplier">
+
+            <VCardText
+                class="pt-4 pb-0 px-4"
+                :class="$vuetify.display.smAndDown ? 'pt-6 pb-0 px-6' : ''"
+            >
+                <VBtn
+                class="btn-light"
+                :class="$vuetify.display.smAndDown ? 'flex-1 order-1' : 'w-auto'"
                 :to="{ name: 'dashboard-admin-suppliers' }"
                 >
+                <template #prepend>
+                    <VIcon icon="custom-return" size="24" />
+                </template>
                 Tillbaka
-            </VBtn>
-        </div>
-    </div>
-    <!-- 👉 Customer Profile  -->
-    <VRow v-if="supplier">
-        <VCol
-            cols="12"
-            md="5"
-            lg="4"
-        >
-            <CustomerBioPanel 
-                :customer-data="supplier"
-                :is-supplier="true" />
-        </VCol>
-        <VCol
-            cols="12"
-            md="7"
-            lg="8">
-            <VTabs v-model="userTab" grow stacked class="mb-5">
-                <VTab
-                    v-for="tab in tabs"
-                    :key="tab.title">
-                    <VIcon
-                        :size="18"
-                        :icon="tab.icon"
-                        />
-                    <span v-if="!isMobile">{{ tab.title }}</span>
-                </VTab>
-            </VTabs>
-    
-            <VWindow v-model="userTab">
-                <VWindowItem :value="0">
-                    <CustomerTabOverview
-                        :customer-data="supplier"
-                        :is-supplier="true"/>
-                </VWindowItem>
-                <VWindowItem :value="1">
-                    <CustomerTabSecurity 
-                        :user_id="supplier.user_id"
-                        @alert="showAlert" />
-                </VWindowItem>
-                <VWindowItem :value="2">
-                    <CustomerTabAddressAndBilling 
-                        :customer-data="supplier"
-                        :is-supplier="true"
-                        @copy="handleCopy"
-                        @download="handleDownload"
-                        @alert="showAlert"
-                        @updateBalance="fetchData"/>
-                </VWindowItem>
-                <VWindowItem :value="3">
-                    <CustomerTabCompany
-                        :customer-data="supplier"
-                        :is-supplier="true"
-                        @copy="handleCopy"
-                        @download="handleDownload"/>
-                </VWindowItem>
-            </VWindow>
-        </VCol>
-    </VRow>
-  </div>
+                </VBtn>
+            </VCardText>
+
+            <VCardText
+                class="d-flex flex-column pa-4 gap-4"
+                :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
+            >
+                <CustomerBioPanel
+                    :customer-data="supplier"
+                    :is-supplier="true" 
+                />
+            </VCardText>
+
+            <VCardText>
+                <VTabs 
+                    v-model="userTab"
+                     grow
+                    :show-arrows="false"
+                     class="suppliers-tabs">
+                    <VTab
+                        v-for="tab in tabs"
+                        :key="tab.title">
+                        <VIcon
+                            :size="24"
+                            :icon="tab.icon"
+                            />
+                        <span>{{ tab.title }}</span>
+                    </VTab>
+                </VTabs>
+        
+                <VWindow v-model="userTab">
+                    <VWindowItem :value="0">
+                        <CustomerTabOverview
+                            :customer-data="supplier"
+                            :is-supplier="true"/>
+                    </VWindowItem>
+                    <VWindowItem :value="1">
+                        <CustomerTabSecurity 
+                            :user_id="supplier.user_id"
+                            @alert="showAlert" />
+                    </VWindowItem>
+                    <VWindowItem :value="2">
+                        <CustomerTabAddressAndBilling 
+                            :customer-data="supplier"
+                            :is-supplier="true"
+                            @alert="showAlert"/>
+                    </VWindowItem>
+                    <VWindowItem :value="3">
+                        <CustomerTabCompany
+                            :customer-data="supplier"
+                            :is-supplier="true"/>
+                    </VWindowItem>
+                </VWindow>
+            </VCardText>
+        </VCard>
+  </section>
 </template>
+
+<style lang="scss" scoped>
+    
+    .v-tabs.suppliers-tabs {
+        :deep(.v-btn) {
+            background-color: #FFFFFF !important;
+            min-width: 50px !important;
+            .v-btn__content {
+                font-size: 14px !important;
+                color: #454545;
+            }
+        }
+        :deep(.v-slide-group__prev),
+        :deep(.v-slide-group__next) {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 776px) {
+        .v-tabs.suppliers-tabs {
+            :deep(.v-icon) {
+                display: none !important;
+            }
+            :deep(.v-btn) {
+                 background-color: #FFFFFF !important;
+                .v-btn__content {
+                    white-space: break-spaces;
+                }
+            }
+        }
+    }
+</style>
 
 <route lang="yaml">
     meta:

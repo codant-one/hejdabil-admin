@@ -41,8 +41,6 @@ const props = defineProps({
 const emit = defineEmits([
   'submit',
   'delete',
-  'copy',
-  'download',
   'alert',
   'updateBalance'
 ])
@@ -101,18 +99,6 @@ async function fetchData() {
   }
 }
 
-const download = (file) => {
-  let data = {
-    icon: document.value.split('.')[1],
-    document: file
-  }
-  emit('download', data)
-}
-
-const copy = (account) => {
-  emit('copy', account)
-}
-
 const editAddress = addressData => {
 
   addressData.addresses_type_id = addressData.addresses_type_id.toString()
@@ -139,113 +125,6 @@ const onSubmit = (address, method) => {
 <template>
   <!-- eslint-disable vue/no-v-html -->
 
-  <!-- 👉 Address Book -->
-  <VCard class="mb-6 facturing" v-if="!props.isSupplier">
-    <VCardText>
-      <div class="d-flex justify-space-between mb-6 flex-wrap align-center gap-y-4 gap-x-6">
-        <h5 class="text-h5">
-          Direcciones
-        </h5>
-        <VBtn
-          variant="tonal"
-          @click="isEditAddressDialogVisible = !isEditAddressDialogVisible"
-        >
-          Agregar
-        </VBtn>
-      </div>
-      <template
-        v-for="(address, index) in addresses_"
-        :key="index"
-      >
-        <div class="d-flex justify-space-between mb-4 gap-y-2 flex-wrap align-center">
-          <div class="d-flex align-center gap-x-1">
-            <VBtn
-              icon
-              variant="text"
-              color="default"
-              size="x-small"
-              @click="show[index] = !show[index]"
-            >
-              <VIcon
-                :icon="show[index] ? 'tabler-chevron-down' : 'tabler-chevron-right'"
-                class="flip-in-rtl"
-              />
-            </VBtn>
-
-            <div>
-              <div class="d-flex">
-                <h6 class="text-h6 me-2">
-                  {{ address.type.name }}
-                </h6>
-                <VChip
-                  v-if="address.default"
-                  color="success"
-                  label
-                >
-                  Dirección por defecto
-                </VChip>
-              </div>
-              <span class="text-body-2 text-disabled">{{ address.title }}</span>
-            </div>
-          </div>
-
-          <div class="ms-5 iconsButton">
-            <VBtn
-              icon
-              variant="text"
-              color="default"
-              @click="editAddress(address)">
-              <VIcon
-                icon="tabler-pencil"
-                class="flip-in-rtl"
-              />
-            </VBtn>
-            <VBtn
-              icon
-              variant="text"
-              color="default"
-              @click="showDeleteDialog(address)">
-              <VIcon
-                icon="tabler-trash"
-                class="flip-in-rtl"
-              />
-            </VBtn>
-          </div>
-        </div>
-        <VExpandTransition>
-          <div
-            v-show="show[index]"
-            class="px-10"
-          >
-            <h6 class="mb-1 text-h6">
-              {{ address.address }}
-            </h6>
-            <div
-              class="text-body-1"
-              v-html="address.street"
-            />
-            <div
-              class="text-body-1"
-              v-html="address.city"
-            />
-            <div
-              class="text-body-1"
-              v-html="address.postal_code"
-            />
-            <div
-              class="text-body-1"
-              v-html="address.phone"
-            />
-          </div>
-        </VExpandTransition>
-        <VDivider
-          v-if="index !== addresses_.length - 1"
-          class="my-4"
-        />
-      </template>
-    </VCardText>
-  </VCard>
-
   <!-- 👉 Payment Methods -->
   <VRow>
     <VCol cols="12" v-if="props.isSupplier">
@@ -256,11 +135,6 @@ const onSubmit = (address, method) => {
       </VCard>
     </VCol>
   </VRow>
-  
-  <!-- <AddEditAddressDialog 
-    v-model:isDialogVisible="isEditAddressDialogVisible"
-    :billing-address="selectedAddress"
-    @submit="onSubmit"/> -->
 </template>
 
 <style>

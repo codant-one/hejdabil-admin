@@ -14,8 +14,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'copy',
-  'download'
+  ''
 ])
 
 const company = ref('')
@@ -54,18 +53,6 @@ async function fetchData() {
     last_name.value = props.customerData.user.last_name 
     email.value = props.customerData.user.email
   }
-}
-
-const download = (file, type) => {
-  let data = {
-    icon: type === 'nit' ? document_nit.value.split('.')[1] : document_rut.value.split('.')[1],
-    document: file
-  }
-  emit('download', data)
-}
-
-const copy = (account) => {
-  emit('copy', account)
 }
 
 </script>

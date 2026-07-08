@@ -76,7 +76,7 @@ async function fetchData() {
 
   if (Number(route.params.id) && route.name === "dashboard-admin-clients-id") {
     client.value = await clientsStores.showClient(Number(route.params.id));
-;
+
     cardItems.value[0].value = client.value.carsPurchased;
     cardItems.value[1].value = client.value.carsForSale;
     cardItems.value[2].value = formatNumber(client.value.totalBilling) + " Kr"
