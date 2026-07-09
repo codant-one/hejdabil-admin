@@ -69,7 +69,7 @@ async function fetchData() {
       </div>
     </VCardText>
 
-    <VCardText class="px-0 d-flex flex-column">
+    <VCardText class="px-0 pb-0 d-flex flex-column">
       <div class="title-section mb-2">
           Företagsinformation
       </div>
