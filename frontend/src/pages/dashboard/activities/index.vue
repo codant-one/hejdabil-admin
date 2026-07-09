@@ -1011,7 +1011,7 @@ onBeforeUnmount(() => {
               >
                   <template #selection="{ item }">
                       <div class="activity-mode-option">
-                        <VIcon :icon="item.raw.icon" size="24" />
+                        <VIcon icon="custom-eye" size="24" />
                         {{ item.raw.title }}
                       </div>
                   </template>
