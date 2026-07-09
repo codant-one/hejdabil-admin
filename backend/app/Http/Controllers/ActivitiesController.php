@@ -155,6 +155,10 @@ class ActivitiesController extends Controller
             return;
         }
 
+        if ($user->hasAnyRole(['SuperAdmin', 'Administrator']) || $user->can('administrator')) {
+            return;
+        }
+
         $query->where(function ($permissionQuery) use ($user) {
             $hasVisibilityCondition = false;
 
