@@ -53,7 +53,10 @@ class DatabaseSeeder extends Seeder
             PayoutStateSeeder::class,
 
             //settings
-            SettingColorSeeder::class
+            SettingColorSeeder::class,
+
+            //plans
+            FeaturesSeeder::class,
         ]);
 
     }

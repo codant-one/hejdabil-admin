@@ -9,7 +9,6 @@ import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTa
 import CustomerTabSecurity from '@/views/apps/ecommerce/customer/view/CustomerTabSecurity.vue'
 import CustomerTabAddressAndBilling from '@/views/apps/ecommerce/customer/view/CustomerTabAddressAndBilling.vue'
 import CustomerTabCompany from '@/views/apps/ecommerce/customer/view/CustomerTabCompany.vue'
-import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 
 defineProps({
   id: [String, Number],
@@ -147,12 +146,16 @@ onBeforeUnmount(() => {
                     <VWindowItem :value="0">
                         <CustomerTabOverview
                             :customer-data="supplier"
-                            :is-supplier="true"/>
+                            :is-supplier="true"
+                            
+                        />
                     </VWindowItem>
                     <VWindowItem :value="1">
                         <CustomerTabSecurity 
                             :user_id="supplier.user_id"
-                            @alert="showAlert" />
+                            @alert="showAlert"
+                            @loading="showLoading"
+                        />
                     </VWindowItem>
                     <VWindowItem :value="2">
                         <CustomerTabAddressAndBilling 

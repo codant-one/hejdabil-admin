@@ -273,6 +273,30 @@ class CacheService
     }
 
     /**
+     * Get active administrator users (cache por 5 minutos)
+     */
+    public static function getActiveAdministratorUsers()
+    {
+        return Cache::remember('users.active_administrators', 300, function () {
+            return User::query()
+                ->with('roles')
+                ->whereHas('roles', function ($roleQuery) {
+                    $roleQuery->whereIn('name', ['SuperAdmin', 'Administrator']);
+                })
+                ->orderBy('name')
+                ->orderBy('last_name')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'user_id' => $user->id,
+                        'user_name' => trim(($user->name ?? '') . ' ' . ($user->last_name ?? '')),
+                    ];
+                })
+                ->values();
+        });
+    }
+
+    /**
      * Get all invoices
      */
     public static function getInvoices()
@@ -360,6 +384,7 @@ class CacheService
             'commission_types.all',
             'document_types.all',
             'suppliers.active',
+            'users.active_administrators',
             'invoices.all',
             'permissions.all',
             'roles.all',

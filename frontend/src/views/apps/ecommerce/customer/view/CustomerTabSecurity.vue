@@ -1,6 +1,5 @@
 <script setup>
-// import { VDataTable } from 'vuetify/labs/VDataTable'
-import { useDisplay } from "vuetify";
+
 import { confirmedValidator, passwordValidator, requiredValidator } from '@/@core/utils/validators'
 import { useUsersStores } from '@/stores/useUsers'
 
@@ -12,7 +11,6 @@ const props = defineProps({
 })
 
 const { width: windowWidth } = useWindowSize();
-const { mdAndDown } = useDisplay();
 const usersStores = useUsersStores()
 
 const refForm  = ref()
@@ -20,8 +18,6 @@ const password = ref()
 const passwordConfirmation = ref()
 const isNewPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
-const smsVerificationNumber = ref('+1(968) 819-2547')
-const isTwoFactorDialogOpen = ref(false)
 
 const advisor = ref({
   type: '',
@@ -29,77 +25,11 @@ const advisor = ref({
   show: false
 })
 
-const emit = defineEmits(['alert'])
+const emit = defineEmits([
+  'alert',
+  'loading'
+])
 
-const recentDeviceHeader = [
-  {
-    title: 'BROWSER',
-    key: 'browser',
-  },
-  {
-    title: 'DEVICE',
-    key: 'device',
-  },
-  {
-    title: 'LOCATION',
-    key: 'location',
-  },
-  {
-    title: 'RECENT ACTIVITY',
-    key: 'activity',
-  },
-]
-
-const recentDevices = [
-  {
-    browser: 'Chrome on Windows',
-    logo: 'tabler-brand-windows',
-    color: 'info',
-    device: 'HP Specter 360',
-    location: 'Switzerland',
-    activity: '10, July 2021 20:07',
-  },
-  {
-    browser: 'Chrome on iPhone',
-    logo: 'tabler-device-mobile',
-    color: 'error',
-    device: 'iPhone 12x',
-    location: 'Australia',
-    activity: '13, July 2021 10:10',
-  },
-  {
-    browser: 'Chrome on Android',
-    logo: 'tabler-brand-android',
-    color: 'success',
-    device: 'OnePlus 9 Pro',
-    location: 'Dubai',
-    activity: '4, July 2021 15:15',
-  },
-  {
-    browser: 'Chrome on macOS',
-    logo: 'tabler-brand-apple',
-    color: 'secondary',
-    device: 'Apple iMac',
-    location: 'India',
-    activity: '20, July 2021 21:01',
-  },
-  {
-    browser: 'Chrome on Windows',
-    logo: 'tabler-brand-windows',
-    color: 'info',
-    device: 'HP Specter 360',
-    location: 'Switzerland',
-    activity: '10, July 2021 20:07',
-  },
-  {
-    browser: 'Chrome on Android',
-    logo: 'tabler-brand-android',
-    color: 'success',
-    device: 'OnePlus 9 Pro',
-    location: 'Dubai',
-    activity: '4, July 2021 15:15',
-  },
-]
 
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid: isValid }) => {
@@ -107,6 +37,8 @@ const onSubmit = () => {
       let data = {
         password: password.value
       }
+
+      emit("loading", true);
 
       usersStores.updatePasswordUser(data, props.user_id)
         .then(response => {
@@ -116,6 +48,7 @@ const onSubmit = () => {
           advisor.value.type = 'success'
           advisor.value.message = 'Lösenord ändrat'
                     
+          emit("loading", false);
           emit('alert', advisor)
 
           nextTick(() => {
@@ -139,166 +72,76 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <VRow>
-    <VCol cols="12">
-      <!-- 👉 Change password -->
-      <VCard class="security">
-        <VCardText class="pb-0">
-          <div class="title-tabs">
-            Ändra lösenord
-          </div>
-        </VCardText>
-        
+  <VCard class="security">
+    <VCardText class="px-0 pb-0">
+      <div class="title-tabs">
+        Ändra lösenord
+      </div>
+    </VCardText>
+    <VCardText class="px-0 pb-0">
+      <VAlert
+        class="mb-4 px-4 pb-3 alert"
+        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
+      >
+        <VAlertTitle class="mb-2">
+          Se till att dessa krav är uppfyllda
+        </VAlertTitle>
+        <ul class="list-style ms-4">
+          <li class="items-alert">Minst 8 tecken</li>
+          <li class="items-alert">Stora och små bokstäver</li>
+          <li class="items-alert">Minst en siffra</li>
+        </ul>
+      </VAlert>
 
-        <VCardText>
-          <VAlert
-            class="mb-4 px-4 pb-3 alert"
-            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
-          >
-            <VAlertTitle class="mb-3">
-              Se till att dessa krav är uppfyllda
-            </VAlertTitle>
-            <ul class="list-style ms-6">
-              <li>Minst 8 tecken</li>
-              <li>Stora och små bokstäver</li>
-              <li>Minst en siffra</li>
-            </ul>
-          </VAlert>
-
-          <VForm
-            ref="refForm"
-            class="card-form"
-            validate-on="submit"
-            @submit.prevent="onSubmit"
-            >
-            <div 
-                class="d-flex flex-wrap"
-                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-            >
-              <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord*" />
-                <VTextField
-                  v-model="password"
-                  :type="isNewPasswordVisible ? 'text' : 'password'"
-                  :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                  :rules="[requiredValidator, passwordValidator]"
-                  @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
-                  />
-              </div>
-              <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord*" />
-                <VTextField
-                  v-model="passwordConfirmation"
-                  :type="isConfirmPasswordVisible ? 'text' : 'password'"
-                  :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                  :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
-                  @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
-                  />
-              </div>
-
-              <div class="mt-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                <VBtn
-                  type="submit"
-                  :block="windowWidth < 1024"
-                  class="btn-gradient"
-                  :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
-                >
-                  Ändra lösenord
-                </VBtn>
-              </div>
-            </div>
-          </VForm>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <VCol cols="12" v-if="false">
-      <!-- 👉 Two step verification -->
-      <VCard class="security">
-        <VCardItem>
-          <VCardTitle class="mb-2">
-            Two-steps verification
-          </VCardTitle>
-          <VCardSubtitle>
-            <span class="text-base text-medium-emphasis">Keep your account secure with authentication step.</span>
-          </VCardSubtitle>
-        </VCardItem>
-
-        <VCardText>
-          <div>
-            <span class="text-base text-high-emphasis font-weight-medium mb-1">
-              SMS
-            </span>
-            <VTextField
-              variant="underlined"
-              :model-value="smsVerificationNumber"
-            >
-              <template #append-inner>
-                <VBtn
-                  icon
-                  variant="text"
-                  color="default">
-                  <VIcon
-                    icon="tabler-edit"
-                    @click="isTwoFactorDialogOpen = true"
-                  />
-                </VBtn>
-                <VBtn
-                  icon
-                  variant="text"
-                  color="default">
-                  <VIcon icon="tabler-trash" />
-                </VBtn>
-              </template>
-            </VTextField>
-          </div>
-
-          <p class="mb-0 mt-4">
-            Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to log in. <a
-              href="javascript:void(0)"
-              class="text-decoration-none"
-            >Learn more</a>.
-          </p>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <VCol cols="12" v-if="false">
-      <!-- 👉 Recent devices -->
-      <VCard title="Recent devices">
-        <VDivider />
-        <!-- <VDataTable
-          :items="recentDevices"
-          :headers="recentDeviceHeader"
-          hide-default-footer
-          class="text-no-wrap"
+      <VForm
+        ref="refForm"
+        class="card-form"
+        validate-on="submit"
+        @submit.prevent="onSubmit"
         >
-          <template #item.browser="{ item }">
-            <div class="d-flex align-center">
-              <VIcon
-                :icon="item.logo"
-                :color="item.color"
-                size="18"
-                class="me-2"
+        <div 
+            class="d-flex flex-wrap"
+            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+            :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+        >
+          <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord*" />
+            <VTextField
+              v-model="password"
+              :type="isNewPasswordVisible ? 'text' : 'password'"
+              :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+              :rules="[requiredValidator, passwordValidator]"
+              @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
               />
-              {{ item.browser }}
-            </div>
-          </template>
-          <template #bottom />
-        </VDataTable> -->
-      </VCard>
-    </VCol>
-  </VRow>
+          </div>
+          <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord*" />
+            <VTextField
+              v-model="passwordConfirmation"
+              :type="isConfirmPasswordVisible ? 'text' : 'password'"
+              :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+              :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
+              @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
+              />
+          </div>
 
-  <!-- 👉 Enable One Time Password Dialog -->
-  <!-- <TwoFactorAuthDialog
-    v-model:isDialogVisible="isTwoFactorDialogOpen"
-    :sms-code="smsVerificationNumber"
-  /> -->
+          <div class="mt-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+            <VBtn
+              type="submit"
+              :block="windowWidth < 1024"
+              class="btn-gradient"
+              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+            >
+              Ändra lösenord
+            </VBtn>
+          </div>
+        </div>
+      </VForm>
+    </VCardText>
+  </VCard>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 
   .title-tabs {
       font-weight: 700;
@@ -311,13 +154,95 @@ const onSubmit = () => {
       }
   }
 
-  .alert{
-    border-radius: 8px;
-    border: 1px solid #FFEC88;
-    background-color: #FFFCEB;
-    box-shadow: none;
-    color: #94430C;
+  .alert.v-alert {
+    border-radius: 8px !important;
+    border: 1px solid #FFEC88 !important;
+    background-color: #FFFCEB !important;
+    box-shadow: none !important;
+    color: #94430C !important;
   }
+
+  .alert.v-alert {
+    border-radius: 8px !important;
+    border: 1px solid #FFEC88 !important;
+    background-color: #FFFCEB !important;
+    box-shadow: none !important;
+    color: #94430C !important;
+  }
+
+  .items-alert {
+      font-size: 12px;
+      line-height: 100%;
+      letter-spacing: 0px;
+      margin-top: 4px;
+  }
+
+  .card-form {
+        .v-input {
+            .v-input__control {
+                .v-field {
+                    background-color: #f6f6f6 !important;
+                    min-height: 48px !important;
+
+                    .v-text-field__suffix {
+                        padding: 12px 16px !important;
+                    }
+
+                    .v-field__input {
+                        min-height: 48px !important;
+                        padding: 12px 16px !important;
+
+                        input {
+                            min-height: 48px !important;
+                        }
+                    }
+
+                    .v-field-label {
+                        top: 12px !important;
+                    }
+
+                    .v-field__append-inner {
+                        align-items: center;
+                        padding-top: 0px;
+                    }
+
+                    .v-text-field__prefix {
+                        height: 48px;
+                        color: #33303CAD;
+                    }
+                }
+            }
+        }
+
+        .v-input.always-show-prefix {
+            .v-input__control {
+                .v-field {
+                    .v-field__input {
+                        padding: 8px 0 !important;
+                    }
+                }
+            }
+        }
+
+        .selector-country {
+            .v-input__prepend {
+                margin-inline-end: 6px !important;
+            }
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+            .v-select__selection,
+            .v-autocomplete__selection {
+                align-items: center;
+            }
+
+            .v-field__input > input {
+                top: 0px;
+                left: 0px;
+            }
+        }
+    }
 
 </style>
 

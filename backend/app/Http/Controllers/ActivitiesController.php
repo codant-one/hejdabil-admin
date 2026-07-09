@@ -82,13 +82,25 @@ class ActivitiesController extends Controller
                 $current_supplier_id = Auth::user()->supplier->id;
             }
 
+            if (
+                Auth::check()
+                && (
+                    Auth::user()->getRoleNames()[0] === 'Supplier'
+                    || Auth::user()->getRoleNames()[0] === 'User'
+                )
+            ) {
+                $users = CacheService::getActiveUsersSuppliers($supplier_id, $current_supplier_id);
+            } else {
+                $users = CacheService::getActiveAdministratorUsers();
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'activities' => $activities,
                     'activitiesTotalCount' => $activities->total(),
                     'suppliers' => CacheService::getActiveSuppliers(),
-                    'users' => CacheService::getActiveUsersSuppliers($supplier_id, $current_supplier_id)
+                    'users' => $users
                 ]
             ]);
 
