@@ -1,6 +1,10 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
 
 const props = defineProps({
   customerData: {
@@ -62,138 +66,233 @@ async function fetchData() {
   <!-- 👉 Payment Methods -->
   <VRow>
     <VCol cols="12" v-if="props.isSupplier">
-      <VCard class="company" title="Allmän information">
-        <VCardText class="d-flex flex-column gap-y-4">
+      <VCard class="company">
+        <VCardText class="pb-0 d-flex flex-column gap-y-4">
+          <VRow class="my-1">
+            <div class="title-tabs">
+              Ändra lösenord
+            </div>
+          </VRow>
+          
+        </VCardText>
+
+        <VCardText class="d-flex flex-column">
           <VRow>
-            <VCol cols="12" md="6">
-              <VList class="card-list mt-2">
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Företag:
-                      <span class="text-body-2">
-                        {{ props.customerData.company }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Organisationsnummer:
-                      <span class="text-body-2">
-                        {{ props.customerData.organization_number }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Hemsida:
-                      <span class="text-body-2">
-                          {{ props.customerData.link }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Adress:
-                      <span class="text-body-2">
-                          {{ props.customerData.address }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Postnummer:
-                      <span class="text-body-2">
-                          {{ props.customerData.postal_code }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Stad:
-                      <span class="text-body-2">
-                          {{ props.customerData.street }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Telefon:
-                      <span class="text-body-2">
-                          {{ props.customerData.phone }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Bank:
-                      <span class="text-body-2">
-                          {{ props.customerData.bank }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Bankgiro:
-                      <span class="text-body-2">
-                          {{ props.customerData.iban }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Kontonummer:
-                      <span class="text-body-2">
-                          {{ props.customerData.account_number }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Iban nummer:
-                      <span class="text-body-2">
-                          {{ props.customerData.iban_number }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      BIC:
-                      <span class="text-body-2">
-                          {{ props.customerData.bic }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Plusgiro:
-                      <span class="text-body-2">
-                          {{ props.customerData.plus_spin }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Swish:
-                      <span class="text-body-2">
-                          {{ props.customerData.swish }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      VAT reg. no:
-                      <span class="text-body-2">
-                          {{ props.customerData.vat }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-              </VList>
+            <VCol cols="12" class="mt-2" :class="windowWidth < 1024 ? '' : 'px-0'">
+              <div class="title-section mb-5">
+                  Företagsinformation
+              </div>
+
+              <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
+
+              <div 
+                  class="d-flex flex-wrap"
+                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                  :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+              >
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Företag
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.company ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Organisationsnummer
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.organization_number ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Hemsida
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.link ?? '-' }}
+                  </span>
+                </div>
+
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Adress
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.address ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Postnummer
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.postal_code ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Stad
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.street ?? '-' }}
+                  </span>
+                </div>
+
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Telefon
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.phone ?? '-' }}
+                  </span>
+                </div>
+               
+                
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Swish
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.swish ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    SMS Sender
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.sms_sender ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    VAT reg. no
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.vat ?? '-' }}
+                  </span>
+                </div>
+              </div>
             </VCol>
-            <VCol cols="12" md="6" v-if="props.customerData.logo">
+
+            <VCol cols="12" class="mt-8" :class="windowWidth < 1024 ? '' : 'px-0'">
+              <div class="title-section mb-5">
+                  Bankinformation
+              </div>
+
+              <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
+
+              <div 
+                  class="d-flex flex-wrap"
+                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                  :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+              >
+                 <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Bank
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.bank ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Bankgiro
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.iban ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Kontonummer
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.account_number ?? '-' }}
+                  </span>
+                </div>
+
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    IBAN
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.iban_number ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    BIC
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.bic ?? '-' }}
+                  </span>
+                </div>
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-space-between' : 'flex-column'"
+                  :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 14px);'"
+                >
+                  <span class="text-title">
+                    Plusgiro
+                  </span>
+                  <span class="text-body-2">
+                    {{ props.customerData.user.user_detail.plus_spin ?? '-' }}
+                  </span>
+                </div>
+              </div>
+            </VCol>
+
+
+            <VCol cols="12" md="6" v-if="false && props.customerData.user.user_detail.logo">
               <VImg
-                :src="themeConfig.settings.urlStorage + props.customerData.logo"
+                :src="themeConfig.settings.urlStorage + props.customerData.user.user_detail.logo"
                 class="img-logo"
               />
             </VCol>
@@ -217,6 +316,36 @@ async function fetchData() {
 
   .company.v-card--variant-elevated {
       box-shadow: none !important;
+  }
+
+  .title-tabs {
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 100%;
+      color: #454545;
+
+      @media (max-width: 1023px) {
+          font-size: 20px
+      }
+  }
+
+  .title-section {
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 100%;
+      color: #878787;
+
+      @media (max-width: 1023px) {
+          font-size: 16px
+      }
+  }
+
+  .text-title {
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      line-height: 24px;
+      letter-spacing: 0 !important;
+      color: #5A7065 !important;
   }
 
 </style>

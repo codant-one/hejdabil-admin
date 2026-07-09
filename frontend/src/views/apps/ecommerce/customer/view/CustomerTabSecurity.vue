@@ -1,5 +1,6 @@
 <script setup>
 // import { VDataTable } from 'vuetify/labs/VDataTable'
+import { useDisplay } from "vuetify";
 import { confirmedValidator, passwordValidator, requiredValidator } from '@/@core/utils/validators'
 import { useUsersStores } from '@/stores/useUsers'
 
@@ -9,6 +10,9 @@ const props = defineProps({
     required: true
   }
 })
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
 const usersStores = useUsersStores()
 
 const refForm  = ref()
@@ -138,56 +142,72 @@ const onSubmit = () => {
   <VRow>
     <VCol cols="12">
       <!-- 👉 Change password -->
-      <VCard class="security" title="Ändra lösenord">
+      <VCard class="security">
+        <VCardText class="pb-0">
+          <div class="title-tabs">
+            Ändra lösenord
+          </div>
+        </VCardText>
+        
+
         <VCardText>
           <VAlert
-            variant="tonal"
-            color="warning"
-            class="mb-4 px-4 py-3"
+            class="mb-4 px-4 pb-3 alert"
+            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
           >
             <VAlertTitle class="mb-3">
               Se till att dessa krav är uppfyllda
             </VAlertTitle>
-            <span>Minst 8 tecken, stora och små bokstäver samt siffror</span>
+            <ul class="list-style ms-6">
+              <li>Minst 8 tecken</li>
+              <li>Stora och små bokstäver</li>
+              <li>Minst en siffra</li>
+            </ul>
           </VAlert>
 
           <VForm
             ref="refForm"
-            @submit.prevent="onSubmit">
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
+            class="card-form"
+            validate-on="submit"
+            @submit.prevent="onSubmit"
+            >
+            <div 
+                class="d-flex flex-wrap"
+                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+            >
+              <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord*" />
                 <VTextField
                   v-model="password"
-                   label="Nytt lösenord"
                   :type="isNewPasswordVisible ? 'text' : 'password'"
-                  :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
                   :rules="[requiredValidator, passwordValidator]"
                   @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
                   />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
+              </div>
+              <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord*" />
                 <VTextField
                   v-model="passwordConfirmation"
-                  label="Bekräfta lösenord"
                   :type="isConfirmPasswordVisible ? 'text' : 'password'"
-                  :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
                   :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
                   @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
                   />
-              </VCol>
+              </div>
 
-              <VCol cols="12">
-                <VBtn type="submit" class="w-100 w-md-auto">
+              <div class="mt-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                <VBtn
+                  type="submit"
+                  :block="windowWidth < 1024"
+                  class="btn-gradient"
+                  :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                >
                   Ändra lösenord
                 </VBtn>
-              </VCol>
-            </VRow>
+              </div>
+            </div>
           </VForm>
         </VCardText>
       </VCard>
@@ -278,8 +298,35 @@ const onSubmit = () => {
   /> -->
 </template>
 
+<style lang="scss" scoped>
+
+  .title-tabs {
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 100%;
+      color: #454545;
+
+      @media (max-width: 1023px) {
+          font-size: 20px
+      }
+  }
+
+  .alert{
+    border-radius: 8px;
+    border: 1px solid #FFEC88;
+    background-color: #FFFCEB;
+    box-shadow: none;
+    color: #94430C;
+  }
+
+</style>
+
 <style scope>
     .security.v-card--variant-elevated {
         box-shadow: none !important;
+    }
+
+    ol, ul  {
+      list-style: disc !important;
     }
 </style>
