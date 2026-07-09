@@ -166,7 +166,8 @@ onBeforeUnmount(() => {
                     <VWindowItem :value="3">
                         <CustomerTabCompany
                             :customer-data="supplier"
-                            :is-supplier="true"/>
+                            :is-supplier="true"
+                        />
                     </VWindowItem>
                 </VWindow>
             </VCardText>
