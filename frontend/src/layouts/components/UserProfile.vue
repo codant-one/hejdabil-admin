@@ -241,7 +241,7 @@ const logout = async () => {
 
           <!--  👉 Activities -->
           <VListItem 
-            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            :class="windowWidth < 1024 ? 'd-none' : 'd-none'"
             :to="{ name: 'dashboard-activities' }"
             >
             <template #prepend>

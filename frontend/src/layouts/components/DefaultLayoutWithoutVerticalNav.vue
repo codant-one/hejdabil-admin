@@ -105,7 +105,7 @@ const redirectToPayoutsAndOpenDialog = () => {
             </VBtn>
 
             <VBtn
-                class="btn-white-2"
+                class="btn-white-2 d-none"
                 :class="windowWidth < 1024 ? 'd-none' : 'px-4'"
                 :to="{ name: 'dashboard-activities' }"
             >
