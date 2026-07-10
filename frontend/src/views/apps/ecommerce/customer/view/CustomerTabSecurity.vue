@@ -86,7 +86,7 @@ const onSubmit = () => {
         <VAlertTitle class="mb-2">
           Se till att dessa krav är uppfyllda
         </VAlertTitle>
-        <ul class="list-style ms-4">
+        <ul id="warning_card" class="list-style ms-4">
           <li class="items-alert">Minst 8 tecken</li>
           <li class="items-alert">Stora och små bokstäver</li>
           <li class="items-alert">Minst en siffra</li>
@@ -251,7 +251,7 @@ const onSubmit = () => {
         box-shadow: none !important;
     }
 
-    ol, ul  {
+    ol.list-style, ul.list-style {
       list-style: disc !important;
     }
 </style>

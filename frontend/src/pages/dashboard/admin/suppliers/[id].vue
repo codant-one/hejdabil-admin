@@ -7,7 +7,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from '@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue'
 import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTabOverview.vue'
 import CustomerTabSecurity from '@/views/apps/ecommerce/customer/view/CustomerTabSecurity.vue'
-import CustomerTabAddressAndBilling from '@/views/apps/ecommerce/customer/view/CustomerTabAddressAndBilling.vue'
+import CustomerTabBilling from '@/views/apps/ecommerce/customer/view/CustomerTabBilling.vue'
 import CustomerTabCompany from '@/views/apps/ecommerce/customer/view/CustomerTabCompany.vue'
 
 defineProps({
@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
                         />
                     </VWindowItem>
                     <VWindowItem :value="2">
-                        <CustomerTabAddressAndBilling 
+                        <CustomerTabBilling 
                             :customer-data="supplier"
                             :is-supplier="true"
                             @alert="showAlert"/>
