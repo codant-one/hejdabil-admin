@@ -1,7 +1,7 @@
 <script setup>
 
-import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
+import companyAvatar from "@/assets/images/avatars/company.svg";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -32,8 +32,27 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
+const role = ref('')
+
+const logo = computed(() => {
+  const logoPath = props.customerData?.user?.user_detail?.logo
+
+  return logoPath ? `${themeConfig.settings.urlStorage}${logoPath}` : null
+})
+
+const signature = computed(() => {
+  const signaturePath = props.customerData?.user?.user_detail?.img_signature
+
+  return signaturePath ? `${themeConfig.settings.urlStorage}${signaturePath}` : null
+})
 
 watchEffect(fetchData)
+
+onMounted(() => {
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  role.value = userData?.roles?.[0]?.name ?? ''
+})
 
 async function fetchData() {
   if(props.isSupplier) {
@@ -220,6 +239,42 @@ async function fetchData() {
         </div>
       </div>
     
+      <div 
+          class="d-flex flex-wrap mt-6"
+          :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+          :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+      >
+        <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+          <span class="avatar-text">
+            Logotyp
+          </span>
+
+          <div class="logo-store">
+            <VImg v-if="logo" :src="logo" class="logo-store-img" contain />
+            <VImg
+              v-else
+              style="border-radius: 50%"
+              :src="companyAvatar"
+            />
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+          <span class="avatar-text">
+            Signatur
+          </span>
+
+          <div class="d-flex align-center gap-4" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+            <div class="signature-preview-box">
+              <VImg v-if="signature" :src="signature" class="signature-image" />
+              <div v-else class="signature-image d-flex align-center justify-center text-body-2">
+                -
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="title-section mt-6 mb-2">
           Bankinformation
       </div>
@@ -299,19 +354,51 @@ async function fetchData() {
           </span>
         </div>
       </div>
-
-      <VImg
-        :src="themeConfig.settings.urlStorage + props.customerData.user.user_detail.logo"
-        class="img-logo d-none"
-      />
     </VCardText>
   </VCard>
 </template>
 
 <style>
-  .img-logo {
+
+  .avatar-text {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 15px;
+    letter-spacing: 0%;
+    color: #454545;
+  }
+
+  .logo-store {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #E7E7E7;
+    background: #F6F6F6;
+    inline-size: 100%;
+    height: 104px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .logo-store-img {
     width: 100%;
-    border-radius: 16px;
+    height: 100% !important;
+  }
+
+  .signature-preview-box {
+    width: 100%;
+  }
+
+  .signature-image {
+    flex: 1 1;
+    width: 100%;
+    height: 104px;
+    border-radius: 8px;
+    border: solid 1px #e7e7e7;
+    opacity: 0.8;
+    background-color: #f6f6f6;
   }
 
   .iconsAddress .v-btn--icon.v-btn--density-default {
