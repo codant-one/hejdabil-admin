@@ -1,0 +1,624 @@
+<script setup>
+
+import { useDisplay } from "vuetify";
+import { formatNumber } from '@/@core/utils/formatters'
+import {requiredValidator} from '@/@core/utils/validators'
+import { useSuppliersStores } from '@/stores/useSuppliers'
+// import AddEditAddressDialog from "@/components/dialogs/AddEditAddressDialog.vue";
+
+const { width: windowWidth } = useWindowSize();
+const refForm = ref()
+const isFormValid = ref(false)
+const cant_commission = ref(0)
+const who_commission = ref(0)
+const ser_commission = ref(0)
+const total_balance = ref(0)
+const settings = ref(0)
+const who_settings = ref(0)
+const ser_settings = ref(0)
+const route = useRoute()
+const suppliersStores = useSuppliersStores()
+const exporteraMobile = ref(false);
+const searchQuery = ref('')
+const rowPerPage = ref(10)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalBillings = ref(0)
+const isRequestOngoing = ref(true)
+const state_id = ref(null)
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
+
+const props = defineProps({
+  addresses: {
+    type: Object,
+    required: false
+  },
+  customerData: {
+    type: Object,
+    required: false,
+  },
+  isSupplier: {
+    type: Boolean,
+    required: true,
+  }
+})
+
+const emit = defineEmits([
+  'submit',
+  'delete',
+  'alert',
+  'updateBalance'
+])
+
+const show = ref([
+  true,
+  false,
+  false,
+])
+
+const isEditAddressDialogVisible = ref(false)
+const selectedAddress = ref({})
+const billings = ref([])
+
+const accountTypes = [
+  {
+    icon: {
+      icon: 'mdi-cash-multiple',
+      size: '40',
+    },
+    title: 'Cuenta Corriente',
+    value: '1',
+  },
+  {
+    icon: {
+      icon: 'tabler-pig-money',
+      size: '40',
+    },
+    title: 'Cuenta de Ahorros',
+    value: '2',
+  }
+]
+
+const type_account = ref('1')
+const document = ref(null)
+const icon_type = ref(null)
+
+// 👉 Computing pagination data
+const paginationData = computed(() => {
+  // const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  // const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
+  
+  return `${totalBillings.value} resultat`;
+
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
+})
+
+watch(() =>  
+  props.addresses, (addreses_) => {
+    addresses_.value = addreses_
+  });
+
+watchEffect(() => {
+  if (!isEditAddressDialogVisible.value)
+    selectedAddress.value = {}
+})
+
+watchEffect(fetchData)
+
+async function fetchData(cleanFilters = false) {
+
+  if(cleanFilters === true) {
+    searchQuery.value = ''
+    rowPerPage.value = 10
+    currentPage.value = 1
+    state_id.value = null
+  }
+
+  let data = {
+    search: searchQuery.value,
+    orderByField: 'id',
+    orderBy: 'desc',
+    limit: rowPerPage.value,
+    page: currentPage.value,
+    state_id: state_id.value
+  }
+
+  isRequestOngoing.value = searchQuery.value !== '' ? false : true
+
+  if(Number(route.params.id)) {
+    if(props.isSupplier && props.customerData.id !== null) {
+      billings.value =[
+        {
+          id: 1,
+          name: "Maria Test Cast",
+          start_date: '2024-01-01',
+          end_date: '2024-01-31',
+          amount: 30,
+            state_id: 7,
+            state_name: 'Betald'
+        },
+        {
+          id: 2,
+          name: "Maria Test Cast",
+          start_date: '2024-02-01',
+          end_date: '2024-02-29',
+          amount: 30,
+          state_id: 7,
+          state_name: 'Betald'
+        },
+        {
+          id: 3,
+          name: "Maria Test Cast",
+          start_date: '2024-03-01',
+          end_date: '2024-03-31',
+          amount: 30,
+          state_id: 7,
+          state_name: 'Betald'
+        },
+        {
+          id: 4,
+          name: "Maria Test Cast",
+          start_date: '2024-04-01',
+          end_date: '2024-04-30',
+          amount: 30,
+          state_id: 4,        
+          state_name: 'Obetald'
+        },
+        {
+          id: 5,
+          name: "Maria Test Cast",
+          start_date: '2024-05-01',
+          end_date: '2024-05-31',
+          amount: 30,
+          state_id: 4,
+          state_name: 'Obetald'
+        }
+      ]
+
+      totalPages.value = 1;//billings.value.length
+      totalBillings.value = billings.value.length
+
+      isRequestOngoing.value = false
+    }
+  }
+}
+
+const editAddress = addressData => {
+
+  addressData.addresses_type_id = addressData.addresses_type_id.toString()
+  addressData.default = (addressData.default) === 1 ? true : false
+  addressData.country_id = addressData.province.country.name
+  addressData.provinceOld_id = addressData.province.id
+  addressData.province_id = addressData.province.name
+
+  isEditAddressDialogVisible.value = true
+  selectedAddress.value = { ...addressData }
+}
+
+const showDeleteDialog = addressData => {
+  emit('delete', addressData)
+}
+
+const onSubmit = (address, method) => {
+  emit('submit', address, method)
+}
+
+const resolveStatus = state_id => {
+  if (state_id === 7)
+    return { class: 'success' }
+  if (state_id === 4)
+    return { class: 'error' }
+}
+
+const downloadPDF = async () => {
+  exporteraMobile.value = false
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1 ,
+      orderByField: "id",
+      orderBy: "desc"
+    }
+
+    await suppliersStores.fetchSuppliers(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const rows = suppliersStores.getSuppliers.map(element => ({
+      id: element.id,
+      fullname: element.user.name + ' ' + (element.user.last_name ?? ''),
+      email: element.user.email,
+      company: element.user.user_detail.company ?? "",
+      swish: element.payout_number ?? "",
+      phone: element.user.user_detail.phone ?? "",
+      landline: element.user.user_detail.landline ?? "",
+      sender: element.sms_sender ?? '',
+      organizationNumber: element.user.user_detail.organization_number ?? "",
+      clients: element.client_count,
+      creator: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
+      status: element.state.name
+    }))
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'Leverantörer',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      ${(() => {
+        const companyLines = [item.company, item.organizationNumber].filter(Boolean)
+        const companyMarkup = companyLines.map(line => escapeHtml(line)).join('<br />')
+
+        const contactLines = [item.fullname, item.email].filter(Boolean)
+        const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
+
+        const phoneLines = [item.phone, item.landline].filter(Boolean)
+        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
+      <tr style="height: 48px;">
+        <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
+        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${companyMarkup}</td>
+        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
+        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.swish)}</td>
+        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
+        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sender)}</td>
+      </tr>
+    `
+      })()}
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Företag</td>
+                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
+                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Swish</td>
+                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
+                      <td style="text-align: center; width: 15%; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Sender</td>
+                      
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'suppliers.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
+}
+
+const downloadCSV = async () => {
+  exporteraMobile.value = false
+  isRequestOngoing.value = true
+
+  let data = { limit: -1 }
+
+  await suppliersStores.fetchSuppliers(data)
+
+  let dataArray = [];
+      
+  suppliersStores.getSuppliers.forEach(element => {
+
+    let data = {
+      ID: element.id,
+      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
+      E_POST: element.user.email,
+      FÖRETAG: element.user.user_detail.company ?? '',
+      ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
+      SWISH: element.payout_number ?? '',
+      SENDER: element.sms_sender ?? '',
+      REGISTRERADE_KUNDER:  element.client_count,
+      SKAPAD_AV: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
+      STATUS: element.state.name
+    }
+
+    dataArray.push(data)
+  })
+
+  excelParser()
+    .exportDataFromJSON(dataArray, "suppliers", "csv");
+
+  isRequestOngoing.value = false
+
+}
+
+
+</script>
+
+<template>
+  <VCard class="company" v-if="props.isSupplier">
+    <VCardText class="d-flex gap-6 justify-space-between"
+      :class="[
+        windowWidth < 1024 ? 'flex-column' : 'flex-row',
+        $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+      ]"
+    >
+      <div class="title-tabs">
+        Fakturahistorik
+      </div>
+
+      <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+      <div class="d-flex">
+        <VMenu v-if="windowWidth >= 1024">
+          <template #activator="{ props }">
+            <VBtn
+              id="payout-export-button"
+              class="btn-light w-auto"
+              block
+              v-bind="props"
+            >
+              <VIcon icon="custom-export" size="24" />
+              Exportera
+            </VBtn>
+          </template>
+
+          <VList>
+            <VListItem @click="downloadPDF">
+              <VListItemTitle>Exportera PDF</VListItemTitle>
+            </VListItem>
+            <VListItem @click="downloadCSV">
+              <VListItemTitle>Exportera Excel</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
+
+        <VBtn
+          v-if="windowWidth < 1024"
+          id="payout-export-button"
+          class="btn-light w-auto"
+          block
+          @click="exporteraMobile = true"
+        >
+          <VIcon icon="custom-export" size="24" />
+          Exportera
+        </VBtn>
+      </div>
+
+      <VDivider v-if="windowWidth < 1024" class="mb-2" />
+    </VCardText>
+
+    <VCardText
+      class="d-flex align-center justify-space-between gap-1"
+      :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
+    >
+      <!-- 👉 Search  -->
+      <div class="search" :style="windowWidth < 1024 ? '' : 'width: 480px !important'">
+        <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+      </div>
+
+      <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+      <div
+        v-if="!$vuetify.display.mdAndDown"
+        class="d-flex align-center visa-select"
+      >
+        <span class="text-no-wrap pr-4">Visa</span>
+        <VSelect
+          v-model="rowPerPage"
+          class="custom-select-hover"
+          :items="[10, 20, 30, 50]"
+        />
+      </div>
+    </VCardText>
+    <VTable
+      v-if="!$vuetify.display.mdAndDown"
+      v-show="billings.length"
+      class="px-4 pb-6 text-no-wrap"
+    >
+      <!-- 👉 table head -->
+      <thead>
+        <tr>
+          <th scope="col"> Namn</th>
+          <th scope="col"> Startdatum </th>
+          <th scope="col"> Förfallodatum </th>
+          <th scope="col"> Belopp </th>
+          <th scope="col" class="text-center"> Status </th>
+          <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')">Faktura</th>
+        </tr>
+      </thead>
+      <!-- 👉 table body -->
+      <tbody>
+        <tr 
+            v-for="billing in billings"
+            :key="billing.id"
+            style="height: 3rem;">
+
+            <td> {{ billing.name }} </td>
+            <td> {{ billing.start_date }} </td>
+            <td> {{ billing.end_date }} </td>
+            <td> {{ billing.amount }} </td>
+            <td class="d-flex justify-center align-center"> 
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
+              >
+                {{ billing.state_name }}
+              </div>
+            </td>
+            <!-- 👉 Actions -->
+            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+              <VMenu>
+                <template #activator="{ props }">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                    <VIcon icon="custom-dots-vertical" size="22" />
+                  </VBtn>
+                </template>
+
+                <VList>
+                  <VListItem 
+                    v-if="$can('view', 'billings')"
+                    @click="">
+                    <template #prepend>
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Visa</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if="$can('edit', 'billings') && billing.state_id === 2"
+                      @click="">
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('view', 'billings') && billing.state_id !== 1"
+                    @click="">
+                    <template #prepend>
+                      <VIcon icon="custom-swish" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Swish</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('edit', 'billings') && billing.state_id === 2"
+                    @click="">
+                    <template #prepend>
+                      <VIcon icon="tabler-mail-forward" />
+                    </template>
+                    <VListItemTitle>Skicka om inbjudan</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('delete','billings') && billing.state_id === 2"
+                    @click="">
+                    <template #prepend>
+                      <VIcon icon="custom-waste" size="24" />
+                    </template>
+                    <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('delete','billings') && billing.state_id === 1"
+                    @click="">
+                    <template #prepend>
+                      <VIcon icon="tabler-rosette-discount-check" />
+                    </template>
+                    <VListItemTitle>Aktivera</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </td>
+        </tr>
+      </tbody>
+      <!-- 👉 table footer  -->
+      <tfoot v-show="!billings.length">
+        <tr>
+          <td
+            colspan="6"
+            class="text-center">
+            Uppgifter ej tillgängliga
+          </td>
+        </tr>
+      </tfoot>
+    </VTable>
+
+    <VCardText
+      v-if="billings.length"
+      :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+      class="align-center flex-wrap gap-4 pt-0 px-6"
+    >
+      <span class="text-pagination-results">
+        {{ paginationData }}
+      </span>
+
+      <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+      <VPagination
+        v-model="currentPage"
+        size="small"
+        :total-visible="4"
+        :length="totalPages"
+        next-icon="custom-chevron-right"
+        prev-icon="custom-chevron-left"
+      />
+    </VCardText>
+
+  </VCard>
+
+  <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="downloadPDF">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="downloadCSV">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+</template>
+
+<style>
+  .iconsButton .v-btn--icon.v-btn--density-default {
+    width: calc(var(--v-btn-height) + 0px) !important;
+    height: 25px !important;
+  }
+  .facturing.v-card--variant-elevated {
+      box-shadow: none !important;
+  }
+</style>
