@@ -46,6 +46,10 @@ class Suppliers {
         return axios.get('suppliers/supplier/report-users', {params})
     }
 
+    getCustomerOverviewTeam(params) {
+        return axios.get('suppliers/supplier/customer-overview-team', {params})
+    }
+
     getInactiveUserByEmail(data) {
         return axios.post('suppliers/supplier/inactive-user', data)
     }

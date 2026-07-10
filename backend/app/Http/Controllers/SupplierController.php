@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -793,6 +794,162 @@ class SupplierController extends Controller
         }
     }
 
+    public function customerOverviewTeam(Request $request): JsonResponse
+    {
+        try {
+            $limit = $request->has('limit') ? (int) $request->limit : 10;
+            $page = max(1, (int) $request->input('page', 1));
+            $requestedSupplierId = (int) $request->input('supplier_id', 0);
+            $supplierId = $requestedSupplierId > 0
+                ? $requestedSupplierId
+                : $this->getCurrentSupplierId();
+
+            if ($supplierId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'supplier_not_found',
+                ], 422);
+            }
+
+            [$hasDateFilter, $dateFrom, $dateTo] = $this->resolveDateFilters($request);
+
+            $filterStart = $hasDateFilter
+                ? ($dateFrom ?: Carbon::today()->copy()->subMonthsNoOverflow(11)->startOfMonth())->copy()->startOfDay()
+                : null;
+            $filterEnd = $hasDateFilter
+                ? ($dateTo ?: Carbon::today()->copy()->endOfDay())->copy()->endOfDay()
+                : null;
+
+            $teamSuppliers = Supplier::query()
+                ->with(['user.userDetail'])
+                ->where(function ($query) use ($supplierId) {
+                    $query->where('id', $supplierId)
+                        ->orWhere('boss_id', $supplierId);
+                })
+                ->whereNotNull('boss_id')
+                ->orderBy('order_id')
+                ->orderBy('id')
+                ->get();
+
+            $teamUserIds = $teamSuppliers
+                ->pluck('user_id')
+                ->filter()
+                ->values()
+                ->all();
+
+            $billingCountsByUser = $this->getTeamDocumentCountsByUser(
+                Billing::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+            $payoutCountsByUser = $this->getTeamDocumentCountsByUser(
+                Payout::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+            $agreementCountsByUser = $this->getTeamDocumentCountsByUser(
+                Agreement::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+
+            $orderedTeamMembers = $teamSuppliers->map(function ($teamSupplier) use (
+                $billingCountsByUser,
+                $payoutCountsByUser,
+                $agreementCountsByUser,
+                $supplierId,
+            ) {
+                $user = $teamSupplier->user;
+                $userId = $teamSupplier->user_id;
+                $invoices = (int) ($billingCountsByUser->get($userId, 0));
+                $swish = (int) ($payoutCountsByUser->get($userId, 0));
+                $agreements = (int) ($agreementCountsByUser->get($userId, 0));
+
+                return [
+                    'id' => $user?->id,
+                    'supplier_id' => $teamSupplier->id,
+                    'position' => $teamSupplier->position,
+                    'is_boss' => $teamSupplier->id === $supplierId,
+                    'name' => $user?->name,
+                    'last_name' => $user?->last_name,
+                    'email' => $user?->email,
+                    'avatar' => $user?->avatar,
+                    'user_detail' => $user?->userDetail,
+                    'invoices' => $invoices,
+                    'swish' => $swish,
+                    'agreements' => $agreements,
+                    'total_actions' => $invoices + $swish + $agreements,
+                    'created_at' => $teamSupplier?->created_at,
+                ];
+            })
+                ->sortByDesc('total_actions')
+                ->values()
+                ->map(function ($teamMember) {
+                    unset($teamMember['total_actions']);
+
+                    return $teamMember;
+                });
+
+            $totalTeamMembers = $orderedTeamMembers->count();
+            $teamMembers = $orderedTeamMembers;
+            $lastPage = 1;
+
+            if ($limit > 0) {
+                $lastPage = max((int) ceil($totalTeamMembers / $limit), 1);
+                $teamMembers = $orderedTeamMembers
+                    ->forPage($page, $limit)
+                    ->values();
+            }
+
+            $totalBillings = $this->getTeamDocumentTotalCount(
+                Billing::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+            $totalPayouts = $this->getTeamDocumentTotalCount(
+                Payout::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+            $totalAgreements = $this->getTeamDocumentTotalCount(
+                Agreement::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'teamMembers' => $teamMembers,
+                    'teamTotals' => [
+                        'billings' => $totalBillings,
+                        'payouts' => $totalPayouts,
+                        'agreements' => $totalAgreements,
+                    ],
+                    'pagination' => [
+                        'total' => $totalTeamMembers,
+                        'per_page' => $limit,
+                        'current_page' => $limit > 0 ? $page : 1,
+                        'last_page' => $lastPage,
+                    ],
+                    'dateRange' => [
+                        'date_from' => $filterStart?->toDateString(),
+                        'date_to' => $filterEnd?->toDateString(),
+                    ],
+                ]
+            ], 200);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      *
      * Store a newly created resource in storage.
@@ -1066,26 +1223,75 @@ class SupplierController extends Controller
     {
         $user = Auth::user();
         $role = $user->getRoleNames()[0] ?? null;
+        $supplier = $user?->supplier;
 
         return match ($role) {
-            'Supplier' => $user->supplier->id,
-            'User' => $user->supplier->boss_id,
-            default => $user->supplier->id,
+            'Supplier' => (int) ($supplier?->id ?? 0),
+            'User' => (int) ($supplier?->boss_id ?? $supplier?->id ?? 0),
+            default => (int) ($supplier?->id ?? 0),
         };
     }
 
-    private function getTeamDocumentCountsByUser($query, array $userIds)
+    private function getTeamDocumentCountsByUser(
+        $query,
+        array $userIds,
+        ?Carbon $filterStart = null,
+        ?Carbon $filterEnd = null,
+    )
     {
         if (empty($userIds)) {
             return collect();
         }
 
-        return (clone $query)
+        $filteredQuery = clone $query;
+
+        if ($filterStart && $filterEnd) {
+            $filteredQuery = (clone $filteredQuery)
+                ->whereNotNull('created_at')
+                ->whereBetween('created_at', [
+                    $filterStart->toDateTimeString(),
+                    $filterEnd->toDateTimeString(),
+                ]);
+        }
+
+        return (clone $filteredQuery)
             ->whereNotNull('user_id')
             ->whereIn('user_id', $userIds)
             ->selectRaw('user_id, COUNT(*) as total')
             ->groupBy('user_id')
             ->pluck('total', 'user_id');
+    }
+
+    private function getTeamDocumentTotalCount(
+        $query,
+        ?Carbon $filterStart = null,
+        ?Carbon $filterEnd = null,
+    ): int {
+        $filteredQuery = clone $query;
+
+        if ($filterStart && $filterEnd) {
+            $filteredQuery = (clone $filteredQuery)
+                ->whereNotNull('created_at')
+                ->whereBetween('created_at', [
+                    $filterStart->toDateTimeString(),
+                    $filterEnd->toDateTimeString(),
+                ]);
+        }
+
+        return (clone $filteredQuery)->count();
+    }
+
+    private function resolveDateFilters(Request $request): array
+    {
+        $hasDateFilter = $request->filled('date_from') || $request->filled('date_to');
+        $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from) : null;
+        $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to) : null;
+
+        if ($dateFrom && $dateTo && $dateFrom->gt($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        return [$hasDateFilter, $dateFrom, $dateTo];
     }
 
 }
