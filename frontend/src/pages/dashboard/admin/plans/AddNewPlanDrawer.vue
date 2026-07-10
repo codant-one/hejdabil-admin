@@ -43,13 +43,12 @@ const getTitle = computed(() => {
 })
 
 watchEffect(async() => {
-  refForm.value?.resetValidation()
+  // refForm.value?.resetValidation()
 
   name.value = ''
   description.value = ''
   price_month.value = 0
   price_annual.value = 0
-  isFormValid.value = false
   features.value = []
   selectedFeatures.value = []
   
@@ -72,6 +71,7 @@ watchEffect(async() => {
     }
 
     features.value = props.features
+    isFormValid.value = true
   }
 })
 
@@ -107,7 +107,9 @@ const onSubmit = () => {
 
       emit('planData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
-      closeNavigationDrawer()
+      setTimeout(() => {
+          closeNavigationDrawer()
+      }, 1000)
     }
   })
 }
