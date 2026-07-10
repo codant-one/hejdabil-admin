@@ -386,10 +386,10 @@ const downloadCSV = async () => {
 
 <template>
   <VCard class="company" v-if="props.isSupplier">
-    <VCardText class="d-flex gap-6 justify-space-between"
+    <VCardText class="d-flex gap-6 justify-space-between px-0"
       :class="[
         windowWidth < 1024 ? 'flex-column' : 'flex-row',
-        $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        $vuetify.display.mdAndDown ? 'py-6' : 'py-4'
       ]"
     >
       <div class="title-tabs">
@@ -438,8 +438,8 @@ const downloadCSV = async () => {
     </VCardText>
 
     <VCardText
-      class="d-flex align-center justify-space-between gap-1"
-      :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
+      class="d-none align-center justify-space-between gap-1 px-0"
+      :class="$vuetify.display.mdAndDown ? 'py-6' : 'py-4 gap-2'"
     >
       <!-- 👉 Search  -->
       <div class="search" :style="windowWidth < 1024 ? '' : 'width: 480px !important'">
@@ -460,20 +460,21 @@ const downloadCSV = async () => {
         />
       </div>
     </VCardText>
+
     <VTable
       v-if="!$vuetify.display.mdAndDown"
       v-show="billings.length"
-      class="px-4 pb-6 text-no-wrap"
+      class="px-0 pb-6 text-no-wrap"
     >
       <!-- 👉 table head -->
       <thead>
         <tr>
           <th scope="col"> Namn</th>
-          <th scope="col"> Startdatum </th>
-          <th scope="col"> Förfallodatum </th>
-          <th scope="col"> Belopp </th>
+          <th scope="col" class="text-center"> Startdatum </th>
+          <th scope="col" class="text-center"> Förfallodatum </th>
+          <th scope="col" class="text-center"> Belopp </th>
           <th scope="col" class="text-center"> Status </th>
-          <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')">Faktura</th>
+          <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
         </tr>
       </thead>
       <!-- 👉 table body -->
@@ -484,9 +485,9 @@ const downloadCSV = async () => {
             style="height: 3rem;">
 
             <td> {{ billing.name }} </td>
-            <td> {{ billing.start_date }} </td>
-            <td> {{ billing.end_date }} </td>
-            <td> {{ formatNumber(billing.amount) ?? "0,00" }} kr </td>
+            <td class="text-center"> {{ billing.start_date }} </td>
+            <td class="text-center"> {{ billing.end_date }} </td>
+            <td class="text-center"> {{ formatNumber(billing.amount) ?? "0,00" }} kr </td>
             <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
@@ -496,7 +497,7 @@ const downloadCSV = async () => {
               </div>
             </td>
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -637,7 +638,7 @@ const downloadCSV = async () => {
     <VCardText
       v-if="billings.length"
       :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-      class="align-center flex-wrap gap-4 pt-0 px-6"
+      class="align-center flex-wrap gap-4 p-0"
     >
       <span class="text-pagination-results">
         {{ paginationData }}
