@@ -486,7 +486,7 @@ const downloadCSV = async () => {
             <td> {{ billing.name }} </td>
             <td> {{ billing.start_date }} </td>
             <td> {{ billing.end_date }} </td>
-            <td> {{ billing.amount }} </td>
+            <td> {{ formatNumber(billing.amount) ?? "0,00" }} kr </td>
             <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
@@ -509,49 +509,41 @@ const downloadCSV = async () => {
                     v-if="$can('view', 'billings')"
                     @click="">
                     <template #prepend>
-                      <VIcon icon="custom-eye" size="24" class="mr-2" />
+                      <VIcon icon="custom-bribery" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Visa</VListItemTitle>
+                    <VListItemTitle>Markera som betald</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="$can('edit', 'billings') && billing.state_id === 2"
+                      v-if="$can('edit', 'billings')"
                       @click="">
                     <template #prepend>
-                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                      <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Redigera</VListItemTitle>
+                    <VListItemTitle>Markera som obetald</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('view', 'billings') && billing.state_id !== 1"
+                    v-if="$can('view', 'billings')"
                     @click="">
                     <template #prepend>
-                      <VIcon icon="custom-swish" size="24" class="mr-2" />
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Swish</VListItemTitle>
+                    <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id === 2"
+                    v-if="$can('edit', 'billings')"
                     @click="">
                     <template #prepend>
-                      <VIcon icon="tabler-mail-forward" />
+                      <VIcon icon="custom-download" />
                     </template>
-                    <VListItemTitle>Skicka om inbjudan</VListItemTitle>
+                    <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','billings') && billing.state_id === 2"
+                    v-if="$can('delete','billings') "
                     @click="">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
-                  </VListItem>
-                  <VListItem
-                    v-if="$can('delete','billings') && billing.state_id === 1"
-                    @click="">
-                    <template #prepend>
-                      <VIcon icon="tabler-rosette-discount-check" />
-                    </template>
-                    <VListItemTitle>Aktivera</VListItemTitle>
                   </VListItem>
                 </VList>
               </VMenu>
@@ -569,6 +561,78 @@ const downloadCSV = async () => {
         </tr>
       </tfoot>
     </VTable>
+
+    <VExpansionPanels
+        class="expansion-panels pb-6 px-6"
+        v-if="billings.length && $vuetify.display.mdAndDown"
+      >
+        <VExpansionPanel v-for="billing in billings" :key="billing.id">
+          <VExpansionPanelTitle
+            class="mt-2"
+            collapse-icon="custom-chevron-right"
+            expand-icon="custom-chevron-down"
+          >
+            <div class="d-flex align-center w-100">
+              <div class="d-flex flex-column gap-1">
+                <span class="text-aqua">
+                  {{ billing.name }}
+                </span>
+                <span class="text-neutral-3">
+                  <div
+                    class="status-chip pb-2"
+                    :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
+                  >
+                    {{ billing.state_name }}
+                  </div>
+                </span>
+              </div>
+            </div>
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Startdatum:</div>
+                <div class="expansion-panel-item-value">
+                  {{ billing.start_date ?? "---" }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Förfallodatum:</div>
+                <div class="expansion-panel-item-value">
+                  {{ billing.end_date ?? "---" }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Belopp:</div>
+                <div class="expansion-panel-item-value">
+                  {{ formatNumber(billing.amount) ?? "0,00" }} kr
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-4">
+              <VBtn class="btn-light flex-1" @click=""
+              >
+                <VIcon icon="custom-eye" size="24" />
+                Visa som PDF
+              </VBtn>
+
+              <VBtn class="btn-light flex-1" @click=""
+              >
+                <VIcon icon="custom-download" size="24" />
+                Ladda ner
+              </VBtn>
+              
+              <!-- <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
+                <VIcon icon="custom-dots-vertical" size="24" />
+              </VBtn> -->
+            </div>
+          </VExpansionPanelText>
+        </VExpansionPanel>
+      </VExpansionPanels>
 
     <VCardText
       v-if="billings.length"
