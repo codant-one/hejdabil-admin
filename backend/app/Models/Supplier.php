@@ -101,7 +101,9 @@ class Supplier extends Model
 
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
-            $q->whereHas('user', function ($uq) use ($search) {
+            $q->where('payout_number', 'LIKE', '%' . $search . '%')
+            ->orWhere('sms_sender', 'LIKE', '%' . $search . '%')
+            ->orWhereHas('user', function ($uq) use ($search) {
                 $uq->withTrashed()
                     ->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
