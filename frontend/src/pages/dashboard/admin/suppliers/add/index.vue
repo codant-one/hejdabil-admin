@@ -21,12 +21,10 @@ const advisor = ref({
 })
 
 const suppliersStores = useSuppliersStores()
-
 const emitter = inject("emitter")
 
 const isRequestOngoing = ref(true)
 
-const isFormValid = ref(false)
 const refForm = ref()
 const currentTab = ref(0)
 const isMobile = ref(false)
@@ -375,9 +373,9 @@ const onSubmit = async () => {
                                 message: 'Leverantör skapad!',
                                 error: false
                             }
-                            // skapatsDialog.value = true;
-                            sessionStorage.setItem('alertMessage', JSON.stringify(data));
+                            // skapatsDialog.value = true;;
                             router.push({ name : 'dashboard-admin-suppliers'})
+                            emitter.emit('toast', data)
                         }
                         isRequestOngoing.value = false
                     })
@@ -402,8 +400,8 @@ const onSubmit = async () => {
                                         message: emailValidationMessage,
                                         error: true
                                     }
-                                    sessionStorage.setItem('alertMessage', JSON.stringify(data));
                                     router.push({ name : 'dashboard-admin-suppliers'})
+                                    emitter.emit('toast', data)
                                     isRequestOngoing.value = false
                                 })
                                 .catch(() => {
@@ -412,8 +410,8 @@ const onSubmit = async () => {
                                         message: emailValidationMessage,
                                         error: true
                                     }
-                                    sessionStorage.setItem('alertMessage', JSON.stringify(data));
                                     router.push({ name : 'dashboard-admin-suppliers'})
+                                    emitter.emit('toast', data);
                                     isRequestOngoing.value = false
                                 })
 

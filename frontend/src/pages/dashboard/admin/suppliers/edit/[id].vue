@@ -27,7 +27,6 @@ const route = useRoute()
 
 const isRequestOngoing = ref(true)
 
-const isFormValid = ref(false)
 const refForm = ref()
 const currentTab = ref(0)
 const isMobile = ref(false)
@@ -367,8 +366,8 @@ const onSubmit = async () => {
                             // Save current state so the dirty-check stops blocking navigation
                             initialData.value = JSON.parse(JSON.stringify(currentData.value));
                             //skapatsDialog.value = true;
-                            sessionStorage.setItem('alertMessage', JSON.stringify(data));
                             router.push({ name : 'dashboard-admin-suppliers'})
+                            emitter.emit('toast', data)
                         }
                         isRequestOngoing.value = false
                     })
@@ -382,8 +381,8 @@ const onSubmit = async () => {
 
                         // Save current state so the dirty-check stops blocking navigation
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
-                        router.push({ name : 'dashboard-admin-suppliers', query: { alertMessage: JSON.stringify(data) } })
-
+                        router.push({ name : 'dashboard-admin-suppliers'})
+                        emitter.emit('toast', data)
                         isRequestOngoing.value = false
                     })
             }
@@ -737,7 +736,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
-                                                :rules="[emailValidator, requiredValidator]"
+                                                disabled
                                                 v-model="email"
                                             />
                                         </div>

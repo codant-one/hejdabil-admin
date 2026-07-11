@@ -101,7 +101,9 @@ class Supplier extends Model
 
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
-            $q->whereHas('user', function ($uq) use ($search) {
+            $q->where('payout_number', 'LIKE', '%' . $search . '%')
+            ->orWhere('sms_sender', 'LIKE', '%' . $search . '%')
+            ->orWhereHas('user', function ($uq) use ($search) {
                 $uq->withTrashed()
                     ->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
@@ -307,7 +309,7 @@ class Supplier extends Model
         return $collectedIds;
     }
 
-    public static function swish($request, $id) {
+    public static function updateSwishSettings($request, $id) {
         $supplier = self::with('user')->where('id', $id)->first();
 
         // Common Name solo con números (sin guiones ni caracteres especiales)

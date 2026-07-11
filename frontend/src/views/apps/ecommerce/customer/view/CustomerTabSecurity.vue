@@ -35,7 +35,8 @@ const onSubmit = () => {
   refForm.value?.validate().then(({ valid: isValid }) => {
     if (isValid) {
       let data = {
-        password: password.value
+        password: password.value,
+        type: 'suppliers'
       }
 
       emit("loading", true);
