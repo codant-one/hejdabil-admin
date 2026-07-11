@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProfileRequest;
+use App\Http\Requests\UserRequest;
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,14 +14,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
-
-use App\Http\Requests\ProfileRequest;
-use App\Http\Requests\UserRequest;
+use App\Jobs\SendEmailJob;
 
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\UserRegisterToken;
-use App\Jobs\SendEmailJob;
+use App\Models\SupplierActivity;
 use App\Models\Supplier;
 
 class UsersController extends Controller
@@ -336,7 +337,8 @@ class UsersController extends Controller
     public function updatePasswordUser(Request $request, string $id): JsonResponse
     {
         $validate = Validator::make($request->all(), [
-            'password' => 'required'
+            'password' => 'required',
+            'type' => 'required'
         ]);
 
         if ($validate->fails()) {
@@ -360,6 +362,24 @@ class UsersController extends Controller
 
             $user->password = Hash::make($request->password);
             $user->save();
+
+            $entity_type = $request->type === 'suppliers' ? 'suppliers' : 'users';
+            $action_type = $request->type === 'suppliers' ? 'password_suppliers' : 'password_users';
+            $route = $request->type === 'suppliers' ? '/dashboard/admin/suppliers' : '/dashboard/admin/users';
+
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => $entity_type,
+                'action_type' => $action_type,
+                'title' => 'Lösenord för '.$user->name.' '.$user->last_name.' uppdaterat',
+                'description' => 'Användarens lösenord har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => $route,
+                'metadata' => json_encode([
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,

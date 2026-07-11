@@ -307,7 +307,7 @@ class Supplier extends Model
         return $collectedIds;
     }
 
-    public static function swish($request, $id) {
+    public static function updateSwishSettings($request, $id) {
         $supplier = self::with('user')->where('id', $id)->first();
 
         // Common Name solo con números (sin guiones ni caracteres especiales)

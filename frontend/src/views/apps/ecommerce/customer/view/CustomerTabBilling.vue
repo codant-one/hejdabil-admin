@@ -414,7 +414,7 @@ const downloadCSV = async () => {
         </VBtn>
       </div>
 
-      <VDivider />
+      <VDivider :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"/>
     </VCardText>
 
     <VCardText

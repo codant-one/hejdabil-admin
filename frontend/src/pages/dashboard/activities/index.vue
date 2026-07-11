@@ -45,6 +45,8 @@ const filterDateRange = ref(null)
 const mode = ref('Lista')
 
 const modules = [
+  { name: 'Mitt team', id: 'users' },
+  { name: 'Leverantör', id: 'suppliers' },
   { name: 'Kunder', id: 'clients' },
   { name: 'Fakturor', id: 'billings' },
   { name: 'Fordonslager', id: 'vehicles' },
@@ -74,9 +76,11 @@ const advisor = ref({
 })
 
 const activityModuleLabels = {
+  users: 'Mitt team',
   agreements: 'Avtal',
   billings: 'Fakturor',
   clients: 'Kunder',
+  suppliers: 'Leverantör',
   documents: 'Dokument',
   notes: 'Mina Värderingar',
   comment_notes: 'Mina Värderingar',
@@ -85,9 +89,11 @@ const activityModuleLabels = {
 }
 
 const activityModuleSingularLabels = {
+  users: 'Mitt team',
   agreements: 'Avtal',
   billings: 'Faktura',
   clients: 'Kund',
+  suppliers: 'Leverantör',
   documents: 'Dokument',
   notes: 'Anteckning',
   comment_notes: 'Kommentar',
@@ -112,6 +118,9 @@ const activityActionLabels = {
   unpaid: 'markerad som obetald',
   update: 'uppdaterad',
   revoke: 'återkallad',
+  activate: 'aktiverad',
+  swish: 'Swish',
+  password: 'Lösenord'
 }
 
 const activityDetailTitles = {
@@ -169,6 +178,7 @@ const activityFieldLabels = {
   registration_fee: 'Registreringsavgift',
   total_sale: 'Total försäljning',
   name: 'Namn',
+  last_name: 'Efternamn',
   notes: 'Anteckning',
   num_iva: 'Momsnummer',
   organization_number: 'Org.nr',
@@ -212,6 +222,11 @@ const activityFieldLabels = {
   payment_received: 'Summa kontant / handpenning',
   payment_method_forcash: 'Betalsätt för kontant / handpenning',
   installment_amount: 'Avbetalningsbelopp (kreditbelopp/leasing)',
+  company: 'Företagsnamn',
+  link: 'Hemsida',
+  bank: 'Bankens namn',
+  account_number: 'Kontonummer',
+  payout_number: 'Utbetalningsnummer'
 }
 
 // 👉 Computing pagination data
@@ -840,7 +855,7 @@ function getActivityModuleSingularLabel(entityType) {
 
 function resolveActivityActionKey(actionType) {
   const normalizedAction = String(actionType ?? '').toLowerCase()
-  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel', 'revoke']
+  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel', 'revoke', 'activate', 'password', 'swish']
 
   return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
 }
