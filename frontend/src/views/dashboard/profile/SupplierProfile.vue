@@ -316,7 +316,7 @@ const resolveStatus = state_id => {
           <!-- 👉 Details -->
           <div
             class="d-flex align-center w-100"
-            :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-4'"
+            :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-0'"
           >
             <div class="profile-info-grid">
               <div 
@@ -394,7 +394,7 @@ const resolveStatus = state_id => {
                 <VBtn
                   id="payout-export-button"
                   class="btn-light w-auto"
-                  block
+                  height="48"
                   v-bind="props"
                 >
                   <VIcon icon="custom-unavailable" size="24" />
@@ -1223,4 +1223,13 @@ const resolveStatus = state_id => {
     color: #FFFFFF;
     background-color: #1C2925;
 }
+
+  #payout-export-button {
+    --v-btn-height: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    align-self: flex-start;
+    margin-left: auto
+  }
 </style>
