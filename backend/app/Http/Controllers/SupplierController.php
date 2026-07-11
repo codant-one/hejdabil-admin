@@ -247,7 +247,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail'])
+            $supplier = Supplier::with(['user.userDetail', 'state'])
                                 ->withTrashed()
                                 ->clientsCount()
                                 ->find($id);
