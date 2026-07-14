@@ -64,6 +64,8 @@ const swishStep = ref(1)
 const state_id = ref(null)
 const refForm = ref(null)
 const isFormValid = ref(false)
+const supplierSwitchStates = ref({})
+const pendingSwitchReset = ref(null)
 
 const selectedSupplierForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -170,6 +172,11 @@ async function fetchData(cleanFilters = false) {
   await suppliersStores.fetchSuppliers(data)
 
   suppliers.value = suppliersStores.getSuppliers
+  supplierSwitchStates.value = suppliers.value.reduce((acc, supplier) => {
+    acc[supplier.id] = supplier.state_id === 2
+
+    return acc
+  }, {})
   totalPages.value = suppliersStores.last_page
   totalSuppliers.value = suppliersStores.suppliersTotalCount
 
@@ -226,6 +233,11 @@ const resendInvitation = async supplierData => {
 }
 
 const showDeleteDialog = async supplierData => {
+  pendingSwitchReset.value = {
+    supplierId: supplierData.id,
+    originalValue: supplierData.state_id === 2,
+  }
+
   selectedSupplier.value = { ...supplierData }
 
   deleteInfo.value = {
@@ -249,6 +261,14 @@ const showDeleteDialog = async supplierData => {
     deleteInfo.value = res.data?.data ?? deleteInfo.value
     isConfirmDeleteDialogVisible.value = true
   } catch (err) {
+      if (pendingSwitchReset.value) {
+        supplierSwitchStates.value = {
+          ...supplierSwitchStates.value,
+          [pendingSwitchReset.value.supplierId]: pendingSwitchReset.value.originalValue,
+        }
+        pendingSwitchReset.value = null
+      }
+
       advisor.value = {
         type: 'error',
         message: err.response?.data?.message || err.message,
@@ -318,8 +338,34 @@ const goToSwishStepTwo = () => {
 }
 
 const showActivateDialog = supplierData => {
+  pendingSwitchReset.value = {
+    supplierId: supplierData.id,
+    originalValue: supplierData.state_id === 2,
+  }
+
   isConfirmActiveDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
+}
+
+const resetPendingSwitch = () => {
+  if (!pendingSwitchReset.value)
+    return
+
+  supplierSwitchStates.value = {
+    ...supplierSwitchStates.value,
+    [pendingSwitchReset.value.supplierId]: pendingSwitchReset.value.originalValue,
+  }
+  pendingSwitchReset.value = null
+}
+
+const closeDeleteDialog = () => {
+  isConfirmDeleteDialogVisible.value = false
+  resetPendingSwitch()
+}
+
+const closeActivateDialog = () => {
+  isConfirmActiveDialogVisible.value = false
+  resetPendingSwitch()
 }
 
 const seeSupplier = supplierData => {
@@ -328,6 +374,7 @@ const seeSupplier = supplierData => {
 
 const removeSupplier = async () => {
   isConfirmDeleteDialogVisible.value = false
+  pendingSwitchReset.value = null
   isRequestOngoing.value = true
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
@@ -426,6 +473,7 @@ const swish = () => {
 
 const activateSupplier = async () => {
   isConfirmActiveDialogVisible.value = false
+  pendingSwitchReset.value = null
   let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
@@ -893,8 +941,23 @@ onUnmounted (() => {
             <td class="text-center">
               {{ supplier.client_count }}
             </td>
-            <td>
-              {{ supplier.state_id }}
+            <td class="text-center" v-if="$can('delete','suppliers') && supplier.state_id === 2">
+              <VSwitch
+                v-model="supplierSwitchStates[supplier.id]"
+                class="d-flex justify-center"
+                hide-details
+                inset
+                @update:modelValue="showDeleteDialog(supplier)"
+              />       
+            </td>
+            <td class="text-center" v-if="$can('delete','suppliers') && supplier.state_id === 1">
+              <VSwitch
+                v-model="supplierSwitchStates[supplier.id]"
+                class="d-flex justify-center"
+                hide-details
+                inset                
+                @update:modelValue="showActivateDialog(supplier)"
+              />       
             </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
@@ -973,22 +1036,6 @@ onUnmounted (() => {
                       <VIcon icon="tabler-mail-forward" />
                     </template>
                     <VListItemTitle>Skicka om inbjudan</VListItemTitle>
-                  </VListItem>
-                  <VListItem 
-                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                    @click="showDeleteDialog(supplier)">
-                    <template #prepend>
-                      <VIcon icon="custom-waste" size="24" />
-                    </template>
-                    <VListItemTitle>Ta bort</VListItemTitle>
-                  </VListItem>
-                  <VListItem
-                    v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                    @click="showActivateDialog(supplier)">
-                    <template #prepend>
-                      <VIcon icon="tabler-rosette-discount-check" />
-                    </template>
-                    <VListItemTitle>Aktivera</VListItemTitle>
                   </VListItem>
                 </VList>
               </VMenu>
@@ -1081,56 +1128,80 @@ onUnmounted (() => {
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Kontakt:</div>
-              <div class="expansion-panel-item-value d-flex flex-column gap-2">
-                <span>{{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}</span>
-                <span>{{ supplier.user.email }}</span>
-              </div>
-            </div>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Status:</div>
-              <div class="expansion-panel-item-value">
-                <div
-                  class="status-chip"
-                  :class="`status-chip-${resolveStatus(supplier.state_id)?.class}`"
-                >
-                  {{ supplier.state.name }}
+            <div class="d-flex justify-between flex-wrap gap-4">
+              <div class="d-flex flex-column">
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Kontakt:</div>
+                  <div class="expansion-panel-item-value d-flex flex-column gap-2">
+                    <span>{{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}</span>
+                    <span>{{ supplier.user.email }}</span>
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Status:</div>
+                  <div class="expansion-panel-item-value">
+                    <div
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus(supplier.state_id)?.class}`"
+                    >
+                      {{ supplier.state.name }}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+                  <div>
+                    <div class="expansion-panel-item-label">Swish:</div>
+                    <div class="expansion-panel-item-value">
+                      {{ supplier.payout_number ?? "---" }}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+                  <div>
+                    <div class="expansion-panel-item-label">Sender:</div>
+                    <div class="expansion-panel-item-value">
+                      {{ supplier.sms_sender ?? "---" }}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+                  <div>
+                    <div class="expansion-panel-item-label">Kunder:</div>
+                    <div class="expansion-panel-item-value">
+                      {{ supplier.client_count ?? "" }}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+                  <div>
+                    <div class="expansion-panel-item-label">Skapad Av:</div>
+                    <div class="expansion-panel-item-value">
+                      {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Swish:</div>
-                <div class="expansion-panel-item-value">
-                  {{ supplier.payout_number ?? "---" }}
-                </div>
+              <div class="switch-mobile">
+                <span class="switch-text">Aktivera</span>
+                <VSwitch
+                  v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                  v-model="supplierSwitchStates[supplier.id]"
+                  class="d-flex justify-center"
+                  hide-details
+                  inset
+                  @update:modelValue="showDeleteDialog(supplier)"
+                />
+                <VSwitch
+                  v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                  v-model="supplierSwitchStates[supplier.id]"
+                  class="d-flex justify-center"
+                  hide-details
+                  inset                
+                  @update:modelValue="showActivateDialog(supplier)"
+                />
               </div>
             </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Sender:</div>
-                <div class="expansion-panel-item-value">
-                  {{ supplier.sms_sender ?? "---" }}
-                </div>
-              </div>
-            </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Kunder:</div>
-                <div class="expansion-panel-item-value">
-                  {{ supplier.client_count ?? "" }}
-                </div>
-              </div>
-            </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Skapad Av:</div>
-                <div class="expansion-panel-item-value">
-                  {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
-                </div>
-              </div>
-            </div>
+           
             <div class="d-flex gap-4">
               <VBtn class="btn-light flex-1" @click="seeSupplier(supplier)"
               >
@@ -1138,7 +1209,12 @@ onUnmounted (() => {
                 Se detaljer
               </VBtn>
               
-              <VBtn class="btn-light" icon @click="selectedSupplierForAction = supplier; isMobileActionDialogVisible = true">
+              <VBtn 
+                v-if="supplier.state_id === 2"
+                class="btn-light" 
+                icon 
+                @click="selectedSupplierForAction = supplier; isMobileActionDialogVisible = true"
+              >
                 <VIcon icon="custom-dots-vertical" size="24" />
               </VBtn>
             </div>
@@ -1178,7 +1254,7 @@ onUnmounted (() => {
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+        @click="closeDeleteDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
@@ -1186,36 +1262,59 @@ onUnmounted (() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
           <div class="dialog-title">
-            Ta bort leverantör
+            Inaktivera leverantör
           </div>
         </VCardText>
 
         <VCardText class="dialog-text">
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
+          Är du säker att du vill inaktivera leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
         </VCardText>
 
         <VCardText class="dialog-text mt-2">
-          Leverantören tas bort från aktiva register.
+          Leverantören blir inaktiv och visas inte som ett alternativ vid nya transaktioner. Befintlig data påverkas inte och finns kvar oförändrad.
         </VCardText>
 
-        <VCardText v-if="deleteInfo.total_associations > 0" class="dialog-text mt-4">
-          <div>Associerade poster:</div>
-          <div v-if="deleteInfo.associations?.clients">Kunder: {{ deleteInfo.associations.clients }}</div>
-          <div v-if="deleteInfo.associations?.billings">Faktureringar: {{ deleteInfo.associations.billings }}</div>
-          <div v-if="deleteInfo.associations?.vehicles">Fordon: {{ deleteInfo.associations.vehicles }}</div>
-          <div v-if="deleteInfo.associations?.agreements">Avtal: {{ deleteInfo.associations.agreements }}</div>
-          <div v-if="deleteInfo.associations?.payouts">Utbetalningar: {{ deleteInfo.associations.payouts }}</div>
-          <div v-if="deleteInfo.associations?.documents">Dokument: {{ deleteInfo.associations.documents }}</div>
-          <div v-if="deleteInfo.associations?.notes">Noteringar: {{ deleteInfo.associations.notes }}</div>
+        <VCardText v-if="deleteInfo.total_associations > 0" class="dialog-text mt-2">
+          <div class="mb-2 title-poster">Associerade poster:</div>
+          <div class="card-poster">
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.clients">
+              <span class="model-poster">Kunder:</span> 
+              <span class="number-poster">{{ deleteInfo.associations.clients }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.billings">
+              <span class="model-poster">Faktureringar:</span>
+              <span class="number-poster"> {{ deleteInfo.associations.billings }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.vehicles">
+              <span class="model-poster">Fordon:</span>
+              <span class="number-poster">{{ deleteInfo.associations.vehicles }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.agreements">
+              <span class="model-poster">Avtal:</span>
+              <span class="number-poster">{{ deleteInfo.associations.agreements }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.payouts">
+              <span class="model-poster">Utbetalningar:</span>
+              <span class="number-poster">{{ deleteInfo.associations.payouts }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.documents">
+              <span class="model-poster">Dokument:</span>
+              <span class="number-poster">{{ deleteInfo.associations.documents }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.notes">
+              <span class="model-poster">Noteringar:</span>
+              <span class="number-poster">{{ deleteInfo.associations.notes }}</span>
+            </div>
+          </div>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
+          <VBtn class="btn-light" @click="closeDeleteDialog">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="removeSupplier"> Ja, radera </VBtn>
+          <VBtn class="btn-gradient" @click="removeSupplier"> Inaktivera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -1377,7 +1476,7 @@ onUnmounted (() => {
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible"
+        @click="closeActivateDialog"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
@@ -1385,18 +1484,22 @@ onUnmounted (() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="tabler-rosette-discount-check" class="action-icon" />
+          <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
           <div class="dialog-title">
             Aktivera leverantör
           </div>
         </VCardText>
 
         <VCardText class="dialog-text">
-          Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill aktivera leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong> igen?.
+        </VCardText>
+
+        <VCardText class="dialog-text mt-2">
+          Leverantören blir synlig och tillgänglig för nya transaktioner igen.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmActiveDialogVisible = false">
+          <VBtn class="btn-light" @click="closeActivateDialog">
             Avbryt
           </VBtn>
 
@@ -1404,7 +1507,7 @@ onUnmounted (() => {
             class="btn-gradient" 
             @click="activateSupplier"
           >
-            Acceptera
+            Aktivera
           </VBtn>
         </VCardText>
       </VCard>
@@ -1442,22 +1545,6 @@ onUnmounted (() => {
             </template>
             <VListItemTitle>Skicka om inbjudan</VListItemTitle>
           </VListItem>
-          <VListItem 
-            v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 2"
-            @click="showDeleteDialog(selectedSupplierForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-waste" size="24" />
-            </template>
-            <VListItemTitle>Ta bort</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="$can('delete','suppliers') && selectedSupplierForAction.state_id === 1"
-            @click="showActivateDialog(selectedSupplierForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="tabler-rosette-discount-check" />
-            </template>
-            <VListItemTitle>Aktivera</VListItemTitle>
-          </VListItem>
         </VList>
       </VCard>
     </VDialog>
@@ -1484,6 +1571,79 @@ onUnmounted (() => {
 </template>
 
 <style lang="scss">
+
+  .switch-mobile .v-switch.v-switch--inset .v-switch__track,
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__wrapper {
+    block-size: 32px !important;
+    inline-size: 56px !important;
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input .v-switch__thumb {
+    block-size: 22px !important;
+    inline-size: 22px !important;
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control--dirty .v-selection-control__input {
+    transform: translateX(12px);
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input {
+    transform: translateX(-12px);
+  }
+
+  .switch-text {
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .switch-mobile {
+    border-radius: 8px;
+    border: 1px solid #BDD2C8;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .model-poster {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .number-poster {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .card-poster {
+    background-color: #F5F8F6;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .title-poster {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
   .v-select .v-field .v-field__input > input {
     align-self: center !important;
   }
