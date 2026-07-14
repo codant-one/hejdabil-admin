@@ -787,6 +787,7 @@ onUnmounted (() => {
             <th scope="col" class="text-center"> Swish </th>
             <th scope="col" class="text-center"> Sender </th>
             <th scope="col" class="text-center"> # Kunder </th>
+            <th scope="col" class="text-center"> Aktivera </th>
             <th scope="col"> Skapad Av </th>
             <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
           </tr>
@@ -876,7 +877,7 @@ onUnmounted (() => {
             <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
-                :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
+                :class="`status-chip-${resolveStatus(supplier.state_id)?.class}`"
               >
                 {{ supplier.state.name }}
               </div>
@@ -891,6 +892,9 @@ onUnmounted (() => {
             </td>
             <td class="text-center">
               {{ supplier.client_count }}
+            </td>
+            <td>
+              {{ supplier.state_id }}
             </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
@@ -927,7 +931,7 @@ onUnmounted (() => {
                   </span>
                 </div>
               </div>
-            </td> 
+            </td>
             <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
               <VMenu>
@@ -1089,7 +1093,7 @@ onUnmounted (() => {
               <div class="expansion-panel-item-value">
                 <div
                   class="status-chip"
-                  :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
+                  :class="`status-chip-${resolveStatus(supplier.state_id)?.class}`"
                 >
                   {{ supplier.state.name }}
                 </div>

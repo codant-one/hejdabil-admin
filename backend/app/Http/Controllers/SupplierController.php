@@ -1142,7 +1142,7 @@ class SupplierController extends Controller
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' tillagd till leverantörsteamet',
                 'description' => 'En ny relaterad användare har lagts till.',
                 'icon' => 'custom-supplier',
-                'route' => '/dashboard/supplier/users',
+                'route' => '/dashboard/my-team?user_id='.$user->id,
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
                     'new_values' => $newValues,
@@ -1268,12 +1268,15 @@ class SupplierController extends Controller
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' borttagen från leverantörsteamet',
                 'description' => 'En relaterad användare har avaktiverats.',
                 'icon' => 'custom-supplier',
-                'route' => '/dashboard/supplier/users',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
                     'old_values' => $oldValues,
                 ])
             ]);
+
+            SupplierActivity::where('entity_id', $supplier->id)
+                ->where('entity_type', 'users')
+                ->update(['route' => null]);
 
             event(new ForceLogoutUserEvent($user->id));
             
@@ -1340,7 +1343,7 @@ class SupplierController extends Controller
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' uppdaterad i leverantörsteamet',
                 'description' => 'En relaterad användare har uppdaterats.',
                 'icon' => 'custom-supplier',
-                'route' => '/dashboard/supplier/users',
+                'route' => '/dashboard/my-team?user_id='.$user->id,
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
                     'old_values' => $oldValues,
@@ -1397,7 +1400,7 @@ class SupplierController extends Controller
                 'title' => 'Behörigheter uppdaterade för användare '.$user->name.' '.$user->last_name,
                 'description' => 'Behörigheter för relaterad användare har uppdaterats.',
                 'icon' => 'custom-supplier',
-                'route' => '/dashboard/supplier/users',
+                'route' => '/dashboard/my-team',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier?->id,
                     'old_values' => $oldValues,
