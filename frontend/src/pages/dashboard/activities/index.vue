@@ -226,7 +226,9 @@ const activityFieldLabels = {
   link: 'Hemsida',
   bank: 'Bankens namn',
   account_number: 'Kontonummer',
-  payout_number: 'Utbetalningsnummer'
+  payout_number: 'Utbetalningsnummer',
+  position: 'Roll',
+  permissions: 'Behörigheter'
 }
 
 // 👉 Computing pagination data

@@ -251,6 +251,24 @@ export const objectOptionField = (key, property, labels = [], options = {}) => o
   ...options,
 })
 
+export const resolvePosition = (key = 'position', options = {}) => fieldConfig(key, {
+  formatter: value => {
+    const normalizedValue = typeof value === 'string' ? Number(value.trim()) : value
+
+    if (normalizedValue === 1)
+      return 'Admin'
+    if (normalizedValue === 2)
+      return 'Inköpare'
+    if (normalizedValue === 3)
+      return 'Säljare'
+    if (normalizedValue === 4)
+      return 'Revisor'
+
+    return value
+  },
+  ...options,
+})
+
 const noteActivityFields = [
   'reg_num',
   currencyField('note'),
@@ -265,6 +283,25 @@ const noteActivityFields = [
 ]
 
 export const activityVisibleFieldsByModule = {
+  users: [
+    'name',
+    fieldConfig('last_name', { sourceKey: 'last_name' }),
+    'email',
+    'company',
+    'organization_number',
+    'link',
+    'phone',
+    'landline',
+    'address',
+    'street',
+    'postal_code',
+    'swish',
+    'sms_sender',
+    'bank', 
+    'account_number',
+    resolvePosition('position', { sourceKey: 'position' }),
+    'permissions'
+  ],
   agreements: [
     'agreement_type_id',
     

@@ -485,6 +485,7 @@ const goToProfile = () => {
                                             <VTextField
                                                 v-model="email"
                                                 type="email"
+                                                disabled
                                                 :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>

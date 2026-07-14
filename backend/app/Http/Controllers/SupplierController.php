@@ -1105,9 +1105,13 @@ class SupplierController extends Controller
                 ['token' => Str::random(60)]
             );
 
-            $user = User::find($supplier->user_id);
+            $user = User::with(['userDetail', 'permissions'])->find($supplier->user_id);
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
+            $user->refresh()->load(['userDetail', 'permissions']);
+            $supplier->refresh();
+
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
             $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
@@ -1131,9 +1135,9 @@ class SupplierController extends Controller
                 $subject
             ); 
 
-            /*SupplierActivity::createActivity([
+            SupplierActivity::createActivity([
                 'entity_id' => $supplier->id,
-                'entity_type' => 'suppliers',
+                'entity_type' => 'users',
                 'action_type' => 'create_related_supplier_user',
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' tillagd till leverantörsteamet',
                 'description' => 'En ny relaterad användare har lagts till.',
@@ -1141,10 +1145,9 @@ class SupplierController extends Controller
                 'route' => '/dashboard/supplier/users',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
-                    'user_id' => $user->id,
-                    'email' => $user->email,
+                    'new_values' => $newValues,
                 ])
-            ]);*/
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1238,7 +1241,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail')->find($id);
+            $user = User::with(['roles', 'userDetail', 'permissions'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1256,9 +1259,11 @@ class SupplierController extends Controller
                     'message' => 'Leverantören hittades inte ' . $user->id
                 ], 404);
 
-            /*SupplierActivity::createActivity([
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
+            SupplierActivity::createActivity([
                 'entity_id' => $supplier->id,
-                'entity_type' => 'suppliers',
+                'entity_type' => 'users',
                 'action_type' => 'delete_related_supplier_user',
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' borttagen från leverantörsteamet',
                 'description' => 'En relaterad användare har avaktiverats.',
@@ -1266,10 +1271,9 @@ class SupplierController extends Controller
                 'route' => '/dashboard/supplier/users',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
-                    'user_id' => $user->id,
-                    'email' => $user->email,
+                    'old_values' => $oldValues,
                 ])
-            ]);*/
+            ]);
 
             event(new ForceLogoutUserEvent($user->id));
             
@@ -1298,7 +1302,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail')->find($id);
+            $user = User::with(['roles', 'userDetail', 'permissions'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1311,13 +1315,7 @@ class SupplierController extends Controller
             $request->merge(['roles' => [0 => "User"] ]);
 
             $supplier = Supplier::where('user_id', $user->id)->first();
-            $oldValues = [
-                'name' => $user->name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'position' => $supplier?->position,
-                'permissions' => $user->permissions->pluck('name')->values()->all(),
-            ];
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
             $user->updateUser($request, $user); 
             $user->syncPermissions($request->permissions);
@@ -1330,19 +1328,14 @@ class SupplierController extends Controller
             ]);
 
             $user->refresh()->load(['permissions']);
+            $user->loadMissing(['userDetail']);
             $supplier->refresh();
 
-            $newValues = [
-                'name' => $user->name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'position' => $supplier?->position,
-                'permissions' => $user->permissions->pluck('name')->values()->all(),
-            ];
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
-            /*SupplierActivity::createActivity([
+            SupplierActivity::createActivity([
                 'entity_id' => $supplier->id,
-                'entity_type' => 'suppliers',
+                'entity_type' => 'users',
                 'action_type' => 'update_related_supplier_user',
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' uppdaterad i leverantörsteamet',
                 'description' => 'En relaterad användare har uppdaterats.',
@@ -1350,11 +1343,10 @@ class SupplierController extends Controller
                 'route' => '/dashboard/supplier/users',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
-                    'user_id' => $user->id,
                     'old_values' => $oldValues,
                     'new_values' => $newValues,
                 ])
-            ]);*/
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1379,7 +1371,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::with(['permissions'])->find($id);
+            $user = User::with(['permissions', 'userDetail'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1389,15 +1381,18 @@ class SupplierController extends Controller
                 ], 404);
 
             $supplier = Supplier::where('user_id', $user->id)->first();
-            $oldPermissions = $user->permissions->pluck('name')->values()->all();
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
             $user->refresh()->load(['permissions']);
+            $user->loadMissing(['userDetail']);
 
-           /* SupplierActivity::createActivity([
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
+            SupplierActivity::createActivity([
                 'entity_id' => $supplier?->id ?? $user->id,
-                'entity_type' => 'suppliers',
+                'entity_type' => 'users',
                 'action_type' => 'update_related_supplier_user_permissions',
                 'title' => 'Behörigheter uppdaterade för användare '.$user->name.' '.$user->last_name,
                 'description' => 'Behörigheter för relaterad användare har uppdaterats.',
@@ -1405,11 +1400,10 @@ class SupplierController extends Controller
                 'route' => '/dashboard/supplier/users',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier?->id,
-                    'user_id' => $user->id,
-                    'old_permissions' => $oldPermissions,
-                    'new_permissions' => $user->permissions->pluck('name')->values()->all(),
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues,
                 ])
-            ]);*/
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1533,6 +1527,22 @@ class SupplierController extends Controller
             ->unique()
             ->mapWithKeys(fn ($field) => [$field => $values[$field] ?? null])
             ->all();
+    }
+
+    private function mapRelatedSupplierUserActivityValues(User $user, ?Supplier $supplier): array
+    {
+        $userDetail = $user->userDetail;
+
+        return [
+            'name' => $user->name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'position' => $supplier?->position,
+            'phone' => $userDetail?->personal_phone ?? $userDetail?->phone,
+            'landline' => $userDetail?->personal_landline ?? $userDetail?->landline,
+            'address' => $userDetail?->personal_address ?? $userDetail?->address,
+            'permissions' => $user->permissions->pluck('name')->values()->all(),
+        ];
     }
 
 }
