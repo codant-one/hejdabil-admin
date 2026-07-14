@@ -503,7 +503,7 @@ onBeforeRouteLeave((to, from, next) => {
                             :to="{ name: 'dashboard-admin-suppliers' }"
                         >
                             <VIcon icon="custom-return" size="24" />
-                            Gå ut 
+                            Tillbaka 
                         </VBtn>
                         
                         <div class="d-flex flex-column gap-4">

@@ -1960,7 +1960,7 @@ onBeforeRouteLeave((to, from, next) => {
                             :to="{ name: state_id === 12 ? 'dashboard-admin-sold' :'dashboard-admin-stock' }"
                         >
                             <VIcon icon="custom-return" size="24" />
-                            Gå ut
+                            Tillbaka
                         </VBtn>
 
                         <div 

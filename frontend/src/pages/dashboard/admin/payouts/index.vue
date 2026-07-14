@@ -1742,7 +1742,7 @@ const onDatePickerUpdate = value => {
               @click="closePayoutDetailDialog"
             >
               <VIcon icon="custom-return" size="24" />
-              Gå ut
+              Tillbaka
             </VBtn>
             <div v-if="selectedPayout.payout_state_id === 4 && (role === 'Supplier' || role === 'User')" class="d-flex gap-2">
               <VBtn
