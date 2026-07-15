@@ -830,7 +830,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                                 <VSpacer />
                                                                 
                                                                 <VRadio
-                                                                    class="mt-4 me-0 cursor-pointer delivery-method-option"
+                                                                    class="mt-4 me-0 cursor-pointer delivery-method-option flex-0"
                                                                     :value="plan.id"
                                                                 />
                                                             </VCardText>
