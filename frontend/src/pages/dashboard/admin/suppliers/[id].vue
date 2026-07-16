@@ -2,15 +2,14 @@
 
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useDisplay } from "vuetify";
+import { themeConfig } from "@themeConfig";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
-import CustomerBioPanel from '@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue'
 import SupplierProfile from '@/views/dashboard/profile/SupplierProfile.vue'
 import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTabOverview.vue'
 import CustomerTabSecurity from '@/views/apps/ecommerce/customer/view/CustomerTabSecurity.vue'
 import CustomerTabBilling from '@/views/apps/ecommerce/customer/view/CustomerTabBilling.vue'
 import CustomerTabCompany from '@/views/apps/ecommerce/customer/view/CustomerTabCompany.vue'
-import { themeConfig } from "@themeConfig";
 
 defineProps({
   id: [String, Number],

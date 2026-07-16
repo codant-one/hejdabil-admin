@@ -322,8 +322,10 @@ const showActivateDialog = supplierData => {
 
 const activateSupplier = async () => {
   isConfirmActiveDialogVisible.value = false
+  isRequestOngoing.value = true
   let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
+  isRequestOngoing.value = false
 
   if (res.data.success) {
     supplier.value = res.data.data.supplier
@@ -402,13 +404,14 @@ const closeDeleteDialog = () => {
 
 const removeSupplier = async () => {
   isConfirmDeleteDialogVisible.value = false
+  isRequestOngoing.value = true
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
   if (res.data.success) {
     supplier.value = res.data.data.supplier
   }
-
+  isRequestOngoing.value = false
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
     message: res.data.success ? (res.data.message ?? 'Leverantör borttagen!') : res.data.message,
@@ -575,7 +578,7 @@ const removeSupplier = async () => {
                 </VBtn>
               </div>
 
-              <div ``
+              <div
                 class="profile-info-item profile-info-col-2"
                 :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
               >
@@ -591,6 +594,7 @@ const removeSupplier = async () => {
                   #{{ supplier.id }}
                 </span>
               </div>
+
               <div 
                 class="profile-info-item profile-info-col-5"
                 :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
@@ -607,6 +611,7 @@ const removeSupplier = async () => {
                   {{ email }}
                 </span>
               </div>
+
               <div 
                 class="profile-info-item profile-info-col-2"
                 :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
@@ -622,7 +627,35 @@ const removeSupplier = async () => {
                 <span class="span-body-profile">
                   {{ phone }}
                 </span>
-              </div>               
+              </div>  
+              
+              <div 
+                v-if="windowWidth < 1024"
+                class="profile-info-item profile-info-col-4 w-100">
+
+                <VBtn
+                  v-if="supplier.state_id === 1"
+                  id="payout-export-button"
+                  class="btn-light w-100"
+                  height="48"
+                  v-bind="props"
+                  @click="showActivateDialog(supplier)"
+                >
+                  <VIcon icon="custom-check-mark" size="24" />
+                  Aktivera
+                </VBtn>
+                <VBtn
+                  v-else
+                  id="payout-export-button"
+                  class="btn-light w-100"
+                  height="48"
+                  v-bind="props"
+                  @click="showDeleteDialog(supplier)"
+                >
+                  <VIcon icon="custom-unavailable" size="24" />
+                  Avsluta abonnemang
+                </VBtn>
+              </div>
             </div>
           </div>
 
