@@ -567,12 +567,12 @@ const clearFilter = () => {
         >
           <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-account"
+          icon="custom-f-user"
           />
           <div class="empty-state-content w-100 pa-4">
-              <div class="empty-state-title">Inget team ännu</div>
+              <div class="empty-state-title">Inga teammedlemmar tillagda</div>
               <div class="empty-state-text">
-                  Bjud in dina medarbetare för att börja följa försäljning och prestation.
+                  Kontot har ännu inte lagt till några användare utöver ägaren.
               </div>
           </div>
         </div>
