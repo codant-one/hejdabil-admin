@@ -16,6 +16,10 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits([
+  'loading'
+])
+
 const { width: windowWidth } = useWindowSize();
 
 const filterMenuVisible = ref(false)
@@ -153,12 +157,16 @@ async function fetchTeamData() {
 
   const now = new Date()
 
+  emit("loading", true);
+
   const response = await Suppliers.getCustomerOverviewTeam({
     supplier_id: supplierId.value,
     date_from: date_from.value ? date_from.value :  new Date(now.getFullYear(), now.getMonth(), '01').toISOString().split('T')[0],
     date_to: date_to.value ? date_to.value : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0],
     limit: -1,
   })
+
+  emit("loading", false);
 
   const payload = response?.data?.data
   const teamTotals = payload?.teamTotals
