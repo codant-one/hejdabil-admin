@@ -31,6 +31,11 @@ use App\Models\Payout;
 use App\Models\Supplier;
 use App\Models\UserDetails;
 use App\Models\SupplierActivity;
+use App\Models\Client;
+use App\Models\SmsMessage;
+use App\Models\Note;
+use App\Models\Document;
+use App\Models\Vehicle;
 
 class SupplierController extends Controller
 {
@@ -949,7 +954,14 @@ class SupplierController extends Controller
                         ->orWhere('boss_id', $supplierId);
                 })
                 ->whereNotNull('boss_id')
-                ->orderBy('order_id')
+                ->whereNotNull('created_at')
+                ->whereBetween('created_at', [
+                    $filterStart->toDateTimeString(),
+                    $filterEnd->toDateTimeString(),
+                ])
+                ->clientsCount()
+                ->acceptedSmsCount($filterStart, $filterEnd)
+                ->orderBy('created_at')
                 ->orderBy('id')
                 ->get();
 
@@ -1003,6 +1015,8 @@ class SupplierController extends Controller
                     'invoices' => $invoices,
                     'swish' => $swish,
                     'agreements' => $agreements,
+                    'clients' => $teamSupplier?->client_count ?? 0,
+                    'accepted_sms' => $teamSupplier?->sms_accepted_count ?? 0,
                     'total_actions' => $invoices + $swish + $agreements,
                     'created_at' => $teamSupplier?->created_at,
                 ];
@@ -1042,6 +1056,42 @@ class SupplierController extends Controller
                 $filterEnd,
             );
 
+            $totalClients = $this->getTeamDocumentTotalCount(
+                Client::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalVehiclesSold = $this->getTeamDocumentTotalCount(
+                Vehicle::query()->where('supplier_id', $supplierId)->where('state_id', 12),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalVehiclesStock = $this->getTeamDocumentTotalCount(
+                Vehicle::query()->where('supplier_id', $supplierId)->where('state_id', "<>", 12),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalSMS = $this->getTeamDocumentTotalCount(
+                SmsMessage::query()->where('supplier_id', $supplierId)->where('billable_count', '>', 0),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalNotes = $this->getTeamDocumentTotalCount(
+                Note::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalDocuments = $this->getTeamDocumentTotalCount(
+                Document::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1050,6 +1100,12 @@ class SupplierController extends Controller
                         'billings' => $totalBillings,
                         'payouts' => $totalPayouts,
                         'agreements' => $totalAgreements,
+                        'clients' => $totalClients,
+                        'vehicles_sold' => $totalVehiclesSold,
+                        'vehicles_stock' => $totalVehiclesStock,
+                        'sms' => $totalSMS,
+                        'notes' => $totalNotes,
+                        'documents' => $totalDocuments
                     ],
                     'pagination' => [
                         'total' => $totalTeamMembers,

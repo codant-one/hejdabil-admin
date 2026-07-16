@@ -85,10 +85,10 @@ class Supplier extends Model
                 }]);
     }
 
-    public function scopeAcceptedSmsCount($query)
+    public function scopeAcceptedSmsCount($query, $date_from = null, $date_to = null)
     {
-        $startOfMonth = Carbon::now()->startOfMonth()->toDateTimeString();
-        $endOfToday = Carbon::now()->endOfDay()->toDateTimeString();
+        $startOfMonth = $date_from ?? Carbon::now()->startOfMonth()->toDateTimeString();
+        $endOfToday = $date_to ?? Carbon::now()->endOfDay()->toDateTimeString();
 
         return $query->addSelect(['sms_accepted_count' => function ($q) use ($startOfMonth, $endOfToday) {
             $q->selectRaw('COUNT(*)')
