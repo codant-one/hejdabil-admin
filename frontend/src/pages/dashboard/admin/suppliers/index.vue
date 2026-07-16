@@ -1033,7 +1033,7 @@ onUnmounted (() => {
                     v-if="$can('edit', 'suppliers') && supplier.state_id === 2 && supplier.user.full_profile === 0"
                     @click="resendInvitation(supplier)">
                     <template #prepend>
-                      <VIcon icon="tabler-mail-forward" />
+                      <VIcon icon="custom-paper-plane" />
                     </template>
                     <VListItemTitle>Skicka om inbjudan</VListItemTitle>
                   </VListItem>
@@ -1541,7 +1541,7 @@ onUnmounted (() => {
             v-if="$can('edit', 'suppliers') && selectedSupplierForAction.state_id === 2 && selectedSupplierForAction.user.full_profile === 0"
             @click="resendInvitation(selectedSupplierForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <VIcon icon="tabler-mail-forward" />
+              <VIcon icon="custom-paper-plane" />
             </template>
             <VListItemTitle>Skicka om inbjudan</VListItemTitle>
           </VListItem>

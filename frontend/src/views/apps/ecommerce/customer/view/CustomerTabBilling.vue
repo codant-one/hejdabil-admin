@@ -540,6 +540,24 @@ const downloadCSV = async () => {
       </tfoot>
     </VTable>
 
+    <div
+      v-if="!isRequestOngoing && !billings.length"
+      class="empty-state"
+      :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+    >
+      <VIcon
+        :size="$vuetify.display.mdAndDown ? 80 : 120"
+        icon="custom-order"
+      />
+      <div class="empty-state-content">
+        <div class="empty-state-title">Inga fakturor än</div>
+        <div class="empty-state-text">
+          Fakturor visas här när det första betalningstillfället 
+          har inträffat.
+        </div>
+      </div>
+    </div>
+
     <VExpansionPanels
         class="expansion-panels pb-6 px-0"
         v-if="billings.length && $vuetify.display.mdAndDown"

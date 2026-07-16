@@ -77,8 +77,29 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
-const avatarCommitted = ref(props.avatar)
-const avatarPreview = ref(props.avatar)
+
+const normalizeAvatarId = avatarId => {
+  const parsed = Number(avatarId)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+const normalizeAvatarSrc = value => {
+  if (!value || typeof value !== 'string')
+    return null
+
+  const trimmed = value.trim()
+
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined')
+    return null
+
+  if (trimmed.endsWith('/null') || trimmed.endsWith('/undefined'))
+    return null
+
+  return trimmed
+}
+
+const avatarCommitted = ref(normalizeAvatarSrc(props.avatar))
+const avatarPreview = ref(normalizeAvatarSrc(props.avatar))
 const supplier = ref(props.supplier)
 
 const avatarOld = ref(props.avatarOld)
@@ -86,7 +107,10 @@ const avatarOld = ref(props.avatarOld)
 const isRequestOngoing = ref(true)
 
 const isConfirmEditAvatarVisible = ref(false)
-const selectedDialogAvatar = ref(props.avatarId)
+const normalizedAvatarId = computed(() => normalizeAvatarId(props.avatarId))
+const hasRenderableCommittedAvatar = computed(() => Boolean(normalizeAvatarSrc(avatarCommitted.value)))
+const hasRenderablePreviewAvatar = computed(() => Boolean(normalizeAvatarSrc(avatarPreview.value)))
+const selectedDialogAvatar = ref(normalizedAvatarId.value)
 const isDeleteInfoLoading = ref(false)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
@@ -122,10 +146,18 @@ const alert = ref({
 
 watch(() =>  
   props.avatar, (avatar_) => {
-    if (!isUserEditDialog.value)
-      avatarCommitted.value = avatar_
+    const normalizedAvatar = normalizeAvatarSrc(avatar_)
 
-    avatarPreview.value = avatar_
+    if (!isUserEditDialog.value)
+      avatarCommitted.value = normalizedAvatar
+
+    avatarPreview.value = normalizedAvatar
+  });
+
+watch(() =>
+  props.avatarId, (avatarId_) => {
+    if (!isUserEditDialog.value)
+      selectedDialogAvatar.value = normalizeAvatarId(avatarId_)
   });
 
 watch(() => 
@@ -189,7 +221,7 @@ const onSubmit = () => {
         formData.append('avatar_id', selectedPresetAvatar.id)
       } else {
         formData.append('image', avatarOld.value)
-        formData.append('avatar_id', props.avatarId)
+        formData.append('avatar_id', normalizedAvatarId.value)
       }
 
       formData.append('logo',  userData.value.user_detail?.logo)
@@ -258,12 +290,13 @@ const deleteAvatar = ()=>{
 const showUserEditDialog = u =>{
   avatarPreview.value = avatarCommitted.value
   avatarOld.value = props.avatarOld
+  selectedDialogAvatar.value = normalizedAvatarId.value
   isUserEditDialog.value = true
 }
 
 const showConfirmEditAvatarDialog = () => {
   const selectedFromCurrent = avatarOptions.find(option => option.src === avatarPreview.value)
-  selectedDialogAvatar.value = selectedFromCurrent?.id ?? props.avatarId
+  selectedDialogAvatar.value = selectedFromCurrent?.id ?? normalizedAvatarId.value
   isConfirmEditAvatarVisible.value = true
 }
 
@@ -306,6 +339,7 @@ const closeUserEditDialog = ()=>{
   isUserEditDialog.value = false
   avatarPreview.value = avatarCommitted.value
   avatarOld.value = props.avatarOld
+  selectedDialogAvatar.value = normalizedAvatarId.value
 }
 
 const resolveStatus = state_id => {
@@ -465,13 +499,13 @@ const removeSupplier = async () => {
               variant="outlined"
             >
               <VImg
-                v-if="avatarCommitted"
+                v-if="hasRenderableCommittedAvatar"
                 :src="avatarCommitted"
               />
               <PresetAvatarImage
                 v-else
                 :radius="0"
-                :avatar-id="avatarId"
+                :avatar-id="normalizedAvatarId"
               />
             </VAvatar>
           </div>
@@ -496,13 +530,13 @@ const removeSupplier = async () => {
                     variant="outlined"
                   >
                     <VImg
-                      v-if="avatarCommitted"
+                      v-if="hasRenderableCommittedAvatar"
                       :src="avatarCommitted"
                     />
                     <PresetAvatarImage
                       v-else
                       :radius="0"
-                      :avatar-id="avatarId"
+                      :avatar-id="normalizedAvatarId"
                     />
                   </VAvatar>
                   <div class="ms-4 w-auto">
@@ -726,14 +760,14 @@ const removeSupplier = async () => {
                       variant="outlined"
                     >
                       <VImg
-                        v-if="avatarPreview"
+                        v-if="hasRenderablePreviewAvatar"
                         style="border-radius: 6px;"
                         :src="avatarPreview"
                       />
                       <PresetAvatarImage
                         v-else
                         :radius="0"
-                        :avatar-id="avatarId"
+                        :avatar-id="normalizedAvatarId"
                       />
                     </VAvatar>
                   </span>
@@ -890,14 +924,14 @@ const removeSupplier = async () => {
                       variant="outlined"
                     >
                       <VImg
-                        v-if="avatarPreview"
+                        v-if="hasRenderablePreviewAvatar"
                         style="border-radius: 6px;"
                         :src="avatarPreview"
                       />
                       <PresetAvatarImage
                         v-else
                         :radius="0"
-                        :avatar-id="avatarId"
+                        :avatar-id="normalizedAvatarId"
                       />
                     </VAvatar>
                   </span>
