@@ -384,7 +384,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user'])->find($id);
+            $supplier = Supplier::with(['user', 'state'])->find($id);
         
             if (!$supplier)
                 return response()->json([
@@ -412,6 +412,8 @@ class SupplierController extends Controller
 
             $supplier->deleteSupplier($id);
             $this->sendSupplierDeactivationEmail($supplierNotificationRecipient);
+
+            $supplier = Supplier::with(['user', 'state'])->withTrashed()->find($id);
 
             $message = 'Leverantör borttagen!';
 
@@ -589,7 +591,7 @@ class SupplierController extends Controller
                 ], 404);
             
             $supplier->activateSupplier($id);
-            $supplier->refresh()->load(['user']);
+            $supplier->refresh()->load(['user', 'state']);
 
             SupplierActivity::createActivity([
                 'entity_id' => $supplier->id,

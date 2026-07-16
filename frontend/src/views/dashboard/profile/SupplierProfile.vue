@@ -1,7 +1,9 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 import avatar1 from '@/assets/images/avatars/1.svg'
 import avatar2 from '@/assets/images/avatars/2.svg'
 import avatar3 from '@/assets/images/avatars/3.svg'
@@ -9,6 +11,8 @@ import avatar4 from '@/assets/images/avatars/4.svg'
 import avatar5 from '@/assets/images/avatars/5.svg'
 import avatar6 from '@/assets/images/avatars/6.svg'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import Toaster from "@/components/common/Toaster.vue";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const props = defineProps({
   user: {
@@ -48,9 +52,18 @@ const emit = defineEmits([
   'alert'
 ])
 
+const { mdAndDown } = useDisplay();
 const { width: windowWidth } = useWindowSize();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const profileStores = useProfileStores()
+const suppliersStores = useSuppliersStores()
 
 const refVForm = ref()
 const refAlert = ref()
@@ -70,8 +83,27 @@ const supplier = ref(props.supplier)
 
 const avatarOld = ref(props.avatarOld)
 
+const isRequestOngoing = ref(true)
+
 const isConfirmEditAvatarVisible = ref(false)
 const selectedDialogAvatar = ref(props.avatarId)
+const isDeleteInfoLoading = ref(false)
+const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmActiveDialogVisible = ref(false)
+const selectedSupplier = ref({})
+const deleteInfo = ref({
+  can_force_delete: false,
+  total_associations: 0,
+  associations: {
+    clients: 0,
+    billings: 0,
+    vehicles: 0,
+    agreements: 0,
+    payouts: 0,
+    documents: 0,
+    notes: 0,
+  },
+})
 
 const avatarOptions = [
   { id: 1, src: avatar1 },
@@ -112,13 +144,14 @@ watch(() => alert.value.show, (show) => {
 watchEffect(fetchData)
 
 async function fetchData() { 
-
   user_id.value = userData.value.id
   email.value = userData.value.email
   name.value = userData.value.name
   last_name.value = userData.value.last_name ?? ''
   phone.value = userData.value.user_detail?.personal_phone
   address.value = userData.value.user_detail?.personal_address
+
+  isRequestOngoing.value = false
 }
 
 const resetAvatar = () => {
@@ -281,10 +314,137 @@ const resolveStatus = state_id => {
   if (state_id === 1)
     return { class: 'error' }
 }
+
+const showActivateDialog = supplierData => {
+  isConfirmActiveDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+}
+
+const activateSupplier = async () => {
+  isConfirmActiveDialogVisible.value = false
+  let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
+  selectedSupplier.value = {}
+
+  if (res.data.success) {
+    supplier.value = res.data.data.supplier
+  }
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Leverantör aktiverad!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
+
+const closeActivateDialog = () => {
+  isConfirmActiveDialogVisible.value = false
+}
+
+const showDeleteDialog = async supplierData => {
+  selectedSupplier.value = { ...supplierData }
+
+  deleteInfo.value = {
+    can_force_delete: false,
+    total_associations: 0,
+    associations: {
+      clients: 0,
+      billings: 0,
+      vehicles: 0,
+      agreements: 0,
+      payouts: 0,
+      documents: 0,
+      notes: 0,
+    },
+  }
+
+  isDeleteInfoLoading.value = true
+  isRequestOngoing.value = true
+  try {
+    const res = await suppliersStores.getDeletionInfo(supplierData.id)
+    deleteInfo.value = res.data?.data ?? deleteInfo.value
+    isConfirmDeleteDialogVisible.value = true
+  } catch (err) {
+
+      advisor.value = {
+        type: 'error',
+        message: err.response?.data?.message || err.message,
+        show: true,
+      }
+
+      setTimeout(() => {
+        advisor.value = {
+          type: '',
+          message: '',
+          show: false,
+        }
+      }, 3000)
+  } finally {
+    isDeleteInfoLoading.value = false
+    isRequestOngoing.value = false
+  }
+}
+
+const closeDeleteDialog = () => {
+  isConfirmDeleteDialogVisible.value = false
+}
+
+const removeSupplier = async () => {
+  isConfirmDeleteDialogVisible.value = false
+  let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
+  selectedSupplier.value = {}
+
+  if (res.data.success) {
+    supplier.value = res.data.data.supplier
+  }
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? (res.data.message ?? 'Leverantör borttagen!') : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
 </script>
 
 <template>
   <section>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
+
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>  
+
+    <Toaster />
+
     <VCardText class="p-0">
       <div class="bg-alert">
         <div 
@@ -392,17 +552,30 @@ const resolveStatus = state_id => {
                 class="profile-info-item profile-info-col-4 ">
 
                 <VBtn
+                  v-if="supplier.state_id === 1"
                   id="payout-export-button"
                   class="btn-light w-auto"
                   height="48"
                   v-bind="props"
+                  @click="showActivateDialog(supplier)"
+                >
+                  <VIcon icon="custom-check-mark" size="24" />
+                  Aktivera
+                </VBtn>
+                <VBtn
+                  v-else
+                  id="payout-export-button"
+                  class="btn-light w-auto"
+                  height="48"
+                  v-bind="props"
+                  @click="showDeleteDialog(supplier)"
                 >
                   <VIcon icon="custom-unavailable" size="24" />
                   Avsluta abonnemang
                 </VBtn>
               </div>
 
-              <div 
+              <div ``
                 class="profile-info-item profile-info-col-2"
                 :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
               >
@@ -874,6 +1047,127 @@ const resolveStatus = state_id => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Confirm Delete -->
+    <VDialog
+      v-model="isConfirmDeleteDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeDeleteDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+        
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
+          <div class="dialog-title">
+            Inaktivera leverantör
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          Är du säker att du vill inaktivera leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
+        </VCardText>
+
+        <VCardText class="dialog-text mt-2">
+          Leverantören blir inaktiv och visas inte som ett alternativ vid nya transaktioner. Befintlig data påverkas inte och finns kvar oförändrad.
+        </VCardText>
+
+        <VCardText v-if="deleteInfo.total_associations > 0" class="dialog-text mt-2">
+          <div class="mb-2 title-poster">Associerade poster:</div>
+          <div class="card-poster">
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.clients">
+              <span class="model-poster">Kunder:</span> 
+              <span class="number-poster">{{ deleteInfo.associations.clients }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.billings">
+              <span class="model-poster">Faktureringar:</span>
+              <span class="number-poster"> {{ deleteInfo.associations.billings }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.vehicles">
+              <span class="model-poster">Fordon:</span>
+              <span class="number-poster">{{ deleteInfo.associations.vehicles }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.agreements">
+              <span class="model-poster">Avtal:</span>
+              <span class="number-poster">{{ deleteInfo.associations.agreements }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.payouts">
+              <span class="model-poster">Utbetalningar:</span>
+              <span class="number-poster">{{ deleteInfo.associations.payouts }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.documents">
+              <span class="model-poster">Dokument:</span>
+              <span class="number-poster">{{ deleteInfo.associations.documents }}</span>
+            </div>
+            <div class="d-flex justify-between" v-if="deleteInfo.associations?.notes">
+              <span class="model-poster">Noteringar:</span>
+              <span class="number-poster">{{ deleteInfo.associations.notes }}</span>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="closeDeleteDialog">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="removeSupplier"> Inaktivera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm activate supplier -->
+    <VDialog
+      v-model="isConfirmActiveDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeActivateDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+        
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
+          <div class="dialog-title">
+            Aktivera leverantör
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          Är du säker att du vill aktivera leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong> igen?.
+        </VCardText>
+
+        <VCardText class="dialog-text mt-2">
+          Leverantören blir synlig och tillgänglig för nya transaktioner igen.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="closeActivateDialog">
+            Avbryt
+          </VBtn>
+
+          <VBtn 
+            class="btn-gradient" 
+            @click="activateSupplier"
+          >
+            Aktivera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -1224,12 +1518,45 @@ const resolveStatus = state_id => {
     background-color: #1C2925;
 }
 
-  #payout-export-button {
-    --v-btn-height: 48px !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
-    align-self: flex-start;
-    margin-left: auto
+#payout-export-button {
+  --v-btn-height: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  align-self: flex-start;
+  margin-left: auto
+}
+
+.model-poster {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .number-poster {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .card-poster {
+    background-color: #F5F8F6;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .title-poster {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787;
   }
 </style>
