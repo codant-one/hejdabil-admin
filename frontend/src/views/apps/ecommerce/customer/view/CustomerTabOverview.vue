@@ -471,7 +471,7 @@ const clearFilter = () => {
                 </span>
               </td>
               <td class="text-center">
-                  <span>{{ member.billings }}</span>
+                  <span>{{ member.invoices }}</span>
               </td>
               <td class="text-center">
                   <span>{{ member.swish }}</span>
@@ -543,7 +543,7 @@ const clearFilter = () => {
                 <div class="mb-6">
                     <div class="expansion-panel-item-label">Fakturor:</div>
                     <div class="expansion-panel-item-value">
-                        {{ member.billings ?? "" }}
+                        {{ member.invoices ?? "" }}
                     </div>
                 </div>
                 <div class="mb-6">
