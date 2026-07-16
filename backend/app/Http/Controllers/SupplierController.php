@@ -961,6 +961,7 @@ class SupplierController extends Controller
                     $filterStart->toDateTimeString(),
                     $filterEnd->toDateTimeString(),
                 ])
+                ->withTrashed()
                 ->clientsCount()
                 ->acceptedSmsCount($filterStart, $filterEnd)
                 ->orderBy('created_at')
