@@ -16,6 +16,10 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits([
+  'loading'
+])
+
 const { width: windowWidth } = useWindowSize();
 
 const filterMenuVisible = ref(false)
@@ -34,19 +38,19 @@ const items = ref([
     icon: 'custom-lager',
     title: 'Fordon i lager',
     subtitle: 'Aktiva fordon',
-    stats: '12',
+    stats: '0',
   },
   {
     icon: 'custom-sold',
     title: 'Sålda fordon',
     subtitle: 'Denna månad',
-    stats: '3',
+    stats: '0',
   },
   {
     icon: 'custom-clients',
     title: 'Antal kunder',
     subtitle: 'Registrerade',
-    stats: '15',
+    stats: '0',
   },
     // {
     //   icon: 'custom-facture',
@@ -58,7 +62,7 @@ const items = ref([
     icon: 'custom-sms',
     title: 'SMS skickade',
     subtitle: 'Denna månad',
-    stats: '124',
+    stats: '0',
     stats2: '500'
   }
 ])
@@ -153,12 +157,16 @@ async function fetchTeamData() {
 
   const now = new Date()
 
+  emit("loading", true);
+
   const response = await Suppliers.getCustomerOverviewTeam({
     supplier_id: supplierId.value,
     date_from: date_from.value ? date_from.value :  new Date(now.getFullYear(), now.getMonth(), '01').toISOString().split('T')[0],
     date_to: date_to.value ? date_to.value : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0],
     limit: -1,
   })
+
+  emit("loading", false);
 
   const payload = response?.data?.data
   const teamTotals = payload?.teamTotals
@@ -171,7 +179,7 @@ async function fetchTeamData() {
 
 
   itemsTwo.value[0].stats = teamTotals?.clients ?? 0
-  itemsTwo.value[1].stats = teamTotals?.invoices ?? 0
+  itemsTwo.value[1].stats = teamTotals?.billings ?? 0
   itemsTwo.value[2].stats = (teamTotals?.vehicles_stock ?? 0) + (teamTotals?.vehicles_sold ?? 0)
   itemsTwo.value[3].stats = teamTotals?.notes ?? 0
   itemsTwo.value[4].stats = teamTotals?.agreements ?? 0
@@ -463,7 +471,7 @@ const clearFilter = () => {
                 </span>
               </td>
               <td class="text-center">
-                  <span>{{ member.invoices }}</span>
+                  <span>{{ member.billings }}</span>
               </td>
               <td class="text-center">
                   <span>{{ member.swish }}</span>
@@ -535,7 +543,7 @@ const clearFilter = () => {
                 <div class="mb-6">
                     <div class="expansion-panel-item-label">Fakturor:</div>
                     <div class="expansion-panel-item-value">
-                        {{ member.invoices ?? "" }}
+                        {{ member.billings ?? "" }}
                     </div>
                 </div>
                 <div class="mb-6">

@@ -164,6 +164,7 @@ onBeforeUnmount(() => {
                         <CustomerTabOverview
                             :customer-data="supplier"
                             :is-supplier="true"
+                            @loading="showLoading"
                             
                         />
                     </VWindowItem>
