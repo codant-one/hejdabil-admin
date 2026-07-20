@@ -2,9 +2,10 @@
 
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useDisplay } from "vuetify";
+import { themeConfig } from "@themeConfig";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
-import CustomerBioPanel from '@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue'
+import SupplierProfile from '@/views/dashboard/profile/SupplierProfile.vue'
 import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTabOverview.vue'
 import CustomerTabSecurity from '@/views/apps/ecommerce/customer/view/CustomerTabSecurity.vue'
 import CustomerTabBilling from '@/views/apps/ecommerce/customer/view/CustomerTabBilling.vue'
@@ -24,6 +25,11 @@ const sectionEl = ref(null)
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const avatar = ref('')
+const avatarOld = ref('')
+const haveAvatar = ref(false)
+const avatar_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -46,6 +52,11 @@ async function fetchData() {
 
   if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-id') {
     supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
+
+    avatarOld.value = themeConfig.settings.urlStorage + supplier.value.user.avatar
+    avatar.value = themeConfig.settings.urlStorage + supplier.value.user.avatar
+    haveAvatar.value = supplier.value.user.avatar === null ? false : true
+    avatar_id.value = supplier.value.user.user_detail.avatar_id
     //console.log('supplier', supplier.value)
   }
 
@@ -119,9 +130,14 @@ onBeforeUnmount(() => {
                 class="d-flex flex-column pa-4 gap-4"
                 :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
             >
-                <CustomerBioPanel
-                    :customer-data="supplier"
-                    :is-supplier="true" 
+                <SupplierProfile
+                    :user="supplier.user"
+                    :avatarOld="avatarOld"
+                    :avatar="avatar"
+                    :haveAvatar="haveAvatar"
+                    :avatarId="avatar_id"
+                    :supplier="supplier"
+                    :show-button="false"
                 />
             </VCardText>
 
@@ -147,6 +163,7 @@ onBeforeUnmount(() => {
                         <CustomerTabOverview
                             :customer-data="supplier"
                             :is-supplier="true"
+                            @loading="showLoading"
                             
                         />
                     </VWindowItem>

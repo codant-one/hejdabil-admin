@@ -8,17 +8,19 @@ use App\Http\Requests\UserRequest;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
+use Carbon\Carbon;
+use Throwable;
+
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Events\ForceLogoutUserEvent;
 use App\Jobs\SendEmailJob;
 
 use App\Models\User;
@@ -28,8 +30,12 @@ use App\Models\Billing;
 use App\Models\Payout;
 use App\Models\Supplier;
 use App\Models\UserDetails;
-use App\Events\ForceLogoutUserEvent;
-use Throwable;
+use App\Models\SupplierActivity;
+use App\Models\Client;
+use App\Models\SmsMessage;
+use App\Models\Note;
+use App\Models\Document;
+use App\Models\Vehicle;
 
 class SupplierController extends Controller
 {
@@ -128,6 +134,27 @@ class SupplierController extends Controller
                 'buttonLink' => env('APP_DOMAIN'),
                 'icon' => asset('/images/users.png'),
             ];
+
+            $supplier = Supplier::with(['user.userDetail'])->find($supplier->id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'create_supplier',
+                'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user->name.' '.$supplier->user->last_name.' tillagd',
+                'description' => 'En ny leverantör har lagts till.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'new_values' => $request->only([
+                        'name', 'last_name', 'email', 'company', 'organization_number', 'link',
+                        'address', 'street', 'postal_code', 'phone', 'landline', 'swish',
+                        'sms_sender', 'bank', 'account_number', 'user_id',
+                        'creator_id', 'boss_id', 'order_id'
+                    ])
+                ])
+            ]);
             
             // Enviar email de forma asíncrona usando Job
             try {
@@ -223,6 +250,20 @@ class SupplierController extends Controller
                 ], 500);
             }
 
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'resend_supplier_invitation',
+                'title' => 'Inbjudan skickad igen till leverantör #'.$supplier->id.' '.$supplier->user->name.' '.$supplier->user->last_name,
+                'description' => 'Inbjudan skickats på nytt till leverantören.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'email' => $supplier->user->email,
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inbjudan skickad på nytt.',
@@ -247,7 +288,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail'])
+            $supplier = Supplier::with(['user.userDetail', 'state'])
                                 ->withTrashed()
                                 ->clientsCount()
                                 ->find($id);
@@ -291,7 +332,34 @@ class SupplierController extends Controller
                     'message' => 'Leverantören hittades inte'
                 ], 404);
 
+            $fields = [
+                'name', 'last_name', 'email', 'company', 'organization_number', 'link',
+                'address', 'street', 'postal_code', 'phone', 'landline', 'swish',
+                'sms_sender', 'bank', 'account_number', 'user_id',
+                'creator_id', 'boss_id', 'order_id'
+            ];
+
+            $oldValues = $this->mapSupplierActivityValues($supplier, $fields);
+
             $supplier->updateSupplier($request, $supplier); 
+
+            $supplier->refresh()->load(['user.userDetail']);
+            $newValues = $this->mapSupplierActivityValues($supplier, $fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'update_supplier',
+                'title' => 'Uppgifterna för #'.$supplier->id.' '.$supplier->user->name.' '.$supplier->user->last_name.' har uppdaterats.',
+                'description' => 'Leverantören har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -316,7 +384,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user'])->find($id);
+            $supplier = Supplier::with(['user', 'state'])->find($id);
         
             if (!$supplier)
                 return response()->json([
@@ -328,8 +396,24 @@ class SupplierController extends Controller
             $deletionSummary = $this->buildDeletionSummary($supplier);
             $supplierNotificationRecipient = $supplier->user;
 
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'delete_supplier',
+                'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' borttagen',
+                'description' => 'Leverantören har avaktiverats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'deletion_summary' => $deletionSummary,
+                ])
+            ]);
+
             $supplier->deleteSupplier($id);
             $this->sendSupplierDeactivationEmail($supplierNotificationRecipient);
+
+            $supplier = Supplier::with(['user', 'state'])->withTrashed()->find($id);
 
             $message = 'Leverantör borttagen!';
 
@@ -507,6 +591,20 @@ class SupplierController extends Controller
                 ], 404);
             
             $supplier->activateSupplier($id);
+            $supplier->refresh()->load(['user', 'state']);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'activate_supplier',
+                'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' aktiverad',
+                'description' => 'Leverantören har aktiverats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -528,7 +626,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::where('id', $id)->first();
+            $supplier = Supplier::with(['user'])->where('id', $id)->first();
         
             if (!$supplier)
                 return response()->json([
@@ -536,8 +634,39 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte'
                 ], 404);
+
+            $oldValues = [
+                'is_payout' => $supplier->is_payout,
+                'payout_number' => $supplier->payout_number,
+                'sms_sender' => $supplier->sms_sender,
+            ];
             
-            $supplier->swish($request, $id);
+            $supplier->updateSwishSettings($request, $id);
+            $supplier->refresh();
+
+            $newValues = [
+                'is_payout' => $supplier->is_payout,
+                'payout_number' => $supplier->payout_number,
+                'sms_sender' => $supplier->sms_sender,
+            ];
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'suppliers',
+                'action_type' => 'swish_supplier',
+                'title' => 'Swish-inställningar för leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' uppdaterade',
+                'description' => 'Swish-inställningarna har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues,
+                    'payout_number' => $supplier->payout_number,
+                    'sms_sender' => $supplier->sms_sender,
+                    'is_payout' => $supplier->is_payout,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -827,7 +956,15 @@ class SupplierController extends Controller
                         ->orWhere('boss_id', $supplierId);
                 })
                 ->whereNotNull('boss_id')
-                ->orderBy('order_id')
+                ->whereNotNull('created_at')
+                ->whereBetween('created_at', [
+                    $filterStart->toDateTimeString(),
+                    $filterEnd->toDateTimeString(),
+                ])
+                ->withTrashed()
+                ->clientsCount()
+                ->acceptedSmsCount($filterStart, $filterEnd)
+                ->orderBy('created_at')
                 ->orderBy('id')
                 ->get();
 
@@ -881,6 +1018,8 @@ class SupplierController extends Controller
                     'invoices' => $invoices,
                     'swish' => $swish,
                     'agreements' => $agreements,
+                    'clients' => $teamSupplier?->client_count ?? 0,
+                    'accepted_sms' => $teamSupplier?->sms_accepted_count ?? 0,
                     'total_actions' => $invoices + $swish + $agreements,
                     'created_at' => $teamSupplier?->created_at,
                 ];
@@ -920,6 +1059,42 @@ class SupplierController extends Controller
                 $filterEnd,
             );
 
+            $totalClients = $this->getTeamDocumentTotalCount(
+                Client::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalVehiclesSold = $this->getTeamDocumentTotalCount(
+                Vehicle::query()->where('supplier_id', $supplierId)->where('state_id', 12),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalVehiclesStock = $this->getTeamDocumentTotalCount(
+                Vehicle::query()->where('supplier_id', $supplierId)->where('state_id', "<>", 12),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalSMS = $this->getTeamDocumentTotalCount(
+                SmsMessage::query()->where('supplier_id', $supplierId)->where('billable_count', '>', 0),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalNotes = $this->getTeamDocumentTotalCount(
+                Note::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            $totalDocuments = $this->getTeamDocumentTotalCount(
+                Document::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -928,6 +1103,12 @@ class SupplierController extends Controller
                         'billings' => $totalBillings,
                         'payouts' => $totalPayouts,
                         'agreements' => $totalAgreements,
+                        'clients' => $totalClients,
+                        'vehicles_sold' => $totalVehiclesSold,
+                        'vehicles_stock' => $totalVehiclesStock,
+                        'sms' => $totalSMS,
+                        'notes' => $totalNotes,
+                        'documents' => $totalDocuments
                     ],
                     'pagination' => [
                         'total' => $totalTeamMembers,
@@ -983,9 +1164,13 @@ class SupplierController extends Controller
                 ['token' => Str::random(60)]
             );
 
-            $user = User::find($supplier->user_id);
+            $user = User::with(['userDetail', 'permissions'])->find($supplier->user_id);
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
+            $user->refresh()->load(['userDetail', 'permissions']);
+            $supplier->refresh();
+
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
             $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
@@ -1008,6 +1193,20 @@ class SupplierController extends Controller
                 $email,
                 $subject
             ); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'users',
+                'action_type' => 'create_related_supplier_user',
+                'title' => 'Användare '.$user->name.' '.$user->last_name.' tillagd till leverantörsteamet',
+                'description' => 'En ny relaterad användare har lagts till.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/my-team?user_id='.$user->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'new_values' => $newValues,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1101,7 +1300,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail')->find($id);
+            $user = User::with(['roles', 'userDetail', 'permissions'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1118,6 +1317,25 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte ' . $user->id
                 ], 404);
+
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'users',
+                'action_type' => 'delete_related_supplier_user',
+                'title' => 'Användare '.$user->name.' '.$user->last_name.' borttagen från leverantörsteamet',
+                'description' => 'En relaterad användare har avaktiverats.',
+                'icon' => 'custom-supplier',
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'old_values' => $oldValues,
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $supplier->id)
+                ->where('entity_type', 'users')
+                ->update(['route' => null]);
 
             event(new ForceLogoutUserEvent($user->id));
             
@@ -1146,7 +1364,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail')->find($id);
+            $user = User::with(['roles', 'userDetail', 'permissions'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1158,14 +1376,38 @@ class SupplierController extends Controller
             
             $request->merge(['roles' => [0 => "User"] ]);
 
+            $supplier = Supplier::where('user_id', $user->id)->first();
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
             $user->updateUser($request, $user); 
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
 
             $supplier = Supplier::where('user_id', $user->id)->first();
-            
+
             $supplier->update([
                 'position' => $request->position === 'null' ? null : $request->position
+            ]);
+
+            $user->refresh()->load(['permissions']);
+            $user->loadMissing(['userDetail']);
+            $supplier->refresh();
+
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier->id,
+                'entity_type' => 'users',
+                'action_type' => 'update_related_supplier_user',
+                'title' => 'Användare '.$user->name.' '.$user->last_name.' uppdaterad i leverantörsteamet',
+                'description' => 'En relaterad användare har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/my-team?user_id='.$user->id,
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues,
+                ])
             ]);
 
             return response()->json([
@@ -1191,7 +1433,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $user = User::find($id);
+            $user = User::with(['permissions', 'userDetail'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -1200,8 +1442,30 @@ class SupplierController extends Controller
                     'message' => 'Användaren hittades inte'
                 ], 404);
 
+            $supplier = Supplier::where('user_id', $user->id)->first();
+            $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
+            $user->refresh()->load(['permissions']);
+            $user->loadMissing(['userDetail']);
+
+            $newValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplier?->id ?? $user->id,
+                'entity_type' => 'users',
+                'action_type' => 'update_related_supplier_user_permissions',
+                'title' => 'Behörigheter uppdaterade för användare '.$user->name.' '.$user->last_name,
+                'description' => 'Behörigheter för relaterad användare har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/my-team',
+                'metadata' => json_encode([
+                    'supplier_id' => $supplier?->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1292,6 +1556,55 @@ class SupplierController extends Controller
         }
 
         return [$hasDateFilter, $dateFrom, $dateTo];
+    }
+
+    private function mapSupplierActivityValues(Supplier $supplier, array $fields): array
+    {
+        $user = $supplier->user;
+        $userDetail = $user?->userDetail;
+
+        $values = [
+            'name' => $user?->name,
+            'last_name' => $user?->last_name,
+            'email' => $user?->email,
+            'company' => $userDetail?->company,
+            'organization_number' => $userDetail?->organization_number,
+            'link' => $userDetail?->link,
+            'address' => $userDetail?->address,
+            'street' => $userDetail?->street,
+            'postal_code' => $userDetail?->postal_code,
+            'phone' => $userDetail?->phone,
+            'landline' => $userDetail?->landline,
+            'swish' => $userDetail?->swish,
+            'sms_sender' => $supplier->sms_sender,
+            'bank' => $userDetail?->bank,
+            'account_number' => $userDetail?->account_number,
+            'user_id' => $supplier->user_id,
+            'creator_id' => $supplier->creator_id,
+            'boss_id' => $supplier->boss_id,
+            'order_id' => $supplier->order_id,
+        ];
+
+        return collect($fields)
+            ->unique()
+            ->mapWithKeys(fn ($field) => [$field => $values[$field] ?? null])
+            ->all();
+    }
+
+    private function mapRelatedSupplierUserActivityValues(User $user, ?Supplier $supplier): array
+    {
+        $userDetail = $user->userDetail;
+
+        return [
+            'name' => $user->name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'position' => $supplier?->position,
+            'phone' => $userDetail?->personal_phone ?? $userDetail?->phone,
+            'landline' => $userDetail?->personal_landline ?? $userDetail?->landline,
+            'address' => $userDetail?->personal_address ?? $userDetail?->address,
+            'permissions' => $user->permissions->pluck('name')->values()->all(),
+        ];
     }
 
 }

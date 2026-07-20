@@ -1,6 +1,7 @@
 <script setup>
 
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import Suppliers from '@/api/suppliers'
 import { themeConfig } from '@themeConfig'
 
@@ -15,7 +16,17 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits([
+  'loading'
+])
+
 const { width: windowWidth } = useWindowSize();
+
+const filterMenuVisible = ref(false)
+const filterDateRange = ref(null)
+const lastFilterSelectionKey = ref(null)
+const date_from = ref(null)
+const date_to = ref(null)
 
 const balance = ref(null)
 const teamMembers = ref([])
@@ -27,31 +38,31 @@ const items = ref([
     icon: 'custom-lager',
     title: 'Fordon i lager',
     subtitle: 'Aktiva fordon',
-    stats: '12',
+    stats: '0',
   },
   {
     icon: 'custom-sold',
     title: 'Sålda fordon',
     subtitle: 'Denna månad',
-    stats: '3',
+    stats: '0',
   },
   {
     icon: 'custom-clients',
     title: 'Antal kunder',
     subtitle: 'Registrerade',
-    stats: '15',
+    stats: '0',
   },
-  {
-    icon: 'custom-facture',
-    title: 'Fakturerat',
-    subtitle: 'Denna månad',
-    stats: '45 200 kr',
-  },
+    // {
+    //   icon: 'custom-facture',
+    //   title: 'Fakturerat',
+    //   subtitle: 'Denna månad',
+    //   stats: '45 200 kr',
+    // },
   {
     icon: 'custom-sms',
     title: 'SMS skickade',
     subtitle: 'Denna månad',
-    stats: '124',
+    stats: '0',
     stats2: '500'
   }
 ])
@@ -144,12 +155,38 @@ async function fetchTeamData() {
     return
   }
 
+  const now = new Date()
+
+  emit("loading", true);
+
   const response = await Suppliers.getCustomerOverviewTeam({
     supplier_id: supplierId.value,
+    date_from: date_from.value ? date_from.value :  new Date(now.getFullYear(), now.getMonth(), '01').toISOString().split('T')[0],
+    date_to: date_to.value ? date_to.value : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0],
     limit: -1,
   })
 
+  emit("loading", false);
+
   const payload = response?.data?.data
+  const teamTotals = payload?.teamTotals
+
+  items.value[0].stats = teamTotals?.vehicles_stock ?? 0
+  items.value[1].stats = teamTotals?.vehicles_sold ?? 0
+  items.value[2].stats = teamTotals?.clients ?? 0
+  items.value[3].stats = teamTotals?.sms ?? 0
+
+
+
+  itemsTwo.value[0].stats = teamTotals?.clients ?? 0
+  itemsTwo.value[1].stats = teamTotals?.billings ?? 0
+  itemsTwo.value[2].stats = (teamTotals?.vehicles_stock ?? 0) + (teamTotals?.vehicles_sold ?? 0)
+  itemsTwo.value[3].stats = teamTotals?.notes ?? 0
+  itemsTwo.value[4].stats = teamTotals?.agreements ?? 0
+  itemsTwo.value[5].stats = teamTotals?.documents ?? 0
+  itemsTwo.value[6].stats = teamTotals?.sms ?? 0
+  itemsTwo.value[7].stats = teamTotals?.payouts ?? 0
+  
   teamMembers.value = Array.isArray(payload?.teamMembers) ? payload.teamMembers : []
   currentPage.value = 1
 }
@@ -201,6 +238,66 @@ const formatLastActive = value => {
   return `${diffDays} dagar sedan`
 }
 
+watch(filterMenuVisible, isVisible => {
+  if (isVisible)
+      lastFilterSelectionKey.value = null
+})
+
+const normalizeRangeValue = value => {
+  if (!value)
+      return null
+
+  if (Array.isArray(value)) {
+      const start = value[0] ?? null
+      const end = value[1] ?? value[0] ?? null
+
+      return start && end ? [start, end] : null
+  }
+
+  if (typeof value === 'string') {
+      const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+      if (chunks.length >= 2)
+        return [chunks[0], chunks[1]]
+
+      return null
+  }
+
+  return null
+}
+
+const onFilterDateUpdate = value => {
+  const range = normalizeRangeValue(value)
+  if (!range)
+      return
+
+  const selectionKey = `${range[0]}__${range[1]}`
+  if (selectionKey === lastFilterSelectionKey.value)
+      return
+
+  lastFilterSelectionKey.value = selectionKey
+  filterMenuVisible.value = false
+  date_from.value = range[0]
+  date_to.value = range[1]
+
+  fetchData();
+
+  // emit('loading', true)
+  // emit('filter', {
+  //     date_from: range[0],
+  //     date_to: range[1],
+  // })
+}
+
+const clearFilter = () => {
+  filterDateRange.value = null
+  lastFilterSelectionKey.value = null
+  filterMenuVisible.value = false
+
+  emit('loading', true)
+  emit('filter', {})
+}
+
+
 </script>
 
 <template>
@@ -209,8 +306,7 @@ const formatLastActive = value => {
       <VCard 
         v-for="(item, index) in items"
         :key="item.title"
-        class="card-overview__main w-100"
-        :class="{ 'card-full': index === items.length - 1 }">
+        class="card-overview__main w-100">
         <VCardText class="p-0">
           <VAvatar
             rounded="lg"
@@ -245,15 +341,40 @@ const formatLastActive = value => {
       </VCard>
     </div>
 
-    <div class="d-flex justify-between align-center pb-3">
-      <span class="item-title">Aktivitet per modul</span>
+    <div 
+      class="d-flex align-center"
+      :class="windowWidth < 1024 ? 'flex-column py-4' : 'justify-between py-3'"
+    >
+      <span 
+        class="item-title"
+        :class="windowWidth < 1024 ? 'w-100 pb-3' : ''"
+      >
+        Aktivitet per modul
+      </span>
       <VBtn 
+        id="team-filter-button"
         class="btn-transparent px-3"
+        :class="windowWidth < 1024 ? 'w-100' : ''"
+        @click="filterMenuVisible = true"
       >
         <VIcon icon="custom-calendar-2" size="24" />
-        <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" >Datum</span>
+        <span class="d-flex" >Datum</span>
       </VBtn>
     </div>
+
+    <ExportDateMenu
+        v-model="filterDateRange"
+        v-model:menuVisible="filterMenuVisible"
+        :show-activator="false"
+        :is-mobile="windowWidth < 1024"
+        :reset-on-open="false"
+        activator="#team-filter-button"
+        button-text="Filtrera"
+        button-icon="custom-filter"
+        picker-label="Filtrera efter datum"
+        picker-placeholder="Välj datum"
+        @update:modelValue="onFilterDateUpdate"
+      />
 
     <div class="dashboard-secondary justify-between">
       <VCard 
@@ -277,14 +398,9 @@ const formatLastActive = value => {
       </VCard>
     </div>
 
-    <div class="d-flex justify-between align-center py-3">
+    <div class="d-flex justify-between align-center py-6">
       <span class="item-title">Teamöversikt</span>
-      <VBtn 
-        class="btn-transparent px-3"
-      >
-        <VIcon icon="custom-filter" size="24" />
-        <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" >Filtrera efter</span>
-      </VBtn>
+      
     </div>
 
     <VCard v-if="teamMembers" id="rol-list" >
@@ -459,12 +575,12 @@ const formatLastActive = value => {
         >
           <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-account"
+          icon="custom-f-user"
           />
           <div class="empty-state-content w-100 pa-4">
-              <div class="empty-state-title">Inget team ännu</div>
+              <div class="empty-state-title">Inga teammedlemmar tillagda</div>
               <div class="empty-state-text">
-                  Bjud in dina medarbetare för att börja följa försäljning och prestation.
+                  Kontot har ännu inte lagt till några användare utöver ägaren.
               </div>
           </div>
         </div>
@@ -608,7 +724,7 @@ const formatLastActive = value => {
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     @media (max-width: 1023px) {
       grid-template-columns: repeat(2, 1fr);
     }

@@ -408,7 +408,7 @@ const goToProfile = () => {
                             :to="{ name: 'dashboard-my-team' }"
                         >
                             <VIcon icon="custom-return" size="24" />
-                            Gå ut
+                            Tillbaka
                         </VBtn>
                         
                         <div class="d-flex flex-column gap-4">
@@ -485,6 +485,7 @@ const goToProfile = () => {
                                             <VTextField
                                                 v-model="email"
                                                 type="email"
+                                                disabled
                                                 :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>

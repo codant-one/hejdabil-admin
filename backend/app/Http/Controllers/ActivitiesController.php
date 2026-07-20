@@ -188,6 +188,9 @@ class ActivitiesController extends Controller
             if ($user->can('view clients'))
                 $allowEntityType('clients');
 
+            if ($user->can('view my-team'))
+                $allowEntityType('users');
+
             if ($user->can('view payouts'))
                 $allowEntityType('payouts');
 

@@ -8,8 +8,9 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { formatNumber, formatNumberInteger, formatDateTime } from '@/@core/utils/formatters'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { useRoute } from 'vue-router'
+import Suppliers from '@/api/suppliers'
 import html2pdf from 'html2pdf.js'
 import show from './show.vue' 
 import showMobile from './showMobile.vue' 
@@ -27,6 +28,7 @@ const usersStores = useSuppliersStores()
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const ability = useAppAbility()
+const route = useRoute()
 
 const users = ref([])
 const searchQuery = ref('')
@@ -186,6 +188,68 @@ const showUserDetailDialog = function(user, mobile = false){
   selectedUser.value.assignedPermissions = permissionsRol
   readonly.value= true
 }
+
+const parseRouteUserId = value => {
+  const raw = Array.isArray(value) ? value[0] : value
+  const parsed = Number.parseInt(raw, 10)
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+const openUserFromRoute = async routeUserId => {
+  if (!routeUserId || !hasLoaded.value)
+    return
+
+  let listUser = users.value.find(item => item?.user?.id === routeUserId)
+
+  if (!listUser) {
+    try {
+      const response = await Suppliers.getUsers({
+        user_id: routeUserId,
+        search: routeUserId,
+        orderByField: 'order_id',
+        orderBy: 'desc',
+        limit: -1,
+        page: 1,
+      })
+
+      const fetchedUsers = response?.data?.data?.users?.data ?? []
+      listUser = fetchedUsers.find(item => item?.user?.id === routeUserId)
+    } catch (error) {
+      console.error('User not found:', error)
+    }
+  }
+
+  if (!listUser?.user) {
+    advisor.value = {
+      type: 'error',
+      message: 'Användaren kunde inte hittas.',
+      show: true,
+    }
+
+    setTimeout(() => {
+      advisor.value.show = false
+    }, 3000)
+
+    return
+  }
+
+  showUserDetailDialog(listUser.user, mdAndDown.value)
+}
+
+watch(() => route.query.user_id, async routeUserId => {
+  const parsedUserId = parseRouteUserId(routeUserId)
+
+  if (parsedUserId && hasLoaded.value)
+    await openUserFromRoute(parsedUserId)
+}, { immediate: true })
+
+watch(hasLoaded, async loaded => {
+  const parsedUserId = parseRouteUserId(route.query.user_id)
+
+  if (loaded && parsedUserId)
+    await openUserFromRoute(parsedUserId)
+})
 
 const showUserPasswordDialog = function(user){
   isUserPasswordDialog.value = true

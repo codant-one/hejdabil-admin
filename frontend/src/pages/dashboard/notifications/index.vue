@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
           :to="{ name: 'dashboard-panel' }"
           >
           <VIcon icon="custom-return" size="24" />
-          <span v-if="windowWidth < 1024">Gå ut</span>
+          <span v-if="windowWidth < 1024">Tillbaka</span>
           <span v-else>Tillbaka</span>                    
         </VBtn>
       </div>

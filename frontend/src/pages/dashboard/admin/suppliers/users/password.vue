@@ -61,7 +61,8 @@ const editUserPassword = function(){
     refForm.value?.validate().then(({ valid: isValid }) => {
         if (isValid) {
             let data = {
-                password: password.value
+                password: password.value,
+                type: 'users'
             }
             //UPDATE USER PASSWORD
             usersStores.updatePasswordUser(data, id.value)
