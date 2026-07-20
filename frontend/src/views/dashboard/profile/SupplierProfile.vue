@@ -597,7 +597,7 @@ const removeSupplier = async () => {
                   @click="showActivateDialog(supplier)"
                 >
                   <VIcon icon="custom-check-mark" size="24" />
-                  Aktivera
+                  Starta abonnemang
                 </VBtn>
                 <VBtn
                   v-else
@@ -676,7 +676,7 @@ const removeSupplier = async () => {
                   @click="showActivateDialog(supplier)"
                 >
                   <VIcon icon="custom-check-mark" size="24" />
-                  Aktivera
+                  Starta abonnemang
                 </VBtn>
                 <VBtn
                   v-else
