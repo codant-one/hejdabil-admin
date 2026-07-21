@@ -242,7 +242,7 @@ async function fetchData() {
 
         sale_price.value = vehicle.value.sale_price
         sale_date.value = formatDate(new Date())
-        iva_sale_id.value = vehicle.value.iva_sale_id
+        iva_sale_id.value = vehicle.value.iva_sale_id ?? vehicle.value.iva_purchase_id
         sale_comments.value = vehicle.value.sale_comments
 
         if(vehicle.value.model_id !== null) {
