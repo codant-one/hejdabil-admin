@@ -10,6 +10,8 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Setting;
 
+use App\Jobs\SendEmailJob;
+
 class SettingController extends Controller
 {
 
@@ -106,12 +108,45 @@ class SettingController extends Controller
         try {
 
             $settings = Setting::where('supplier_id', $id)->first();
+            $currentSettingBilling = $settings?->billing;
+            $currentNotification = $currentSettingBilling?->send_notifications ?? 0;
+            $newNotification = $request->input('send_notifications', 0);
+
             $settings = Setting::billings($request, $settings);
+
+            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $data = [];
+            $subject = "";
+
+            if ($currentNotification == 0 && $newNotification != 0 && $clientEmail != null) {
+                $settings = Setting::with('supplier.user')->find($settings->id);
+                $name = $settings->supplier->user->name . ' ' . $settings->supplier->user->last_name;
+               
+                $subject = "Leverantören $name har aktiverat sms-tjänsten";
+
+                $data = [
+                    'name' => $name,
+                    'text' => "SMS-tjänsten har aktiverats för att skicka fakturor från leverantören $name.",
+                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'icon' => asset('/images/important.png')
+                ];
+
+                // Send email asynchronously
+                SendEmailJob::dispatch(
+                    'emails.admin.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject
+                );
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'settings' => $settings
+                    'settings' => $settings,
+                    'dataEmail' => $data,
+                    'clientEmail' => $clientEmail,
+                    "subject" => $subject
                 ]
             ], 200);
 
@@ -129,12 +164,45 @@ class SettingController extends Controller
         try {
 
             $settings = Setting::where('supplier_id', $id)->first();
+            $currentSettinAgreement = $settings?->agreement;
+            $currentNotification = $currentSettinAgreement?->send_notifications ?? 0;
+            $newNotification = $request->input('send_notifications', 0);
+
             $settings = Setting::agreements($request, $settings);
+
+            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $data = [];
+            $subject = "";
+
+            if ($currentNotification == 0 && $newNotification != 0 && $clientEmail != null) {
+                $settings = Setting::with('supplier.user')->find($settings->id);
+                $name = $settings->supplier->user->name . ' ' . $settings->supplier->user->last_name;
+               
+                $subject = "Leverantören $name har aktiverat sms-tjänsten";
+
+                $data = [
+                    'name' => $name,
+                    'text' => "SMS-tjänsten har aktiverats för att skicka avtal från leverantören $name.",
+                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'icon' => asset('/images/important.png')
+                ];
+
+                // Send email asynchronously
+                SendEmailJob::dispatch(
+                    'emails.admin.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject
+                );
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'settings' => $settings
+                    'settings' => $settings,
+                    'dataEmail' => $data,
+                    'clientEmail' => $clientEmail,
+                    "subject" => $subject
                 ]
             ], 200);
 
@@ -175,12 +243,46 @@ class SettingController extends Controller
         try {
 
             $settings = Setting::where('supplier_id', $id)->first();
+            $currentSettingDocument = $settings?->document;
+            $currentNotification = $currentSettingDocument?->send_notifications ?? 0;
+            $newNotification = $request->input('send_notifications', 0);
+
             $settings = Setting::documents($request, $settings);
+            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $data = [];
+            $subject = "";
+
+            if ($currentNotification == 0 && $newNotification != 0 && $clientEmail != null) {
+                $settings = Setting::with('supplier.user')->find($settings->id);
+                $name = $settings->supplier->user->name . ' ' . $settings->supplier->user->last_name;
+               
+                $subject = "Leverantören $name har aktiverat sms-tjänsten";
+
+                $data = [
+                    'name' => $name,
+                    'text' => "SMS-tjänsten har aktiverats för att skicka dokument från leverantören $name.",
+                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'icon' => asset('/images/important.png')
+                ];
+
+                // Send email asynchronously
+                SendEmailJob::dispatch(
+                    'emails.admin.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject
+                );
+            }
+
+
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'settings' => $settings
+                    'settings' => $settings,
+                    'dataEmail' => $data,
+                    'clientEmail' => $clientEmail,
+                    "subject" => $subject
                 ]
             ], 200);
 
