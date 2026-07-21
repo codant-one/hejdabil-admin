@@ -114,7 +114,7 @@ class SettingController extends Controller
 
             $settings = Setting::billings($request, $settings);
 
-            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $clientEmail = env('MAIL_ADMIN', null);
             $data = [];
             $subject = "";
 
@@ -127,7 +127,7 @@ class SettingController extends Controller
                 $data = [
                     'name' => $name,
                     'text' => "SMS-tjänsten har aktiverats för att skicka fakturor från leverantören $name.",
-                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'title' => 'Aktivera SMS',
                     'icon' => asset('/images/important.png')
                 ];
 
@@ -170,7 +170,7 @@ class SettingController extends Controller
 
             $settings = Setting::agreements($request, $settings);
 
-            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $clientEmail = env('MAIL_ADMIN', null);
             $data = [];
             $subject = "";
 
@@ -183,7 +183,7 @@ class SettingController extends Controller
                 $data = [
                     'name' => $name,
                     'text' => "SMS-tjänsten har aktiverats för att skicka avtal från leverantören $name.",
-                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'title' => 'Aktivera SMS',
                     'icon' => asset('/images/important.png')
                 ];
 
@@ -248,7 +248,7 @@ class SettingController extends Controller
             $newNotification = $request->input('send_notifications', 0);
 
             $settings = Setting::documents($request, $settings);
-            $clientEmail = env('SUPPORT_SUPPLIER_EMAIL', null);
+            $clientEmail = env('MAIL_ADMIN', null);
             $data = [];
             $subject = "";
 
@@ -261,7 +261,7 @@ class SettingController extends Controller
                 $data = [
                     'name' => $name,
                     'text' => "SMS-tjänsten har aktiverats för att skicka dokument från leverantören $name.",
-                    'title' => 'Leverantören har aktiverat sms-tjänsten',
+                    'title' => 'Aktivera SMS',
                     'icon' => asset('/images/important.png')
                 ];
 
