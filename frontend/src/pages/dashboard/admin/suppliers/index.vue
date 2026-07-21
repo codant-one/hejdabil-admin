@@ -868,7 +868,7 @@ onUnmounted (() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium text-aqua">
-                    {{ supplier.user.name }} {{ supplier.user.last_name ?? "" }}
+                    {{ supplier.user.user_detail.company ?? '' }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
