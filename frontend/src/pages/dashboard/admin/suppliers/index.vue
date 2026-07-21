@@ -505,6 +505,13 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const getSupplierFullName = supplier => {
+  const firstName = supplier?.user?.name ?? ''
+  const lastName = supplier?.user?.last_name ?? ''
+
+  return `${firstName} ${lastName}`.trim()
+}
+
 const downloadPDF = async () => {
   exporteraMobile.value = false
   isRequestOngoing.value = true
@@ -870,7 +877,7 @@ onUnmounted (() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium text-aqua">
-                    {{ supplier.user.name }} {{ supplier.user.last_name ?? "" }}
+                    {{ supplier.user.user_detail.company ?? '' }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
@@ -905,8 +912,18 @@ onUnmounted (() => {
                   />
                 </VAvatar>
                 <div class="d-flex flex-column">
-                  <span class="font-weight-medium">
-                    {{ supplier.user.name }} {{ supplier.user.last_name ?? "" }}
+                  <VTooltip 
+                      v-if="getSupplierFullName(supplier).length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ truncateText(getSupplierFullName(supplier), 20) }}
+                        </span>
+                      </template>
+                      <span>{{ getSupplierFullName(supplier) }}</span>
+                    </VTooltip>
+                  <span class="font-weight-medium" v-else>
+                    {{ getSupplierFullName(supplier) }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
