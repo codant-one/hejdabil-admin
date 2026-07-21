@@ -77,7 +77,7 @@ Route::group([
     Route::get('password/find/{token}', [PasswordResetController::class, 'find'])->name("find");
     Route::post('change', [PasswordResetController::class, 'change'])->name("change");
 
-    Route::middleware('jwt')->group(function () {
+    Route::middleware(['jwt', 'idle'])->group(function () {
         Route::post('2fa/validate', [AuthController::class, 'validate_double_factor_auth'])->name('2fa.validate');
         Route::post('logout', [AuthController::class , 'logout'])->name('logout');
         Route::post('me', [AuthController::class , 'me'])->name('me');
@@ -87,7 +87,7 @@ Route::group([
 });
 
 //Private Endpoints
-Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
+Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], function(){
      
     //Resources 
     Route::apiResource('users', UsersController::class);

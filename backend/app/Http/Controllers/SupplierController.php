@@ -1198,8 +1198,8 @@ class SupplierController extends Controller
                 'entity_id' => $supplier->id,
                 'entity_type' => 'users',
                 'action_type' => 'create_related_supplier_user',
-                'title' => 'Användare '.$user->name.' '.$user->last_name.' tillagd till leverantörsteamet',
-                'description' => 'En ny relaterad användare har lagts till.',
+                'title' => 'Användare '.$user->name.' '.$user->last_name.' tillagd i leverantörsteamet',
+                'description' => 'En ny användare har lagts till i leverantörsteamet.',
                 'icon' => 'custom-supplier',
                 'route' => '/dashboard/my-team?user_id='.$user->id,
                 'metadata' => json_encode([
@@ -1325,7 +1325,7 @@ class SupplierController extends Controller
                 'entity_type' => 'users',
                 'action_type' => 'delete_related_supplier_user',
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' borttagen från leverantörsteamet',
-                'description' => 'En relaterad användare har avaktiverats.',
+                'description' => 'Användare '.$user->name.' '.$user->last_name.' avaktiverad.',
                 'icon' => 'custom-supplier',
                 'metadata' => json_encode([
                     'supplier_id' => $supplier->id,
@@ -1400,7 +1400,7 @@ class SupplierController extends Controller
                 'entity_type' => 'users',
                 'action_type' => 'update_related_supplier_user',
                 'title' => 'Användare '.$user->name.' '.$user->last_name.' uppdaterad i leverantörsteamet',
-                'description' => 'En relaterad användare har uppdaterats.',
+                'description' => 'Användaren har uppdaterats i leverantörsteamet.',
                 'icon' => 'custom-supplier',
                 'route' => '/dashboard/my-team?user_id='.$user->id,
                 'metadata' => json_encode([
