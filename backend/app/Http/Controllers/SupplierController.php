@@ -36,6 +36,7 @@ use App\Models\SmsMessage;
 use App\Models\Note;
 use App\Models\Document;
 use App\Models\Vehicle;
+use App\Models\Setting;
 
 class SupplierController extends Controller
 {
@@ -1095,6 +1096,17 @@ class SupplierController extends Controller
                 $filterEnd,
             );
 
+            $settings = 
+                Setting::with([
+                    'billing',
+                    'agreement', 
+                    'document'
+                ])->where('supplier_id', $supplierId)->first();
+
+            $smsActivate = $settings?->billing?->send_notifications === 1 || 
+                           $settings?->agreement?->send_notifications === 1 || 
+                           $settings?->document?->send_notifications === 1;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1108,7 +1120,8 @@ class SupplierController extends Controller
                         'vehicles_stock' => $totalVehiclesStock,
                         'sms' => $totalSMS,
                         'notes' => $totalNotes,
-                        'documents' => $totalDocuments
+                        'documents' => $totalDocuments,
+                        'smsActivate' => $smsActivate
                     ],
                     'pagination' => [
                         'total' => $totalTeamMembers,
