@@ -6,9 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+use App\Jobs\SendEmailJob;
+
 use App\Models\SettingBilling;
 use App\Models\SettingAgreement;
 use App\Models\SettingNotification;
+use App\Models\SettingDocument;
+use App\Models\SettingColor;    
 
 class Setting extends Model
 {
@@ -89,6 +93,8 @@ class Setting extends Model
             'setting_billing_id' => $settingBilling->id,
         ]);
 
+        self::sendMail($supplier_id, 'billing');
+
         return $settings;
     }
 
@@ -119,6 +125,8 @@ class Setting extends Model
         ], [
             'setting_agreement_id' => $settingAgreement->id,
         ]);
+
+        self::sendMail($supplier_id, 'agreement');
 
         return $settings;
     }
@@ -151,7 +159,7 @@ class Setting extends Model
         return $settings;
     }
 
-     public static function documents($request, $settings) {
+    public static function documents($request, $settings) {
 
         $supplier_id = self::resolveSupplierId($request);
 
@@ -173,6 +181,8 @@ class Setting extends Model
         ], [
             'setting_document_id' => $settingDocument->id,
         ]);
+
+        self::sendMail($supplier_id, 'document');
 
         return $settings;
     }
@@ -202,5 +212,60 @@ class Setting extends Model
             $request->supplier_id === 'null' => null,
             default => $request->supplier_id,
         };
+    }
+
+    private static function sendMail($supplier_id, $module) {
+
+        $settings = Setting::with(
+            'supplier.user.userDetail',
+            'billing', 
+            'agreement', 
+            'document'
+        )->where('supplier_id', $supplier_id)->first();
+
+        $email = env('MAIL_ADMIN', null);
+        $user = $settings->supplier->user->userDetail->company;
+
+        switch ($module) {
+            case 'billing':
+                $send_notifications = $settings?->billing?->send_notifications ?? 0;
+                $subject = $send_notifications ? 'SMS för fakturor har aktiverats' : 'SMS för fakturor har avaktiverats';
+                $title = $send_notifications ? 'Aktiverad SMS' : 'Avaktiverad SMS';
+                $text_primary = $send_notifications ? 'har aktiverat SMS-utskick för fakturor i sitt Bilflogg-konto.' : 'har avaktiverat SMS-utskick för fakturor i sitt Bilflogg-konto.';
+                $text_secondary = $send_notifications ? 'SMS kommer nu att skickas i samband med fakturor enligt företagets inställningar.' : 'SMS kommer inte längre att skickas i samband med fakturor.';
+                break;
+            case 'agreement':
+                $send_notifications = $settings?->agreement?->send_notifications ?? 0;
+                $subject = $send_notifications ? 'SMS för avtal har aktiverats' : 'SMS för avtal har avaktiverats';
+                $title = $send_notifications ? 'Aktiverad SMS' : 'Avaktiverad SMS';
+                $text_primary = $send_notifications ? 'har aktiverat SMS-utskick för avtal i sitt Bilflogg-konto.' : 'har avaktiverat SMS-utskick för avtal i sitt Bilflogg-konto.';
+                $text_secondary = $send_notifications ? 'SMS kommer nu att skickas i samband med avtal enligt företagets inställningar.' : 'SMS kommer inte längre att skickas i samband med avtal.';
+                break;
+            case 'document':
+                $send_notifications = $settings?->document?->send_notifications ?? 0;
+                $subject = $send_notifications ? 'SMS för E-signering har aktiverats' : 'SMS för E-signering har avaktiverats';
+                $title = $send_notifications ? 'Aktiverad SMS' : 'Avaktiverad SMS';
+                $text_primary = $send_notifications ? 'har aktiverat SMS-utskick för E-signering i sitt Bilflogg-konto.' : 'har avaktiverat SMS-utskick för E-signering i sitt Bilflogg-konto.';
+                $text_secondary = $send_notifications ? 'SMS kommer nu att skickas i samband med digital signering enligt företagets inställningar.' : 'SMS kommer inte längre att skickas i samband med digital signering.';
+                break;
+            default:
+                return; // Exit if the module is not recognized
+        }
+
+        $data = [
+            'user' => $user,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $title,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.admin.notifications',
+            $data,
+            $email,
+            $subject
+        );
     }
 }
