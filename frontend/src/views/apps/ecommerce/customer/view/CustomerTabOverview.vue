@@ -300,7 +300,7 @@ const onFilterDateUpdate = value => {
         :key="item.title"
         class="w-100"
         :class="item.border">
-        <VCardText class="p-0 d-flex gap-4 align-start justify-between">
+        <VCardText class="p-0 d-flex gap-2 align-start justify-between">
           <VAvatar
             rounded="lg"
             size="36"
@@ -318,7 +318,7 @@ const onFilterDateUpdate = value => {
             class="status-chip-mobile"
             :class="`status-chip-${smsActivate ? 'success' : 'error'}`"
           >
-            {{ smsActivate ? 'Aktiv' : 'Inaktiverad' }}
+            {{ smsActivate ? 'Aktiverad' : 'Avaktiverad' }}
           </div>
         </VCardText>
         <VCardTitle class="title-main p-0">
@@ -326,7 +326,7 @@ const onFilterDateUpdate = value => {
         </VCardTitle>
         <VCardText class="stats-main p-0">
           {{ item.stats }}
-          <span v-if="item.stats2" class="stats2-main"> / {{ item.stats2 }}</span>
+          <span v-if="item.stats2" class="stats2-main d-none"> / {{ item.stats2 }}</span>
           <VProgressLinear 
             v-if="item.stats2" 
             :model-value="(parseInt(item.stats) * 100) / parseInt(item.stats2)" 
@@ -335,6 +335,7 @@ const onFilterDateUpdate = value => {
             :color="!smsActivate && smsActivate !== null ? '#9B191B' : '#57F287'"
             :bg-color="!smsActivate && smsActivate !== null? '#FF4D4F' : '#D4E6DF'"
             :bg-opacity="1"
+            class="d-none"
           />
         </VCardText>
         <VCardText class="subtitle-main p-0">
