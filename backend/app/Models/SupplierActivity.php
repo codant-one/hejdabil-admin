@@ -60,9 +60,9 @@ class SupplierActivity extends Model
             $query->where('supplier_id', Auth::user()->supplier->id);
         } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
             $query->where('supplier_id', Auth::user()->supplier->boss_id);
-        } else {
-             $query->where('supplier_id', null);
-        }
+        } //else {
+        //     $query->where('supplier_id', null);
+        // }
 
         if ($filters->get('user_id') !== null) {
             $query->where('user_id', $filters->get('user_id'));

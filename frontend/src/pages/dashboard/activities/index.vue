@@ -337,7 +337,7 @@ async function fetchData(cleanFilters = false) {
         orderBy: 'desc',
         limit: rowPerPage.value,
         page: currentPage.value,
-        supplier_id: null,
+        supplier_id: supplier_id.value,
         user_id: userId.value,
         module: module.value,
         date_from: dateRange?.[0] ?? null,
@@ -1887,7 +1887,7 @@ onBeforeUnmount(() => {
           <VCol 
             cols="12" md="12" 
             v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            class="pb-0 d-none">
+            class="pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="supplier_id"
@@ -1950,7 +1950,7 @@ onBeforeUnmount(() => {
   >
     <VCard class="card-form">
       <VList>
-        <VListItem class="form py-0 d-none" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
           <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="supplier_id"
