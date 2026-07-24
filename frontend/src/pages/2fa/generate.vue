@@ -4,7 +4,7 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useDisplay } from "vuetify";
 import QRCode from 'qrcode-generator';
 
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");

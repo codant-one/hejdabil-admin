@@ -809,15 +809,15 @@ class AgreementController extends Controller
             if (is_string($decoded))
                 $decoded = json_decode($decoded, true);
 
-            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Billogg Sverige AB'));
+            return trim((string) ((is_array($decoded) ? ($decoded['company'] ?? '') : '') ?: 'Bilflogg Sverige AB'));
         }
 
-        return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Billogg Sverige AB'));
+        return trim((string) ($agreement->supplier?->user?->userDetail?->company ?? 'Bilflogg Sverige AB'));
     }
 
     private function finalizeAgreementSmsMessage(?string $message, string $companyName, Agreement $agreement): string
     {
-        $resolvedCompanyName = trim($companyName) ?: 'Billogg Sverige AB';
+        $resolvedCompanyName = trim($companyName) ?: 'Bilflogg Sverige AB';
         $fallbackMessage = 'Du har fått ett avtal från '.$resolvedCompanyName.' för digital signering.';
         $normalizedMessage = trim((string) $message) . ' ' . env('APP_DOMAIN') . '/sign/' . $agreement->token->signing_token;
 

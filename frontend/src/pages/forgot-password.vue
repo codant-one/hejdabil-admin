@@ -6,7 +6,7 @@ import { emailValidator, requiredValidator } from "@validators";
 const authStores = useAuthStores();
 const router = useRouter();
 
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
@@ -109,7 +109,7 @@ const onSubmit = () => {
           <label>E-post</label>
           <VTextField
             v-model="email"
-            placeholder="billogg@gmail.com"
+            placeholder="bilflogg@gmail.com"
             type="email"
             :rules="[requiredValidator, emailValidator]"
             :error-messages="errors"

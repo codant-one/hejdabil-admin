@@ -29,7 +29,7 @@ watch(() => props.isLoading, (newVal) => {
     <VCard class="loading-card">
       <img 
         :key="imgKey"
-        src="@/assets/images/billogg_loading.gif" 
+        src="@/assets/images/bilflogg_loading.gif" 
         alt="Loading..." 
         class="loading-gif"
       />

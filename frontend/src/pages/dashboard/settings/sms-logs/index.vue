@@ -487,7 +487,7 @@ onBeforeUnmount(() => {
           <div class="empty-state-content">
             <div class="empty-state-title">Inga SMS har skickats ännu</div>
             <div class="empty-state-text">
-              SMS skickas automatiskt när du sänder fakturor, avtal och kontrakt till dina kunder via Billogg. Dina poster visas här.
+              SMS skickas automatiskt när du sänder fakturor, avtal och kontrakt till dina kunder via Bilflogg. Dina poster visas här.
             </div>
           </div>
         </div>

@@ -44,7 +44,7 @@ class PasswordResetController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.$passwordReset['token'].'&user='.$email;
         
         $info = [
-            'subject' => 'Återställ ditt lösenord i Billogg',
+            'subject' => 'Återställ ditt lösenord i Bilflogg',
             'title' => 'Återställ ditt lösenord',
             'buttonLink' =>  $url ?? null,
             'icon' => asset('/images/forgot-password.png'),

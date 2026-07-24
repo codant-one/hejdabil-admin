@@ -29,7 +29,7 @@ class Billing extends Model
 
     private const BILLING_SMS_COMPANY_PLACEHOLDER = '{Företagsnamn}';
     private const DEFAULT_BILLING_SMS_MESSAGE = 'Du har fått en faktura från {Företagsnamn}.';
-    private const DEFAULT_BILLING_COMPANY_NAME = 'Billogg Sverige AB';
+    private const DEFAULT_BILLING_COMPANY_NAME = 'Bilflogg Sverige AB';
     private const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen';
 
     protected $guarded = [];

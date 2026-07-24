@@ -9,7 +9,7 @@ import { useDisplay } from "vuetify";
 
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import people from "@images/pages/login/login_image.png";
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const alertStore = useAlertStore();
 const authStores = useAuthStores();
@@ -180,7 +180,7 @@ const onSubmit = () => {
                   class="login"
                   v-model="email"
                   type="email"
-                  placeholder="billogg@gmail.com"
+                  placeholder="bilflogg@gmail.com"
                   :rules="[requiredValidator, emailValidator]"
                   :error-messages="errors.email"
                   @input="inputChange()"

@@ -5,7 +5,7 @@
     <tr>
         <td align="center" style="padding:0;margin:0;padding-bottom:16px;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:24px;color:#454545;font-size:16px;">
-                Ditt konto har nu avaktiverats. Tack för att du har valt Billogg och för förtroendet att få vara en del av din verksamhet.
+                Ditt konto har nu avaktiverats. Tack för att du har valt Bilflogg och för förtroendet att få vara en del av din verksamhet.
             </p>
         </td>
     </tr>

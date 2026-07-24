@@ -125,10 +125,10 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
 
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email'=> $email,
                 'password' => $password,
@@ -221,10 +221,10 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
 
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email' => $email,
                 'password' => $password,
@@ -490,7 +490,7 @@ class SupplierController extends Controller
             return;
         }
 
-        $subject = 'Ditt Billogg-konto har avaktiverats';
+        $subject = 'Ditt Bilflogg-konto har avaktiverats';
 
         $data = [
             'title' => 'Kontot har avaktiverats',
@@ -1187,10 +1187,10 @@ class SupplierController extends Controller
 
             $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,

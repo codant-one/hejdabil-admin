@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import videoSrc from '@/assets/images/billogg_alpha.mp4'
+import videoSrc from '@/assets/images/bilflogg_alpha.mp4'
 
 const props = defineProps({
   showOnce: {

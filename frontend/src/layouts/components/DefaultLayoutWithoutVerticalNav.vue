@@ -3,7 +3,7 @@
 import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import router from '@/router'
-import logo from '@images/logos/billogg-logo.svg'
+import logo from '@images/logos/bilflogg-logo.svg'
 
 const { width: windowWidth } = useWindowSize()
 const route = useRoute()
@@ -61,7 +61,7 @@ const redirectToPayoutsAndOpenDialog = () => {
             <img
                 :src="logo"
                 :width="windowWidth < 1024 ? 95 : 121"
-                alt="Billogg"
+                alt="Bilflogg"
             >
         </div>
 

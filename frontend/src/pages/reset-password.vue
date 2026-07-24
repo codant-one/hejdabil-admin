@@ -6,7 +6,7 @@ import {
 } from "@/@core/utils/validators";
 import { useAuthStores } from "@/stores/useAuth";
 import { useDisplay } from "vuetify";
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const route = useRoute();
 const router = useRouter();

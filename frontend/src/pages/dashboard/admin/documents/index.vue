@@ -13,7 +13,7 @@ import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";

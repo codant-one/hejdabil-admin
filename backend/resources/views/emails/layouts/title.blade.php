@@ -4,7 +4,7 @@
             @if(isset($icon))
                 <img src="{{ $icon }}" alt="Icon" title="Icon" width="142" />
             @else
-                <img src="{{ asset('/images/check.png') }}" alt="Billogg" alt="Icon" title="Icon" width="142" />
+                <img src="{{ asset('/images/check.png') }}" alt="Bilflogg" alt="Icon" title="Icon" width="142" />
             @endif
         </td>
     </tr>

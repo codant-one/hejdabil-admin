@@ -11,7 +11,7 @@ import billing3 from '@images/billings/3.svg'
 import billing4 from '@images/billings/4.svg'
 
 const DEFAULT_BILLING_SMS_MESSAGE = 'Du har fått en faktura från {Företagsnamn}.'
-const DEFAULT_BILLING_COMPANY_NAME = 'Billogg Sverige AB'
+const DEFAULT_BILLING_COMPANY_NAME = 'Bilflogg Sverige AB'
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
 const DEFAULT_THEME = 0

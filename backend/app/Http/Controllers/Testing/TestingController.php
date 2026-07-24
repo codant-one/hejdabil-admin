@@ -29,7 +29,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Återställ ditt lösenord i Billogg',
+            'subject' => 'Återställ ditt lösenord i Bilflogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
@@ -198,7 +198,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Återställ ditt lösenord i Billogg',
+            'subject' => 'Återställ ditt lösenord i Bilflogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 

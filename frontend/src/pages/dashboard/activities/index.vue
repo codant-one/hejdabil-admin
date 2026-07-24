@@ -1852,7 +1852,7 @@ onBeforeUnmount(() => {
         <div class="empty-state-content">
           <div class="empty-state-title">Ingen aktivitet registrerad än</div>
           <div class="empty-state-text">
-            När du eller ditt team utför åtgärder i Billogg - som att uppdatera ett fordon, skapa en faktura eller ändra en kunds uppgifter - visas allt här.
+            När du eller ditt team utför åtgärder i Bilflogg - som att uppdatera ett fordon, skapa en faktura eller ändra en kunds uppgifter - visas allt här.
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { initialAbility } from '@/plugins/casl/ability'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const router = useRouter()
 const ability = useAppAbility()
@@ -50,7 +50,7 @@ const back = function(){
 <template>
   <VCard class="bg-gradient pa-4 d-flex flex-column" style="min-height: 100vh;">
     <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
-      <img :src="logo" width="121" height="40" alt="Billogg" />
+      <img :src="logo" width="121" height="40" alt="Bilflogg" />
     </div>
 
     <div 

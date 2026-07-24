@@ -21,7 +21,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
-import billogg from "@/assets/images/billogg_img.svg";
+import bilflogg from "@/assets/images/bilflogg_img.svg";
 import swish from "@/assets/images/swish_img.svg";
 
 const { width: windowWidth } = useWindowSize();
@@ -1710,8 +1710,8 @@ const onDatePickerUpdate = value => {
 
           <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
             <img 
-              :src="billogg" 
-              alt="Billogg image"
+              :src="bilflogg" 
+              alt="Bilflogg image"
             />
             <VDivider vertical />
             <img 
@@ -1808,8 +1808,8 @@ const onDatePickerUpdate = value => {
 
         <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="height: 32px !important;">
           <img 
-            :src="billogg" 
-            alt="Billogg image"
+            :src="bilflogg" 
+            alt="Bilflogg image"
           />
           <VDivider vertical class="my-auto"/>
           <img 

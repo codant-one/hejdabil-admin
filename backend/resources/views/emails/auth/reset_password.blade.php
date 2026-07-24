@@ -6,7 +6,7 @@
     <td align="center" style="padding:0;margin:0;padding-bottom:15px;">
         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">         
           Hej, <br>
-          Ditt lösenord för Billogg har nu ändrats framgångsrikt.<br>
+          Ditt lösenord för Bilflogg har nu ändrats framgångsrikt.<br>
           Du kan logga in igen via länken nedan:
         </p>
       </td>
@@ -15,7 +15,7 @@
     <td align="center" style="padding:0;margin:0;padding:24px;">
         <span class="es-button-border" style="border-style:solid;border-width:0px 0px 2px 0px;display:block;border-radius:48px;width:auto;border-bottom-width:0px">
             <a href="{{ $buttonLink }}" class="btn-gradient" style="font-family: 'Titillium Web', sans-serif; font-size: 16px; color: #416054;">
-                Logga in i Billogg
+                Logga in i Bilflogg
             </a>
         </span>
     </td>
