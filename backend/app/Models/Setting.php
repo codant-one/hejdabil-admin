@@ -5,14 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 
 use App\Jobs\SendEmailJob;
+
+use App\Events\UserNotificationEvent;
 
 use App\Models\SettingBilling;
 use App\Models\SettingAgreement;
 use App\Models\SettingNotification;
 use App\Models\SettingDocument;
-use App\Models\SettingColor;    
+use App\Models\SettingColor;  
+use App\Models\Notification;  
+use App\Models\User;
 
 class Setting extends Model
 {
@@ -267,5 +272,42 @@ class Setting extends Model
             $email,
             $subject
         );
+
+        $users = User::role(['SuperAdmin', 'Administrator'])->get();
+
+        foreach ($users as $us) {
+            // Guardar en base de datos
+            $dbNotification = Notification::create([
+                'user_id' => $us->id,
+                'notification_id' => $supplier_id,
+                'title' => $subject,
+                'subtitle' => $title,
+                'text' => $user . ' ' . $text_primary,
+                'color' => 'primary',
+                'icon' => 'custom-sms',
+                'route' => '/dashboard/admin/suppliers/' . $supplier_id,
+                'read' => false,
+            ]);
+
+            // Preparar el mensaje de notificación para WebSocket
+            $message = (object) [
+                'id' => $dbNotification->id,
+                'title' => $subject,
+                'subtitle' => $title,
+                'time' => now()->format('H:i:s'),
+                'img' => null,
+                'color' => 'primary',
+                'icon' => 'custom-sms',
+                'text' => $user . ' ' . $text_primary,
+                'route' => '/dashboard/admin/suppliers/' . $supplier_id,
+                'read' => false,
+            ];
+
+            // Enviar via WebSocket
+            // Notificación privada
+            $evento = new UserNotificationEvent($message, $us->id);
+            Event::dispatch($evento);
+            
+        }
     }
 }
