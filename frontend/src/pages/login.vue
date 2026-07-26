@@ -144,11 +144,11 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <VideoLoader 
+  <!--<VideoLoader 
     show-once 
     use-local-storage 
     storage-key="hasSeenLoginVideo" 
-  />
+  />-->
 
   <VSnackbar
     v-model="alertStore.show"
