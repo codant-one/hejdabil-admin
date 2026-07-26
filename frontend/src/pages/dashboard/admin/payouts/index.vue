@@ -1712,6 +1712,7 @@ const onDatePickerUpdate = value => {
             <img 
               :src="bilflogg" 
               alt="Bilflogg image"
+              width="110"
             />
             <VDivider vertical />
             <img 
@@ -1810,6 +1811,7 @@ const onDatePickerUpdate = value => {
           <img 
             :src="bilflogg" 
             alt="Bilflogg image"
+            width="110"
           />
           <VDivider vertical class="my-auto"/>
           <img 
