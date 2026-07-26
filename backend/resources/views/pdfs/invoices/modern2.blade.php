@@ -78,7 +78,7 @@
             letter-spacing: 0 !important;
             line-height: 100%;
             border-collapse: separate !important;
-            border-spacing: 0 4px !important;
+            border-spacing: 0 !important;
             background-color: transparent;
         }
 
