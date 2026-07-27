@@ -108,19 +108,6 @@ const formatOrgNumber = () => {
     payout_number.value = numbers
 }
 
-// const pemFileRules = computed(() => {
-//   if (!swishHasSteps.value || !is_payout.value)
-//     return []
-
-//   return [
-//     value => {
-//       const hasNewFile = Array.isArray(value) && value.length > 0
-//       const hasExistingPem = !!pem_url.value
-//       return hasNewFile || hasExistingPem || 'Ladda upp en PEM-fil för att aktivera Swish-utbetalningar.'
-//     },
-//   ]
-// })
-
 const swishHasCSR = computed(() => !!csr_url.value)
 const pemFileName = computed(() => {
     const file = Array.isArray(pemFile.value) ? pemFile.value[0] : pemFile.value
