@@ -1,23 +1,22 @@
  <script setup>
 
+import { themeConfig } from "@themeConfig";
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useDisplay } from "vuetify";
-import { themeConfig } from "@themeConfig";
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { getRemoteFileSize, openStorageFileUrl, formatDateSimple, getFileNameFromPath, formatFileSize } from '@/@core/utils/formatters'
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
-import router from '@/router'
-import Toaster from "@/components/common/Toaster.vue";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 defineProps({
   id: [String, Number],
 });
-
 
 const route = useRoute()
 const suppliersStores = useSuppliersStores()
 
 const { mdAndDown } = useDisplay();
 const { width: windowWidth } = useWindowSize();
+
 const sectionEl = ref(null);
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const isRequestOngoing = ref(true)
@@ -25,13 +24,17 @@ const isRequestOngoing = ref(true)
 const supplier = ref(null)
 const selectedSupplier = ref({})
 const isMobile = ref(false)
-const initialData = ref(null)
-const currentTab = ref(0)
 const payout_number = ref(null)
 const csr_url = ref(null)
+const csr_at = ref(null)
+const csr_size = ref(null)
 const pem_url = ref(null)
+const pem_at = ref(null)
+const pem_size = ref(null)
 const is_payout = ref(false)
 const pemFile = ref([])
+const pemFileInputRef = ref(null)
+const isPemDragOver = ref(false)
 const refForm = ref(null)
 const isFormValid = ref(false)
 
@@ -61,14 +64,25 @@ async function fetchData() {
         selectedSupplier.value = { ...supplier.value }
         payout_number.value = supplier.value.payout_number || null
         csr_url.value = supplier.value.csr_url || null
+        csr_at.value = supplier.value.csr_at || null
+        csr_size.value = null
         pem_url.value = supplier.value.pem_url || null
+        pem_at.value = supplier.value.pem_at || null
+        pem_size.value = null
         is_payout.value = supplier.value.is_payout === 0 ? false : true
         pemFile.value = []
+
+        if (csr_url.value) {
+            csr_size.value = await getRemoteFileSize(csr_url.value)
+        }
+
+        if (pem_url.value) {
+            pem_size.value = await getRemoteFileSize(pem_url.value)
+        }
 
         nextTick(() => {
             refForm.value?.resetValidation()
         })
-
 
     }
 
@@ -107,13 +121,106 @@ const formatOrgNumber = () => {
 //   ]
 // })
 
-const openStorageFileUrl = filePath => {
-  if (!filePath) return ''
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath
-  return `${themeConfig.settings.urlStorage}${filePath}`
+const swishHasCSR = computed(() => !!csr_url.value)
+const pemFileName = computed(() => {
+    const file = Array.isArray(pemFile.value) ? pemFile.value[0] : pemFile.value
+    return file?.name || ''
+})
+const selectedPemFile = computed(() => {
+    const file = Array.isArray(pemFile.value) ? pemFile.value[0] : pemFile.value
+    return file || null
+})
+const hasPendingPemSelection = computed(() => !!selectedPemFile.value)
+const shouldShowPemCard = computed(() => !!pem_url.value || !!selectedPemFile.value)
+const pemDisplayName = computed(() => {
+    if (hasPendingPemSelection.value) return selectedPemFile.value?.name || ''
+    if (pem_url.value) return getFileNameFromPath(pem_url.value)
+    return ''
+})
+const pemDisplayMeta = computed(() => {
+    if (hasPendingPemSelection.value) return `${formatFileSize(selectedPemFile.value.size)} · Uppladdad ${formatDateSimple(new Date())}`
+    if (pem_url.value) return `${formatFileSize(pem_size.value)} · Uppladdad ${formatDateSimple(pem_at.value)}`
+    return ''
+})
+
+const PEM_MAX_SIZE_BYTES = 2 * 1024 * 1024
+
+const showAdvisorMessage = (type, message, timeout = 3500) => {
+    advisor.value = {
+        type,
+        message,
+        show: true,
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+        }
+    }, timeout)
 }
 
-const swishHasCSR = computed(() => !!csr_url.value)
+const normalizePemFiles = value => {
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    return [value]
+}
+
+const clearPemFileInput = () => {
+    const input = pemFileInputRef.value?.$el?.querySelector('input[type="file"]')
+    if (input) input.value = ''
+}
+
+const validatePemFile = file => {
+    if (!file) return false
+
+    const hasValidExtension = file.name?.toLowerCase().endsWith('.pem')
+    if (!hasValidExtension) {
+        showAdvisorMessage('error', 'Endast .pem-filer ar tillatna.')
+        return false
+    }
+
+    if (file.size > PEM_MAX_SIZE_BYTES) {
+        showAdvisorMessage('error', 'PEM-filen far vara max 2 MB.')
+        return false
+    }
+
+    return true
+}
+
+const setPemFile = file => {
+    if (!validatePemFile(file)) {
+        pemFile.value = []
+        clearPemFileInput()
+        return
+    }
+
+    pemFile.value = [file]
+}
+
+const openPemFilePicker = () => {
+    pemFileInputRef.value?.$el?.querySelector('input[type="file"]')?.click()
+}
+
+const onPemInputChange = value => {
+    const files = normalizePemFiles(value)
+    if (!files.length) {
+        pemFile.value = []
+        return
+    }
+
+    setPemFile(files[0])
+}
+
+const onPemDrop = event => {
+    isPemDragOver.value = false
+
+    const file = event.dataTransfer?.files?.[0]
+    if (!file) return
+
+    setPemFile(file)
+}
 
 const swish = () => {
 
@@ -140,7 +247,7 @@ const swish = () => {
 
               advisor.value = {
                 type: 'success',
-                message: res.data.data.supplier.is_payout === 1 ? 'Swish aktiverad!' : 'Swish avaktiverad!',
+                message: 'Uppdaterad Swish',
                 show: true
               }
 
@@ -177,17 +284,65 @@ const swish = () => {
   })
 }
 
-const onSubmit = async () => {
+const removePemFile = () => {
+  pemFile.value = []
+  pem_url.value = null
+  pem_at.value = null
+  pem_size.value = null
+    isPemDragOver.value = false
+    clearPemFileInput()
 }
 
-const currentData = computed(() => ({
-    
-}))
+const undoPendingPemSelection = () => {
+    pemFile.value = []
+    isPemDragOver.value = false
+    clearPemFileInput()
+}
+
+const downloadFile = async url => {
+  if (!url) {
+    isFileMissingDialogVisible.value = true
+
+    return
+  }
+
+  try {
+    isRequestOngoing.value = true
+
+    const response = await fetch(
+      themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + url,
+    )
+
+    isRequestOngoing.value = false
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = blobUrl
+    link.download = url.split('/').pop()
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Error:', error)
+    setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
+    clearAdvisorLater(5000)
+  }
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 
 </script>
 
 <template>
-    <section class="page-section suppliers-page" ref="sectionEl">
+    <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
         <VSnackbar
@@ -199,27 +354,25 @@ const currentData = computed(() => ({
         >
             {{ advisor.message }}
         </VSnackbar>
-
-        <VForm
-            ref="refForm"
-            class="card-form"
-            v-model="isFormValid"
-            @submit.prevent="swish"
-            >
-            <VCard
-                flat 
-                class="card-fill"
-                :class="[
-                    windowWidth < 1024 ? 'flex-column' : 'flex-row',
-                    $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
-                ]"
+        
+        <VCard
+            class="card-fill"
+            :class="[
+                windowWidth < 1024 ? 'flex-column' : 'flex-row',
+                $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+            ]"
+        >
+            <VForm
+                ref="refForm"
+                class="card-form"
+                v-model="isFormValid"
+                @submit.prevent="swish"
             >
                 <VCardText class="p-0">
                     <div 
                         class="d-flex  gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between"
                         :class="windowWidth < 1024 ? 'flex-column' : 'flex-wrap'"
                     >
-                
                         <VBtn
                             :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
                             class="btn-light"
@@ -235,7 +388,7 @@ const currentData = computed(() => ({
                                 Swish
                             </span>
                             <span 
-                                class="subtitle-page"
+                                class="subtitle-page-swish"
                                 :class="windowWidth < 1024 ? 'd-none' : 'justify-start'"
                             >
                                 Betalningsuppgifter för leverantören Nordic Parts AB
@@ -260,130 +413,223 @@ const currentData = computed(() => ({
 
                 <VDivider :class="windowWidth < 1024 ? 'd-none' : ''" />
 
-                <VCardText class="px-0">
-                    <VRow class="px-md-3">
-                        <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                <VCardText :class="windowWidth < 1024 ? 'p-0' : 'px-0 py-4'">
+                    <div :class="windowWidth < 1024 ? 'p-0' : 'px-0'">
+                        <div 
+                            class="d-flex flex-wrap"
+                            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                            :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                        >
+
+                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Utbetalningsnummer*" />
+                                <VTextField
+                                    v-model="payout_number"
+                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                    minLength="11"
+                                    maxlength="11"
+                                    @input="formatOrgNumber()"
+                                />
+                            </div> 
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 d-flex flex-column gap-4" v-if="swishHasCSR && is_payout" :class="windowWidth < 1024 ? '' : 'px-0'">
+                        <div class="d-flex flex-column gap-2">
+                            <div class="title-info" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                                CSR-fil
+                            </div>
+                            <span class="subtitle-info" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                                Ladda ner CSR-filen och skicka den till din bank för att beställa ett Swish-certifikat.
+                            </span>
                             <div 
                                 class="d-flex flex-wrap"
                                 :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                 :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                             >
-
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Utbetalningsnummer*" />
-                                    <VTextField
-                                        v-model="payout_number"
-                                        :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                        minLength="11"
-                                        maxlength="11"
-                                        @input="formatOrgNumber()"
-                                    />
-                                </div> 
-                            </div>
-
-                            <div class="title-tabs mb-2 pt-6">
-                                Aktivera Swish utbetalningar
-                            </div>
-                            <div 
-                                class="d-flex flex-wrap"
-                                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                            >
-
-                                <div class="d-flex flex-row" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Möjliggör automatiska utbetalningar till leverantören via Swish." />
-                                    <VSwitch
-                                        v-model="is_payout"
-                                        class="ms-8"
-                                        hide-details
-                                        inset
-                                    />
-                                </div>  
-                            </div>
-                        </VCol>
-                    </VRow>
-
-                    <VRow 
-                        v-if="swishHasCSR"
-                        class="px-md-3"
-                    >
-                        <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
-                            <div class="title-tabs mb-2 pt-6">
-                                Certifikat
-                            </div>
-                            <div 
-                                class="d-flex flex-wrap"
-                                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                            >
-
-                                <div class="d-flex flex-row" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Krävs för att aktivera automatiska Swish-utbetalningar." />
-                                </div>  
-                            </div>
-
-                            <div 
-                                class="d-flex flex-wrap mt-6"
-                                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                            >
-
                                 <div
-                                    class="d-flex flex-column" 
+                                    class="d-flex flex-column"
                                     :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'"
                                 >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="CSR-fil" />
-                                    <VBtn
-                                        v-if="csr_url"
-                                        class="file_download"
-                                        variant="tonal"
-                                        :href="openStorageFileUrl(csr_url)"
-                                        target="_blank"
+                                    <div
+                                        v-if="csr_url" 
+                                        class="card-swish-card d-flex justify-space-between gap-4"
+                                        :class="windowWidth < 1024 ? 'flex-column align-start' : 'flex-row align-center'"
                                     >
-                                        {{ csr_url.split('/').pop() }}
-                                    </VBtn>
-                                    <div v-else class="text-disabled">Ingen CSR-fil tillgänglig.</div>
-                                </div>  
-                            </div>
+                                        <div class="d-flex align-center gap-2">
+                                            <VAvatar
+                                                color="#E7E7E7"
+                                                icon="custom-facture"
+                                                variant="flat"
+                                                size="44"
+                                                rounded="lg"
+                                                class="indicator-icon"
+                                                :style="{ '--icon-color': '#454545' }"
+                                            />
 
+                                            <div class="d-flex flex-column gap-1">
+                                                <div class="card-swish-title">{{ getFileNameFromPath(csr_url) }}</div>
+                                                <div class="card-swish-meta">Genererad {{ formatDateSimple(csr_at) }} · {{ formatFileSize(csr_size) }}</div>
+                                            </div>
+                                        </div>
+
+                                        <VBtn
+                                            class="btn-gradient"
+                                            :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                                            :download="getFileNameFromPath(csr_url)"
+                                            @click="downloadFile(csr_url)"
+                                        >
+                                            <VIcon icon="custom-download" size="24"/>
+                                            Ladda ner
+                                        </VBtn>
+                                    </div>
+                                    <div v-else class="text-disabled">Ingen CSR-fil tillgänglig.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                       <div class="d-flex flex-column gap-2">
+                            <div class="title-info" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                                PEM-fil
+                            </div>
+                             <span class="subtitle-info" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                                Ladda upp certifikatet du fått från din bank för att aktivera automatiska Swish-utbetalningar. Du kan ersätta filen när som helst.
+                            </span>
                             <div 
-                                class="d-flex flex-wrap mt-6"
+                                class="d-flex flex-wrap"
                                 :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                 :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                             >
-
                                 <div 
-                                    class="d-flex flex-column" 
+                                    class="d-flex flex-column gap-4" 
                                     :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'"
                                 >
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="PEM-fil" />
-                                    <VBtn
-                                        v-if="pem_url"
-                                        class="file_download"
-                                        variant="tonal"
-                                        :href="openStorageFileUrl(pem_url)"
-                                        target="_blank"
+                                    <div
+                                        v-if="!shouldShowPemCard"
+                                        class="pem-dropzone"
+                                        :class="{ 'is-dragover': isPemDragOver, 'has-file': !!pemFileName }"
+                                        role="button"
+                                        tabindex="0"
+                                        @click="openPemFilePicker"
+                                        @keydown.enter.prevent="openPemFilePicker"
+                                        @keydown.space.prevent="openPemFilePicker"
+                                        @dragover.prevent="isPemDragOver = true"
+                                        @dragleave.prevent="isPemDragOver = false"
+                                        @drop.prevent="onPemDrop"
                                     >
-                                        {{ pem_url.split('/').pop() }}
-                                    </VBtn>
-                                    <div v-else class="text-disabled">Ingen PEM-fil uppladdad än.</div>
+                                        <VIcon icon="custom-upload" size="24" class="pem-dropzone-icon" />
+
+                                        <div class="pem-dropzone-title">
+                                            <template v-if="pemFileName">
+                                                {{ pemFileName }}
+                                            </template>
+                                            <template v-else>
+                                                Dra och slapp filen har, eller <span class="pem-dropzone-link">bladdra bland filer</span>
+                                            </template>
+                                        </div>
+
+                                        <div class="pem-dropzone-subtitle">
+                                            Endast .pem-filer, max 2 MB
+                                        </div>
+                                    </div>
 
                                     <VFileInput
-                                        class="mt-4"
+                                        ref="pemFileInputRef"
                                         v-model="pemFile"
-                                        label="Ladda upp PEM-fil"
+                                        class="d-none"
                                         accept=".pem"
-                                        prepend-icon="tabler-file"
+                                        @update:modelValue="onPemInputChange"
                                     />
+
+                                    <div
+                                        v-if="shouldShowPemCard" 
+                                        class="card-swish-card d-flex justify-space-between gap-4"
+                                        :class="windowWidth < 1024 ? 'flex-column align-start' : 'flex-row align-center'"
+                                    >
+                                        <div class="d-flex align-center gap-2">
+                                            <VAvatar
+                                                color="#E7E7E7"
+                                                icon="custom-star"
+                                                variant="flat"
+                                                size="44"
+                                                rounded="lg"
+                                                class="indicator-icon"
+                                                :style="{ '--icon-color': '#454545' }"
+                                            />
+
+                                            <div class="d-flex flex-column gap-1">
+                                                <div class="d-flex align-center gap-1">
+                                                    <div class="card-swish-title">{{ pemDisplayName }}</div>
+                                                    <span 
+                                                        v-if="hasPendingPemSelection" 
+                                                        class="status-chip-mobile status-chip-pending"
+                                                        :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                                                    >
+                                                        Väntar på Spara
+                                                    </span>
+                                                </div>
+                                                <div class="card-swish-meta">{{ pemDisplayMeta }}</div>
+                                            </div>
+                                        </div>
+
+                                        <VBtn
+                                            v-if="hasPendingPemSelection"
+                                            class="btn-light"
+                                            :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                                            @click="undoPendingPemSelection"
+                                        >
+                                            <VIcon icon="custom-return" size="24"/>
+                                            Ångra
+                                        </VBtn>
+
+                                        <div v-else class="d-flex gap-2" :class="windowWidth < 1024 ? 'w-100' : 'w-auto'">                                            
+                                            <VBtn
+                                                class="btn-light"
+                                                block
+                                                @click="openPemFilePicker"
+                                            >
+                                                <VIcon icon="custom-refresh" size="24"/>
+                                                Ersätt fil
+                                            </VBtn>
+                                            <VBtn
+                                                class="btn-error"
+                                                :download="getFileNameFromPath(csr_url)"
+                                                @click="removePemFile()"
+                                            >
+                                                <VIcon icon="custom-waste" size="24"/>
+                                            </VBtn>
+                                        </div>
+                                    </div>
                                 </div>  
                             </div>
-                        </VCol>
-                    </VRow>
+                       </div>   
+                    </div>
+
+                    <div class="title-info mt-4">
+                        Aktivera Swish utbetalningar
+                    </div>
+                    <div 
+                        class="d-flex flex-wrap"
+                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                    >
+
+                        <div class="d-flex flex-row" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Möjliggör automatiska utbetalningar till leverantören via Swish." />
+                            <VSwitch
+                                v-model="is_payout"
+                                :class="windowWidth < 1024 ? 'me-3' : 'ms-8'"
+                                hide-details
+                                inset
+                            />
+                        </div>  
+                    </div>
                 </VCardText>
 
                 <VCardText 
-                    class="d-flex justify-end gap-3 flex-wrap dialog-actions pe-0"
+                    class="d-flex justify-end gap-3 flex-wrap dialog-actions"
                     :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 50%;'"
+                    :class="windowWidth < 1024 ? 'flex-column px-0' : 'flex-row pe-0'"
                 >
                     <VBtn 
                         class="btn-light" 
@@ -391,10 +637,10 @@ const currentData = computed(() => ({
                     >
                         Avbryt
                     </VBtn>
-                    <VBtn class="btn-gradient" type="submit"> Acceptera </VBtn>
+                    <VBtn class="btn-gradient" type="submit"> Spara </VBtn>
                 </VCardText>
-            </VCard>
-        </VForm>
+            </VForm>
+        </VCard>
     </section>
 </template>
 
@@ -410,22 +656,27 @@ const currentData = computed(() => ({
         }
     }
 
-    .subtitle-page {
+    .subtitle-page-swish {
         font-weight: 400;
         font-size: 16px;
         line-height: 100%;
         color: #454545;
     }
 
-    .title-tabs {
+    .title-info {
         font-weight: 700;
-        font-size: 24px;
-        line-height: 100%;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
         color: #454545;
+    }
 
-        @media (max-width: 1023px) {
-            font-size: 16px
-        }
+    .subtitle-info {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
+        color: #454545;
     }
 
     .card-form {
@@ -512,6 +763,83 @@ const currentData = computed(() => ({
             font-size: 16px;
             line-height: 100%;
             color: #5D5D5D;
+        }
+
+        .card-swish-card {
+            padding: 16px 18px;
+            border: 1px solid #E7E7E7;
+            border-radius: 14px;
+        }
+
+        .card-swish-title {
+            overflow: hidden;
+            font-weight: 700;
+            font-size: 16px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #454545;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-swish-meta {
+            font-weight: 400;
+            font-size: 14px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #878787;
+        }
+
+        .pem-dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 141px;
+            padding: 24px;
+            border: 1px dashed #E7E7E7;
+            border-radius: 14px;
+            background: #F6F6F6;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .pem-dropzone.is-dragover {
+            border-color: #006D5C;
+            background: #F6F6F6;
+        }
+
+        .pem-dropzone.has-file {
+            border-style: solid;
+            background: #F6F6F6;
+        }
+
+        .pem-dropzone-icon {
+            color: #454545;
+        }
+
+        .pem-dropzone-title {
+            font-weight: 600;
+            font-size: 15px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #1C2925;
+            word-break: break-word;
+        }
+
+        .pem-dropzone-link {
+            color: #0D6E2D;
+            font-weight: 600;
+        }
+
+        .pem-dropzone-subtitle {
+            font-weight: 400;
+            font-size: 13px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #878787;
         }
     }
 

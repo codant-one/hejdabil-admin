@@ -332,6 +332,7 @@ class Supplier extends Model
 
             Storage::disk('public')->put($filePath, file_get_contents($file));
             $supplier->pem_url = $filePath;
+            $supplier->pem_at = now();
         } else { //Se se van a generar CSR y KEY
             $sslService = new OpenSslService();
 
@@ -354,6 +355,7 @@ class Supplier extends Model
 
             Storage::disk('public')->put($filePath, $csrAndKey['csr']);
             $supplier->csr_url = $filePath;
+            $supplier->csr_at = now();
 
             //Save KEY file
             $path = 'suppliers/key/';
