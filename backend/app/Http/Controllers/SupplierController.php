@@ -38,6 +38,8 @@ use App\Models\Document;
 use App\Models\Vehicle;
 use App\Models\Setting;
 
+use App\Services\CacheService;
+
 class SupplierController extends Controller
 {
     public function __construct()
@@ -289,10 +291,14 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail', 'state'])
-                                ->withTrashed()
-                                ->clientsCount()
-                                ->find($id);
+            $supplier = Supplier::with([
+                'user.userDetail',
+                'state',
+                'plan'
+            ])
+            ->withTrashed()
+            ->clientsCount()
+            ->find($id);
 
             if (!$supplier)
                 return response()->json([
@@ -304,7 +310,8 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'supplier' => $supplier
+                    'supplier' => $supplier,
+                    'plans' => CacheService::getPlans(),
                 ]
             ]);
 
@@ -1618,6 +1625,29 @@ class SupplierController extends Controller
             'address' => $userDetail?->personal_address ?? $userDetail?->address,
             'permissions' => $user->permissions->pluck('name')->values()->all(),
         ];
+    }
+
+    /**
+     * Display the all plans.
+     */
+    public function plans()
+    {
+        try {
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'plans' => CacheService::getPlans(),
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
 }

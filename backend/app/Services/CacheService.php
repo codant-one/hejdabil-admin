@@ -26,7 +26,8 @@ use App\Models\{
     Client,
     Country,
     PayoutState,
-    User
+    User,
+    Plan
 };
 use Spatie\Permission\Models\{Permission, Role};
 
@@ -353,6 +354,16 @@ class CacheService
     {
         return Cache::remember('clients.all', self::CACHE_DURATION, function () {
             return Client::all();
+        });
+    }
+
+    /**
+     * Get all plans
+     */
+    public static function getPlans()
+    {
+        return Cache::remember('plans.all', self::CACHE_DURATION, function () {
+            return Plan::all();
         });
     }
 

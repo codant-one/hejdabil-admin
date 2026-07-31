@@ -937,7 +937,6 @@ class Agreement extends Model
         }
 
         $vehicle = Vehicle::find($vehicleClient->vehicle_id);
-        $vehicleRequest->request->add(['state_id' => 10]);
         $vehicle->updateVehicle($vehicleRequest, $vehicle);
 
         //Update Vehicle Payment.

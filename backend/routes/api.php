@@ -190,6 +190,7 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::post('/swish/{id}', [SupplierController::class, 'swish']);
         Route::post('/master-password/{id}', [SupplierController::class, 'masterPassword']);
         Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
+        Route::get('/plans/all', [SupplierController::class, 'plans']);
     });
 
     //Clients

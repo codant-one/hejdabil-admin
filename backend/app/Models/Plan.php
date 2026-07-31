@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -13,23 +14,16 @@ class Plan extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = [
-        'name',
-        'description',
-        'state_id',
-        'price_month',
-        'price_annual',
-    ];
-
-    protected $casts = [
-        'price_month' => 'decimal:2',
-        'price_annual' => 'decimal:2',
-    ];
+    protected $guarded = [];
 
     /**** Relationship ****/
-
     public function featurePlans() {
         return $this->hasMany(FeaturePlan::class, 'plan_id', 'id');
+    }
+
+    public function features(): BelongsToMany
+    {
+        return $this->belongsToMany(Feature::class, 'feature_plans', 'plan_id', 'feature_id');
     }
 
     public function state()
@@ -79,8 +73,8 @@ class Plan extends Model
         return $query->paginate($limit);
     }
 
-     /**** Public methods ****/
-     public static function createPlan($request) {
+    /**** Public methods ****/
+    public static function createPlan($request) {
 
         $plan = self::create([
             'name' => $request->name,
@@ -90,21 +84,7 @@ class Plan extends Model
             'price_annual' => $request->price_annual
         ]);
 
-        $features = ($request->has('features')) ? json_decode($request->features) : [];
-
-        if($features && count($features) > 0) {
-            //Elimino el listadp de features del plan para agregar los indicados 
-            //en la edicion
-            FeaturePlan::where('plan_id', $plan->id)
-                        ->delete();
-
-            foreach ($features as $feature) {
-                FeaturePlan::create([
-                    'plan_id' => $plan->id,
-                    'feature_id' => $feature
-                ]);
-            }
-        }
+        $plan->features()->sync(self::extractFeatureIds($request));
 
         return $plan;
     }
@@ -119,24 +99,27 @@ class Plan extends Model
             'price_annual' => $request->price_annual
         ]);
 
-        $features = ($request->has('features')) ? json_decode($request->features) : [];
-
-        if($features && count($features) > 0) {
-            //Elimino el listadp de features del plan para agregar los indicados 
-            //en la edicion
-            FeaturePlan::where('plan_id', $plan->id)
-                        ->delete();
-
-            foreach ($features as $feature) {
-                FeaturePlan::create([
-                    'plan_id' => $plan->id,
-                    'feature_id' => $feature
-                ]);
-            }
-        }
+        $plan->features()->sync(self::extractFeatureIds($request));
         
 
         return $plan;
+    }
+
+    private static function extractFeatureIds($request): array
+    {
+        $features = $request->input('features', []);
+
+        if (is_string($features)) {
+            $decoded = json_decode($features, true);
+            $features = is_array($decoded) ? $decoded : [];
+        }
+
+        return collect($features)
+            ->filter(fn ($featureId) => is_numeric($featureId))
+            ->map(fn ($featureId) => (int) $featureId)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public static function deletePlan($id) {

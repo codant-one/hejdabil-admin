@@ -4,6 +4,7 @@ import Suppliers from '@/api/suppliers'
 export const useSuppliersStores = defineStore('suppliers', {
     state: () => ({
         suppliers: [],
+        plans: {},
         loading: false,
         last_page: 1,
         suppliersTotalCount: 6,
@@ -17,6 +18,9 @@ export const useSuppliersStores = defineStore('suppliers', {
         },
         getUsers(params) {
             return this.users
+        },
+        getPlans() {
+            return this.plans
         }
     },
     actions: {
@@ -60,6 +64,7 @@ export const useSuppliersStores = defineStore('suppliers', {
             return Suppliers.show(id)
                 .then((response) => {
                     if(response.data.success)
+                        this.plans = response.data.data.plans
                         return Promise.resolve(response.data.data.supplier)
                 })
                 .catch(error => Promise.reject(error))
@@ -305,6 +310,22 @@ export const useSuppliersStores = defineStore('suppliers', {
                 .finally(() => {
                     this.setLoading(false)
                 })
-        }
+        },
+        fetchPlans() {
+            this.setLoading(true)
+
+            return Suppliers.plans()
+                .then((response) => {
+                    if(response.data.success) {
+                        this.plans = response.data.data.plans
+                        return Promise.resolve(response.data.data.plans)
+                    }
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
     }
 })

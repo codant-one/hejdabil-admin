@@ -523,6 +523,10 @@ body .v-btn {
 
     .avatar-box {
       background-color: #f6f6f6;
+
+      img.v-img__img {
+        object-fit: contain !important;
+      }
     }
   }
 

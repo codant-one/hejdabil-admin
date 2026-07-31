@@ -25,6 +25,10 @@ class AdminSeeder extends Seeder
             'updated_at' => now()->toDateString()
         ]);
 
+        UserDetails::create([
+            'user_id' => $admin->id,
+        ]);
+
         $admin->assignRole('SuperAdmin');
         
     }

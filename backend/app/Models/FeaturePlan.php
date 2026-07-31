@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FeaturePlan extends Model
 {
-    protected $table = 'feature_plans';
-
     protected $guarded = [];
 
     /**** Relationship ****/

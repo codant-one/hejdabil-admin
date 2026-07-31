@@ -547,7 +547,7 @@ const removeSupplier = async () => {
                       <div
                         class="status-chip me-2 plan-color"
                       >
-                        PRO
+                        {{ supplier.plan.name }}
                       </div>
                       <div
                         class="status-chip"
@@ -571,9 +571,9 @@ const removeSupplier = async () => {
                 </span>
                 <div class="d-flex flex-row ">
                   <div
-                    class="status-chip me-2 plan-color"
+                    class="status-chip me-2 plan-color uppercase"
                   >
-                    PRO
+                    {{ supplier.plan.name }}
                   </div>
                   <div
                     class="status-chip"
@@ -1580,10 +1580,11 @@ const removeSupplier = async () => {
     }
 
     .plan-color {
-    border: 1px solid #1C2925;
-    color: #FFFFFF;
-    background-color: #1C2925;
-}
+      border: 1px solid #1C2925;
+      color: #FFFFFF;
+      background-color: #1C2925;
+      text-transform: uppercase;
+  }
 
 #payout-export-button {
   --v-btn-height: 48px !important;

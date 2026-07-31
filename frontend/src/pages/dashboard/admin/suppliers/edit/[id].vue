@@ -1,8 +1,9 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
+import { formatNumberInteger } from "@/@core/utils/formatters";
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
@@ -47,27 +48,90 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
+const plan_id = ref(2)
+const is_yearly = ref(0)
+const start_date = ref(null)
+const end_date = ref(null)
 
 const allowNavigation = ref(false)
 const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
 const initialData = ref(null)
 
-const selectedPlan = ref(1)
-const availablePlans = ref([
-    {
-        id: 1,
-        name: 'Swish',
-        price: 499,
-        icon: 'custom-swish-gray'
-    },
-    {
-        id: 2,
-        name: 'Pro',
-        price: 999,
-        icon: 'custom-fairytale'
+const plans = ref([])
+const selectedPlan = ref(null)
+
+const parseLocalDate = (value) => {
+    if (!value) return null
+
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) return null
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate())
     }
-])
+
+    if (typeof value === 'string') {
+        const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (match) {
+            const year = Number(match[1])
+            const month = Number(match[2]) - 1
+            const day = Number(match[3])
+            return new Date(year, month, day)
+        }
+    }
+
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return null
+
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+}
+
+const toLocalDateYmd = (value) => {
+    const date = parseLocalDate(value)
+    if (!date) return null
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+const addMonthsExact = (date, monthsToAdd) => {
+    const source = new Date(date)
+    const sourceDay = source.getDate()
+
+    const target = new Date(source)
+    target.setMonth(target.getMonth() + monthsToAdd, 1)
+
+    const daysInTargetMonth = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+    target.setDate(Math.min(sourceDay, daysInTargetMonth))
+
+    return target
+}
+
+const datePickerConfig = computed(() => ({
+    dateFormat: 'Y-m-d',
+    position: 'auto right',
+}))
+
+const planCycleLabel = computed(() => Number(is_yearly.value) === 1 ? 'kr / år' : 'kr / mån')
+
+const availablePlans = computed(() => {
+    const list = Array.isArray(plans.value) ? plans.value : []
+
+    return list.map(plan => {
+        const planId = Number(plan?.id)
+        const monthlyPrice = Number(plan?.price_month ?? 0)
+        const yearlyPrice = Number(plan?.price_annual ?? 0)
+
+        return {
+            id: planId,
+            name: plan?.name ?? '',
+            price: Number(is_yearly.value) === 1 ? yearlyPrice : monthlyPrice,
+            icon: planId === 1 ? 'custom-swish-gray' : 'custom-fairytale',
+        }
+    })
+})
 
 const hasPhoneValue = value => !!String(value ?? '').trim()
 
@@ -145,6 +209,13 @@ watchEffect(async() => {
         name.value  = supplier.value.user.name
         last_name.value = supplier.value.user.last_name 
         email.value = supplier.value.user.email
+        plan_id.value = supplier.value.plan_id
+        is_yearly.value = Number(supplier.value.is_yearly ?? 0)
+        start_date.value = supplier.value.start_date
+        end_date.value = supplier.value.end_date
+
+        plans.value = suppliersStores.getPlans
+        selectedPlan.value = Number(supplier.value.plan_id ?? plans.value?.[0]?.id ?? 0)
     }
 
     isRequestOngoing.value = false
@@ -152,6 +223,26 @@ watchEffect(async() => {
     nextTick(() => {
         initialData.value = JSON.parse(JSON.stringify(currentData.value))
     })  
+})
+
+watch([start_date, is_yearly], ([startDateValue, isYearlyValue]) => {
+    const sourceDate = parseLocalDate(startDateValue)
+
+    if (!sourceDate) {
+        end_date.value = null
+        return
+    }
+
+    const calculatedDate = Number(isYearlyValue) === 1
+        ? addMonthsExact(sourceDate, 12)
+        : addMonthsExact(sourceDate, 1)
+
+    end_date.value = toLocalDateYmd(calculatedDate)
+}, { immediate: true })
+
+onMounted(() => {
+    if (!start_date.value)
+        start_date.value = toLocalDateYmd(new Date())
 })
 
 const formatOrgNumber = () => {
@@ -208,7 +299,8 @@ const getTabValidationErrors = () => {
 
     const hasTab2Errors = !name.value ||
                           !last_name.value ||
-                          !email.value
+                          !email.value ||
+                          !start_date.value
 
     return {
         hasTab0Errors,
@@ -344,6 +436,10 @@ const onSubmit = async () => {
                 formData.append('name', name.value)
                 formData.append('last_name', last_name.value)
                 formData.append('email', email.value)
+                formData.append('plan_id', selectedPlan.value)
+                formData.append('is_yearly', is_yearly.value)
+                formData.append('start_date', start_date.value)
+                formData.append('end_date', end_date.value)
 
                 isRequestOngoing.value = true
 
@@ -410,7 +506,11 @@ const currentData = computed(() => ({
     // contact
     name: name.value ,
     last_name: last_name.value,
-    email: email.value
+    email: email.value,
+    plan_id: selectedPlan.value,
+    is_yearly: is_yearly.value,
+    start_date: start_date.value,
+    end_date: end_date.value,
 }))
 
 const isDirty = computed(() => {
@@ -733,23 +833,51 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
                                                 disabled
                                                 v-model="email"
                                             />
                                         </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Startdatum*" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(datePickerConfig)"
+                                                v-model="start_date"
+                                                density="default"
+                                                :config="datePickerConfig"
+                                                :rules="[requiredValidator]"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Startdatum"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(datePickerConfig)"
+                                                v-model="end_date"
+                                                density="default"
+                                                :config="datePickerConfig"
+                                                class="field-solo-flat"
+                                                placeholder="Slutdatum"
+                                                disabled
+                                            />
+                                        </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
                                             <VLabel class="mb-4 text-body-2 text-high-emphasis" text="Välj plan" />
                                             <div class="d-flex flex-row align-center mb-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
-                                                <VLabel class="mb-1 mb-1 title-comments me-2" text="Månadsvis" />
+                                                <VLabel class="title-comments me-2" text="Månadsvis" />
                                                 <VSwitch
+                                                    v-model="is_yearly"
                                                     class="plan-time"
+                                                    :false-value="0"
+                                                    :true-value="1"
                                                     hide-details
                                                     inset
                                                 />
-                                                <VLabel class="mb-1 ms-2 title-comments" text="Årlig" />
+                                                <VLabel class="title-comments ms-2" text="Årlig" />
                                             </div>
                                             <VRadioGroup 
                                                 v-model="selectedPlan"
@@ -768,8 +896,11 @@ onBeforeRouteLeave((to, from, next) => {
                                                         :class="selectedPlan === plan.id ? 'border-card-comment-selected' : 'border-card-comment'"
                                                     >
                                                         <div id="cardContent" 
-                                                            class="py-6 px-8 gap-2" 
-                                                            :class="selectedPlan === plan.id ? 'card-bg-selected' : ''"
+                                                            class="gap-2" 
+                                                            :class="[
+                                                                selectedPlan === plan.id ? 'card-bg-selected' : '',
+                                                                windowWidth < 1024 ? 'px-4 py-4' : 'px-8 py-6'
+                                                            ]"
                                                             style="width: 100%;"
                                                         >
                                                             <VCardText 
@@ -780,7 +911,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                                     :icon="plan.icon"
                                                                     size="40" 
                                                                 />
-                                                                <span class="title-card" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                                                <span class="title-card" style="overflow: hidden; white-space: nowrap; flex: 1;">
                                                                     {{ plan.name }}
                                                                 </span>
                                                                 <VSpacer />
@@ -793,8 +924,8 @@ onBeforeRouteLeave((to, from, next) => {
 
                                                             <div class="d-block gap-4 px-0 mt-auto">
                                                                 <div class="price-text mt-4">
-                                                                    {{ plan.price }}    
-                                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="kr / mån" />
+                                                                    {{ formatNumberInteger(plan.price) }}
+                                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="planCycleLabel" />
                                                                 </div>
                                 
                                                                 <div class="d-flex gap-4 my-4">
@@ -803,9 +934,9 @@ onBeforeRouteLeave((to, from, next) => {
                                                                     </span>
                                                                 </div>
 
-                                                                <VDivider class="border-card-line mb-1" />
+                                                                <VDivider class="border-card-line mb-1 d-none" />
 
-                                                                <div class="d-flex gap-4 mt-4 align-center justify-content-center">
+                                                                <div class="d-none gap-4 mt-4 align-center justify-content-center">
                                                                     <span class="details-text">
                                                                         Se vad som ingår
                                                                     </span>
@@ -1056,7 +1187,8 @@ onBeforeRouteLeave((to, from, next) => {
         font-weight: 600;
         font-size: 16px;
         line-height: 100%;
-        color: #454545; 
+        color: #454545 !important;
+        overflow: visible !important;
     }
 
     .small-text {
