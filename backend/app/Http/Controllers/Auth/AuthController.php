@@ -211,9 +211,13 @@ class AuthController extends Controller
             $permissions = getPermissionsByRole(Auth::user());
             $userData = getUserData(Auth::user()->load([
                 'userDetail', 
+                'supplier.plan.features:id,name',
+                'supplier.plan.featurePlans.feature:id,name',
                 'supplier.boss.settings',
                 'supplier.boss.settings.billing',
                 'supplier.boss.settings.agreement',
+                'supplier.boss.plan.features:id,name',
+                'supplier.boss.plan.featurePlans.feature:id,name',
                 'supplier.boss.user.userDetail',
                 'supplier.boss.user.commissions',  
                 'supplier.boss.user.offers',  
@@ -351,9 +355,13 @@ class AuthController extends Controller
         $permissions = getPermissionsByRole(Auth::user());
         $userData = getUserData(Auth::user()->load([
             'userDetail', 
+            'supplier.plan.features:id,name',
+            'supplier.plan.featurePlans.feature:id,name',
             'supplier.boss.settings',
             'supplier.boss.settings.billing',
             'supplier.boss.settings.agreement',
+            'supplier.boss.plan.features:id,name',
+            'supplier.boss.plan.featurePlans.feature:id,name',
             'supplier.boss.user.userDetail',
             'supplier.boss.user.commissions',  
             'supplier.boss.user.offers',  

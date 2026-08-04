@@ -2,7 +2,7 @@
 
 import settingsNavItems from "@/navigation/settings";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { can } from "@layouts/plugins/casl";
+import { canWithPlan } from "@layouts/plugins/casl";
 
 const { width: windowWidth } = useWindowSize()
 const isRequestOngoing = ref(true);
@@ -10,7 +10,12 @@ const shouldRenderContent = ref(false);
 const router = useRouter()
 const sectionEl = ref(null)
 
-const visibleSettingsNavItems = computed(() => settingsNavItems.filter(item => can(item.action, item.subject)))
+const settingsNavItemsWithAccess = computed(() => {
+  return settingsNavItems.map(item => ({
+    ...item,
+    hasAccess: canWithPlan(item.action, item.subject),
+  }))
+})
 
 watch(windowWidth, async width => {
   isRequestOngoing.value = true
@@ -71,11 +76,12 @@ onBeforeUnmount(() => {
       <VCardText>
         <ul class="settings-nav-list">
           <li
-            v-for="item in visibleSettingsNavItems"
+            v-for="item in settingsNavItemsWithAccess"
             :key="item.to"
             class="settings-nav-item"
           >
             <RouterLink
+              v-if="item.hasAccess"
               :to="{ name: item.to }"
               class="settings-nav-link"
             >
@@ -83,11 +89,29 @@ onBeforeUnmount(() => {
                 :icon="item.icon?.icon"
                 size="24"
                 class="settings-nav-icon"
+                color="#1C2925"
               />
-              <span class="settings-nav-title">
+              <span 
+                class="settings-nav-title"
+              >
                 {{ item.title }}
               </span>
             </RouterLink>
+
+            <div
+              v-else
+              class="settings-nav-link settings-nav-link-disabled"
+            >
+              <VIcon
+                :icon="item.icon?.icon"
+                size="24"
+                class="settings-nav-icon"
+                color="#BDD2C8"
+              />
+              <span class="settings-nav-title settings-nav-title-disabled">
+                {{ item.title }}
+              </span>
+            </div>
           </li>
         </ul>
       </VCardText>
@@ -128,8 +152,16 @@ onBeforeUnmount(() => {
   }
 
   .settings-nav-icon {
-    color: #454545 !important;
     flex-shrink: 0;
+  }
+
+  .settings-nav-link-disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .settings-nav-link-disabled:hover {
+    background: #FFFFFF;
   }
 
   .settings-nav-title {
@@ -137,7 +169,11 @@ onBeforeUnmount(() => {
     font-size: 16px;
     line-height: 16px;
     letter-spacing: 0;
-    color: #454545;
+    color: #1C2925;
+  }
+
+  .settings-nav-title-disabled {
+    color: #BDD2C8;
   }
 
 </style>

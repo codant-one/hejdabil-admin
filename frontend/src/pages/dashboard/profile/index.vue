@@ -1,7 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import TabMyTeam from '@/pages/dashboard/admin/suppliers/users/index.vue'
@@ -13,7 +13,6 @@ import Toaster from "@/components/common/Toaster.vue";
 const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
-const ability = useAppAbility()
 const route = useRoute();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -51,9 +50,8 @@ const tabs = [
 ]
 
 const hasMyTeamAccess = computed(() => {
-  if (role.value === 'Supplier') return true
-
-  return role.value === 'User' && ability.can('view', 'my-team')
+  return (role.value === 'Supplier' || role.value === 'User')
+    && canWithPlan('view', 'my-team')
 })
 
 const visibleTabs = computed(() => {

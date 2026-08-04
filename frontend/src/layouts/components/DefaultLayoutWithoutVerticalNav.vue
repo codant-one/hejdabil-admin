@@ -1,5 +1,6 @@
 <script setup>
 
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import router from '@/router'
@@ -67,7 +68,7 @@ const redirectToPayoutsAndOpenDialog = () => {
 
         <div class="d-flex align-center" :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
             <VBtn
-                v-if="$can('create', 'agreements')"
+                v-if="canWithPlan('create', 'agreements')"
                 class="btn-blue px-6"
                 :class="windowWidth < 1024 ? 'd-none' : ''"
                 @click="redirectTo('dashboard-admin-agreements-purchase')"
@@ -79,7 +80,7 @@ const redirectToPayoutsAndOpenDialog = () => {
                 />
             </VBtn>
             <VBtn
-                v-if="$can('create', 'agreements')"
+                v-if="canWithPlan('create', 'agreements')"
                 class="btn-green px-6"
                 :class="windowWidth < 1024 ? 'd-none' : ''"
                 @click="redirectTo('dashboard-admin-agreements-sales')"

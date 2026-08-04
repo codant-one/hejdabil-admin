@@ -1,9 +1,10 @@
 <script setup>
+
 import { computed, getCurrentInstance, ref } from "vue";
 import { themeConfig } from "@themeConfig";
 import { useWindowSize } from "@vueuse/core";
 import { getComputedNavLinkToProp, isNavLinkActive } from "@layouts/utils";
-import { can, canViewNavMenuGroup } from "@layouts/plugins/casl";
+import { can, canWithPlan, canViewNavMenuGroup } from "@layouts/plugins/casl";
 import router from "@/router";
 
 const showMenu = ref(false);
@@ -79,7 +80,7 @@ const redirectToPayoutsAndOpenDialog = () => {
       <span>Hem</span>
     </VBtn>
     <VBtn 
-      v-if="$can('create', 'agreements')" 
+      v-if="canWithPlan('create', 'agreements')" 
       class="btn-green" 
       @click="redirectTo('dashboard-admin-agreements-purchase')"
     >
@@ -87,7 +88,7 @@ const redirectToPayoutsAndOpenDialog = () => {
       <span>Köp</span>
     </VBtn>
     <VBtn 
-      v-if="$can('create', 'agreements')" 
+      v-if="canWithPlan('create', 'agreements')" 
       class="btn-blue" 
       @click="redirectTo('dashboard-admin-agreements-sales')"
     >

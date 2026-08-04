@@ -207,6 +207,23 @@ const closeRoleDetailDialog = function(){
                                 :readonly="readonly"
                             />
                         </div>
+                        <VLabel style="font-weight: bold;">
+                            Inställningar
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view company"
+                                value="view company"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view sms"
+                                value="view sms"
+                                :readonly="readonly"
+                            />
+                        </div>
                     </div>
                 </VCardText>
                 <VCardTitle>

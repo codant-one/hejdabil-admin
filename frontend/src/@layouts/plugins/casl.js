@@ -1,5 +1,104 @@
 import ability from '@/plugins/casl/ability'
 
+const PLAN_GATED_SUBJECTS = new Set([
+  'clients',
+  'billings',
+  'invoices',
+  'stock',
+  'sold',
+  'agreements',
+  'signed-documents',
+  'payouts',
+  'notes',
+  'my-team',
+  'company',
+  'sms'
+])
+
+const normalizeSubject = subject => String(subject || '').trim().toLowerCase()
+
+const getStoredUserData = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user_data') || 'null')
+  } catch (error) {
+    return null
+  }
+}
+
+const getPlanFeatureNames = supplier => {
+  const directFeatures = Array.isArray(supplier?.plan?.features)
+    ? supplier.plan.features
+    : []
+
+  const pivotFeaturesRaw = Array.isArray(supplier?.plan?.feature_plans)
+    ? supplier.plan.feature_plans
+    : Array.isArray(supplier?.plan?.featurePlans)
+      ? supplier.plan.featurePlans
+      : []
+
+  const pivotFeatures = pivotFeaturesRaw
+    .map(item => item?.feature)
+    .filter(Boolean)
+
+  return [...directFeatures, ...pivotFeatures]
+    .map(feature => normalizeSubject(feature?.name))
+    .filter(Boolean)
+}
+
+const hasPlanFeatureAccess = subject => {
+  const normalizedSubject = normalizeSubject(subject)
+
+  if (!PLAN_GATED_SUBJECTS.has(normalizedSubject))
+    return true
+
+  const userData = getStoredUserData()
+  if (!userData)
+    return false
+
+  const userRole = userData.roles?.[0]?.name
+  if (userRole !== 'Supplier' && userRole !== 'User')
+    return true
+
+  const supplierSource = userRole === 'User'
+    ? userData.supplier?.boss
+    : userData.supplier
+
+  if (!supplierSource?.plan_id)
+    return false
+
+  const planFeatures = getPlanFeatureNames(supplierSource)
+
+  if (planFeatures.length === 0)
+    return false
+
+  return planFeatures.includes(normalizedSubject)
+}
+
+const hasAccessByRoleAndPlan = (hasPermission, subject) => {
+  if (!hasPermission)
+    return false
+
+  if (!hasPlanFeatureAccess(subject))
+    return false
+
+  if (subject === 'payouts') {
+    const userData = getStoredUserData()
+    if (!userData)
+      return false
+
+    const userRole = userData.roles?.[0]?.name
+
+    if (userRole === 'Supplier')
+      return userData.supplier?.is_payout === 1
+  }
+
+  return true
+}
+
+export const canWithPlan = (action, subject) => {
+  return hasAccessByRoleAndPlan(ability.can(action, subject), subject)
+}
+
 /**
  * Returns ability result if ACL is configured or else just return true
  * We should allow passing string | undefined to can because for admin ability we omit defining action & subject
@@ -16,30 +115,11 @@ export const can = (action, subject, item = null) => {
   if (!vm)
     return false
   const localCan = vm.proxy && '$can' in vm.proxy
-  
-  // Verificación básica de permisos CASL
+
+  // Verificacion basica de permisos CASL.
   const hasPermission = localCan ? vm.proxy?.$can(action, subject) : true
-  
-  // Si no tiene permiso básico, retornar false
-  if (!hasPermission) return false
-  
-  // Validación adicional para payouts:
-  // - Si el usuario es Supplier: además del permiso, debe tener `is_payout === 1`.
-  // - Si no es Supplier: solo se valida el permiso.
-  if (subject === 'payouts') {
-    const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-    if (!userData) return false
 
-    const userRole = userData.roles?.[0]?.name
-
-    if (userRole === 'Supplier') {
-      return userData.supplier?.is_payout === 1 && hasPermission
-    }
-
-    return hasPermission
-  }
-  
-  return hasPermission
+  return hasAccessByRoleAndPlan(hasPermission, subject)
 }
 
 /**
@@ -65,8 +145,8 @@ export const canNavigate = to => {
       : []
 
     if (permissionsAny.length > 0)
-      return permissionsAny.some(permission => ability.can(permission.action, permission.subject))
+      return permissionsAny.some(permission => canWithPlan(permission.action, permission.subject))
 
-    return ability.can(route.meta.action, route.meta.subject)
+    return canWithPlan(route.meta.action, route.meta.subject)
   })
 }

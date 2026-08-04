@@ -3,6 +3,7 @@
 import { themeConfig } from '@themeConfig'
 import { useDisplay } from 'vuetify'
 import { useActivitiesStore } from '@/stores/useActivities'
+import { canWithPlan } from '@/@layouts/plugins/casl'
 import { formatNumber } from '@/@core/utils/formatters'
 import { getActivityVisibleFields } from './activityVisibleFields'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -55,6 +56,39 @@ const modules = [
   { name: 'Swish', id: 'payouts' },
   { name: 'Mina Värderingar', id: 'notes' },
 ]
+
+const MODULE_PERMISSION_SUBJECTS = {
+  users: ['my-team'],
+  suppliers: ['suppliers'],
+  clients: ['clients'],
+  billings: ['billings'],
+  vehicles: ['stock', 'sold'],
+  agreements: ['agreements'],
+  documents: ['signed-documents'],
+  payouts: ['payouts'],
+  notes: ['notes'],
+}
+
+const hasModuleAccess = moduleId => {
+  const subjects = MODULE_PERMISSION_SUBJECTS[moduleId] ?? []
+
+  if (!subjects.length)
+    return true
+
+  return subjects.some(subject => canWithPlan('view', subject))
+}
+
+const availableModules = computed(() => modules.filter(item => hasModuleAccess(item.id)))
+
+watch(availableModules, currentModules => {
+  if (!module.value)
+    return
+
+  const isCurrentModuleAllowed = currentModules.some(item => item.id === module.value)
+
+  if (!isCurrentModuleAllowed)
+    module.value = null
+}, { immediate: true })
 
 const modeOptions = [
   {
@@ -1918,7 +1952,7 @@ onBeforeUnmount(() => {
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
             <AppAutocomplete
               v-model="module"
-              :items="modules"
+              :items="availableModules"
               :item-title="item => item.name"
               :item-value="item => item.id"
               autocomplete="off"
@@ -1981,7 +2015,7 @@ onBeforeUnmount(() => {
           <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
           <AppAutocomplete
               v-model="module"
-              :items="modules"
+              :items="availableModules"
               :item-title="item => item.name"
               :item-value="item => item.id"
               autocomplete="off"

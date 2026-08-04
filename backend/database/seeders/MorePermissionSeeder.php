@@ -71,6 +71,10 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'edit plans'],
             ['name' => 'delete plans'],
 
+            //settings
+            ['name' => 'view company'],
+            ['name' => 'view sms'],
+
         ]; 
         // Crear o actualizar permisos
         $this->createOrUpdatePermissions($permissions);

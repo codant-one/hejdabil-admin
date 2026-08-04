@@ -138,6 +138,21 @@ const closeModal = function(){
                                 value="view team-reports"
                             />
                         </div>
+                        <VLabel style="font-weight: bold;">
+                           Inställningar
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view company"
+                                value="view company"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view sms"
+                                value="view sms"
+                            />
+                        </div>
                     </div>
                 </VCardText>
                 <VCardTitle>

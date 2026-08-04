@@ -11,7 +11,7 @@ export default [
     icon: { icon: 'custom-business' },
     to: 'dashboard-settings-company', 
     action: 'view', 
-    subject: 'dashboard'
+    subject: 'company'
   },
   { 
     title: 'Säkerhet', 
@@ -32,28 +32,28 @@ export default [
     icon: { icon: 'custom-facture' },
     to: 'dashboard-settings-billings', 
     action: 'view', 
-    subject: 'dashboard'
+    subject: 'billings'
   },
   { 
     title: 'Avtal', 
     icon: { icon: 'custom-contract' },
     to: 'dashboard-settings-agreements', 
     action: 'view', 
-    subject: 'dashboard'
+    subject: 'agreements'
   },
   { 
     title: 'E-signering', 
     icon: { icon: 'custom-signature' },
     to: 'dashboard-settings-documents', 
     action: 'view', 
-    subject: 'dashboard'
+    subject: 'signed-documents'
   },
   {
     title: 'SMS-översikt',
     icon: { icon: 'custom-sms' },
     to: 'dashboard-settings-sms-logs',
     action: 'view',
-    subject: 'dashboard'
+    subject: 'sms'
   }
 ]
   

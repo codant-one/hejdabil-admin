@@ -16,6 +16,19 @@ use App\Models\SupplierActivity;
 
 class ActivitiesController extends Controller
 {
+    private const PLAN_GATED_FEATURES = [
+        'clients',
+        'billings',
+        'invoices',
+        'stock',
+        'sold',
+        'agreements',
+        'signed-documents',
+        'payouts',
+        'notes',
+        'my-team',
+    ];
+
 
     /**
      * Display a listing of the resource.
@@ -179,30 +192,30 @@ class ActivitiesController extends Controller
                 $hasVisibilityCondition = true;
             };
 
-            if ($user->can('view agreements'))
+            if ($this->canViewWithPlan($user, 'agreements'))
                 $allowEntityType('agreements');
 
-            if ($user->can('view billings'))
+            if ($this->canViewWithPlan($user, 'billings'))
                 $allowEntityType('billings');
 
-            if ($user->can('view clients'))
+            if ($this->canViewWithPlan($user, 'clients'))
                 $allowEntityType('clients');
 
-            if ($user->can('view my-team'))
+            if ($this->canViewWithPlan($user, 'my-team'))
                 $allowEntityType('users');
 
-            if ($user->can('view payouts'))
+            if ($this->canViewWithPlan($user, 'payouts'))
                 $allowEntityType('payouts');
 
-            if ($user->can('view notes')) {
+            if ($this->canViewWithPlan($user, 'notes')) {
                 $allowEntityType('notes');
                 $allowEntityType('comment_notes');
             }
 
-            if ($user->can('view signed-documents'))
+            if ($this->canViewWithPlan($user, 'signed-documents'))
                 $allowEntityType('documents');
 
-            if ($user->can('view sold')) {
+            if ($this->canViewWithPlan($user, 'sold')) {
                 $permissionQuery->orWhere(function ($vehicleQuery) {
                     $vehicleQuery
                         ->where('entity_type', 'vehicles')
@@ -212,7 +225,7 @@ class ActivitiesController extends Controller
                 $hasVisibilityCondition = true;
             }
 
-            if ($user->can('view stock')) {
+            if ($this->canViewWithPlan($user, 'stock')) {
                 $permissionQuery->orWhere(function ($vehicleQuery) {
                     $vehicleQuery
                         ->where('entity_type', 'vehicles')
@@ -225,5 +238,64 @@ class ActivitiesController extends Controller
             if (!$hasVisibilityCondition)
                 $permissionQuery->whereRaw('1 = 0');
         });
+    }
+
+    private function canViewWithPlan($user, string $subject): bool
+    {
+        if (!$user->can('view ' . $subject)) {
+            return false;
+        }
+
+        return $this->hasPlanFeatureAccess($user, $subject);
+    }
+
+    private function hasPlanFeatureAccess($user, string $subject): bool
+    {
+        $role = $user->getRoleNames()[0] ?? null;
+        $normalizedSubject = strtolower(trim($subject));
+
+        if (!in_array($normalizedSubject, self::PLAN_GATED_FEATURES, true)) {
+            return true;
+        }
+
+        if ($role !== 'Supplier' && $role !== 'User') {
+            return true;
+        }
+
+        $supplierSource = $role === 'User'
+            ? $user?->supplier?->boss
+            : $user?->supplier;
+
+        if (!$supplierSource?->plan_id) {
+            return false;
+        }
+
+        if ($normalizedSubject === 'payouts' && $role === 'Supplier' && (int) ($supplierSource?->is_payout ?? 0) !== 1) {
+            return false;
+        }
+
+        $supplierSource->loadMissing([
+            'plan.features:id,name',
+            'plan.featurePlans.feature:id,name',
+        ]);
+
+        $directFeatures = collect($supplierSource?->plan?->features ?? [])
+            ->map(fn ($feature) => strtolower(trim((string) ($feature->name ?? ''))));
+
+        $pivotFeatures = collect($supplierSource?->plan?->featurePlans ?? [])
+            ->map(fn ($item) => strtolower(trim((string) ($item?->feature?->name ?? ''))));
+
+        $planFeatures = $directFeatures
+            ->merge($pivotFeatures)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($planFeatures)) {
+            return false;
+        }
+
+        return in_array($normalizedSubject, $planFeatures, true);
     }
 }

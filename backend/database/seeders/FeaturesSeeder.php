@@ -19,9 +19,15 @@ class FeaturesSeeder extends Seeder
             ['name' => 'clients'],
             ['name' => 'billings'],
             ['name' => 'invoices'],
+            ['name' => 'stock'],
+            ['name' => 'sold'],
+            ['name' => 'agreements'],
             ['name' => 'signed-documents'],
             ['name' => 'payouts'],
-            ['name' => 'my-team']
+            ['name' => 'notes'],
+            ['name' => 'my-team'],
+            ['name' => 'company'],
+            ['name' => 'sms']
         ]; 
         // Crear o actualizar características
         $this->createOrUpdateFeatures($features);

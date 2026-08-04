@@ -1,7 +1,7 @@
 <script setup>
 import { useLayouts } from '@layouts'
 import { config } from '@layouts/config'
-import { can } from '@layouts/plugins/casl'
+import { canWithPlan } from '@layouts/plugins/casl'
 import { useBillingsStores } from '@/stores/useBillings'
 import {
   getComputedNavLinkToProp,
@@ -19,6 +19,7 @@ const props = defineProps({
 
 const route = useRoute()
 const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'))
+const hasAccess = computed(() => canWithPlan(props.item.action, props.item.subject))
 
 const handleClick = (item) => {
   const currentRoute = route.name;
@@ -38,11 +39,12 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
 
 <template>
   <li
-    v-if="can(item.action, item.subject)"
+    v-if="!isSettingsRoute ? hasAccess : true"
     class="nav-link"
-    :class="[{ disabled: item.disable }, item.class]"
+    :class="[{ disabled: item.disable }, item.class, { 'nav-link-disabled': isSettingsRoute && !hasAccess }]"
   >
     <Component
+      v-if="hasAccess"
       v-bind="getComputedNavLinkToProp(item)"
       :is="item.to ? 'RouterLink' : 'a'"
       :class="[
@@ -85,6 +87,41 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
         </Component>
       </TransitionGroup>
     </Component>
+
+    <div
+      v-else
+      class="nav-link-setting nav-link-setting-disabled"
+    >
+      <Component
+        :is="config.app.iconRenderer || 'div'"
+        v-bind="item.icon || config.verticalNav.defaultNavItemIconProps"
+        class="nav-item-icon"
+        size="24"
+      />
+      <TransitionGroup name="transition-slide-x">
+        <Component
+          :is="config.app.enableI18n ? 'i18n-t' : 'span'"
+          v-show="!hideTitleAndBadge"
+          key="title-disabled"
+          class="nav-item-title"
+          v-bind="dynamicI18nProps(item.title, 'span')"
+        >
+          {{ item.title }}
+        </Component>
+
+        <Component
+          :is="config.app.enableI18n ? 'i18n-t' : 'span'"
+          v-if="item.badgeContent"
+          v-show="!hideTitleAndBadge"
+          key="badge-disabled"
+          class="nav-item-badge"
+          :class="item.badgeClass"
+          v-bind="dynamicI18nProps(item.badgeContent, 'span')"
+        >
+          {{ item.badgeContent }}
+        </Component>
+      </TransitionGroup>
+    </div>
   </li>
 </template>
 
@@ -103,6 +140,19 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
   .nav-link-setting-active {
     background: #E7E7E7;
     border-radius: 8px !important;
+  }
+
+  .nav-link-setting-disabled {
+    background: #FFFFFF;
+    border-radius: 8px !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .nav-link-disabled .nav-item-icon,
+  .nav-link-disabled .nav-item-title,
+  .nav-link-disabled .nav-item-badge {
+    color: #BDD2C8 !important;
   }
 }
 </style>
