@@ -442,6 +442,29 @@ body .v-btn {
     }
   }
 
+  &.btn-error {
+    background-color: transparent !important;
+    width: auto !important;
+    padding: 0 !important;
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #9B191B !important;
+      gap: 8px;
+    }
+
+    &:hover,
+    &:focus {
+      .v-btn__content,
+      .v-btn__prepend {
+        color: #FF4D4F !important;
+      }
+    }
+  }
+
   &.btn-custom-notifications {
     width: 79px !important;
     min-width: auto !important;
@@ -500,6 +523,10 @@ body .v-btn {
 
     .avatar-box {
       background-color: #f6f6f6;
+
+      img.v-img__img {
+        object-fit: contain !important;
+      }
     }
   }
 
