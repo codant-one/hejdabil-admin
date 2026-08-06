@@ -36,6 +36,9 @@ use App\Models\SmsMessage;
 use App\Models\Note;
 use App\Models\Document;
 use App\Models\Vehicle;
+use App\Models\Setting;
+
+use App\Services\CacheService;
 
 class SupplierController extends Controller
 {
@@ -124,10 +127,10 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
 
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email'=> $email,
                 'password' => $password,
@@ -220,10 +223,10 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
 
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email' => $email,
                 'password' => $password,
@@ -288,10 +291,14 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail', 'state'])
-                                ->withTrashed()
-                                ->clientsCount()
-                                ->find($id);
+            $supplier = Supplier::with([
+                'user.userDetail',
+                'state',
+                'plan'
+            ])
+            ->withTrashed()
+            ->clientsCount()
+            ->find($id);
 
             if (!$supplier)
                 return response()->json([
@@ -303,7 +310,8 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'supplier' => $supplier
+                    'supplier' => $supplier,
+                    'plans' => CacheService::getPlans(),
                 ]
             ]);
 
@@ -489,7 +497,7 @@ class SupplierController extends Controller
             return;
         }
 
-        $subject = 'Ditt Billogg-konto har avaktiverats';
+        $subject = 'Ditt Bilflogg-konto har avaktiverats';
 
         $data = [
             'title' => 'Kontot har avaktiverats',
@@ -605,6 +613,10 @@ class SupplierController extends Controller
                     'supplier_id' => $supplier->id,
                 ])
             ]);
+
+            SupplierActivity::where('entity_id', $supplier->id)
+                ->where('entity_type', 'suppliers')
+                ->update(['route' => '/dashboard/admin/suppliers/'.$supplier->id]);
 
             return response()->json([
                 'success' => true,
@@ -1095,6 +1107,17 @@ class SupplierController extends Controller
                 $filterEnd,
             );
 
+            $settings = 
+                Setting::with([
+                    'billing',
+                    'agreement', 
+                    'document'
+                ])->where('supplier_id', $supplierId)->first();
+
+            $smsActivate = $settings?->billing?->send_notifications === 1 || 
+                           $settings?->agreement?->send_notifications === 1 || 
+                           $settings?->document?->send_notifications === 1;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1108,7 +1131,8 @@ class SupplierController extends Controller
                         'vehicles_stock' => $totalVehiclesStock,
                         'sms' => $totalSMS,
                         'notes' => $totalNotes,
-                        'documents' => $totalDocuments
+                        'documents' => $totalDocuments,
+                        'smsActivate' => $smsActivate
                     ],
                     'pagination' => [
                         'total' => $totalTeamMembers,
@@ -1174,10 +1198,10 @@ class SupplierController extends Controller
 
             $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,
@@ -1605,6 +1629,29 @@ class SupplierController extends Controller
             'address' => $userDetail?->personal_address ?? $userDetail?->address,
             'permissions' => $user->permissions->pluck('name')->values()->all(),
         ];
+    }
+
+    /**
+     * Display the all plans.
+     */
+    public function plans()
+    {
+        try {
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'plans' => CacheService::getPlans(),
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
 }

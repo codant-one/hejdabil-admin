@@ -85,6 +85,10 @@ class Suppliers {
     getMasterPassword(id) {
         return axios.get(`/suppliers/master-password/${id}`)
     }
+
+    plans() {
+        return axios.get('/suppliers/plans/all')
+    }
 }
 
 const suppliers = new Suppliers();

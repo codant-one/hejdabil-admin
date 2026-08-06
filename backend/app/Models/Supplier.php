@@ -74,6 +74,10 @@ class Supplier extends Model
         return $this->hasMany(Supplier::class, 'boss_id', 'id');
     }
 
+    public function plan() {
+        return $this->belongsTo(Plan::class, 'plan_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeClientsCount($query)
     {
@@ -181,7 +185,11 @@ class Supplier extends Model
             'creator_id' => Auth::user()->id,
             'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
             'order_id' => ( $request->has('order_id') ) ? $request->order_id : null,
-            'sms_sender' => ( $request->has('sms_sender') ) ? $request->sms_sender : null
+            'sms_sender' => ( $request->has('sms_sender') ) ? $request->sms_sender : null,
+            'plan_id' => $request->plan_id,
+            'is_yearly' => $request->is_yearly,
+            'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
+            'end_date' => $request->end_date  === 'null' ? null : $request->end_date
         ]);
 
         $user_details = UserDetails::where('user_id', $user->id)->first();
@@ -198,6 +206,10 @@ class Supplier extends Model
 
         $supplier->update([
             'sms_sender' => ($request->has('sms_sender')) ? $request->sms_sender : null,
+            'plan_id' => $request->plan_id,
+            'is_yearly' => $request->is_yearly,
+            'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
+            'end_date' => $request->end_date  === 'null' ? null : $request->end_date
         ]);
         
         if( $supplier->boss_id > 0 )
@@ -332,6 +344,7 @@ class Supplier extends Model
 
             Storage::disk('public')->put($filePath, file_get_contents($file));
             $supplier->pem_url = $filePath;
+            $supplier->pem_at = now();
         } else { //Se se van a generar CSR y KEY
             $sslService = new OpenSslService();
 
@@ -354,6 +367,7 @@ class Supplier extends Model
 
             Storage::disk('public')->put($filePath, $csrAndKey['csr']);
             $supplier->csr_url = $filePath;
+            $supplier->csr_at = now();
 
             //Save KEY file
             $path = 'suppliers/key/';

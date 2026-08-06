@@ -289,18 +289,20 @@ const showDeleteDialog = async supplierData => {
 }
 
 const showSwishDialog = supplierData => {
-  isConfirmSwishDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
-  payout_number.value = supplierData.payout_number || null
-  csr_url.value = supplierData.csr_url || null
-  pem_url.value = supplierData.pem_url || null
-  is_payout.value = supplierData.is_payout === 0 ? false : true
-  pemFile.value = []
-  swishStep.value = 1
+  // isConfirmSwishDialogVisible.value = true
+  // selectedSupplier.value = { ...supplierData }
+  // payout_number.value = supplierData.payout_number || null
+  // csr_url.value = supplierData.csr_url || null
+  // pem_url.value = supplierData.pem_url || null
+  // is_payout.value = supplierData.is_payout === 0 ? false : true
+  // pemFile.value = []
+  // swishStep.value = 1
 
-  nextTick(() => {
-    refForm.value?.resetValidation()
-  })
+  // nextTick(() => {
+  //   refForm.value?.resetValidation()
+  // })
+
+  router.push({ name : 'dashboard-admin-suppliers-swish-id', params: { id: supplierData.id } })
 }
 
 const closeSwishDialog = () => {

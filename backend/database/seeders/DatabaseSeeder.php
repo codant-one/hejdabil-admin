@@ -57,6 +57,7 @@ class DatabaseSeeder extends Seeder
 
             //plans
             FeaturesSeeder::class,
+            PlanSeeder::class,
         ]);
 
     }

@@ -1,4 +1,29 @@
 import { isToday } from './index'
+import { themeConfig } from '@themeConfig'
+
+export const getRemoteFileSize = async filePath => {
+    if (!filePath) return null
+
+    try {
+        const url = openStorageFileUrl(filePath)
+        const response = await fetch(url, { method: 'HEAD' })
+        if (!response.ok) return null
+
+        const contentLength = response.headers.get('content-length')
+        if (!contentLength) return null
+
+        const bytes = Number(contentLength)
+        return Number.isFinite(bytes) ? bytes : null
+    } catch {
+        return null
+    }
+}
+
+export const openStorageFileUrl = filePath => {
+  if (!filePath) return ''
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath
+  return `${themeConfig.settings.urlStorage}${filePath}`
+}
 
 export const avatarText = value => {
   if (!value)
@@ -75,6 +100,21 @@ export const formatDateTime = (dateString) => {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${year}/${month}/${day} ${hours}:${minutes}`;
 };
+
+
+export const formatDateSimple = value => {
+    if (!value) return ''
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+
+    const swedishShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+    const day = date.getDate()
+    const month = swedishShortMonths[date.getMonth()]
+    const year = date.getFullYear()
+
+    return `${day} ${month} ${year}`
+}
 
 /**
  * Format date to DD mmm YYYY, HH:mm using Swedish short month names
@@ -171,4 +211,26 @@ export const formatCommentDate = (dateString) => {
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
     return `${day} ${month} ${year}, ${hours}:${minutes}`
+}
+
+export const getFileNameFromPath = filePath => {
+    if (!filePath) return ''
+    return filePath.split('/').pop()?.split('?')[0] || ''
+}
+
+export const formatFileSize = bytes => {
+    const size = Number(bytes)
+    if (!Number.isFinite(size) || size <= 0) return 'okand storlek'
+
+    const units = ['b', 'kb', 'mb', 'gb', 'tb']
+    let unitIndex = 0
+    let value = size
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024
+        unitIndex += 1
+    }
+
+    const rounded = value >= 10 || unitIndex === 0 ? Math.round(value) : Number(value.toFixed(1))
+    return `${rounded} ${units[unitIndex]}`
 }
