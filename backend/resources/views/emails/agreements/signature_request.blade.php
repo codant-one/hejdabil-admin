@@ -96,5 +96,6 @@
         </td>
     </tr>
     @endif
+    @include('emails.layouts.copy')
 </table>             
 @endsection

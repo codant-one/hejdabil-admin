@@ -58,5 +58,7 @@
 			</p>
 		</td>
 	</tr>
+
+	@include('emails.layouts.copy')
 </table>
 @endsection

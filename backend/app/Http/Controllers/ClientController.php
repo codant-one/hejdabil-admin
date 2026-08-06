@@ -133,9 +133,26 @@ class ClientController extends Controller
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
+            $driverErrorCode = (int) ($ex->errorInfo[1] ?? 0);
+            $isDuplicateOrganizationNumber = $driverErrorCode === 1062
+                && Str::contains($ex->getMessage(), 'clients_supplier_org_unique');
+            $deletedClientId = null;
+
+            if ($isDuplicateOrganizationNumber) {
+                $deletedClientId = Client::onlyTrashed()
+                    ->where('organization_number', $request->organization_number)
+                    ->applyFilters([
+                        'supplier_id' => $request->supplier_id === 'null' ? null : $request->supplier_id,
+                    ])
+                    ->value('id');
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'database_error '.$ex->getMessage(),
+                'message' => $isDuplicateOrganizationNumber
+                    ? 'active_client'
+                    : 'database_error '.$ex->getMessage(),
+                'client_id' => $deletedClientId,
                 'exception' => $ex->getMessage()
             ], 500);
         }
@@ -257,9 +274,26 @@ class ClientController extends Controller
             ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
+            $driverErrorCode = (int) ($ex->errorInfo[1] ?? 0);
+            $isDuplicateOrganizationNumber = $driverErrorCode === 1062
+                && Str::contains($ex->getMessage(), 'clients_supplier_org_unique');
+            $deletedClientId = null;
+
+            if ($isDuplicateOrganizationNumber) {
+                $deletedClientId = Client::onlyTrashed()
+                    ->where('organization_number', $request->organization_number)
+                    ->applyFilters([
+                        'supplier_id' => $request->supplier_id === 'null' ? null : $request->supplier_id,
+                    ])
+                    ->value('id');
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'database_error',
+                'message' => $isDuplicateOrganizationNumber
+                    ? 'active_client'
+                    : 'database_error '.$ex->getMessage(),
+                'client_id' => $deletedClientId,
                 'exception' => $ex->getMessage()
             ], 500);
         }

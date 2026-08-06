@@ -30,6 +30,7 @@
                 <strong>E-post:</strong> {!! $company->email !!}
             </p><br>
         </td>
-    </tr>         
+    </tr>        
+    @include('emails.layouts.copy') 
 </table>        
 @endsection
