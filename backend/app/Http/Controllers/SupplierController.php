@@ -614,6 +614,10 @@ class SupplierController extends Controller
                 ])
             ]);
 
+            SupplierActivity::where('entity_id', $supplier->id)
+                ->where('entity_type', 'suppliers')
+                ->update(['route' => '/dashboard/admin/suppliers/'.$supplier->id]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
