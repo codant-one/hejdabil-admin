@@ -394,6 +394,23 @@ class ClientController extends Controller
             
             $client->activateClient($id);
 
+             SupplierActivity::createActivity([
+                'entity_id' => $client->id,
+                'entity_type' => 'clients',
+                'action_type' => 'activate_client',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' aktiverad',
+                'description' => 'Kunden har aktiverats.',
+                'icon' => 'custom-clients',
+                'route' => '/dashboard/admin/clients/'.$client->id,
+                'metadata' => json_encode([
+                    'client_id' => $client->id
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $client->id)
+                ->where('entity_type', 'clients')
+                ->update(['route' => '/dashboard/admin/clients/'.$client->id]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
