@@ -13,6 +13,7 @@ use App\Models\Billing;
 use App\Models\Notification;
 use App\Models\Payout;
 use App\Models\Reminder;
+use App\Models\SmsMessage;
 use App\Models\Supplier;
 use App\Models\SupplierActivity;
 use App\Models\Vehicle;
@@ -583,6 +584,12 @@ class DashboardController extends Controller
             $filterEnd,
         );
 
+        $smsSentByMonth = $this->getMonthlySmsSentTotals(
+            $supplierId,
+            $filterStart,
+            $filterEnd,
+        );
+
         $totalsByMonth = $purchasePriceByMonth->mapWithKeys(function ($item) {
             return [
                 $item->month => round((float) $item->total_purchase_price, 2),
@@ -601,6 +608,12 @@ class DashboardController extends Controller
             ];
         });
 
+        $totalsSmsSentByMonth = $smsSentByMonth->mapWithKeys(function ($item) {
+            return [
+                $item->month => (int) $item->total_sms_sent,
+            ];
+        });
+
         $months = [];
         $cursor = $chartStartMonth->copy();
 
@@ -609,6 +622,7 @@ class DashboardController extends Controller
             $totalPurchasePrice = $totalsByMonth->get($monthKey, 0);
             $totalSalePrice = $totalsSaleByMonth->get($monthKey, 0);
             $totalCost = $totalsTaskCostByMonth->get($monthKey, 0);
+            $totalSmsSent = $totalsSmsSentByMonth->get($monthKey, 0);
             $totalProfit = round((float) ($totalSalePrice - $totalPurchasePrice - $totalCost), 2);
 
             $months[] = [
@@ -622,6 +636,7 @@ class DashboardController extends Controller
                 'total_cost_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalCost),
                 'total_profit' => $totalProfit,
                 'total_profit_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalProfit),
+                'total_sms_sent' => $totalSmsSent,
             ];
 
             $cursor->addMonth();
@@ -630,6 +645,7 @@ class DashboardController extends Controller
         $totalPurchasePrice = round((float) $totalsByMonth->sum(), 2);
         $totalSalePrice = round((float) $totalsSaleByMonth->sum(), 2);
         $totalCost = round((float) $totalsTaskCostByMonth->sum(), 2);
+        $totalSmsSent = (int) $totalsSmsSentByMonth->sum();
 
         return [
             'months' => $months,
@@ -637,7 +653,28 @@ class DashboardController extends Controller
             'totalSalePrice' => $totalSalePrice,
             'totalCost' => $totalCost,
             'totalProfit' => round((float) ($totalSalePrice - $totalPurchasePrice - $totalCost), 2),
+            'totalSmsSent' => $totalSmsSent,
         ];
+    }
+
+    private function getMonthlySmsSentTotals(
+        int $supplierId,
+        Carbon $filterStart,
+        Carbon $filterEnd,
+    ) {
+        return SmsMessage::query()
+            ->selectRaw("DATE_FORMAT(sent_at, '%Y-%m') as month")
+            ->selectRaw('COUNT(*) as total_sms_sent')
+            ->whereNotNull('sent_at')
+            ->where('billable_count', '>', 0)
+            ->whereBetween('sent_at', [
+                $filterStart->toDateString(),
+                $filterEnd->toDateString(),
+            ])
+            ->where('supplier_id', $supplierId)
+            ->groupBy(DB::raw("DATE_FORMAT(sent_at, '%Y-%m')"))
+            ->orderBy('month')
+            ->get();
     }
 
     private function getMonthlyVehicleTotals(
