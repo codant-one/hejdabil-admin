@@ -20,6 +20,10 @@ class Supplier extends Model
 
     protected $guarded = [];
     protected $appends = ['full_name', 'user_name'];
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
 
     /**** Relationship ****/
     public function user() {
@@ -171,8 +175,8 @@ class Supplier extends Model
         return $query->paginate($limit);
     }
 
-     /**** Public methods ****/
-     public static function createSupplier($request) {
+    /**** Public methods ****/
+    public static function createSupplier($request) {
         $user = User::createUser($request);
 
         if( $request->has('boss_id') )

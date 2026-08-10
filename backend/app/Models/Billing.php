@@ -484,13 +484,25 @@ class Billing extends Model
 
         $array = json_decode($billing->detail, true);
 
-        foreach ($array[0] as &$item) {
-            if ($item['id'] == 3 || $item['id'] == 4) {
-                $numericValue = is_numeric($item['value']) ? (float)$item['value'] : null;
-                if ($numericValue !== null) {
-                    $item['value'] = '-' . ltrim($item['value'], '-'); // Agrega signo negativo (o lo mantiene si ya lo tiene)
+        if (is_array($array)) {
+            foreach ($array as &$group) {
+                if (!is_array($group))
+                    continue;
+
+                foreach ($group as &$item) {
+                    if (!is_array($item) || !isset($item['id']))
+                        continue;
+
+                    if ($item['id'] == 3 || $item['id'] == 4) {
+                        $numericValue = is_numeric($item['value']) ? (float)$item['value'] : null;
+                        if ($numericValue !== null) {
+                            $item['value'] = '-' . ltrim((string) $item['value'], '-');
+                        }
+                    }
                 }
+                unset($item);
             }
+            unset($group);
         }
 
         // Marcar la factura original como crédito
@@ -515,9 +527,9 @@ class Billing extends Model
             'rabatt' =>  $billing->rabatt,
             'discount' =>  $billing->discount,
             'amount_discount' =>  $billing->amount_discount,
-            'amount_tax' => $billing->amount_tax,
+            'amount_tax' => '-' . $billing->amount_tax,
             'subtotal' => '-' . $billing->subtotal,
-            'tax' =>  '-' . $billing->tax,
+            'tax' =>  $billing->tax,
             'total' =>  '-' . $billing->total,
             'detail' => json_encode($array, true)
         ]);    

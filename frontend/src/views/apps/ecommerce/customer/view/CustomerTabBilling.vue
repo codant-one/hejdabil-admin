@@ -2,31 +2,25 @@
 
 import { formatNumber } from '@/@core/utils/formatters'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
+import { themeConfig } from '@themeConfig'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import companyAvatar from "@/assets/images/avatars/company.svg";
 
 const { width: windowWidth } = useWindowSize();
 
 const route = useRoute()
 const suppliersStores = useSuppliersStores()
+const supplierInvoicesStores = useSupplierInvoicesStores()
 const exporteraMobile = ref(false);
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalBillings = ref(0)
-const isRequestOngoing = ref(true)
 const state_id = ref(null)
 
-const advisor = ref({
-  type: '',
-  message: '',
-  show: false
-})
-
 const props = defineProps({
-  addresses: {
-    type: Object,
-    required: false
-  },
   customerData: {
     type: Object,
     required: false,
@@ -37,48 +31,27 @@ const props = defineProps({
   }
 })
 
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
+
 const emit = defineEmits([
   'submit',
   'delete',
   'alert',
-  'updateBalance'
-])
-
-const show = ref([
-  true,
-  false,
-  false,
+  'loading'
 ])
 
 const isEditAddressDialogVisible = ref(false)
 const selectedAddress = ref({})
 const billings = ref([])
+const selectedBilling = ref({})
+const isConfirmKreditera = ref(false)
 
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
-
-const accountTypes = [
-  {
-    icon: {
-      icon: 'mdi-cash-multiple',
-      size: '40',
-    },
-    title: 'Cuenta Corriente',
-    value: '1',
-  },
-  {
-    icon: {
-      icon: 'tabler-pig-money',
-      size: '40',
-    },
-    title: 'Cuenta de Ahorros',
-    value: '2',
-  }
-]
-
-const type_account = ref('1')
-const document = ref(null)
-const icon_type = ref(null)
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -89,11 +62,6 @@ const paginationData = computed(() => {
 
   // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
 })
-
-watch(() =>  
-  props.addresses, (addreses_) => {
-    addresses_.value = addreses_
-  });
 
 watchEffect(() => {
   if (!isEditAddressDialogVisible.value)
@@ -120,84 +88,182 @@ async function fetchData(cleanFilters = false) {
     state_id: state_id.value
   }
 
-  isRequestOngoing.value = searchQuery.value !== '' ? false : true
-
   if(Number(route.params.id)) {
     if(props.isSupplier && props.customerData.id !== null) {
-      billings.value =[
-        {
-          id: 1,
-          name: "Maria Test Cast",
-          start_date: '2024-01-01',
-          end_date: '2024-01-31',
-          amount: 30,
-            state_id: 7,
-            state_name: 'Betald'
-        },
-        {
-          id: 2,
-          name: "Maria Test Cast",
-          start_date: '2024-02-01',
-          end_date: '2024-02-29',
-          amount: 30,
-          state_id: 7,
-          state_name: 'Betald'
-        },
-        {
-          id: 3,
-          name: "Maria Test Cast",
-          start_date: '2024-03-01',
-          end_date: '2024-03-31',
-          amount: 30,
-          state_id: 7,
-          state_name: 'Betald'
-        },
-        {
-          id: 4,
-          name: "Maria Test Cast",
-          start_date: '2024-04-01',
-          end_date: '2024-04-30',
-          amount: 30,
-          state_id: 4,        
-          state_name: 'Obetald'
-        },
-        {
-          id: 5,
-          name: "Maria Test Cast",
-          start_date: '2024-05-01',
-          end_date: '2024-05-31',
-          amount: 30,
-          state_id: 4,
-          state_name: 'Obetald'
-        }
-      ]
+      data.supplier_id = props.customerData.id
 
-      totalPages.value = 1;//billings.value.length
-      totalBillings.value = billings.value.length
+      try {
 
-      isRequestOngoing.value = false
+        emit("loading", true);
+        
+        await supplierInvoicesStores.fetchSupplierInvoices(data)
+
+        emit("loading", false);
+
+        const supplierInvoices = Array.isArray(supplierInvoicesStores.getSupplierInvoices)
+          ? supplierInvoicesStores.getSupplierInvoices
+          : []
+
+        billings.value = supplierInvoices.map(invoice => ({
+          id: invoice.id,
+          user_id: invoice.user_id,
+          invoice_id: invoice.invoice_id,
+          period: invoice.billing_period,
+          name: [invoice.supplier?.user?.name, invoice.supplier?.user?.last_name].filter(Boolean).join(' ') || '-',
+          start_date: invoice.invoice_date,
+          end_date: invoice.due_date,
+          amount: Number(invoice.total ?? 0) + Number(invoice.amount_discount ?? 0),
+          state_id: invoice.state_id,
+          state_name: invoice.state?.name ?? '-',
+          file: invoice.file,
+          is_credit: invoice.is_credit,
+          user: {
+            name: invoice.user?.name ?? '-',
+            last_name: invoice.user?.last_name ?? '',
+            email: invoice.user?.email ?? '',
+            avatar: invoice.user?.avatar ?? null,
+            user_detail: {
+              avatar_id: invoice.user?.user_detail?.avatar_id ?? null,
+            },
+          },
+        }))
+
+        totalPages.value = supplierInvoicesStores.last_page
+        totalBillings.value = supplierInvoicesStores.supplierInvoicesTotalCount
+      } finally {
+        emit("loading", false);
+      }
     }
   }
 }
 
-const showDeleteDialog = addressData => {
-  emit('delete', addressData)
+const updateBillingState = async billing => {
+  if (!billing?.id)
+    return
+
+  try {
+    await supplierInvoicesStores.updateState(billing.id)
+    await fetchData()
+  } finally {
+    emit("loading", false);
+  }
 }
 
-const onSubmit = (address, method) => {
-  emit('submit', address, method)
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
+
+const openBillingPdf = billing => {
+  if (!billing?.file)
+    return
+
+  window.open(themeConfig.settings.urlStorage + billing.file)
+}
+
+const printBilling = async billing => {
+  if (!billing?.file)
+    return
+
+  try {
+    const response = await fetch(
+      themeConfig.settings.urlbase + "proxy-image?url=" + themeConfig.settings.urlStorage + billing.file
+    )
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = blobUrl
+
+    iframe.onload = () => {
+      iframe.contentWindow.print()
+    }
+
+    document.body.appendChild(iframe)
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
+
+const downloadBillingPdf = async (billing) => {
+  if (!billing?.file)
+    return
+
+
+  try {
+    const response = await fetch(
+      themeConfig.settings.urlbase + "proxy-image?url=" + themeConfig.settings.urlStorage + billing.file
+    );
+    const blob = await response.blob();
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = billing.file.split("/").pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+const credit = billing => {
+  if (!billing?.id)
+    return
+
+  selectedBilling.value = { ...billing }
+  isConfirmKreditera.value = true
+}
+
+const kreditera = async () => {
+  if (!selectedBilling.value?.id)
+    return
+
+  emit("loading", true);
+  isConfirmKreditera.value = false
+
+  try {
+    await supplierInvoicesStores.credit(Number(selectedBilling.value.id))
+    selectedBilling.value = {}
+
+    advisor.value.show = true
+    advisor.value.type = 'success'
+    advisor.value.message = 'Framgångsrik kredit'
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      emit('alert', advisor)
+    }, 5000)
+
+    await fetchData()
+  } finally {
+    emit("loading", false);
+  }
 }
 
 const resolveStatus = state_id => {
+  if (state_id === 4)
+    return { class: 'pending' }
   if (state_id === 7)
     return { class: 'success' }
-  if (state_id === 4)
+  if (state_id === 8)
+    return { class: 'error' }
+  if (state_id === 9)
     return { class: 'error' }
 }
 
 const downloadPDF = async () => {
   exporteraMobile.value = false
-  isRequestOngoing.value = true
+  emit("loading", true);
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
   const escapeHtml = value => String(value ?? '')
@@ -235,7 +301,6 @@ const downloadPDF = async () => {
       landline: element.user.user_detail.landline ?? "",
       sender: element.sms_sender ?? '',
       organizationNumber: element.user.user_detail.organization_number ?? "",
-      clients: element.client_count,
       creator: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
       status: element.state.name
     }))
@@ -321,14 +386,14 @@ const downloadPDF = async () => {
     if (pdfContainer?.parentNode)
       pdfContainer.parentNode.removeChild(pdfContainer)
 
-    isRequestOngoing.value = false
+    emit("loading", false);
   }
 
 }
 
 const downloadCSV = async () => {
   exporteraMobile.value = false
-  isRequestOngoing.value = true
+  emit("loading", true);
 
   let data = { limit: -1 }
 
@@ -346,7 +411,6 @@ const downloadCSV = async () => {
       ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
       SWISH: element.payout_number ?? '',
       SENDER: element.sms_sender ?? '',
-      REGISTRERADE_KUNDER:  element.client_count,
       SKAPAD_AV: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
       STATUS: element.state.name
     }
@@ -357,7 +421,7 @@ const downloadCSV = async () => {
   excelParser()
     .exportDataFromJSON(dataArray, "suppliers", "csv");
 
-  isRequestOngoing.value = false
+  emit("loading", false)
 
 }
 
@@ -378,7 +442,7 @@ const downloadCSV = async () => {
 
       <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-      <div class="d-flex">
+      <div class="d-flex gap-2">
         <VMenu v-if="windowWidth >= 1024">
           <template #activator="{ props }">
             <VBtn
@@ -393,10 +457,10 @@ const downloadCSV = async () => {
           </template>
 
           <VList>
-            <VListItem @click="downloadPDF">
+            <VListItem>
               <VListItemTitle>Exportera PDF</VListItemTitle>
             </VListItem>
-            <VListItem @click="downloadCSV">
+            <VListItem>
               <VListItemTitle>Exportera Excel</VListItemTitle>
             </VListItem>
           </VList>
@@ -411,6 +475,14 @@ const downloadCSV = async () => {
         >
           <VIcon icon="custom-export" size="24" />
           Exportera
+        </VBtn>
+
+        <VBtn
+          class="btn-gradient"
+          block
+        >
+          <VIcon icon="custom-plus" size="24" />
+          Ny faktura
         </VBtn>
       </div>
 
@@ -449,11 +521,13 @@ const downloadCSV = async () => {
       <!-- 👉 table head -->
       <thead>
         <tr>
-          <th scope="col"> Namn</th>
-          <th scope="col" class="text-center"> Startdatum </th>
-          <th scope="col" class="text-center"> Förfallodatum </th>
+          <th scope="col" class="text-center"> # Faktura</th>
+          <th scope="col" class="text-center"> Period </th>
+          <th scope="col" class="text-center"> Fakturadatum </th>
+          <th scope="col" class="text-center"> Förfaller </th>
           <th scope="col" class="text-center"> Belopp </th>
           <th scope="col" class="text-center"> Status </th>
+          <th scope="col">Skapad av</th>
           <th scope="col"></th>
         </tr>
       </thead>
@@ -464,7 +538,8 @@ const downloadCSV = async () => {
             :key="billing.id"
             style="height: 3rem;">
 
-            <td> {{ billing.name }} </td>
+            <td class="text-center"> {{ billing.invoice_id }} </td>
+            <td class="text-center"> {{ billing.period }} </td>
             <td class="text-center"> {{ billing.start_date }} </td>
             <td class="text-center"> {{ billing.end_date }} </td>
             <td class="text-center"> {{ formatNumber(billing.amount) ?? "0,00" }} kr </td>
@@ -476,6 +551,60 @@ const downloadCSV = async () => {
                 {{ billing.state_name }}
               </div>
             </td>
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1" v-if="billing.user_id !== null">
+                <VAvatar
+                  variant="outlined"
+                  size="38"
+                >
+                  <VImg
+                    v-if="billing.user?.avatar"
+                    style="border-radius: 50%"
+                    :src="themeConfig.settings.urlStorage + billing.user.avatar"
+                  />
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="billing.user?.user_detail?.avatar_id"
+                  />
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium">
+                    {{ billing.user?.name ?? '-' }} {{ billing.user?.last_name ?? "" }}
+                  </span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip 
+                      v-if="billing.user?.email && billing.user.email.length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ truncateText(billing.user?.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ billing.user?.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ billing.user?.email }}</span>
+                  </span>
+                </div>
+              </div>
+              <div class="d-flex align-center gap-x-1" v-else>
+                <VAvatar
+                  variant="outlined"
+                  size="38"
+                  class="supplier-company-logo-avatar"
+                >
+                  <VImg
+                    style="border-radius: 50%"
+                    :src="companyAvatar"
+                  />
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium text-aqua">
+                    automatisk
+                  </span>
+                  <span class="text-sm text-disabled">faktura</span>
+                </div>
+              </div>
+            </td>  
             <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;">
               <VMenu>
@@ -486,42 +615,59 @@ const downloadCSV = async () => {
                 </template>
 
                 <VList>
+                  <VListItem
+                    v-if="$can('view', 'billings')"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Se detaljer</VListItemTitle>
+                  </VListItem>
                   <VListItem 
-                    v-if="billing.state_id === 4"
-                    @click="">
+                    v-if="billing.state_id === 4 || billing.state_id === 8"
+                    @click="updateBillingState(billing)">
                     <template #prepend>
                       <VIcon icon="custom-bribery" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Markera som betald</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="billing.state_id === 7"
-                      @click="">
+                      v-if="billing.state_id === 7 && billing.is_credit === 0"
+                      @click="updateBillingState(billing)">
                     <template #prepend>
                       <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Markera som obetald</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    @click="">
+                    @click="printBilling(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-print" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Skriv ut</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    @click="openBillingPdf(billing)">
                     <template #prepend>
                       <VIcon icon="custom-pdf" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    @click="">
+                    @click="downloadBillingPdf(billing)">
                     <template #prepend>
                       <VIcon icon="custom-download" />
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem 
-                    @click="">
+                  <VListItem
+                    v-if="billing.state_id !== 9 && billing.is_credit === 0"
+                    @click="credit(billing)"
+                  >
                     <template #prepend>
-                      <VIcon icon="custom-waste" size="24" />
+                      <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Ta bort</VListItemTitle>
+                    <VListItemTitle>Kreditera</VListItemTitle>
                   </VListItem>
                 </VList>
               </VMenu>
@@ -541,7 +687,7 @@ const downloadCSV = async () => {
     </VTable>
 
     <div
-      v-if="!isRequestOngoing && !billings.length"
+      v-if="!billings.length"
       class="empty-state"
       :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
     >
@@ -564,30 +710,38 @@ const downloadCSV = async () => {
       >
         <VExpansionPanel v-for="billing in billings" :key="billing.id">
           <VExpansionPanelTitle
-            class="mt-2"
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
-          >
-            <div class="d-flex align-center w-100">
-              <div class="d-flex flex-column gap-1">
-                <span class="text-aqua">
-                  {{ billing.name }}
-                </span>
-                <span class="text-neutral-3">
+          > 
+            <span class="order-id">
+              {{ billing.invoice_id }}
+            </span>
+            <div class="d-flex align-center justify-between w-100">
+              <div class="order-title-box">
+                <span class="title-panel">
+                  {{ billing.period }}
+                </span>    
+                <div class="title-organization">
+                  Belopp
+                  <div class="text-black">
+                    {{ formatNumber(billing.amount) ?? "0,00" }} kr
+                  </div>
+                </div>        
+              </div>
+              <span class="text-neutral-3 me-4">
                   <div
-                    class="status-chip pb-2"
+                    class="status-chip-mobile pb-2"
                     :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
                   >
                     {{ billing.state_name }}
                   </div>
                 </span>
-              </div>
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6 d-flex justify-between flex-wrap gap-4">
               <div>
-                <div class="expansion-panel-item-label">Startdatum:</div>
+                <div class="expansion-panel-item-label">Fakturadatum:</div>
                 <div class="expansion-panel-item-value">
                   {{ billing.start_date ?? "---" }}
                 </div>
@@ -595,35 +749,16 @@ const downloadCSV = async () => {
             </div>
             <div class="mb-6 d-flex justify-between flex-wrap gap-4">
               <div>
-                <div class="expansion-panel-item-label">Förfallodatum:</div>
+                <div class="expansion-panel-item-label">Förfaller:</div>
                 <div class="expansion-panel-item-value">
                   {{ billing.end_date ?? "---" }}
                 </div>
               </div>
             </div>
-            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
-              <div>
-                <div class="expansion-panel-item-label">Belopp:</div>
-                <div class="expansion-panel-item-value">
-                  {{ formatNumber(billing.amount) ?? "0,00" }} kr
-                </div>
-              </div>
-            </div>
             <div class="d-flex gap-4">
-              <VBtn class="btn-light flex-1"
-                v-if="billing.state_id === 4"
-                @click=""
-              >
-                <VIcon icon="custom-bribery" size="24" />
-                Markera som betald
-              </VBtn>
-
-              <VBtn class="btn-light flex-1"
-                v-if="billing.state_id === 7"
-                @click=""
-              >
-                <VIcon icon="custom-money-transfer" size="24" />
-                Markera som obetald
+              <VBtn class="btn-light flex-1">
+                <VIcon icon="custom-eye" size="24" />
+                Se detaljer
               </VBtn>
               
               <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
@@ -665,11 +800,11 @@ const downloadCSV = async () => {
   >
     <VCard>
       <VList>
-        <VListItem @click="downloadPDF">
+        <VListItem>
           <VListItemTitle>Exportera PDF</VListItemTitle>
         </VListItem>
 
-        <VListItem @click="downloadCSV">
+        <VListItem>
           <VListItemTitle>Exportera Excel</VListItemTitle>
         </VListItem>
       </VList>
@@ -685,29 +820,92 @@ const downloadCSV = async () => {
       <VCard>
         <VList>
           <VListItem
-              @click="isMobileActionDialogVisible = false;">
+            v-if="selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8"
+            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-cash-2" size="24" />
+            </template>
+            <VListItemTitle>Markera som betald</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
+            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Markera som obetald</VListItemTitle>
+          </VListItem>
+          <VListItem
+              @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-print" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Skriv ut</VListItemTitle>
+          </VListItem>
+          <VListItem
+              @click="openBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pdf" size="24" class="mr-2" />
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
           <VListItem 
-            @click="isMobileActionDialogVisible = false;">
+            @click="downloadBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-download" size="24" class="mr-2" />
             </template>
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
-          <VListItem 
-            @click="isMobileActionDialogVisible = false;">
+          <VListItem
+            v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
+            @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
             <template #prepend>
-              <VIcon icon="custom-waste" size="24" />
+              <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
             </template>
-            <VListItemTitle>Ta bort</VListItemTitle>
+            <VListItemTitle>Kreditera</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>
     </VDialog>
+
+  <VDialog
+    v-model="isConfirmKreditera"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmKreditera = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-cancel-contract" class="action-icon" />
+        <div class="dialog-title">
+          Kreditera faktura
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        En hel kreditering innebär att du tar bort din fordran på leverantörer till fullo.
+        Är du säker på att du vill kreditera fakturan
+        <strong>#{{ selectedBilling.invoice_id }}</strong
+        >?
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmKreditera = false">
+          Avbryt
+        </VBtn>
+        <VBtn class="btn-gradient" @click="kreditera"> Kreditera </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style>

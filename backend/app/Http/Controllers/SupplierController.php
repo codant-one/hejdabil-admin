@@ -968,11 +968,6 @@ class SupplierController extends Controller
                         ->orWhere('boss_id', $supplierId);
                 })
                 ->whereNotNull('boss_id')
-                ->whereNotNull('created_at')
-                ->whereBetween('created_at', [
-                    $filterStart->toDateTimeString(),
-                    $filterEnd->toDateTimeString(),
-                ])
                 ->withTrashed()
                 ->clientsCount()
                 ->acceptedSmsCount($filterStart, $filterEnd)

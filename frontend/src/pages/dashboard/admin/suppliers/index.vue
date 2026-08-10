@@ -1,7 +1,6 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { nextTick } from 'vue';
 import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'

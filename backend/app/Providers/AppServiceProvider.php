@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+
 use App\Observers\CatalogObserver;
+use App\Observers\SupplierObserver;
 
 // Models to observe
 use App\Models\{
@@ -29,6 +31,7 @@ use App\Models\{
     Invoice,
     Client
 };
+
 use Spatie\Permission\Models\{Permission, Role};
 
 class AppServiceProvider extends ServiceProvider
@@ -67,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
         CommissionType::observe(CatalogObserver::class);
         DocumentType::observe(CatalogObserver::class);
         Supplier::observe(CatalogObserver::class);
+        Supplier::observe(SupplierObserver::class);
         Invoice::observe(CatalogObserver::class);
         Client::observe(CatalogObserver::class);
         Permission::observe(CatalogObserver::class);
