@@ -29,7 +29,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('supplier:generate-billing')
                  ->daily()
-                 ->at('06:26')
+                 ->at('06:27')
                  ->after(function () {
                     Artisan::call('suppliers:update-plan-date');
                  })
