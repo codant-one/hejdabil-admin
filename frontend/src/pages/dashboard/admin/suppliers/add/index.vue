@@ -323,7 +323,7 @@ const getTabValidationErrors = () => {
 
     const hasTab2Errors = !name.value ||
                           !last_name.value ||
-                          !email.value ||
+                          (email.value && emailValidator(email.value) !== true) ||
                           !start_date.value
 
     return {
@@ -877,8 +877,8 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
-                                                disabled
                                                 v-model="email"
+                                                :rules="[requiredValidator, emailValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
