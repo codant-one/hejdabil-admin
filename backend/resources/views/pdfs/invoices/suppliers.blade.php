@@ -262,7 +262,7 @@
         <div class="page-background"></div>
 
         <!------------------------- BILL TO---------------------------------->
-        <div style="position: fixed; bottom: 230px; left: 45px; right: 45px; padding: 16px;" class="card-classic">
+        <div style="position: fixed; bottom: 90px; left: 45px; right: 45px; padding: 16px;" class="card-classic">
             <table width="100%" class="table-supplier style-supplier">
                 <tr>
                     <td width="25%">
