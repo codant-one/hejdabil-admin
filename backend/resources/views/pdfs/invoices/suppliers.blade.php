@@ -247,7 +247,7 @@
         @php
             $rowHeight = 48;
             $reservedContentHeight = 250;
-            $availableHeight = 830 - 45 - 45 - 200;
+            $availableHeight = 800 - 45 - 45 - 200;
             $minSpacerPadding = 16;
             $rowsPerPage = max(1, (int) floor(($availableHeight - $reservedContentHeight - $minSpacerPadding) / $rowHeight));
             $invoicePages = collect($invoices)->chunk($rowsPerPage)->values();
