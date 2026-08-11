@@ -6,7 +6,7 @@
                     @if(isset($logo))
                         <img src="{{ $logo }}" alt="Company Logo" title="Company Logo" width="100" />
                     @else
-                        <img src="{{ asset('/images/main.png') }}" alt="Billogg" title="Billogg" width="104" />
+                        <img src="{{ asset('/images/main.png') }}" alt="Bilflogg" title="Bilflogg" width="104" />
                     @endif
                 </td>
             </tr>

@@ -1,8 +1,8 @@
 <script setup>
 
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useRoute } from 'vue-router'
 import { useDisplay } from "vuetify";
-import { themeConfig } from '@themeConfig'
 import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import { useDashboardStores } from '@/stores/useDashboard'
 import { useAuthStores } from '@/stores/useAuth';
@@ -422,13 +422,19 @@ onBeforeUnmount(() => {
       <VCard title="" class="card-transparent">
         
         <div class="dashboard-grid">
-          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-6 h-card"
+            :style="canWithPlan('view', 'stock') ? 'height: 392px !important;' : 'height: 480px !important;'"
+          >
             <Activities 
               :activities="activities?.activities" 
               :notifications="notifications?.notifications"
             />
           </div>
-          <div class="dashboard-grid__item dashboard-grid__item--md-6">
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-6" 
+            v-if="canWithPlan('view', 'stock') && canWithPlan('view', 'sold')"
+          >
             <Indicators
               :company="company"
               :indicators="indicators"
@@ -437,7 +443,10 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-10">
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-10"
+            v-if="canWithPlan('view', 'stock') && canWithPlan('view', 'sold')"
+          >
             <Statisticians 
               :company="company"
               :statisticians="statisticians" 
@@ -445,7 +454,11 @@ onBeforeUnmount(() => {
               @filter="handleStatisticiansFilter" 
             />
           </div>
-          <div class="dashboard-grid__item dashboard-grid__item--md-2">
+
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-2"
+            v-if="canWithPlan('view', 'stock') && canWithPlan('view', 'sold')"
+          >
             <Profit :profit="profit" />
           </div>
 
@@ -461,7 +474,12 @@ onBeforeUnmount(() => {
               @advisor="handleAdvisor"
             />
           </div>
-          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card" style="height: 480px !important;">
+
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-6 h-card" 
+            style="height: 480px !important;"
+            v-if="canWithPlan('view', 'stock') && canWithPlan('view', 'sold')"
+          >
             <Measures
               :measures="measures"
               @loading="handleStatisticiansLoading"
@@ -469,7 +487,10 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-12">
+          <div 
+            class="dashboard-grid__item dashboard-grid__item--md-12"
+            v-if="canWithPlan('view', 'stock') && canWithPlan('view', 'sold')"
+          >
             <VehicleInfo
               :stock-vehicles="vehicles?.stockVehicles"
               :sold-vehicles="vehicles?.soldVehicles"
@@ -478,7 +499,10 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-12" v-if="$can('view','team-reports')">
+          <div
+            class="dashboard-grid__item dashboard-grid__item--md-12" 
+            v-if="$can('view','team-reports') && canWithPlan('view', 'my-team')"
+          >
             <Team
               :team-members="team?.teamMembers"
               :team-totals="team?.teamTotals"

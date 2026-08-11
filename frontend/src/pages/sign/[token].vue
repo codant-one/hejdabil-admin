@@ -10,7 +10,7 @@ import Configs from '@/api/configs'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
-import logo from "@images/logos/billogg-logo.svg";
+import logo from "@images/logos/bilflogg-logo.svg";
 
 const DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED = true
 const DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED = true
@@ -986,7 +986,7 @@ onMounted(loadSignatureData);
           <!-- Sidebar izquierda con controles -->
           <div class="placement-sidebar">
             <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
-              <img :src="logo" width="121" height="40" alt="Billogg" />
+              <img :src="logo" width="121" height="40" alt="Bilflogg" />
             </div>  
             <VAlert
               color="success"
@@ -1046,7 +1046,7 @@ onMounted(loadSignatureData);
     <div v-if="!isRequestOngoing && finalState && !isAlreadySigned">
       <VCard class="signing-card pa-4 d-flex flex-column" style="min-height: 100vh;">
         <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
-          <img :src="logo" width="121" height="40" alt="Billogg" />
+          <img :src="logo" width="121" height="40" alt="Bilflogg" />
         </div>
 
         <div 
@@ -1081,7 +1081,7 @@ onMounted(loadSignatureData);
           <!-- Sidebar izquierda con controles -->
           <div class="placement-sidebar">
             <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
-              <img :src="logo" width="121" height="40" alt="Billogg" />
+              <img :src="logo" width="121" height="40" alt="Bilflogg" />
             </div>
             
             <!-- Controles de zoom -->

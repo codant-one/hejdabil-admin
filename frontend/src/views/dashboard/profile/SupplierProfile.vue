@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { formatDateSimple } from '@/@core/utils/formatters'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useSuppliersStores } from '@/stores/useSuppliers'
@@ -544,10 +545,11 @@ const removeSupplier = async () => {
                       {{ name }} {{ last_name }}
                     </span>
                     <div class="d-flex flex-row ">
-                      <div
-                        class="status-chip me-2 plan-color"
-                      >
-                        PRO
+                      <div class="status-chip me-2 plan-color">
+                        {{ supplier.plan.name }}
+                      </div>
+                      <div class="status-chip me-2 plan-time">
+                        {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
                       </div>
                       <div
                         class="status-chip"
@@ -570,10 +572,11 @@ const removeSupplier = async () => {
                   {{ name }} {{ last_name }}
                 </span>
                 <div class="d-flex flex-row ">
-                  <div
-                    class="status-chip me-2 plan-color"
-                  >
-                    PRO
+                  <div class="status-chip me-2 plan-color uppercase" >
+                    {{ supplier.plan.name }}
+                  </div>
+                  <div class="status-chip me-2 plan-time" >
+                    {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
                   </div>
                   <div
                     class="status-chip"
@@ -630,7 +633,24 @@ const removeSupplier = async () => {
               </div>
 
               <div 
-                class="profile-info-item profile-info-col-5"
+                class="profile-info-item profile-info-col-3"
+                :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
+              >
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-pris-information-outlined"
+                    size="16"
+                  />
+                  Prenumeration
+                </span>
+                <span class="span-body-profile">
+                  {{ formatDateSimple(supplier.start_date) }} - {{ formatDateSimple(supplier.end_date) }}
+                </span>
+              </div>
+
+              <div 
+                class="profile-info-item profile-info-col-4"
                 :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
               >
                 <span class="text-body-profile">
@@ -1382,7 +1402,7 @@ const removeSupplier = async () => {
     }
   }
 
-  .card-info {
+    .card-info {
         background-color: #F6F6F6;
         border-radius: 16px;
     }
@@ -1580,50 +1600,57 @@ const removeSupplier = async () => {
     }
 
     .plan-color {
-    border: 1px solid #1C2925;
-    color: #FFFFFF;
-    background-color: #1C2925;
-}
+      border: 1px solid #1C2925;
+      color: #FFFFFF;
+      background-color: #1C2925;
+      text-transform: uppercase;
+    }
 
-#payout-export-button {
-  --v-btn-height: 48px !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
-  align-self: flex-start;
-  margin-left: auto
-}
+    .plan-time {
+      border: 1px solid #FFFFFF;
+      color: #878787;
+      background-color: #FFFFFF;
+    }
 
-.model-poster {
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 24px;
-    letter-spacing: 0;
-    color: #878787;
-  }
+    #payout-export-button {
+      --v-btn-height: 48px !important;
+      height: 48px !important;
+      min-height: 48px !important;
+      max-height: 48px !important;
+      align-self: flex-start;
+      margin-left: auto
+    }
 
-  .number-poster {
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 24px;
-    letter-spacing: 0;
-    color: #878787;
-  }
+    .model-poster {
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: 0;
+      color: #878787;
+    }
 
-  .card-poster {
-    background-color: #F5F8F6;
-    border-radius: 16px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+    .number-poster {
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: 0;
+      color: #878787;
+    }
 
-  .title-poster {
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 24px;
-    letter-spacing: 0;
-    color: #878787;
-  }
+    .card-poster {
+      background-color: #F5F8F6;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .title-poster {
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: 0;
+      color: #878787;
+    }
 </style>

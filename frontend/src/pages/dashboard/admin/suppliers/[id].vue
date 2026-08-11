@@ -178,7 +178,9 @@ onBeforeUnmount(() => {
                         <CustomerTabBilling 
                             :customer-data="supplier"
                             :is-supplier="true"
-                            @alert="showAlert"/>
+                            @alert="showAlert"
+                            @loading="showLoading"
+                        />
                     </VWindowItem>
                     <VWindowItem :value="3">
                         <CustomerTabCompany

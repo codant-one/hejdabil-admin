@@ -97,6 +97,16 @@ const carbodies = ref([])
 const fuels = ref([])
 const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
+const state_id = ref(null)
+const sale_price = ref(null)
+const sale_date = ref(null)
+const iva_sale_id = ref(null)
+const sale_comments = ref(null)
+const iva_sale_amount = ref(0)
+const iva_sale_exclusive = ref(0)
+const discount = ref(0)
+const total_sale = ref(0)
+
 const generation = ref(null)
 const car_body_id = ref(null)
 const control_inspection = ref(null)
@@ -284,6 +294,16 @@ async function fetchData() {
         summer_tire.value = agreement.value.vehicle_client.vehicle.summer_tire
         winter_tire.value = agreement.value.vehicle_client.vehicle.winter_tire
         service_book.value = agreement.value.vehicle_client.vehicle.service_book
+        
+        state_id.value = agreement.value.vehicle_client.vehicle.state_id
+        iva_sale_amount.value = agreement.value.vehicle_client.vehicle.iva_sale_amount
+        iva_sale_exclusive.value = agreement.value.vehicle_client.vehicle.iva_sale_exclusive
+        discount.value = agreement.value.vehicle_client.vehicle.discount
+        total_sale.value = agreement.value.vehicle_client.vehicle.total_sale
+        sale_price.value = formatDecimal(agreement.value.vehicle_client.vehicle.sale_price)
+        sale_date.value = agreement.value.vehicle_client.vehicle.sale_date ?? formatDate(new Date())
+        iva_sale_id.value = agreement.value.vehicle_client.vehicle.iva_sale_id
+        sale_comments.value = agreement.value.vehicle_client.vehicle.sale_comments
 
         car_body_id.value = agreement.value.vehicle_client.vehicle.car_body_id
         generation.value = agreement.value.vehicle_client.vehicle.generation
@@ -454,6 +474,7 @@ const selectVehicle = vehicle => {
         last_dist_belt.value = _vehicle.last_dist_belt
         last_dist_belt_date.value = _vehicle.last_dist_belt_date
         comments.value = _vehicle.comments
+        state_id.value = _vehicle.state_id
     }
 }
 
@@ -1291,6 +1312,16 @@ const onSubmit = async (forceSave = false) => {
                 formData.append('winter_tire', winter_tire.value)
                 formData.append('fuel_id', fuel_id.value)
                 formData.append('comments', comments.value)
+                //Para ventas
+                formData.append('state_id', state_id.value)
+                formData.append('iva_sale_amount', iva_sale_amount.value)
+                formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+                formData.append('discount', discount.value)
+                formData.append('total_sale', total_sale.value)
+                formData.append('sale_price', sale_price.value)
+                formData.append('sale_date', sale_date.value)
+                formData.append('iva_sale_id', iva_sale_id.value)
+                formData.append('sale_comments', sale_comments.value)
 
                 formData.append('car_body_id', car_body_id.value)
                 formData.append('generation', generation.value)

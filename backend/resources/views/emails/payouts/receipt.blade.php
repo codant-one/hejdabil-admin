@@ -30,6 +30,8 @@
         <td align="center" style="padding:0;margin:0;padding-bottom:15px;">
             Se bifogat kvitto för mer information.
         </td>
-    </tr>               
+    </tr>       
+    
+    @include('emails.layouts.copy')
 </table>
 @endsection

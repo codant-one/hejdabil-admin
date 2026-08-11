@@ -43,7 +43,8 @@ use App\Http\Controllers\{
     SettingController,
     SmsMessageController,
     ActivitiesController,
-    PlanController
+    PlanController,
+    SupplierInvoiceController
 };
 
 use App\Http\Controllers\Services\{
@@ -116,6 +117,7 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
     Route::apiResource('reminders', ReminderController::class);
     Route::apiResource('activities', ActivitiesController::class);
     Route::apiResource('plans', PlanController::class);
+    Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -171,6 +173,13 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::get('/reminder/{id}', [BillingController::class, 'reminder']);
         Route::get('/info/all', [BillingController::class, 'info']);
         Route::post('/downloadZip', [BillingController::class, 'downloadZip']);
+    });
+
+    //Supplier invoices
+    Route::group(['prefix' => 'supplier-invoices'], function () {
+        Route::get('/updateState/{id}', [SupplierInvoiceController::class, 'updateState']);
+        Route::get('/credit/{id}', [SupplierInvoiceController::class, 'credit']);
+        Route::get('/reminder/{id}', [SupplierInvoiceController::class, 'reminder']);
     });
 
     //Suppliers
@@ -272,7 +281,7 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::post('/downloadZip', [AgreementController::class, 'downloadZip']);
     });
 
-    //Billing
+    //Payouts
     Route::group(['prefix' => 'payouts'], function () {
         Route::get('/info/all', [PayoutController::class, 'info']);
         Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
@@ -313,6 +322,7 @@ Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
 Route::get('agreement', [TestingController::class , 'agreement'])->name('agreement');
+Route::get('invoices', [TestingController::class , 'invoices'])->name('invoices');
 
 // Public Signature Endpoints
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {

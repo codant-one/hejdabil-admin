@@ -4,14 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PlanRequest;
 
-/*use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;*/
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -133,7 +125,7 @@ class PlanController extends Controller
     public function update(PlanRequest $request,  $id): JsonResponse
     {
         try {
-            $plan = Plan::find($id);
+            $plan = Plan::withTrashed()->find($id);
 
             if (!$plan) {
                 return response()->json([
@@ -164,7 +156,7 @@ class PlanController extends Controller
     {
         try {
 
-            $plan = Plan::with(['state'])->find($id);
+            $plan = Plan::find($id);
         
             if (!$plan)
                 return response()->json([
@@ -173,16 +165,12 @@ class PlanController extends Controller
                     'message' => 'Planen hittades inte'
                 ], 404);
 
-            Plan::deletePlan($plan->id);
-
-            $message = 'Plan borttagen!';
+            Plan::deletePlan($id);
 
             return response()->json([
                 'success' => true,
-                'message' => $message,
                 'data' => [ 
-                    'plan' => $plan,
-                    'deletion_mode' => 'soft',
+                    'plan' => $plan
                 ]
             ], 200);
 
@@ -199,7 +187,7 @@ class PlanController extends Controller
     {
         try {
 
-            $plan = Plan::find($id);
+            $plan = Plan::withTrashed()->find($id);
         
             if (!$plan)
                 return response()->json([

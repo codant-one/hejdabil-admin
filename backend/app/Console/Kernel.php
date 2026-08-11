@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Artisan; 
 
 class Kernel extends ConsoleKernel
 {
@@ -25,6 +26,14 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('reminders:delete --hours=24')
                  ->hourly();
+
+        $schedule->command('supplier:generate-billing')
+                 ->daily()
+                 ->at('00:00')
+                 ->after(function () {
+                    Artisan::call('suppliers:update-plan-date');
+                 })
+                 ->withoutOverlapping();
     }
 
     /**

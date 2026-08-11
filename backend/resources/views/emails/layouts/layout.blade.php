@@ -6,7 +6,7 @@
         <meta name="x-apple-disable-message-reformatting">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta content="telephone=no" name="format-detection">
-        <title>E-mails Billogg</title>
+        <title>E-mails Bilflogg</title>
 
         <!-- Import Font -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

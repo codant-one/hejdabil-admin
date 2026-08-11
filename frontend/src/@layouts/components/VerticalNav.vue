@@ -99,7 +99,7 @@ const handleNavScroll = (evt) => {
         :class="hideTitleAndIcon ? 'justify-center' : ''"
         class="d-flex h-100 app-logo align-center gap-x-1 app-title-wrapper"
       >
-        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" />
+        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" width="121" height="40" />
       </RouterLink>
     </div>
     <div class="nav-header" :class="isSettingsRoute ? 'nav-items-settings' : ''">

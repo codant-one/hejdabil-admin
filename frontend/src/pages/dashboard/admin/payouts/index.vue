@@ -21,7 +21,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
-import billogg from "@/assets/images/billogg_img.svg";
+import bilflogg from "@/assets/images/bilflogg_img.png";
 import swish from "@/assets/images/swish_img.svg";
 
 const { width: windowWidth } = useWindowSize();
@@ -679,6 +679,27 @@ const captureAndSaveReceipt = async (payout) => {
       console.warn('Receipt element not found');
       return;
     }
+
+    const waitForImageLoad = img => new Promise(resolve => {
+      if (img.complete && img.naturalWidth > 0) {
+        resolve()
+        return
+      }
+
+      const finish = () => resolve()
+
+      img.addEventListener('load', finish, { once: true })
+      img.addEventListener('error', finish, { once: true })
+      setTimeout(finish, 1500)
+    })
+
+    const receiptImages = Array.from(receiptElement.querySelectorAll('img'))
+
+    if (receiptImages.length)
+      await Promise.all(receiptImages.map(waitForImageLoad))
+
+    if (document.fonts?.ready)
+      await document.fonts.ready
 
     const canvas = await html2canvas(receiptElement, {
       scale: 2,
@@ -1710,8 +1731,11 @@ const onDatePickerUpdate = value => {
 
           <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
             <img 
-              :src="billogg" 
-              alt="Billogg image"
+              :src="bilflogg" 
+              alt="Bilflogg image"
+              width="110"
+              height="32"
+              style="display: block; width: 110px; height: 32px; object-fit: contain; object-position: center; flex-shrink: 0;"
             />
             <VDivider vertical />
             <img 
@@ -1806,12 +1830,15 @@ const onDatePickerUpdate = value => {
           </span>
         </VCardText>
 
-        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="height: 32px !important;">
+        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="min-height: 32px;">
           <img 
-            :src="billogg" 
-            alt="Billogg image"
+            :src="bilflogg" 
+            alt="Bilflogg image"
+            width="110"
+            height="32"
+            style="display: block; width: 110px; height: 32px; object-fit: contain; object-position: center; flex-shrink: 0;"
           />
-          <VDivider vertical class="my-auto"/>
+          <VDivider vertical style="height: 32px; align-self: center; " />
           <img 
             :src="swish"
             alt="Swish image"

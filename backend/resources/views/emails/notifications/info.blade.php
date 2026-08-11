@@ -6,7 +6,7 @@
 		<td align="center" style="padding:0;margin:0;padding-bottom:15px;">
 			<p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:24px;color:#454545;font-size:16px">
 				Hej {{ $user }}, <br>
-				Du har fått en ny notis i Billogg.
+				Du har fått en ny notis i Bilflogg.
 			</p>
 		</td>
 	</tr>
@@ -44,7 +44,7 @@
 			<td align="center" style="padding:0;margin:0;padding:24px;">
 				<span class="es-button-border" style="border-style:solid;border-width:0px 0px 2px 0px;display:block;border-radius:48px;width:auto;border-bottom-width:0px">
 					<a href="{{ $notificationRoute }}" class="btn-gradient" style="font-family: 'Titillium Web', sans-serif; font-size:16px; color:#416054;">
-						Öppna i Billogg
+						Öppna i Bilflogg
 					</a>
 				</span>
 			</td>
@@ -58,5 +58,7 @@
 			</p>
 		</td>
 	</tr>
+
+	@include('emails.layouts.copy')
 </table>
 @endsection

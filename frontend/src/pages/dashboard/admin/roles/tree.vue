@@ -90,6 +90,17 @@ const closeTreeDialog  = function(){
                                 <strong>Visa teamrapporter</strong>&emsp;/&emsp;<code>Tillåter visning av teamrapporter</code>
                             </li>
                         </ul>
+                         <li class="tab n2">
+                            <strong>Inställningar</strong>&emsp;/&emsp;<code>Åtkomst till inställningar</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Mitt företag</strong>&emsp;/&emsp;<code>Åtkomst till företagskonfiguration</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>SMS-översikt</strong>&emsp;/&emsp;<code>Åtkomst till SMS</code>
+                            </li>
+                        </ul>
                     </ul>
                     <ul class="tab">
                         <li class="n1">

@@ -120,6 +120,8 @@ const format_number = (value) => {
 const nextStep = async () => {
   shouldShowStep1Validation.value = true
 
+  await nextTick()
+
   const { valid } = await refFormStep1.value.validate()
   
   if (valid) {
@@ -160,6 +162,8 @@ const searchPerson = async () => {
 const onSubmit = async () => {
   shouldShowStep1Validation.value = true
   shouldShowStep2Validation.value = true
+
+  await nextTick()
 
   const { valid } = await refForm.value.validate()
 

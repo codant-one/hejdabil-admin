@@ -133,9 +133,26 @@ class ClientController extends Controller
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
+            $driverErrorCode = (int) ($ex->errorInfo[1] ?? 0);
+            $isDuplicateOrganizationNumber = $driverErrorCode === 1062
+                && Str::contains($ex->getMessage(), 'clients_supplier_org_unique');
+            $deletedClientId = null;
+
+            if ($isDuplicateOrganizationNumber) {
+                $deletedClientId = Client::onlyTrashed()
+                    ->where('organization_number', $request->organization_number)
+                    ->applyFilters([
+                        'supplier_id' => $request->supplier_id === 'null' ? null : $request->supplier_id,
+                    ])
+                    ->value('id');
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'database_error '.$ex->getMessage(),
+                'message' => $isDuplicateOrganizationNumber
+                    ? 'active_client'
+                    : 'database_error '.$ex->getMessage(),
+                'client_id' => $deletedClientId,
                 'exception' => $ex->getMessage()
             ], 500);
         }
@@ -257,9 +274,26 @@ class ClientController extends Controller
             ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
+            $driverErrorCode = (int) ($ex->errorInfo[1] ?? 0);
+            $isDuplicateOrganizationNumber = $driverErrorCode === 1062
+                && Str::contains($ex->getMessage(), 'clients_supplier_org_unique');
+            $deletedClientId = null;
+
+            if ($isDuplicateOrganizationNumber) {
+                $deletedClientId = Client::onlyTrashed()
+                    ->where('organization_number', $request->organization_number)
+                    ->applyFilters([
+                        'supplier_id' => $request->supplier_id === 'null' ? null : $request->supplier_id,
+                    ])
+                    ->value('id');
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'database_error',
+                'message' => $isDuplicateOrganizationNumber
+                    ? 'active_client'
+                    : 'database_error '.$ex->getMessage(),
+                'client_id' => $deletedClientId,
                 'exception' => $ex->getMessage()
             ], 500);
         }
@@ -359,6 +393,23 @@ class ClientController extends Controller
                 ], 404);
             
             $client->activateClient($id);
+
+             SupplierActivity::createActivity([
+                'entity_id' => $client->id,
+                'entity_type' => 'clients',
+                'action_type' => 'activate_client',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' aktiverad',
+                'description' => 'Kunden har aktiverats.',
+                'icon' => 'custom-clients',
+                'route' => '/dashboard/admin/clients/'.$client->id,
+                'metadata' => json_encode([
+                    'client_id' => $client->id
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $client->id)
+                ->where('entity_type', 'clients')
+                ->update(['route' => '/dashboard/admin/clients/'.$client->id]);
 
             return response()->json([
                 'success' => true,

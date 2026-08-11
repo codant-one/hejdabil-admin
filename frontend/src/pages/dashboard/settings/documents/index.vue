@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/useSettings'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const DEFAULT_DOCUMENT_SMS_MESSAGE = 'Du har fått ett dokument från {Företagsnamn} för digital signering.'
-const DEFAULT_DOCUMENT_COMPANY_NAME = 'Billogg Sverige AB'
+const DEFAULT_DOCUMENT_COMPANY_NAME = 'Bilflogg Sverige AB'
 const DEFAULT_DOCUMENT_DUE_DATES = 5
 const DEFAULT_DOCUMENT_SEND_REMINDER = true
 const DEFAULT_DOCUMENT_DELIVERY_METHOD = 'email'

@@ -30,6 +30,7 @@ import Dashboard from '@/api/dashboard'
     total_sale_price: 0,
     total_cost: 0,
     total_profit: 0,
+    total_sms_sent: 0,
   }))
 
   const defaultMonthCategories = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
@@ -511,6 +512,7 @@ import Dashboard from '@/api/dashboard'
       total_sale_price: emptyStateChartValues[index] ?? 0,
       total_cost: emptyStateChartValues[index] ?? 0,
       total_profit: emptyStateChartValues[index] ?? 0,
+      total_sms_sent: 0,
     }))
   })
 
@@ -532,18 +534,24 @@ import Dashboard from '@/api/dashboard'
   const saleSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
   const costSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_cost ?? 0)))
   const profitSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+  const smsSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_sms_sent ?? 0)))
   const currentChartAmountField = computed(() => {
     return [
       'total_purchase_price',
       'total_sale_price',
       'total_cost',
       'total_profit',
+      'total_sms_sent',
     ][activeChartTab.value] ?? 'total_purchase_price'
   })
 
   const getCurrentMonthAbbreviatedValue = dataPointIndex => {
     const item = chartMonthlyStats.value[dataPointIndex] ?? {}
     const field = currentChartAmountField.value
+
+    if (field === 'total_sms_sent')
+      return Number(item?.[field] ?? 0)
+
     const abbreviatedField = `${field}_abbreviated`
 
     return item?.[abbreviatedField] ?? formatSwedishAbbreviatedCurrency(item?.[field] ?? 0)
@@ -565,6 +573,7 @@ import Dashboard from '@/api/dashboard'
       saleSeries.value.length,
       costSeries.value.length,
       profitSeries.value.length,
+      smsSeries.value.length,
     ].join('::')
   })
 
@@ -617,7 +626,9 @@ import Dashboard from '@/api/dashboard'
       dataLabels: {
         enabled: true,
         formatter(_val, opts) {
-          return `${getCurrentMonthAbbreviatedValue(opts?.dataPointIndex)} kr`
+          const value = getCurrentMonthAbbreviatedValue(opts?.dataPointIndex)
+
+          return currentChartAmountField.value === 'total_sms_sent' ? `${value}` : `${value} kr`
         },
         offsetY: -25,
         style: {
@@ -650,6 +661,9 @@ import Dashboard from '@/api/dashboard'
         labels: {
           offsetX: -15,
           formatter(val) {
+            if (currentChartAmountField.value === 'total_sms_sent')
+              return formatNumber(Number(val ?? 0))
+
             return `${formatSwedishAbbreviatedCurrency(val)} kr`
           },
           style: { fontSize: '13px', colors: labelColor, fontFamily: 'Public Sans' },
@@ -714,6 +728,14 @@ import Dashboard from '@/api/dashboard'
         series: [{ data: profitSeries.value }],
         border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-profit',
         bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#C0FEFF',
+      },
+      {
+        title: 'SMS-skickade',
+        icon: 'custom-sms',
+        chartOptions: createChartOptions(makeColors('#6E9383', '#BDD2C8')),
+        series: [{ data: smsSeries.value }],
+        border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-inventary',
+        bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#F5F8F6',
       },
     ]
   })

@@ -1,19 +1,17 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import { themeConfig } from "@themeConfig";
 import TabMyTeam from '@/pages/dashboard/admin/suppliers/users/index.vue'
 import TabReports from '@/pages/dashboard/admin/suppliers/users/reports.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import Toaster from "@/components/common/Toaster.vue";
 
 const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
-const ability = useAppAbility()
 const route = useRoute();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -49,15 +47,13 @@ const tabs = [
 ]
 
 const hasMyTeamAccess = computed(() => {
-  if (role.value === 'Supplier') return true
-
-  return role.value === 'User' && ability.can('view', 'my-team')
+  return (role.value === 'Supplier' || role.value === 'User')
+    && canWithPlan('view', 'my-team')
 })
 
 const hasReportsAccess = computed(() => {
-  if (role.value === 'Supplier') return true
-
-  return role.value === 'User' && ability.can('view', 'team-reports')
+  return (role.value === 'Supplier' || role.value === 'User')
+    && canWithPlan('view', 'team-reports')
 })
 
 const visibleTabs = computed(() => {

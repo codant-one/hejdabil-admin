@@ -1,8 +1,8 @@
 <script setup>
 
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { handleNumericTextFieldKeydown, handleDecimalTextFieldKeydown, normalizeNumericTextInput, decimalRangeValidator, normalizeDecimalTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
-import { requiredValidator, minLengthNonDigitsValidator } from '@/@core/utils/validators'
+import { handleDecimalTextFieldKeydown, decimalRangeValidator, normalizeDecimalTextInput, numericRangeValidator } from '@/@core/utils/numericTextField'
+import { requiredValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -22,6 +22,8 @@ const props = defineProps({
 const emit = defineEmits([
   'update:isDrawerOpen',
   'planData',
+  'alert',
+  'loading'
 ])
 
 const isFormValid = ref(false)
@@ -35,7 +37,6 @@ const price_annual = ref(0)
 const selectedFeatures = ref([])
 const features = ref([])
 const isEdit = ref(false)
-const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
 const nonNegativeDecimalRules = [decimalRangeValidator({ min: 0 })];
 
 const getTitle = computed(() => {
@@ -43,17 +44,6 @@ const getTitle = computed(() => {
 })
 
 watchEffect(async() => {
-  // refForm.value?.resetValidation()
-
-  name.value = ''
-  description.value = ''
-  price_month.value = 0
-  price_annual.value = 0
-  features.value = []
-  selectedFeatures.value = []
-  
-  isEdit.value = false 
-  id.value = 0
 
   if (props.isDrawerOpen) {
 

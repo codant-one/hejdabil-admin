@@ -95,10 +95,10 @@ class UsersController extends Controller
             );
 
             $email = $user->email;
-            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+            $subject = 'Välkommen till Bilflogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Välkommen till Billogg',
+                'title' => 'Välkommen till Bilflogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,

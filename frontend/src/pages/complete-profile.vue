@@ -1,5 +1,6 @@
 <script setup>
 
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useDisplay } from "vuetify";
 import {
   emailValidator,
@@ -513,7 +514,7 @@ const triggerAvatarUpload = () => {
 };
 
 const handleSubmit = () => {
-  return role.value === "Supplier" || role.value === "User"
+  return (role.value === "Supplier" || role.value === "User") && canWithPlan('view', 'company')
     ? onSubmit()
     : submitCompleteProfile();
 };
@@ -970,7 +971,7 @@ const dataURLtoBlob = (dataURL) => {
           <h2 class="profile-title">Kom igång - fyll i din profil</h2>
         </div>
         <MobileScrollTabs
-          v-if="role === 'Supplier' || role === 'User'"
+          v-if="(role === 'Supplier' || role === 'User') && canWithPlan('view', 'company')"
           v-model="controlledTab"
           :target-ref="sectionEl"
           grow
@@ -989,7 +990,7 @@ const dataURLtoBlob = (dataURL) => {
         @submit.prevent="handleSubmit"
         class="auth-form mx-auto d-flex flex-column gap-4"
       >
-        <template v-if="role === 'Supplier' || role === 'User'">
+        <template v-if="(role === 'Supplier' || role === 'User') && canWithPlan('view', 'company')">
           <VWindow
             v-model="controlledTab"
             class="disable-tab-transition"
@@ -1229,7 +1230,7 @@ const dataURLtoBlob = (dataURL) => {
                 <VTextField :disabled="role === 'User'" v-model="form.vat" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Payout Number*" />
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Payout Number" />
                 <VTextField
                   v-model="form.payout_number"
                   disabled

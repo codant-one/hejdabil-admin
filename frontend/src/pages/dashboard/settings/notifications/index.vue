@@ -1,9 +1,10 @@
 <script setup>
 
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { canWithPlan } from "@layouts/plugins/casl";
 import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
 import { useConfigsStores } from '@/stores/useConfigs'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const DEFAULT_NOTIFY_VIA_SOUND = true
 const DEFAULT_NOTIFY_VIA_EMAIL = false
@@ -235,7 +236,10 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="pb-0">
-          <div class="settings-layout border-bottom-settings pb-4">
+          <div 
+            class="settings-layout pb-4"
+            :class="canWithPlan('view', 'agreements') && canWithPlan('view', 'signed-documents') ? 'border-bottom-settings' : ''"
+          >
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Allmänt</span>
@@ -319,7 +323,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="pb-0">
+        <VCardText class="pb-0" v-if="canWithPlan('view', 'agreements') && canWithPlan('view', 'signed-documents')">
           <div class="settings-layout pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">

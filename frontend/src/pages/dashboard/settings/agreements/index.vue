@@ -10,7 +10,7 @@ import agreement2 from '@images/agreements/2.svg'
 import agreement3 from '@images/agreements/3.svg'
 
 const DEFAULT_AGREEMENT_SMS_MESSAGE = 'Du har fått ett avtal från {Företagsnamn} för digital signering.'
-const DEFAULT_AGREEMENT_COMPANY_NAME = 'Billogg Sverige AB'
+const DEFAULT_AGREEMENT_COMPANY_NAME = 'Bilflogg Sverige AB'
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
 const DEFAULT_THEME = 0

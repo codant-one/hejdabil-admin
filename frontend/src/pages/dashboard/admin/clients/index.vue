@@ -99,11 +99,13 @@ const advisor = ref({
 
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
+const activeDialog = ref(false);
 const isDuplicate = ref(false)
 const isEdit = ref(false)
 const err = ref(null);
 const openedClientFormSource = ref('drawer');
 const lastEditedClientDraft = ref(null);
+const client_id = ref(null);
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
@@ -535,9 +537,14 @@ const submitCreate = (clientData) => {
     })
     .catch((error) => {
       err.value = error;
-      isDuplicate.value = error.message === 'organization_number.unique' ? true : false
-      inteSkapatsDialog.value = true;
-      isRequestOngoing.value = false
+      isDuplicate.value = error.message === 'organization_number.unique' ? true : false;
+      activeDialog.value = error.message === 'active_client' ? true : false;
+      inteSkapatsDialog.value = error.message === 'active_client' ? false : true;
+      client_id.value = error.client_id ?? null;
+      isRequestOngoing.value = false;
+
+      addNewClientDrawerRef.value?.reallyCloseAndReset?.();
+      addNewClientMobileRef.value?.reallyCloseAndReset?.();
     });
 };
 
@@ -559,11 +566,46 @@ const submitUpdate = (clientData) => {
     })
     .catch((error) => {
       err.value = error;
-      isDuplicate.value = error.message === 'organization_number.unique' ? true : false
-      inteSkapatsDialog.value = true;
-      isRequestOngoing.value = false
+      isDuplicate.value = error.message === 'organization_number.unique' ? true : false;
+      activeDialog.value = error.message === 'active_client' ? true : false;
+      inteSkapatsDialog.value = error.message === 'active_client' ? false : true;
+      client_id.value = error.client_id ?? null;
+      isRequestOngoing.value = false;
+
+      addNewClientDrawerRef.value?.reallyCloseAndReset?.();
+      addNewClientMobileRef.value?.reallyCloseAndReset?.();
     })
 };
+
+const activateClient = async () => {
+  activeDialog.value = false
+  isRequestOngoing.value = true
+  
+  let res = await clientsStores.activateClient(client_id.value)
+  selectedClient.value = {}
+
+  isRequestOngoing.value = false
+  
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Kunden aktiverad!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+
+    client_id.value = null
+  }, 3000)
+
+  return true
+}
 
 const closeDialog = () => {
   skapatsDialog.value = false;
@@ -1365,7 +1407,6 @@ onBeforeUnmount(() => {
       class="action-dialog"
     >
       <!-- Dialog close btn -->
-
       <VBtn
         icon
         class="btn-white close-btn"
@@ -1866,7 +1907,7 @@ onBeforeUnmount(() => {
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
           <div class="dialog-title">
-            {{ isDuplicate ? 'Kunden finns redan registrerad.' : 'Kunde inte skapa avtalet' }}
+            {{ isDuplicate ? 'Kunden finns redan registrerad.' : 'Kunde inte lägga till kunden' }}
           </div>
         </VCardText>
         <VCardText class="dialog-text text-center">
@@ -1879,6 +1920,48 @@ onBeforeUnmount(() => {
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
           <VBtn class="btn-light" @click="showError">
             Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- Active client -->
+    <VDialog
+      v-model="activeDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="activeDialog = !activeDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-info" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">
+            Aktivera kunden
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          Den här kunden finns redan i ditt kundregister men är inaktiv. Vill du återaktivera kunden?
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="activeDialog = false">
+            Avbryt
+          </VBtn>
+
+          <VBtn 
+            class="btn-gradient" 
+            @click="activateClient"
+          >
+            Ja, återaktivera
           </VBtn>
         </VCardText>
       </VCard>

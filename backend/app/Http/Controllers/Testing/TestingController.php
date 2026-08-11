@@ -18,6 +18,7 @@ use App\Models\UserDetails;
 use App\Models\Config;
 use App\Models\Document;
 use App\Models\Payout;
+use App\Models\SupplierInvoice;
 
 class TestingController extends Controller
 {
@@ -29,7 +30,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Återställ ditt lösenord i Billogg',
+            'subject' => 'Återställ ditt lösenord i Bilflogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
@@ -129,7 +130,7 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(56);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(3);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -181,7 +182,71 @@ class TestingController extends Controller
         $company->secondary_color = '#DFFAFA';
         $company->theme = 0;
 
-        return view('pdfs.invoices.modern2', 
+        return view('pdfs.invoices.classic', 
+            compact(
+                'company',
+                'billing',
+                'types',
+                'invoices'
+            )
+        );
+    }
+
+    public function invoices() {
+
+        $billing = SupplierInvoice::with(['user.userDetail', 'state'])->find(3);
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+        
+        // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
+  
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        $company->primary_color = '#09DAD9';
+        $company->secondary_color = '#DFFAFA';
+        $company->theme = 0;
+
+        return view('pdfs.invoices.suppliers', 
             compact(
                 'company',
                 'billing',
@@ -198,7 +263,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Återställ ditt lösenord i Billogg',
+            'subject' => 'Återställ ditt lösenord i Bilflogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 

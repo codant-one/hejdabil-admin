@@ -3,6 +3,7 @@
 import { themeConfig } from '@themeConfig'
 import { useDisplay } from 'vuetify'
 import { useActivitiesStore } from '@/stores/useActivities'
+import { canWithPlan } from '@/@layouts/plugins/casl'
 import { formatNumber } from '@/@core/utils/formatters'
 import { getActivityVisibleFields } from './activityVisibleFields'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -55,6 +56,39 @@ const modules = [
   { name: 'Swish', id: 'payouts' },
   { name: 'Mina Värderingar', id: 'notes' },
 ]
+
+const MODULE_PERMISSION_SUBJECTS = {
+  users: ['my-team'],
+  suppliers: ['suppliers'],
+  clients: ['clients'],
+  billings: ['billings'],
+  vehicles: ['stock', 'sold'],
+  agreements: ['agreements'],
+  documents: ['signed-documents'],
+  payouts: ['payouts'],
+  notes: ['notes'],
+}
+
+const hasModuleAccess = moduleId => {
+  const subjects = MODULE_PERMISSION_SUBJECTS[moduleId] ?? []
+
+  if (!subjects.length)
+    return true
+
+  return subjects.some(subject => canWithPlan('view', subject))
+}
+
+const availableModules = computed(() => modules.filter(item => hasModuleAccess(item.id)))
+
+watch(availableModules, currentModules => {
+  if (!module.value)
+    return
+
+  const isCurrentModuleAllowed = currentModules.some(item => item.id === module.value)
+
+  if (!isCurrentModuleAllowed)
+    module.value = null
+}, { immediate: true })
 
 const modeOptions = [
   {
@@ -337,7 +371,7 @@ async function fetchData(cleanFilters = false) {
         orderBy: 'desc',
         limit: rowPerPage.value,
         page: currentPage.value,
-        supplier_id: null,
+        supplier_id: supplier_id.value,
         user_id: userId.value,
         module: module.value,
         date_from: dateRange?.[0] ?? null,
@@ -1852,7 +1886,7 @@ onBeforeUnmount(() => {
         <div class="empty-state-content">
           <div class="empty-state-title">Ingen aktivitet registrerad än</div>
           <div class="empty-state-text">
-            När du eller ditt team utför åtgärder i Billogg - som att uppdatera ett fordon, skapa en faktura eller ändra en kunds uppgifter - visas allt här.
+            När du eller ditt team utför åtgärder i Bilflogg - som att uppdatera ett fordon, skapa en faktura eller ändra en kunds uppgifter - visas allt här.
           </div>
         </div>
       </div>
@@ -1887,7 +1921,7 @@ onBeforeUnmount(() => {
           <VCol 
             cols="12" md="12" 
             v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            class="pb-0 d-none">
+            class="pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="supplier_id"
@@ -1918,7 +1952,7 @@ onBeforeUnmount(() => {
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
             <AppAutocomplete
               v-model="module"
-              :items="modules"
+              :items="availableModules"
               :item-title="item => item.name"
               :item-value="item => item.id"
               autocomplete="off"
@@ -1950,7 +1984,7 @@ onBeforeUnmount(() => {
   >
     <VCard class="card-form">
       <VList>
-        <VListItem class="form py-0 d-none" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
           <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -1981,7 +2015,7 @@ onBeforeUnmount(() => {
           <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modul" />
           <AppAutocomplete
               v-model="module"
-              :items="modules"
+              :items="availableModules"
               :item-title="item => item.name"
               :item-value="item => item.id"
               autocomplete="off"

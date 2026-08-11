@@ -6,7 +6,7 @@
         <td align="center" style="padding:0;margin:0;padding-bottom:15px;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">         
                 Hej,<br>
-                Vi har mottagit en begäran om att återställa lösenordet för ditt Billogg-konto.<br>
+                Vi har mottagit en begäran om att återställa lösenordet för ditt Bilflogg-konto.<br>
                 För att skapa ett nytt lösenord, klicka på knappen nedan:
             </p>
         </td>

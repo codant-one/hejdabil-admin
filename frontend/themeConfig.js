@@ -5,7 +5,7 @@ import { defineThemeConfig } from '@core'
 import { RouteTransitions, Skins } from '@core/enums'
 import logo from '@images/logo.svg?raw'
 import logoWhite from '@images/logo_white.svg'
-import logoFull from '@images/logos/billogg-logo.svg'
+import logoFull from '@images/logos/bilflogg-logo.svg'
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
 export const { themeConfig, layoutConfig } = defineThemeConfig({

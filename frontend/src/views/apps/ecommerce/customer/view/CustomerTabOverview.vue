@@ -33,37 +33,44 @@ const teamMembers = ref([])
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 
+const smsActivate = ref(null)
+
 const items = ref([
   {
     icon: 'custom-lager',
     title: 'Fordon i lager',
     subtitle: 'Aktiva fordon',
     stats: '0',
+    border: 'card-overview__main'
   },
   {
     icon: 'custom-sold',
     title: 'Sålda fordon',
     subtitle: 'Denna månad',
     stats: '0',
+    border: 'card-overview__main'
   },
   {
     icon: 'custom-clients',
     title: 'Antal kunder',
     subtitle: 'Registrerade',
     stats: '0',
+    border: 'card-overview__main'
   },
     // {
     //   icon: 'custom-facture',
     //   title: 'Fakturerat',
     //   subtitle: 'Denna månad',
     //   stats: '45 200 kr',
+    // border: 'card-overview__main'
     // },
   {
     icon: 'custom-sms',
     title: 'SMS skickade',
     subtitle: 'Denna månad',
     stats: '0',
-    stats2: '500'
+    stats2: '500',
+    border: 'card-overview__main'
   }
 ])
 
@@ -116,7 +123,6 @@ const supplierId = computed(() => {
     ?? props.customerData?.id
     ?? null
 })
-
 
 const totalPages = computed(() => {
   if (!teamMembers.value.length)
@@ -171,12 +177,13 @@ async function fetchTeamData() {
   const payload = response?.data?.data
   const teamTotals = payload?.teamTotals
 
+  smsActivate.value = teamTotals?.smsActivate ?? false
+
   items.value[0].stats = teamTotals?.vehicles_stock ?? 0
   items.value[1].stats = teamTotals?.vehicles_sold ?? 0
   items.value[2].stats = teamTotals?.clients ?? 0
   items.value[3].stats = teamTotals?.sms ?? 0
-
-
+  items.value[3].border = smsActivate.value ? 'card-overview__activate' : 'card-overview__desactivate'
 
   itemsTwo.value[0].stats = teamTotals?.clients ?? 0
   itemsTwo.value[1].stats = teamTotals?.billings ?? 0
@@ -281,22 +288,7 @@ const onFilterDateUpdate = value => {
 
   fetchData();
 
-  // emit('loading', true)
-  // emit('filter', {
-  //     date_from: range[0],
-  //     date_to: range[1],
-  // })
 }
-
-const clearFilter = () => {
-  filterDateRange.value = null
-  lastFilterSelectionKey.value = null
-  filterMenuVisible.value = false
-
-  emit('loading', true)
-  emit('filter', {})
-}
-
 
 </script>
 
@@ -306,8 +298,9 @@ const clearFilter = () => {
       <VCard 
         v-for="(item, index) in items"
         :key="item.title"
-        class="card-overview__main w-100">
-        <VCardText class="p-0">
+        class="w-100"
+        :class="item.border">
+        <VCardText class="p-0 d-flex gap-2 align-start justify-between">
           <VAvatar
             rounded="lg"
             size="36"
@@ -319,20 +312,30 @@ const clearFilter = () => {
               color="#6E9383" 
             />
           </VAvatar> 
+          
+          <div
+            v-if="index === 3 && smsActivate !== null"
+            class="status-chip-mobile"
+            :class="`status-chip-${smsActivate ? 'success' : 'error'}`"
+          >
+            {{ smsActivate ? 'Aktiverad' : 'Avaktiverad' }}
+          </div>
         </VCardText>
         <VCardTitle class="title-main p-0">
           {{ item.title }} 
         </VCardTitle>
         <VCardText class="stats-main p-0">
           {{ item.stats }}
-          <span v-if="item.stats2" class="stats2-main"> / {{ item.stats2 }}</span>
+          <span v-if="item.stats2" class="stats2-main d-none"> / {{ item.stats2 }}</span>
           <VProgressLinear 
             v-if="item.stats2" 
             :model-value="(parseInt(item.stats) * 100) / parseInt(item.stats2)" 
             height="3"
             rounded="pill"   
-            color="#57F287"      
-            bg-color="#5A7065" 
+            :color="!smsActivate && smsActivate !== null ? '#9B191B' : '#57F287'"
+            :bg-color="!smsActivate && smsActivate !== null? '#FF4D4F' : '#D4E6DF'"
+            :bg-opacity="1"
+            class="d-none"
           />
         </VCardText>
         <VCardText class="subtitle-main p-0">
@@ -743,6 +746,34 @@ const clearFilter = () => {
     display: flex;
     flex-direction: column;
     border: 1px solid #D4E6DF;
+    background: #F6FDFB;
+    height: 170px;
+    @media (max-width: 1023px) { 
+      height: 157px;
+    }
+  }
+
+  .card-overview__activate {
+    border-radius: 8px !important;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid transparent;
+    background-image: linear-gradient( #F6FDFB, #F6FDFB, #F6FDFB),linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    height: 170px;
+    @media (max-width: 1023px) { 
+      height: 157px;
+    }
+  }
+
+  .card-overview__desactivate {
+    border-radius: 8px !important;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #FF4D4F;
     background: #F6FDFB;
     height: 170px;
     @media (max-width: 1023px) { 

@@ -3,18 +3,18 @@
         font-family: "DM Sans";
         font-style: normal;
         font-weight: 400;
-        src: url("https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxRSW3z.ttf") format("truetype");
+        src: url("{{ storage_path('fonts/dmsans/dmsans-regular.ttf') }}") format("truetype");
     }
     @font-face {
         font-family: "DM Sans";
         font-style: normal;
         font-weight: 600;
-        src: url("https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAfJtRSW3z.ttf") format("truetype");
+        src: url("{{ storage_path('fonts/dmsans/dmsans-semibold.ttf') }}") format("truetype");
     }
     @font-face {
         font-family: "DM Sans";
         font-style: normal;
         font-weight: 700;
-        src: url("https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwARZtRSW3z.ttf") format("truetype");
+        src: url("{{ storage_path('fonts/dmsans/dmsans-bold.ttf') }}") format("truetype");
     }
 </style>

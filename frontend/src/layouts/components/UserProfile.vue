@@ -1,6 +1,7 @@
 <script setup>
 
 import { initialAbility } from "@/plugins/casl/ability";
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -15,7 +16,6 @@ defineProps({
 const authStores = useAuthStores();
 const router = useRouter();
 const route = useRoute();
-const emitter = inject('emitter');
 const ability = useAppAbility();
 const userData_ = ref(null)
 const role = ref(null)
@@ -37,9 +37,8 @@ async function fetchData(cleanFilters = false) {
 
 
 const hasMyTeamAccess = computed(() => {
-  if (role.value === 'Supplier') return true
-
-  return role.value === 'User' && ability.can('view', 'my-team')
+  return (role.value === 'Supplier' || role.value === 'User')
+    && canWithPlan('view', 'my-team')
 })
 
 const userData = field =>{
@@ -72,19 +71,6 @@ const truncateText = (text, length = 28) => {
     return text.substring(0, length) + '...';
   }
   return text;
-};
-
-const redirectToPayoutsAndOpenDialog = () => {
-  if (route.name === 'dashboard-admin-payouts') {
-    emitter.emit('open-payout-dialog');
-
-    return;
-  }
-
-  router.push({
-    name: 'dashboard-admin-payouts',
-    query: { open_payout: 'true' },
-  });
 };
 
 const logout = async () => {

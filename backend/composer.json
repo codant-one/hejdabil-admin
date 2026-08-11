@@ -83,6 +83,7 @@
             "php-http/discovery": true
         },
         "audit": {
+            "block-insecure": false,
             "ignore": ["PKSA-365x-2zjk-pt47", "PKSA-bjyb-w14t-61js", "PKSA-8x19-j2j3-bn67"]
         }
     },
