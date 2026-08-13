@@ -1,24 +1,33 @@
 <script setup>
 
 import { formatNumber } from '@/@core/utils/formatters'
-import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
 import { themeConfig } from '@themeConfig'
+import { excelParser } from '@/plugins/csv/excelParser'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import companyAvatar from "@/assets/images/avatars/company.svg";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import html2pdf from 'html2pdf.js'
 
 const { width: windowWidth } = useWindowSize();
 
 const route = useRoute()
-const suppliersStores = useSuppliersStores()
 const supplierInvoicesStores = useSupplierInvoicesStores()
 const exporteraMobile = ref(false);
+const date = ref(null)
+const selectedExportType = ref(null)
+const isExportTypeMenuVisible = ref(false)
+const isExportMenuVisible = ref(false)
+const isExportingFile = ref(false)
+const lastExportSelectionKey = ref(null)
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalBillings = ref(0)
 const state_id = ref(null)
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot'
 
 const props = defineProps({
   customerData: {
@@ -36,6 +45,20 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY)
+    if (!cached) return {}
+
+    const parsed = JSON.parse(cached)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const company = ref(readCachedCompany())
 
 const emit = defineEmits([
   'submit',
@@ -66,6 +89,11 @@ const paginationData = computed(() => {
 watchEffect(() => {
   if (!isEditAddressDialogVisible.value)
     selectedAddress.value = {}
+})
+
+watch(isExportMenuVisible, isVisible => {
+  if (isVisible)
+    lastExportSelectionKey.value = null
 })
 
 watchEffect(fetchData)
@@ -261,6 +289,204 @@ const resolveStatus = state_id => {
     return { class: 'error' }
 }
 
+const toYmd = value => {
+  if (!value)
+    return null
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+
+    const parsed = new Date(normalized)
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear()
+      const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+      const day = `${parsed.getDate()}`.padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  }
+
+  return null
+}
+
+const resolveDateRange = value => {
+  if (!value)
+    return null
+
+  if (Array.isArray(value)) {
+    const from = toYmd(value[0])
+    const to = toYmd(value[1] ?? value[0])
+
+    return from && to ? [from, to] : null
+  }
+
+  if (typeof value === 'string') {
+    const splitByRange = value.split(/\s+-\s+|\s+to\s+|\s+till\s+|\s+a\s+/i)
+
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+
+      return from && to ? [from, to] : null
+    }
+
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  if (value instanceof Date) {
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  return null
+}
+
+const getDateRangePayload = () => {
+  const dateRange = resolveDateRange(date.value)
+
+  if (!dateRange)
+    return {}
+
+  return {
+    date_from: dateRange[0],
+    date_to: dateRange[1],
+  }
+}
+
+const buildRangeSelectionKey = value => {
+  if (!value)
+    return null
+
+  const normalize = item => {
+    if (!item)
+      return ''
+
+    if (item instanceof Date && !Number.isNaN(item.getTime())) {
+      const year = item.getFullYear()
+      const month = `${item.getMonth() + 1}`.padStart(2, '0')
+      const day = `${item.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof item === 'string')
+      return item.trim()
+
+    return String(item)
+  }
+
+  if (Array.isArray(value)) {
+    const first = normalize(value[0])
+    const second = normalize(value[1] ?? value[0])
+
+    return `${first}__${second}`
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return `${chunks[0]}__${chunks[1]}`
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const single = normalize(value)
+  return `${single}__${single}`
+}
+
+const isCompleteRangeSelection = value => {
+  if (!value)
+    return false
+
+  if (Array.isArray(value))
+    return value.length >= 2 && !!value[0] && !!value[1]
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+  }
+
+  return false
+}
+
+const buildExportParams = () => {
+  const data = {
+    limit: -1,
+    ...getDateRangePayload(),
+    orderByField: 'id',
+    orderBy: 'desc',
+    state_id: state_id.value,
+  }
+
+  if (Number(route.params.id) && props.isSupplier && props.customerData?.id !== null)
+    data.supplier_id = props.customerData.id
+
+  return data
+}
+
+const exportPDFAndCloseMenu = async () => {
+  if (isExportingFile.value)
+    return
+
+  if (!selectedExportType.value)
+    return
+
+  isExportingFile.value = true
+
+  try {
+    if (selectedExportType.value === 'excel') {
+      await downloadCSV()
+    } else {
+      await downloadPDF()
+    }
+
+    isExportMenuVisible.value = false
+  } finally {
+    selectedExportType.value = null
+    isExportingFile.value = false
+  }
+}
+
+const openExportDateMenu = type => {
+  exporteraMobile.value = false
+  selectedExportType.value = type
+  isExportTypeMenuVisible.value = false
+
+  nextTick(() => {
+    isExportMenuVisible.value = true
+  })
+}
+
+const onDatePickerUpdate = value => {
+  if (!selectedExportType.value)
+    return
+
+  if (!isCompleteRangeSelection(value))
+    return
+
+  const selectionKey = buildRangeSelectionKey(value)
+  if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+    return
+
+  lastExportSelectionKey.value = selectionKey
+
+  if (!isExportingFile.value)
+    exportPDFAndCloseMenu()
+}
+
 const downloadPDF = async () => {
   exporteraMobile.value = false
   emit("loading", true);
@@ -276,13 +502,9 @@ const downloadPDF = async () => {
   let pdfContainer = null
 
   try {
-    const data = {
-      limit: -1 ,
-      orderByField: "id",
-      orderBy: "desc"
-    }
+    const data = buildExportParams()
 
-    await suppliersStores.fetchSuppliers(data)
+    await supplierInvoicesStores.fetchSupplierInvoices(data)
 
     if (document.fonts?.load) {
       await Promise.all([
@@ -291,50 +513,47 @@ const downloadPDF = async () => {
       ])
     }
 
-    const rows = suppliersStores.getSuppliers.map(element => ({
-      id: element.id,
-      fullname: element.user.name + ' ' + (element.user.last_name ?? ''),
-      email: element.user.email,
-      company: element.user.user_detail.company ?? "",
-      swish: element.payout_number ?? "",
-      phone: element.user.user_detail.phone ?? "",
-      landline: element.user.user_detail.landline ?? "",
-      sender: element.sms_sender ?? '',
-      organizationNumber: element.user.user_detail.organization_number ?? "",
-      creator: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
-      status: element.state.name
+    const supplierName = supplierInvoicesStores.getSupplierInfo?.supplier_name ?? null
+
+    company.value.company = supplierInvoicesStores.getSupplierInfo?.user.user_detail.company ?? null
+    company.value.name = supplierInvoicesStores.getSupplierInfo?.user?.name ?? null
+    company.value.last_name = supplierInvoicesStores.getSupplierInfo?.user?.last_name ?? null
+    company.value.email = supplierInvoicesStores.getSupplierInfo?.user?.email ?? null
+
+    const supplier = `${supplierName}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'supplier-billings'
+
+    const rows = supplierInvoicesStores.getSupplierInvoices.map(element => ({
+      invoiceId: element.invoice_id ?? '-',
+      period: element.billing_period ?? '-',
+      invoiceDate: element.invoice_date ?? '-',
+      dueDate: element.due_date ?? '-',
+      total: `${formatNumber((Number(element.total ?? 0) + Number(element.amount_discount ?? 0))) ?? '0,00'} kr`,
+      state: element.state?.name ?? '-',
     }))
 
     const { headerMarkup } = await buildPdfTopHeader({
       company: company.value,
-      title: 'Leverantörer',
+      title: 'Fakturor',
       themeConfig,
       escapeHtml,
       showCompanyDetailsWhenLogo: true,
     })
 
     const rowsMarkup = rows.map(item => `
-      ${(() => {
-        const companyLines = [item.company, item.organizationNumber].filter(Boolean)
-        const companyMarkup = companyLines.map(line => escapeHtml(line)).join('<br />')
-
-        const contactLines = [item.fullname, item.email].filter(Boolean)
-        const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
-
-        const phoneLines = [item.phone, item.landline].filter(Boolean)
-        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
-
-        return `
       <tr style="height: 48px;">
-        <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
-        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${companyMarkup}</td>
-        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.swish)}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sender)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceId)}</td>
+        <td style="width: 18%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.period)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceDate)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.dueDate)}</td>
+        <td style="width: 17%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.total)}</td>
+        <td style="width: 17%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.state)}</td>
       </tr>
-    `
-      })()}
     `).join('')
 
     pdfContainer = document.createElement('div')
@@ -349,12 +568,12 @@ const downloadPDF = async () => {
                 <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
                   <thead>
                     <tr style="height: 48px;">
-                      <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
-                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Företag</td>
-                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Swish</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Sender</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Faktura ID</td>
+                      <td style="text-align: center; width: 18%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Period</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Fakturadatum</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Förfaller</td>
+                      <td style="text-align: center; width: 17%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Belopp</td>
+                      <td style="text-align: center; width: 17%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Status</td>
                       
                     </tr>
                   </thead>
@@ -374,7 +593,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'suppliers.pdf',
+        filename: `${supplier}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -395,31 +614,37 @@ const downloadCSV = async () => {
   exporteraMobile.value = false
   emit("loading", true);
 
-  let data = { limit: -1 }
+  let data = buildExportParams()
 
-  await suppliersStores.fetchSuppliers(data)
+  await supplierInvoicesStores.fetchSupplierInvoices(data)
 
   let dataArray = [];
       
-  suppliersStores.getSuppliers.forEach(element => {
+  supplierInvoicesStores.getSupplierInvoices.forEach(element => {
 
     let data = {
-      ID: element.id,
-      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      E_POST: element.user.email,
-      FÖRETAG: element.user.user_detail.company ?? '',
-      ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
-      SWISH: element.payout_number ?? '',
-      SENDER: element.sms_sender ?? '',
-      SKAPAD_AV: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
-      STATUS: element.state.name
+      FAKTURA_ID: element.invoice_id ?? '-',
+      PERIOD: element.billing_period ?? '-',
+      FAKTURADATUM: element.invoice_date ?? '-',
+      FÖRFALLER: element.due_date ?? '-',
+      BELOPP: `${formatNumber((Number(element.total ?? 0) + Number(element.amount_discount ?? 0))) ?? '0,00'} kr`,
+      STATUS: element.state?.name ?? '-',
     }
 
     dataArray.push(data)
   })
 
+  const supplierName = supplierInvoicesStores.getSupplierInfo?.supplier_name ?? null
+  const supplier = `${supplierName}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'supplier-billings'
+
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, supplier, "csv");
 
   emit("loading", false)
 
@@ -443,7 +668,7 @@ const downloadCSV = async () => {
       <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
       <div class="d-flex gap-2">
-        <VMenu v-if="windowWidth >= 1024">
+        <VMenu v-if="windowWidth >= 1024" v-model="isExportTypeMenuVisible">
           <template #activator="{ props }">
             <VBtn
               id="payout-export-button"
@@ -457,10 +682,10 @@ const downloadCSV = async () => {
           </template>
 
           <VList>
-            <VListItem>
+            <VListItem @click="openExportDateMenu('pdf')">
               <VListItemTitle>Exportera PDF</VListItemTitle>
             </VListItem>
-            <VListItem>
+            <VListItem @click="openExportDateMenu('excel')">
               <VListItemTitle>Exportera Excel</VListItemTitle>
             </VListItem>
           </VList>
@@ -485,6 +710,15 @@ const downloadCSV = async () => {
           Ny faktura
         </VBtn>
       </div>
+
+      <ExportDateMenu
+        v-model="date"
+        v-model:menuVisible="isExportMenuVisible"
+        :show-activator="false"
+        :is-mobile="windowWidth < 1024"
+        activator="#payout-export-button"
+        @update:modelValue="onDatePickerUpdate"
+      />
 
       <VDivider :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"/>
     </VCardText>
@@ -800,11 +1034,11 @@ const downloadCSV = async () => {
   >
     <VCard>
       <VList>
-        <VListItem>
+        <VListItem @click="openExportDateMenu('pdf')">
           <VListItemTitle>Exportera PDF</VListItemTitle>
         </VListItem>
 
-        <VListItem>
+        <VListItem @click="openExportDateMenu('excel')">
           <VListItemTitle>Exportera Excel</VListItemTitle>
         </VListItem>
       </VList>

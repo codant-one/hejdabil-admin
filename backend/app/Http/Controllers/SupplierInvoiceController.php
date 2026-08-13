@@ -73,11 +73,20 @@ class SupplierInvoiceController extends Controller
                 $supplierInvoices = $query->paginate($limit);
             }
           
+            $supplier = $request->supplier_id
+                ? Supplier::with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email')->withTrashed()])
+                    ->withTrashed()
+                    ->find($request->supplier_id)
+                : null;
+
+            $supplier->supplier_name = trim(($supplier->user->name ?? '') . ' ' . ($supplier->user->last_name ?? ''));
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'supplierInvoices' => $supplierInvoices,
-                    'supplierInvoicesTotalCount' => $supplierInvoices->total()
+                    'supplierInvoicesTotalCount' => $supplierInvoices->total(),
+                    'supplier' => $supplier
                 ]
             ]);
 

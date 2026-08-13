@@ -20,11 +20,15 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
         pendingTax: 0,
         paidTax: 0,
         expiredTax: 0,
-        state_id: null
+        state_id: null,
+        supplier_info: null,
     }),
     getters:{
         getSupplierInvoices(){
             return this.supplierInvoices
+        },
+        getSupplierInfo(){
+            return this.supplier_info
         },
         getStateId(){
             return this.state_id
@@ -51,6 +55,7 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.totalSum = response.data.data.totalSum
                     this.totalTax = response.data.data.totalTax
                     this.totalNeto = response.data.data.totalNeto
+                    this.supplier_info = response.data.data.supplier
                 })
                 .catch(error => console.log(error))
                 .finally(() => {

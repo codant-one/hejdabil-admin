@@ -118,7 +118,7 @@ class SupplierInvoice extends Model
                 [Carbon::parse($filters->get('date_from'))->format('Y-m-d').' 00:00:00'],
                 [Carbon::parse($filters->get('date_to'))->format('Y-m-d').' 23:59:59']
             ];
-            $query->whereBetween('created_at', $filter);
+            $query->whereBetween('invoice_date', $filter);// fecha de factura
         }
         
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
