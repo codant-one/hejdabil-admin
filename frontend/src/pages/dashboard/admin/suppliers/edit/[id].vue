@@ -3,6 +3,7 @@
 import { useDisplay } from "vuetify";
 import { requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
+import { handleNumericTextFieldKeydown as handlePhoneKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { formatNumberInteger } from "@/@core/utils/formatters";
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -52,6 +53,8 @@ const plan_id = ref(2)
 const is_yearly = ref(0)
 const start_date = ref(null)
 const end_date = ref(null)
+const sms_price = ref(1)
+const nonNegativeNumericRules = [numericRangeValidator({ min: 1 })]
 
 const allowNavigation = ref(false)
 const isConfirmLeaveVisible = ref(false)
@@ -185,7 +188,6 @@ watchEffect(async() => {
 
     isRequestOngoing.value = true
 
-
     if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-edit-id') {
         supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
        
@@ -213,6 +215,7 @@ watchEffect(async() => {
         is_yearly.value = Number(supplier.value.is_yearly ?? 0)
         start_date.value = supplier.value.start_date
         end_date.value = supplier.value.end_date
+        sms_price.value = formatDecimal(supplier.value.sms_price) ?? formatDecimal(supplier.value.sms_price)
 
         plans.value = suppliersStores.getPlans
         selectedPlan.value = Number(supplier.value.plan_id ?? plans.value?.[0]?.id ?? 0)
@@ -224,6 +227,16 @@ watchEffect(async() => {
         initialData.value = JSON.parse(JSON.stringify(currentData.value))
     })  
 })
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
+    }
+
+    return number.toString();
+}
 
 watch([start_date, is_yearly], ([startDateValue, isYearlyValue]) => {
     const sourceDate = parseLocalDate(startDateValue)
@@ -285,6 +298,9 @@ const showTabValidationWarning = (message) => {
 const getTabValidationErrors = () => {
     const isPhoneValid = supplierPhoneRules.value.every(rule => rule(phone.value) === true)
     const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
+    const smsPriceValue = String(sms_price.value ?? '').trim()
+    const smsPriceNumber = Number(smsPriceValue)
+    const hasInvalidSmsPrice = smsPriceValue === '' || Number.isNaN(smsPriceNumber) || smsPriceNumber < 1
 
     const hasTab0Errors = !company.value ||
                             !organization_number.value ||
@@ -300,7 +316,8 @@ const getTabValidationErrors = () => {
     const hasTab2Errors = !name.value ||
                           !last_name.value ||
                           !email.value ||
-                          !start_date.value
+                          !start_date.value ||
+                          hasInvalidSmsPrice
 
     return {
         hasTab0Errors,
@@ -440,6 +457,7 @@ const onSubmit = async () => {
                 formData.append('is_yearly', is_yearly.value)
                 formData.append('start_date', start_date.value)
                 formData.append('end_date', end_date.value)
+                formData.append('sms_price', sms_price.value)
 
                 isRequestOngoing.value = true
 
@@ -511,6 +529,7 @@ const currentData = computed(() => ({
     is_yearly: is_yearly.value,
     start_date: start_date.value,
     end_date: end_date.value,
+    sms_price: sms_price.value
 }))
 
 const isDirty = computed(() => {
@@ -863,6 +882,17 @@ onBeforeRouteLeave((to, from, next) => {
                                                 class="field-solo-flat"
                                                 placeholder="Slutdatum"
                                                 disabled
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Priset för ett sms*" />
+                                            <VTextField
+                                                v-bind="numericTextFieldProps"
+                                                v-model="sms_price"
+                                                suffix="KR"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="sms_price = normalizeNumericTextInput(sms_price)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">

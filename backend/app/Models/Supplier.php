@@ -193,7 +193,8 @@ class Supplier extends Model
             'plan_id' => $request->plan_id,
             'is_yearly' => $request->is_yearly,
             'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
-            'end_date' => $request->end_date  === 'null' ? null : $request->end_date
+            'end_date' => $request->end_date  === 'null' ? null : $request->end_date,
+            'sms_price' => $request->sms_price
         ]);
 
         $user_details = UserDetails::where('user_id', $user->id)->first();
@@ -213,7 +214,8 @@ class Supplier extends Model
             'plan_id' => $request->plan_id,
             'is_yearly' => $request->is_yearly,
             'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
-            'end_date' => $request->end_date  === 'null' ? null : $request->end_date
+            'end_date' => $request->end_date  === 'null' ? null : $request->end_date,
+            'sms_price' => $request->sms_price
         ]);
         
         if( $supplier->boss_id > 0 )

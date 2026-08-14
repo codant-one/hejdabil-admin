@@ -147,7 +147,7 @@ class GenerateSupplierBilling extends Command
 
             $smsSummary = [
                 'count' => 0,
-                'unit_price' => 2.0,
+                'unit_price' => $supplier->sms_price ?? 1.0,
                 'total' => 0.0,
                 'from' => null,
                 'to' => null,
@@ -165,8 +165,8 @@ class GenerateSupplierBilling extends Command
 
                 $smsSummary = [
                     'count' => $totalSMS,
-                    'unit_price' => 2.0,
-                    'total' => round($totalSMS * 2, 2),
+                    'unit_price' => $supplier->sms_price ?? 1.0,
+                    'total' => round($totalSMS * ($supplier->sms_price ?? 1.0), 2),
                     'from' => $filterStart,
                     'to' => $filterEnd,
                 ];
@@ -244,8 +244,8 @@ class GenerateSupplierBilling extends Command
             $totalSMS = (int) ($smsSummary['count'] ?? 0);
 
             if ($totalSMS > 0) {
-                $unitPrice = (float) ($smsSummary['unit_price'] ?? 2.0);
-                $priceSMS = number_format((float) ($smsSummary['total'] ?? 0), 2, '.', '');
+                $unitPrice = (float) ($smsSummary['unit_price'] ?? $supplier->sms_price ?? 1.0);
+                $priceSMS = number_format((float) ($smsSummary['total'] ?? round($totalSMS * $unitPrice, 2)), 2, '.', '');
                 $from = $smsSummary['from'] instanceof Carbon ? $smsSummary['from'] : null;
                 $to = $smsSummary['to'] instanceof Carbon ? $smsSummary['to'] : null;
                 $time = ($from ? $from->format('y.m.d') : '-') . ' - ' . ($to ? $to->format('y.m.d') : '-');
