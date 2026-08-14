@@ -112,6 +112,19 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        replaceFile(data) {
+            this.setLoading(true)
+
+            return SupplierInvoices.replaceFile(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
     }
 })

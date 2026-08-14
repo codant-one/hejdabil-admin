@@ -77,6 +77,8 @@ const isConfirmKreditera = ref(false)
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 const isConfirmStateDialogVisible = ref(false);
+const replaceFileInput = ref(null)
+const billingToReplaceFile = ref(null)
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -261,6 +263,68 @@ const downloadBillingPdf = async (billing) => {
     document.body.removeChild(a);
   } catch (error) {
     console.error("Error:", error);
+  }
+}
+
+const replaceFile = billing => {
+  if (!billing?.id)
+    return
+
+  billingToReplaceFile.value = billing
+  replaceFileInput.value?.click()
+}
+
+const onReplaceFileSelected = async event => {
+  const target = event?.target
+  const file = target?.files?.[0]
+
+  if (!file || !billingToReplaceFile.value?.id) {
+    if (target)
+      target.value = ''
+
+    return
+  }
+
+  const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+
+  if (!isPdfFile) {
+    advisor.value = {
+      type: 'error',
+      message: 'Endast PDF-filer är tillåtna',
+      show: true,
+    }
+
+    emit('alert', advisor)
+
+    target.value = ''
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    emit('loading', true)
+
+    const response = await supplierInvoicesStores.replaceFile({
+      id: billingToReplaceFile.value.id,
+      data: formData,
+    })
+
+    advisor.value = {
+      type: response?.data?.success ? 'success' : 'error',
+      message: response?.data?.success ? 'Fakturan har ersatts' : (response?.data?.message || 'Något gick fel'),
+      show: true,
+    }
+
+    emit('alert', advisor)
+
+    if (response?.data?.success)
+      await fetchData()
+  } finally {
+    emit('loading', false)
+    billingToReplaceFile.value = null
+    target.value = ''
   }
 }
 
@@ -916,6 +980,13 @@ const downloadCSV = async () => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
+                  <VListItem 
+                    @click="replaceFile(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-upload" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ersätta faktura</VListItemTitle>
+                  </VListItem>
                   <VListItem
                     v-if="billing.state_id !== 9 && billing.is_credit === 0"
                     @click="credit(billing)"
@@ -1115,6 +1186,14 @@ const downloadCSV = async () => {
           <VListItemTitle>Ladda ner</VListItemTitle>
         </VListItem>
         <VListItem
+          @click="replaceFile(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-upload" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Ersätta faktura</VListItemTitle>
+        </VListItem>
+        <VListItem
           v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
           @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
         >
@@ -1200,6 +1279,14 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <input
+      ref="replaceFileInput"
+      type="file"
+      accept="application/pdf,.pdf"
+      style="display: none"
+      @change="onReplaceFileSelected"
+    >
 </template>
 
 <style>

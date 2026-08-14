@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
@@ -273,5 +274,58 @@ class SupplierInvoiceController extends Controller
     public function reminder($id)
     {
         //
+    }
+
+    public function replaceFile(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'invalid_data',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            $billing = SupplierInvoice::find($id);
+
+            if (!$billing) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+            }
+
+            if (!$billing->file) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'file_not_found',
+                    'message' => 'Fakturan saknar filväg'
+                ], 422);
+            }
+
+            $uploadedFile = $request->file('file');
+
+            Storage::disk('public')->put($billing->file, file_get_contents($uploadedFile->getRealPath()));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fakturan har ersatts',
+                'data' => [
+                    'billing' => $billing,
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 }

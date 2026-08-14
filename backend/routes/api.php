@@ -180,6 +180,7 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::get('/updateState/{id}', [SupplierInvoiceController::class, 'updateState']);
         Route::get('/credit/{id}', [SupplierInvoiceController::class, 'credit']);
         Route::get('/reminder/{id}', [SupplierInvoiceController::class, 'reminder']);
+        Route::post('/replaceFile/{id}', [SupplierInvoiceController::class, 'replaceFile']);
     });
 
     //Suppliers

@@ -33,6 +33,10 @@ class SupplierInvoices {
     reminder(id) {
         return axios.get(`/supplier-invoices/reminder/${id}`)
     }
+
+    replaceFile(data) {
+        return axios.post(`/supplier-invoices/replaceFile/${data.id}`, data.data)
+    }
 }
 
 const supplierInvoices = new SupplierInvoices();

@@ -19,10 +19,13 @@ const invoices = ref([]);
 const invoice = ref(null);
 const isRequestOngoing = ref(true);
 const file = ref(false);
+const pdfCacheBuster = ref(Date.now())
 
 const isMobileActionDialogVisible = ref(false);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmKreditera = ref(false);
+const replaceFileInput = ref(null)
+const billingToReplaceFile = ref(null)
 
 const advisor = ref({
   type: "",
@@ -67,6 +70,13 @@ const backToSupplierBillingRoute = computed(() => {
   }
 })
 
+const pdfSource = computed(() => {
+  if (!invoice.value?.file)
+    return ''
+
+  return `${themeConfig.settings.urlbase}proxy-image?url=${themeConfig.settings.urlStorage}${invoice.value.file}&v=${pdfCacheBuster.value}`
+})
+
 const updatePdfViewportWidth = () => {
   const el = pdfViewportEl.value;
   if (!el)
@@ -100,6 +110,7 @@ watchEffect(async () => {
 async function fetchData() {
   if (Number(route.params.id) && route.name === "dashboard-admin-suppliers-billings-id") {
     isRequestOngoing.value = true;
+    invoices.value = [];
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     canShowBillingSmsAction.value = await loadBillingSmsActionPreference(userData.value)
 
@@ -111,6 +122,67 @@ async function fetchData() {
     });
 
     isRequestOngoing.value = false;
+  }
+}
+
+const replaceFile = billing => {
+  if (!billing?.id)
+    return
+
+  billingToReplaceFile.value = billing
+  replaceFileInput.value?.click()
+}
+
+const onReplaceFileSelected = async event => {
+  const target = event?.target
+  const file = target?.files?.[0]
+
+  if (!file || !billingToReplaceFile.value?.id) {
+    if (target)
+      target.value = ''
+
+    return
+  }
+
+  const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+
+  if (!isPdfFile) {
+    advisor.value = {
+      type: 'error',
+      message: 'Endast PDF-filer är tillåtna',
+      show: true,
+    }
+
+    target.value = ''
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    isRequestOngoing.value = true;
+
+    const response = await supplierInvoicesStores.replaceFile({
+      id: billingToReplaceFile.value.id,
+      data: formData,
+    })
+
+    advisor.value = {
+      type: response?.data?.success ? 'success' : 'error',
+      message: response?.data?.success ? 'Fakturan har ersatts' : (response?.data?.message || 'Något gick fel'),
+      show: true,
+    }
+
+    await fetchData();
+
+    if (response?.data?.success)
+      pdfCacheBuster.value = Date.now()
+
+  } finally {
+    isRequestOngoing.value = false;
+    billingToReplaceFile.value = null
+    target.value = ''
   }
 }
 
@@ -290,7 +362,7 @@ onBeforeUnmount(() => {
 
       <VBtn
         v-if="
-          $can('view', 'billings') &&
+          $can('view', 'suppliers') &&
           (invoice.state_id === 4 || invoice.state_id === 8) &&
           invoice.user_id !== null
         "
@@ -335,15 +407,11 @@ onBeforeUnmount(() => {
           <div ref="pdfViewportEl" class="invoice-panel">
             <div class="pdf-host" :style="{ width: `${pdfWidth}px` }">
               <VuePdfEmbed
+                :key="pdfSource"
                 text-layer
                 :width="pdfWidth"
                 :scale="pdfScale"
-                :source="
-                  themeConfig.settings.urlbase +
-                  'proxy-image?url=' +
-                  themeConfig.settings.urlStorage +
-                  invoice.file
-                "
+                :source="pdfSource"
                 class="w-100 m-auto"
               />
             </div>
@@ -359,7 +427,7 @@ onBeforeUnmount(() => {
           <VCardText :class="windowWidth < 1024 ? 'pa-6' : 'pa-4'">
             <VBtn 
               v-if="
-                $can('view', 'billings') &&
+                $can('view', 'suppliers') &&
                 (invoice.state_id === 4 || invoice.state_id === 8) &&
                 invoice.user_id !== null
               "
@@ -384,7 +452,7 @@ onBeforeUnmount(() => {
             <VDivider class="mb-4" />
 
             <VBtn
-              v-if="$can('edit', 'billings') && (invoice.state_id === 4 || invoice.state_id === 8)"
+              v-if="$can('edit', 'suppliers') && (invoice.state_id === 4 || invoice.state_id === 8)"
               class="btn-light w-100 mb-4"
               @click="updateBilling"
             >
@@ -395,7 +463,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id === 7 && invoice.is_credit === 0"
+              v-if="$can('edit', 'suppliers') && invoice.state_id === 7 && invoice.is_credit === 0"
               class="btn-light w-100 mb-4"
               @click="updateBilling"
             >
@@ -406,7 +474,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn 
-              v-if="$can('view', 'billings')"
+              v-if="$can('view', 'suppliers')"
               class="btn-light w-100 mb-4"
               @click="download">
               <template #prepend>
@@ -416,7 +484,17 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn 
-              v-if="$can('view', 'billings')"
+              v-if="$can('view', 'suppliers')"
+              class="btn-light w-100 mb-4"
+              @click="replaceFile(invoice)">
+              <template #prepend>
+                <VIcon icon="custom-upload" size="24" />
+              </template>
+              Ersätta faktura
+            </VBtn>
+
+            <VBtn 
+              v-if="$can('view', 'suppliers')"
               class="btn-light w-100 mb-4" 
               @click="printInvoice">
               <template #prepend>
@@ -426,7 +504,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.is_credit === 0"
+              v-if="$can('edit', 'suppliers') && invoice.state_id !== 9 && invoice.is_credit === 0"
               class="btn-light w-100"
               @click="credit(invoice)"
             >
@@ -449,7 +527,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            v-if="$can('edit', 'billings') && (invoice.state_id === 4 || invoice.state_id === 8)"
+            v-if="$can('edit', 'suppliers') && (invoice.state_id === 4 || invoice.state_id === 8)"
             @click="updateBilling(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -458,7 +536,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.state_id === 7 && invoice.is_credit === 0"
+            v-if="$can('edit', 'suppliers') && invoice.state_id === 7 && invoice.is_credit === 0"
             @click="updateBilling(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -468,7 +546,7 @@ onBeforeUnmount(() => {
           </VListItem>
 
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('view', 'suppliers')"
             @click="printInvoice(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -477,7 +555,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skriv ut</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('view', 'suppliers')"
             @click="download(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -486,7 +564,16 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.is_credit === 0"
+            v-if="$can('view', 'suppliers')"
+            @click="replaceFile(invoice); isMobileActionDialogVisible = false"
+          >
+            <template #prepend>
+              <VIcon icon="custom-upload" size="24" />
+            </template>
+            <VListItemTitle>Ersätta faktura</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'suppliers') && invoice.state_id !== 9 && invoice.is_credit === 0"
             @click="credit(invoice); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -574,6 +661,14 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <input
+      ref="replaceFileInput"
+      type="file"
+      accept="application/pdf,.pdf"
+      style="display: none"
+      @change="onReplaceFileSelected"
+    >
   </section>
 </template>
 
