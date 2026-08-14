@@ -4,23 +4,9 @@ import SupplierInvoices from '@/api/supplierInvoices'
 export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
     state: () => ({
         supplierInvoices: {},
-        suppliers: {},
-        clients: {},
         loading: false,
         last_page: 1,
         supplierInvoicesTotalCount: 6,
-        totalSum: 0,
-        totalTax: 0,
-        totalNeto: 0,
-        sum: 0,
-        tax: 0,
-        totalPending: 0,
-        totalPaid: 0,
-        totalExpired: 0,
-        pendingTax: 0,
-        paidTax: 0,
-        expiredTax: 0,
-        state_id: null,
         supplier_info: null,
     }),
     getters:{
@@ -29,20 +15,11 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
         },
         getSupplierInfo(){
             return this.supplier_info
-        },
-        getStateId(){
-            return this.state_id
         }
     },
     actions: {
         setLoading(payload) {
             this.loading = payload
-        },
-        setStateId(state_id) {
-            this.state_id = state_id
-        },
-        cleanData() {
-            this.state_id = null
         },
         fetchSupplierInvoices(params) {
             this.setLoading(true)
@@ -52,9 +29,6 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.supplierInvoices = response.data.data.supplierInvoices.data
                     this.last_page = response.data.data.supplierInvoices.last_page
                     this.supplierInvoicesTotalCount = response.data.data.supplierInvoicesTotalCount
-                    this.totalSum = response.data.data.totalSum
-                    this.totalTax = response.data.data.totalTax
-                    this.totalNeto = response.data.data.totalNeto
                     this.supplier_info = response.data.data.supplier
                 })
                 .catch(error => console.log(error))

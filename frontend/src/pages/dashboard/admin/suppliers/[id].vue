@@ -44,6 +44,36 @@ const tabs = [
     { icon: 'custom-business', title: 'Företag' }
 ]
 
+const TAB_INDEX_BY_KEY = {
+    overview: 0,
+    security: 1,
+    billing: 2,
+    company: 3,
+}
+
+const resolveTabFromQuery = tab => {
+    if (typeof tab === 'string') {
+        const normalized = tab.trim().toLowerCase()
+
+        if (Object.prototype.hasOwnProperty.call(TAB_INDEX_BY_KEY, normalized))
+            return TAB_INDEX_BY_KEY[normalized]
+
+        const asNumber = Number(normalized)
+        if (Number.isInteger(asNumber) && asNumber >= 0 && asNumber < tabs.length)
+            return asNumber
+    }
+
+    return 0
+}
+
+watch(
+    () => route.query.tab,
+    tab => {
+        userTab.value = resolveTabFromQuery(tab)
+    },
+    { immediate: true }
+)
+
 watchEffect(fetchData)
 
 async function fetchData() {

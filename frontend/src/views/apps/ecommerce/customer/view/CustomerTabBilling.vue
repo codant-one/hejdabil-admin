@@ -9,6 +9,7 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import companyAvatar from "@/assets/images/avatars/company.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2pdf from 'html2pdf.js'
+import router from "@/router";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -75,6 +76,7 @@ const isConfirmKreditera = ref(false)
 
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+const isConfirmStateDialogVisible = ref(false);
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -165,12 +167,27 @@ async function fetchData(cleanFilters = false) {
   }
 }
 
-const updateBillingState = async billing => {
-  if (!billing?.id)
-    return
+const updateBilling = (billingData) => {
+  isConfirmStateDialogVisible.value = true;
+  selectedBilling.value = { ...billingData };
+};
+
+const updateState = async () => {
+  isConfirmStateDialogVisible.value = false;
 
   try {
-    await supplierInvoicesStores.updateState(billing.id)
+    emit("loading", true);
+    
+    let res = await supplierInvoicesStores.updateState(selectedBilling.value.id);
+    
+    advisor.value = {
+      type: res.data.success ? "success" : "error",
+      message: res.data.success ? "Fakturan uppdaterad!" : res.data.message,
+      show: true,
+    };
+
+    emit('alert', advisor)
+
     await fetchData()
   } finally {
     emit("loading", false);
@@ -190,6 +207,13 @@ const openBillingPdf = billing => {
 
   window.open(themeConfig.settings.urlStorage + billing.file)
 }
+
+const showBilling = (billingData) => {
+  router.push({
+    name: "dashboard-admin-suppliers-billings-id",
+    params: { id: billingData.id },
+  });
+};
 
 const printBilling = async billing => {
   if (!billing?.file)
@@ -849,9 +873,7 @@ const downloadCSV = async () => {
                 </template>
 
                 <VList>
-                  <VListItem
-                    v-if="$can('view', 'billings')"
-                  >
+                  <VListItem @click="showBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
@@ -859,7 +881,7 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem 
                     v-if="billing.state_id === 4 || billing.state_id === 8"
-                    @click="updateBillingState(billing)">
+                    @click="updateBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-bribery" size="24" class="mr-2" />
                     </template>
@@ -867,7 +889,7 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem
                       v-if="billing.state_id === 7 && billing.is_credit === 0"
-                      @click="updateBillingState(billing)">
+                      @click="updateBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
                     </template>
@@ -990,7 +1012,7 @@ const downloadCSV = async () => {
               </div>
             </div>
             <div class="d-flex gap-4">
-              <VBtn class="btn-light flex-1">
+              <VBtn class="btn-light flex-1" @click="showBilling(billing)">
                 <VIcon icon="custom-eye" size="24" />
                 Se detaljer
               </VBtn>
@@ -1046,64 +1068,64 @@ const downloadCSV = async () => {
   </VDialog>
 
   <!-- 👉 Mobile Action Dialog -->
-    <VDialog
-      v-model="isMobileActionDialogVisible"
-      transition="dialog-bottom-transition"
-      content-class="dialog-bottom-full-width"
-    >
-      <VCard>
-        <VList>
-          <VListItem
-            v-if="selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8"
-            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-cash-2" size="24" />
-            </template>
-            <VListItemTitle>Markera som betald</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
-            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Markera som obetald</VListItemTitle>
-          </VListItem>
-          <VListItem
-              @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-print" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Skriv ut</VListItemTitle>
-          </VListItem>
-          <VListItem
-              @click="openBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-pdf" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Visa som PDF</VListItemTitle>
-          </VListItem>
-          <VListItem 
-            @click="downloadBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-download" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Ladda ner</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
-            @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Kreditera</VListItemTitle>
-          </VListItem>
-        </VList>
-      </VCard>
-    </VDialog>
+  <VDialog
+    v-model="isMobileActionDialogVisible"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard>
+      <VList>
+        <VListItem
+          v-if="selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8"
+          @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-bribery" size="24" />
+          </template>
+          <VListItemTitle>Markera som betald</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
+          @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Markera som obetald</VListItemTitle>
+        </VListItem>
+        <VListItem
+            @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-print" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Skriv ut</VListItemTitle>
+        </VListItem>
+        <VListItem
+            @click="openBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-pdf" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Visa som PDF</VListItemTitle>
+        </VListItem>
+        <VListItem 
+          @click="downloadBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-download" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Ladda ner</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
+          @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Kreditera</VListItemTitle>
+        </VListItem>
+      </VList>
+    </VCard>
+  </VDialog>
 
   <VDialog
     v-model="isConfirmKreditera"
@@ -1113,7 +1135,7 @@ const downloadCSV = async () => {
     <VBtn
       icon
       class="btn-white close-btn"
-      @click="isConfirmKreditera = false"
+      @click="isConfirmKreditera = !isConfirmKreditera"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
@@ -1140,6 +1162,44 @@ const downloadCSV = async () => {
       </VCardText>
     </VCard>
   </VDialog>
+
+      <!-- 👉 Update State -->
+    <VDialog
+      v-model="isConfirmStateDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+          <div class="dialog-title">
+            Uppdatera status
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill uppdatera fakturans status
+          <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+          {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
 </template>
 
 <style>

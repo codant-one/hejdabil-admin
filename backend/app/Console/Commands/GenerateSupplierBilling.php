@@ -200,7 +200,8 @@ class GenerateSupplierBilling extends Command
                 'detail' => $details,
             ]);
 
-            $nextBillingDate = Carbon::parse($lockedSupplier->start_date);
+            // Advance from the current billing cursor to avoid re-billing the same month.
+            $nextBillingDate = Carbon::parse($lockedSupplier->next_billing_date);
             $nextBillingDate = $supplier->is_yearly
                 ? $nextBillingDate->addYear()
                 : $nextBillingDate->addMonth();
@@ -210,7 +211,7 @@ class GenerateSupplierBilling extends Command
 
             $this->generatePdf($billing);
             $this->sendNotification($billing);
-            $this->sendEmail($billing);
+            //$this->sendEmail($billing);
 
             return true;
         });

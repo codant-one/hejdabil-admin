@@ -112,7 +112,42 @@ class SupplierInvoiceController extends Controller
      */
     public function show($id)
     {
-        //
+        try {
+
+            $supplierInvoice = 
+                SupplierInvoice::with([
+                    'supplier' => function($query) {
+                        $query->withTrashed()
+                            ->with(['user' => function($query) {
+                                $query->withTrashed();
+                            }]);
+                    },
+                    'supplier.user.userDetail',
+                    'state',
+                    'user.userDetail'
+                ])->find($id);
+
+            if (!$supplierInvoice)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'supplierInvoice' => $supplierInvoice
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
       /**
