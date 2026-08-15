@@ -137,6 +137,119 @@ class SupplierInvoice extends Model
     }
 
     /**** Public methods ****/
+    public static function createBilling($request) {
+
+        $details = array_map(function($item) {
+            $decoded = json_decode($item, true);
+            
+            if (isset($decoded['note'])) {
+                return [$decoded]; // Devuelve el objeto de nota directamente
+            }
+
+            return array_map(function($value, $key) {
+                return [
+                    'id' => $key,
+                    'value' => in_array($key, [3, 4]) ? number_format($value, 2, '.', '') : $value
+                ];
+            }, $decoded, array_keys($decoded));
+        }, $request->details);
+
+        $billing = self::create([
+            'user_id' => Auth::user()->id,
+            'supplier_id' => $request->supplier_id,
+            'state_id' => 4,
+            'billing_period' => $request->billing_period,
+            'invoice_id' =>  $request->invoice_id,
+            'invoice_date' =>  $request->invoice_date,
+            'due_date' =>  $request->due_date,
+            'payment_terms' =>  $request->payment_terms . ' dagar netto',
+            'terms_and_conditions' => $request->terms_and_conditions,
+            'rabatt' =>  $request->rabatt,
+            'discount' =>  $request->discount,
+            'amount_discount' =>  $request->amount_discount,
+            'amount_tax' => '-' . $request->amount_tax,
+            'subtotal' => '-' . $request->subtotal,
+            'tax' => $request->tax,
+            'total' =>  '-' . $request->total,
+            'detail' => json_encode($details, true),
+        ]);    
+
+        $supplier = Supplier::with(['user'])->find($billing->supplier_id);
+        $billing = self::with(['supplier.user', 'user.userDetail'])->find($billing->id);
+        $types = Invoice::all();
+        $invoices = [];
+  
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo = Config::getByKey('logo') ?? ['value' => '[]'];
+        $configColor = Config::getByKey('color') ?? ['value' => '[]'];
+        $configBillings = Config::getByKey('billings') ?? ['value' => '[]'];
+
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+
+            return '[]';
+        };
+
+        $decodeSafe = function ($raw) {
+            $decoded = json_decode($raw);
+
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+
+            return $decoded;
+        };
+
+        $company = $decodeSafe($getValue($configCompany));
+        $logoObj = $decodeSafe($getValue($configLogo));
+        $colorObj = $decodeSafe($getValue($configColor));
+        $billingsObj = $decodeSafe($getValue($configBillings));
+
+        $company->logo = $logoObj->logo ?? null;
+        $company->type = $billingsObj->type ?? 1;
+        $company->theme = $colorObj->theme ?? 0;
+
+        $colorSettingId = $colorObj->setting_color_id ?? null;
+
+        if ($colorSettingId) {
+            $color = SettingColor::find($colorSettingId);
+
+            $company->primary_color = $color->primary ?? '#4BBDAA';
+            $company->secondary_color = $color->secondary ?? '#E8F6F4';
+        } else {
+            $company->primary_color = $colorObj->primary_color ?? '#4BBDAA';
+            $company->secondary_color = $colorObj->secondary_color ?? '#E8F6F4';
+        }
+
+        $details = json_decode($billing->detail, true);
+
+        foreach ($details as $row) {
+            $invoices[] = $row;
+        }
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755, true);
+        }
+
+        PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf');
+
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf';
+        $billing->update();
+
+        return $billing;
+    }
+
     public static function createCredit($billing) {
         $maxInvoiceId = self::where('supplier_id', $billing->supplier_id)->max('invoice_id');
         $invoiceId = ((int) ($maxInvoiceId ?? 0)) + 1;

@@ -105,7 +105,36 @@ class SupplierInvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+
+            $supplierInvoice = SupplierInvoice::createBilling($request);
+
+            /*SupplierActivity::createActivity([
+                'entity_id' => $supplierInvoice->id,
+                'entity_type' => 'billings',
+                'action_type' => 'create_billing',
+                'title' => 'Faktura #'.$supplierInvoice->invoice_id.' - tillagd',
+                'description' => 'En ny faktura har lagts till.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$supplierInvoice->id,
+                'metadata' => json_encode([
+                    'billing_id' => $supplierInvoice->id,
+                    'new_values' => $this->billingActivityValues($supplierInvoice),
+                ])
+            ]);*/
+
+            return response()->json([
+                'success' => true,
+                'billing' => SupplierInvoice::with('state')->find($supplierInvoice->id)
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -271,11 +300,6 @@ class SupplierInvoiceController extends Controller
         }
     }
 
-    public function reminder($id)
-    {
-        //
-    }
-
     public function replaceFile(Request $request, $id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -325,6 +349,31 @@ class SupplierInvoiceController extends Controller
                 'success' => false,
                 'message' => 'database_error',
                 'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function all(Request $request): JsonResponse
+    {
+        try {
+
+            $invoice_id = (int) (
+                SupplierInvoice::where('supplier_id', $request->supplier_id)->max('invoice_id') ?? 0
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'invoices' => CacheService::getInvoices(),
+                    'invoice_id' => $invoice_id + 1
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
             ], 500);
         }
     }

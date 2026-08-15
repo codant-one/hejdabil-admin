@@ -211,7 +211,7 @@ class GenerateSupplierBilling extends Command
 
             $this->generatePdf($billing);
             $this->sendNotification($billing);
-            //$this->sendEmail($billing);
+            $this->sendEmail($billing);
 
             return true;
         });

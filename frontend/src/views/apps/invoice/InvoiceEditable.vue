@@ -62,6 +62,15 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  showSupplier: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
+  supplierBilling: {
+    type: Object,
+    required: false,
+  },
   title: {
     type: String,
     required: false,
@@ -873,7 +882,7 @@ const handleFocus = (element, fieldId) => {
                   v-model="invoice.days"
                   v-bind="numericTextFieldProps"
                   label="Dagar"
-                  :disabled="props.isCredit"
+                  :disabled="props.isCredit || !props.showSupplier"
                   :rules="nonNegativeIntegerRules"
                   @input="invoice.days = normalizeNumericTextInput(invoice.days)"
                   @keydown="handleNumericTextFieldKeydown"
@@ -925,6 +934,7 @@ const handleFocus = (element, fieldId) => {
       </VCardText>
 
       <VCardText
+        v-if="props.showSupplier"
         class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 p-0 w-100"
       >
         <div class="rouded-select">
@@ -1505,7 +1515,8 @@ const handleFocus = (element, fieldId) => {
             <div 
               class="rouded-select" 
               v-if="
-                props.role === 'SuperAdmin' || props.role === 'Administrator'
+                (props.role === 'SuperAdmin' || props.role === 'Administrator') &&
+                props.showSupplier
               "
             >
               <AppAutocomplete
@@ -1536,7 +1547,7 @@ const handleFocus = (element, fieldId) => {
                 </template>
               </AppAutocomplete>
             </div>
-            <div class="rouded-select">
+            <div class="rouded-select" v-if="props.showSupplier">
               <AppAutocomplete
                 v-model="invoice.client_id"
                 :items="clients"

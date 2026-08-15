@@ -101,18 +101,6 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.setLoading(false)
                 })  
         },
-        reminder(id) {
-            this.setLoading(true)
-
-            return SupplierInvoices.reminder(id)
-                .then((response) => {
-                    return Promise.resolve(response)
-                })
-                .catch(error => Promise.reject(error))
-                .finally(() => {
-                    this.setLoading(false)
-                })  
-        },
         replaceFile(data) {
             this.setLoading(true)
 
@@ -125,6 +113,18 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.setLoading(false)
                 })
             
+        },
+        all(params) {
+            this.setLoading(true)
+
+            return SupplierInvoices.all(params)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
         },
     }
 })
