@@ -164,13 +164,13 @@ class SupplierInvoice extends Model
             'due_date' =>  $request->due_date,
             'payment_terms' =>  $request->payment_terms . ' dagar netto',
             'terms_and_conditions' => $request->terms_and_conditions,
+            'subtotal' =>  $request->subtotal,
+            'tax' =>  $request->tax,
+            'total' =>  $request->total,
             'rabatt' =>  $request->rabatt,
             'discount' =>  $request->discount,
             'amount_discount' =>  $request->amount_discount,
-            'amount_tax' => '-' . $request->amount_tax,
-            'subtotal' => '-' . $request->subtotal,
-            'tax' => $request->tax,
-            'total' =>  '-' . $request->total,
+            'amount_tax' => ($request->tax * $request->subtotal) / 100,
             'detail' => json_encode($details, true),
         ]);    
 

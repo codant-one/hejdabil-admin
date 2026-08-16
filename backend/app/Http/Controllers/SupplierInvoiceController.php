@@ -364,6 +364,7 @@ class SupplierInvoiceController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
+                    'suppliers' => CacheService::getActiveSuppliers(),
                     'invoices' => CacheService::getInvoices(),
                     'invoice_id' => $invoice_id + 1
                 ]

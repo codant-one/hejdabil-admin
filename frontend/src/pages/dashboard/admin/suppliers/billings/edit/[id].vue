@@ -4,19 +4,19 @@ import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from "vue-router";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
-import { useSupplierInvoicesStores } from "@/stores/useSupplierInvoices";
+import { useBillingsStores } from "@/stores/useBillings";
 import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
-const route = useRoute()
-const configsStores = useConfigsStores();
 const authStores = useAuthStores();
-const supplierInvoices = useSupplierInvoicesStores()
+const billingsStores = useBillingsStores();
+const configsStores = useConfigsStores();
 const ability = useAppAbility();
 const emitter = inject("emitter");
+const route = useRoute();
 
 const advisor = ref({
   type: "",
@@ -29,32 +29,35 @@ const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
+const initialInvoiceData = ref(null);
+const savedInvoiceData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
+const invoiceEditableRef = ref(null);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const err = ref(null);
+
 // 👉 Default Blank Data
 const validate = ref();
 const invoiceData = ref([]);
 const band = ref(true);
 const total = ref(0);
 const isRequestOngoing = ref(true);
+const billing = ref([]);
 const invoice = ref([]);
 const invoices = ref([]);
-const invoice_id = ref(0);
 const suppliers = ref([]);
-
-const billing_id = ref(null);
-const billing = ref(null);
-const invoiceEditableRef = ref(null);
-const err = ref(null);
-const skapatsDialog = ref(false);
-const inteSkapatsDialog = ref(false);
-const isConfirmLeaveVisible = ref(false);
+const clients = ref([]);
+const invoice_id = ref(0);
 
 const userData = ref(null);
 const role = ref(null);
 const company = ref({});
 
-const DEFAULT_BILLING_DUE_DATES = 10;
+const DEFAULT_BILLING_DUE_DATES = 5;
 const DEFAULT_BILLING_TERMS = "Efter forfallodagen debiteras ranta enligt rantelagen.";
-const supplierId = ref(Number(route.query.supplier_id))
 
 const discount = ref(0);
 const rabattApplied = ref(false);
@@ -63,10 +66,11 @@ const amount_discount = ref(0);
 const seeDialogRemove = ref(false);
 const selectedInvoice = ref({});
 
-const initialInvoiceData = ref(null);
-const savedInvoiceData = ref(null);
-const allowNavigation = ref(false);
-const nextRoute = ref(null);
+const extractDaysFromNetTermSplit = (term) => {
+  const parts = term.split(/\s+/);
+  const daysIndex = parts.findIndex((part) => /dagar?/i.test(part));
+  return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
+};
 
 const currentInvoiceData = computed(() => ({
   invoice: invoice.value,
@@ -84,7 +88,7 @@ const isDirty = computed(() => {
 });
 
 const hasChangedSinceSave = computed(() => {
-  if (!savedInvoiceData.value) return true; // Never saved, so consider it "changed"
+  if (!savedInvoiceData.value) return true;
   try {
     return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(savedInvoiceData.value);
   } catch (e) {
@@ -95,72 +99,147 @@ const hasChangedSinceSave = computed(() => {
 watchEffect(fetchData);
 
 async function fetchData() {
-  isRequestOngoing.value = true;
+  if (
+    Number(route.params.id) &&
+    route.name === "dashboard-admin-billings-edit-id"
+  ) {
+    isRequestOngoing.value = true;
 
-  const applyBillingSettings = (settings) => {
-    company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
-    company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
-      ? settings.terms_and_conditions
-      : DEFAULT_BILLING_TERMS;
-  };
+    const applyBillingSettings = (settings) => {
+      company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
+      company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
+        ? settings.terms_and_conditions
+        : DEFAULT_BILLING_TERMS;
+    };
 
-  let response = await supplierInvoices.all({ supplier_id: supplierId.value });
+    billing.value = await billingsStores.showBilling(Number(route.params.id));
 
-  suppliers.value = response.data.data.suppliers;
-  invoices.value = response.data.data.invoices;
-  invoice_id.value = response.data.data.invoice_id;
+    invoice.value.id = billing.value.invoice_id;
+    invoice.value.reference = billing.value.reference;
+    invoice.value.invoice_date = billing.value.invoice_date;
+    invoice.value.due_date = billing.value.due_date;
+    invoice.value.days = extractDaysFromNetTermSplit(
+      billing.value.payment_terms
+    );
+    invoice.value.terms = billing.value.terms_and_conditions;
+    invoice.value.supplier_id = billing.value.supplier_id ?? null;
+    invoice.value.client_id = billing.value.client_id;
+    invoice.value.subtotal = billing.value.subtotal;
+    invoice.value.total = billing.value.total;
+    invoice.value.tax = billing.value.tax;
+    discount.value = billing.value.discount;
+    rabattApplied.value = billing.value.rabatt;
+    amount_discount.value = billing.value.amount_discount;
 
-  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-  role.value = userData.value.roles[0].name;
+    invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
+      const detailObject = {};
+      element.forEach((item) => {
+        detailObject[item.id] = item.value;
+      });
+      return detailObject;
+    });
 
-  const { user_data, userAbilities } = await authStores.me(userData.value);
+    let response = await billingsStores.all();
 
-  localStorage.setItem("userAbilities", JSON.stringify(userAbilities));
+    clients.value = response.data.data.clients;
+    suppliers.value = response.data.data.suppliers;
+    invoices.value = response.data.data.invoices;
+    invoice_id.value = response.data.data.invoice_id;
 
-  ability.update(userAbilities);
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+    role.value = userData.value.roles[0].name;
 
-  localStorage.setItem("user_data", JSON.stringify(user_data));
+    const { user_data, userAbilities } = await authStores.me(userData.value);
 
- 
-    await configsStores.getFeature("company");
-    await configsStores.getFeature("logo");
-    await configsStores.getFeature("billings");
+    localStorage.setItem("userAbilities", JSON.stringify(userAbilities));
 
-    company.value = configsStores.getFeaturedConfig("company");
-    company.value.billings = response.data.data.billings;
-    company.value.logo = configsStores.getFeaturedConfig("logo").logo;
-    applyBillingSettings(configsStores.getFeaturedConfig("billings"));
+    ability.update(userAbilities);
 
+    localStorage.setItem("user_data", JSON.stringify(user_data));
 
-  var item = {};
-  invoices.value.forEach((element) => {
-    var value = "";
-    switch (element.type_id) {
-      case 1:
-        value = "";
-        break;
-      case 2:
-        value = 1;
-        break;
-      case 3:
-        value = "0.00";
-        break;
+    if (billing.value.supplier_id === null) {
+      //admin
+      await configsStores.getFeature("company");
+      await configsStores.getFeature("logo");
+
+      company.value = configsStores.getFeaturedConfig("company");
+      company.value.billings = response.data.data.billings;
+      company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+
+      applyBillingSettings(configsStores.getFeaturedConfig("billings"));
+
+    } else {
+      //supplier
+      company.value = billing.value.supplier.user.user_detail;
+      company.value.email = billing.value.supplier.user.email;
+      company.value.billings = billing.value.supplier.billings;
+      company.value.name = billing.value.supplier.user.name;
+      company.value.last_name = billing.value.supplier.user.last_name;
+
+      if (role.value === "Supplier") {
+        applyBillingSettings(user_data?.supplier?.settings?.billing);
+      } else if (role.value === "User") {
+        applyBillingSettings(user_data?.supplier?.boss?.settings?.billing);
+      }
     }
-    item[parseInt(element.id)] = value;
-  });
 
-  item[5] = 0;
-  item[6] = false;
+    JSON.parse(billing.value.detail).forEach((details) => {
+      var item = {};
 
-  invoiceData.value?.push(item);
+      details.forEach((detail) => {
+        if (detail.note) item["note"] = detail.note;
+        else
+          invoices.value.forEach((element) => {
+            if (detail.id === element.id) {
+              item[parseInt(element.id)] =
+                element.type_id === 2 || element.type_id === 3
+                  ? parseInt(detail.value)
+                  : detail.value;
 
-  isRequestOngoing.value = false;
-  
-  // Capture initial state
-  nextTick(() => {
-    initialInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
-  });
+              if (element.id === 4) total.value += Number(detail.value);
+            } else {
+              item[detail.id] = detail.value;
+            }
+          });
+      });
+
+      invoiceData.value?.push(item);
+    });
+
+    isRequestOngoing.value = false;
+  }
 }
+
+function reloadPage() {
+  window.location.reload();
+}
+
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  const responseData = err.value?.response?.data;
+  
+  if (responseData?.message) {
+    advisor.value.message = responseData.message;
+  } else if (responseData?.errors) {
+    advisor.value.message = Object.values(responseData.errors)
+              .flat()
+              .join("<br>");
+  } else if (err.value?.message) {
+    advisor.value.message = err.value.message;
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
 
 const data = (data) => {
   invoice.value = data;
@@ -219,51 +298,6 @@ const editProduct = () => {
   });
 };
 
-const showError = () => {
-  inteSkapatsDialog.value = false;
-
-  advisor.value.show = true;
-  advisor.value.type = "error";
-  const responseData = err.value?.response?.data;
-  
-  if (responseData?.message) {
-    advisor.value.message = responseData.message;
-  } else if (responseData?.errors) {
-    advisor.value.message = Object.values(responseData.errors)
-              .flat()
-              .join("<br>");
-  } else if (err.value?.message) {
-    advisor.value.message = err.value.message;
-  } else {
-    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
-  }
-
-  setTimeout(() => {
-    advisor.value.show = false;
-    advisor.value.type = "";
-    advisor.value.message = "";
-  }, 3000);
-
-};
-
-const createBilling = () => {
-  let data = {
-    message: "Fakturan skapades framgångsrikt",
-    error: false,
-  };
-
-  router.push({
-    name: "dashboard-admin-suppliers-billings",
-    query: { tab: 'billing' }
-  });
-
-  emitter.emit("toast", data);
-};
-
-const reloadPage = () => {
-  window.location.reload();
-};
-
 const confirmLeave = () => {
   isConfirmLeaveVisible.value = false;
   allowNavigation.value = true;
@@ -276,18 +310,7 @@ const confirmLeave = () => {
 const onSubmit = () => {
   // If already saved and NO changes since save, show success dialog
   if (billing.value?.file && !hasChangedSinceSave.value) {
-    //skapatsDialog.value = true;
-    let data = {
-      message: "Fakturan är skapad!",
-      error: false,
-    };
-
-    router.push({
-      name: "dashboard-admin-suppliers-billings-id",
-      params: { id: billing_id.value },
-    });
-
-    emitter.emit("toast", data);
+    skapatsDialog.value = true;
     return;
   }
 
@@ -299,7 +322,9 @@ const onSubmit = () => {
         (element) => element?.note === undefined && element[5] > 0
       );
 
-      formData.append("billing_period", invoice.value.period);
+      formData.append("id", Number(route.params.id));
+      formData.append("_method", "PUT");
+      formData.append("client_id", invoice.value.client_id);
       formData.append("due_date", invoice.value.due_date);
       formData.append("invoice_id", invoice.value.id);
       formData.append("invoice_date", invoice.value.invoice_date);
@@ -310,6 +335,7 @@ const onSubmit = () => {
       formData.append("rabatt", rabattApplied.value === true ? 1 : 0);
       formData.append("discount", discount.value);
       formData.append("amount_discount", amount_discount.value);
+      formData.append("reference", invoice.value.reference);
       formData.append("payment_terms", invoice.value.days);
       formData.append("terms_and_conditions", invoice.value.terms);
 
@@ -317,13 +343,17 @@ const onSubmit = () => {
         formData.append(`details[]`, JSON.stringify(element));
       });
 
+      let data = {
+        data: formData,
+        id: Number(route.params.id),
+      };
+
       isRequestOngoing.value = true;
 
-      supplierInvoices
-        .addSupplierInvoice(formData)
+      billingsStores
+        .updateBilling(data)
         .then((res) => {
-          billing_id.value = res.data.billing.id;
-          billing.value = res.data.billing;
+          billing.value = res.data.data.billing;
           isRequestOngoing.value = false;
           allowNavigation.value = true;
           
@@ -334,18 +364,7 @@ const onSubmit = () => {
           if (windowWidth.value < 1024 && invoiceEditableRef.value) {
             invoiceEditableRef.value.setPreviewTab();
           } else {
-            //skapatsDialog.value = true;
-            let data = {
-              message: "Fakturan är skapad!",
-              error: false,
-            };
-
-            router.push({
-              name: "dashboard-admin-suppliers-billings-id",
-              params: { id: billing_id.value },
-            });
-
-            emitter.emit("toast", data);
+            skapatsDialog.value = true;
           }
         })
         .catch((error) => {
@@ -355,6 +374,19 @@ const onSubmit = () => {
         });
     }
   });
+};
+
+const editBilling = () => {
+  let data = {
+    message: "Fakturan uppdaterades framgångsrikt",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
 };
 
 function resizeSectionToRemainingViewport() {
@@ -399,7 +431,6 @@ onBeforeRouteLeave((to, from, next) => {
     >
       {{ advisor.message }}
     </VSnackbar>
-
     <VForm ref="validate" @submit.prevent="onSubmit">
       <VRow no-gutters v-if="band" class="card-fill w-100">
         <!-- 👉 InvoiceEditable -->
@@ -410,11 +441,10 @@ onBeforeRouteLeave((to, from, next) => {
         >
           <InvoiceEditable
             ref="invoiceEditableRef"
-            v-if="userData"
+            v-if="clients.length > 0"
             :data="invoiceData"
-            :clients="[]"
+            :clients="clients"
             :suppliers="suppliers"
-            :supplier_id="supplierId"
             :invoices="invoices"
             :invoice_id="invoice_id"
             :userData="userData"
@@ -423,10 +453,10 @@ onBeforeRouteLeave((to, from, next) => {
             :total="total"
             :amount_discount="amount_discount"
             :billing="billing"
-            :isCreated="true"
+            :isCreated="false"
             :isCredit="false"
-            :showSupplier="false"
             :hasUnsavedChanges="hasChangedSinceSave"
+            :title="'Redigera fakturan'"
             :days="company.days"
             :terms="company.terms"
             @push="addProduct"
@@ -448,28 +478,24 @@ onBeforeRouteLeave((to, from, next) => {
             <VCardText
               :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
             >
-              <!-- 👉 Skapa faktura -->
+              <!-- 👉 Redigera fakturan -->
               <VBtn
                 class="btn-gradient mb-4"
-                :class="windowWidth < 1024 ? 'flex-1 order-2 mb-0' : 'w-100'"
+               :class="windowWidth < 1024 ? 'flex-1 order-2 mb-0' : 'w-100'"
                 type="submit"
               >
                 <template #prepend>
                   <VIcon icon="custom-factura" size="24" v-if="windowWidth >= 1024" />
                   <VIcon icon="custom-factura" size="24" v-if="windowWidth < 1024" />
                 </template>
-                Skapa faktura
+                Redigera fakturan
               </VBtn>
 
               <!-- 👉 Preview -->
               <VBtn
                 class="btn-light"
                 :class="windowWidth < 1024 ? 'flex-1 order-1' : 'w-100'"
-                :to="{ 
-                    name: 'dashboard-admin-suppliers-id', 
-                    params: { id: supplierId },
-                    query: { tab: 'billing' } 
-                }"
+                :to="{ name: 'dashboard-admin-billings' }"
               >
                 <template #prepend>
                   <VIcon icon="custom-return" size="24" />
@@ -492,7 +518,7 @@ onBeforeRouteLeave((to, from, next) => {
         icon
         class="btn-white close-btn"
         @click="router.push({
-          name: 'dashboard-admin-suppliers-billings-id',
+          name: 'dashboard-admin-billings-id',
           params: { id: billing_id },
         })"
       >
@@ -504,17 +530,19 @@ onBeforeRouteLeave((to, from, next) => {
           <VIcon size="72" icon="custom-f-create-order" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Fakturan är skapad!</div>
+          <div class="dialog-title">Fakturan är uppdaterad!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
+           Ditt Fakturan har uppdaterats och ändringarna har sparats.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="createBilling">
+          <VBtn class="btn-light" @click="editBilling">
             Gå till fakturalistan
           </VBtn>
-          <VBtn class="btn-gradient" @click="reloadPage"> Skapa ny faktura </VBtn>
+          <VBtn class="btn-gradient" @click="reloadPage"> 
+            Redigera fakturan
+          </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -579,34 +607,8 @@ onBeforeRouteLeave((to, from, next) => {
     </VDialog>
   </section>
 </template>
-<style lang="scss" scoped>
-.fix-bottom-menu {
-  position: fixed;
-  bottom: 70px;
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    #eafff1 0%,
-    #eafff8 50%,
-    #ecffff 100%
-  ) !important;
-  z-index: 1;
-}
-@media (max-width: 768px) {
-  .mobile-gradient-card {
-    .v-card {
-      background: none !important;
-
-      .v-card-text {
-        flex-direction: row-reverse;
-      }
-    }
-  }
-}
-</style>
-
 <route lang="yaml">
 meta:
-  action: create
-  subject: suppliers
+  action: edit
+  subject: billings
 </route>
