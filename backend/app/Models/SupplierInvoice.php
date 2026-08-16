@@ -158,7 +158,7 @@ class SupplierInvoice extends Model
             'user_id' => Auth::user()->id,
             'supplier_id' => $request->supplier_id,
             'state_id' => 4,
-            'billing_period' => $request->billing_period,
+            'billing_period' => $request->billing_period === 'null' ? null : $request->billing_period,
             'invoice_id' =>  $request->invoice_id,
             'invoice_date' =>  $request->invoice_date,
             'due_date' =>  $request->due_date,
@@ -269,7 +269,7 @@ class SupplierInvoice extends Model
 
         $billing->update([
             'supplier_id' => $request->supplier_id,
-            'billing_period' => $request->billing_period,
+            'billing_period' => $request->billing_period === 'null' ? null : $request->billing_period,
             'invoice_id' =>  $request->invoice_id,
             'invoice_date' =>  $request->invoice_date,
             'due_date' =>  $request->due_date,
