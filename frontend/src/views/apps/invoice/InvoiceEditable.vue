@@ -81,6 +81,11 @@ const props = defineProps({
     required: false,
     default: false
   },
+  period: {
+    type: String,
+    required: false,
+    default: ''
+  },
   days: {
     type: [Number, String],
     required: false,
@@ -303,7 +308,7 @@ defineExpose({
 
 const invoice = ref({
   id: 1,
-  period: '',
+  period: props.period,
   days: props.days,
   terms: props.terms,
   client_id: null,
@@ -515,7 +520,6 @@ async function fetchData() {
     invoice.value.supplier_id = props.billing.supplier_id ?? null;
     invoice.value.client_id = props.billing.client_id;
     invoice.value.tax = props.billing.tax;
-    invoice.value.period = String(props.billing?.period ?? '').trim();
 
     selectedTax.value = taxOptions.value.includes(props.billing.tax)
       ? props.billing.tax
@@ -531,7 +535,6 @@ async function fetchData() {
     const day = String(invoice_date.getDate()).padStart(2, "0");
 
     invoice.value.invoice_date = `${year}-${month}-${day}`;
-    invoice.value.period = '';
 
     invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
   }
@@ -874,6 +877,23 @@ const handleFocus = (element, fieldId) => {
               </div>
             </span>
           </div>
+
+          <!-- 👉 Period -->
+          <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
+            <span class="me-2 text-start w-40 text-black">Period</span>
+
+            <span style="min-inline-size: 10.5rem">
+              <div class="form-field">
+                <VTextField
+                  v-model="invoice.period"
+                  placeholder="YYYY-MM"
+                  :rules="periodRules"
+                  style="inline-size: 10.5rem"
+                />
+              </div>
+            </span>
+          </div>
+
           <!-- 👉 Issue Date -->
           <div
             class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
@@ -918,24 +938,8 @@ const handleFocus = (element, fieldId) => {
                   v-else
                   v-model="invoice.due_date"
                   placeholder="YYYY-MM-DD"
-                  readonly
+                  disabled
                   class="cursor-none"
-                />
-              </div>
-            </span>
-          </div>
-
-          <!-- 👉 Period -->
-          <div class="d-block d-md-flex align-center justify-sm-start mt-2" v-if="!props.showSupplier">
-            <span class="me-2 text-start w-40 text-black">Period</span>
-
-            <span style="min-inline-size: 10.5rem">
-              <div class="form-field">
-                <VTextField
-                  v-model="invoice.period"
-                  placeholder="YYYY-MM"
-                  :rules="periodRules"
-                  style="inline-size: 10.5rem"
                 />
               </div>
             </span>
@@ -1474,6 +1478,22 @@ const handleFocus = (element, fieldId) => {
                   </div>
                 </span>
               </div>
+
+              <!-- 👉 Period -->
+              <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
+                <span class="mb-2 me-2 text-start w-40 text-black">Period</span>
+
+                <span style="min-inline-size: 10.5rem">
+                  <div class="form-field">
+                    <VTextField
+                      v-model="invoice.period"
+                      placeholder="YYYY-MM"
+                      :rules="periodRules"
+                    />
+                  </div>
+                </span>
+              </div>
+
               <!-- 👉 Issue Date -->
               <div
                 class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
@@ -1522,23 +1542,8 @@ const handleFocus = (element, fieldId) => {
                       v-else
                       v-model="invoice.due_date"
                       placeholder="YYYY-MM-DD"
-                      readonly
+                      disabled
                       class="cursor-none"
-                    />
-                  </div>
-                </span>
-              </div>
-
-              <!-- 👉 Period -->
-              <div class="d-block d-md-flex align-center justify-sm-start mt-2" v-if="!props.showSupplier">
-                <span class="mb-2 me-2 text-start w-40 text-black">Period</span>
-
-                <span style="min-inline-size: 10.5rem">
-                  <div class="form-field">
-                    <VTextField
-                      v-model="invoice.period"
-                      placeholder="YYYY-MM"
-                      :rules="periodRules"
                     />
                   </div>
                 </span>

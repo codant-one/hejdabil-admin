@@ -121,16 +121,14 @@ async function fetchData() {
 
   localStorage.setItem("user_data", JSON.stringify(user_data));
 
- 
-    await configsStores.getFeature("company");
-    await configsStores.getFeature("logo");
-    await configsStores.getFeature("billings");
+  await configsStores.getFeature("company");
+  await configsStores.getFeature("logo");
+  await configsStores.getFeature("billings");
 
-    company.value = configsStores.getFeaturedConfig("company");
-    company.value.billings = response.data.data.billings;
-    company.value.logo = configsStores.getFeaturedConfig("logo").logo;
-    applyBillingSettings(configsStores.getFeaturedConfig("billings"));
-
+  company.value = configsStores.getFeaturedConfig("company");
+  company.value.billings = response.data.data.billings;
+  company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+  applyBillingSettings(configsStores.getFeaturedConfig("billings"));
 
   var item = {};
   invoices.value.forEach((element) => {
@@ -253,7 +251,7 @@ const createBilling = () => {
   };
 
   router.push({
-    name: "dashboard-admin-suppliers-billings",
+    name: "dashboard-admin-suppliers-id",
     query: { tab: 'billing' }
   });
 

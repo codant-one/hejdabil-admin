@@ -185,7 +185,60 @@ class SupplierInvoiceController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        //
+         try {
+
+            $billing = SupplierInvoice::with(['supplier', 'user'])->find($id);
+        
+            if (!$billing)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+
+            $fields = [
+                'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                'payment_terms', 'terms_and_conditions', 'period',
+                'subtotal', 'tax', 'total', 'rabatt', 'discount',
+                'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
+                'amount_tax', 'sent_at'
+            ];
+
+            //$oldValues = $this->billingActivityValues($billing);
+
+            $billing = $billing->updateBilling($request, $billing);
+
+            //$newValues = $this->billingActivityValues($billing);
+
+            /*SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'update_billing',
+                'title' => 'Faktura #'.$billing->invoice_id.' - uppdaterad',
+                'description' => 'Fakturan har uppdaterats.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);*/
+            
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'billing' => SupplierInvoice::with('state')->find($billing->id)
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**

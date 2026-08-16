@@ -4,7 +4,7 @@ import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from "vue-router";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
-import { useBillingsStores } from "@/stores/useBillings";
+import { useSupplierInvoicesStores } from "@/stores/useSupplierInvoices";
 import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
@@ -12,7 +12,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const authStores = useAuthStores();
-const billingsStores = useBillingsStores();
+const supplierInvoices = useSupplierInvoicesStores();
 const configsStores = useConfigsStores();
 const ability = useAppAbility();
 const emitter = inject("emitter");
@@ -49,15 +49,15 @@ const billing = ref([]);
 const invoice = ref([]);
 const invoices = ref([]);
 const suppliers = ref([]);
-const clients = ref([]);
 const invoice_id = ref(0);
 
 const userData = ref(null);
 const role = ref(null);
 const company = ref({});
 
-const DEFAULT_BILLING_DUE_DATES = 5;
+const DEFAULT_BILLING_DUE_DATES = 10;
 const DEFAULT_BILLING_TERMS = "Efter forfallodagen debiteras ranta enligt rantelagen.";
+const supplierId = ref(null)
 
 const discount = ref(0);
 const rabattApplied = ref(false);
@@ -101,7 +101,7 @@ watchEffect(fetchData);
 async function fetchData() {
   if (
     Number(route.params.id) &&
-    route.name === "dashboard-admin-billings-edit-id"
+    route.name === "dashboard-admin-suppliers-billings-edit-id"
   ) {
     isRequestOngoing.value = true;
 
@@ -112,10 +112,9 @@ async function fetchData() {
         : DEFAULT_BILLING_TERMS;
     };
 
-    billing.value = await billingsStores.showBilling(Number(route.params.id));
+    billing.value = await supplierInvoices.showSupplierInvoice(Number(route.params.id));
 
     invoice.value.id = billing.value.invoice_id;
-    invoice.value.reference = billing.value.reference;
     invoice.value.invoice_date = billing.value.invoice_date;
     invoice.value.due_date = billing.value.due_date;
     invoice.value.days = extractDaysFromNetTermSplit(
@@ -123,13 +122,15 @@ async function fetchData() {
     );
     invoice.value.terms = billing.value.terms_and_conditions;
     invoice.value.supplier_id = billing.value.supplier_id ?? null;
-    invoice.value.client_id = billing.value.client_id;
     invoice.value.subtotal = billing.value.subtotal;
     invoice.value.total = billing.value.total;
     invoice.value.tax = billing.value.tax;
+    invoice.value.period = billing.value.billing_period ?? null;
     discount.value = billing.value.discount;
     rabattApplied.value = billing.value.rabatt;
     amount_discount.value = billing.value.amount_discount;
+
+    supplierId.value = billing.value.supplier_id;
 
     invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
       const detailObject = {};
@@ -139,9 +140,8 @@ async function fetchData() {
       return detailObject;
     });
 
-    let response = await billingsStores.all();
+    let response = await supplierInvoices.all({ supplier_id: supplierId.value });
 
-    clients.value = response.data.data.clients;
     suppliers.value = response.data.data.suppliers;
     invoices.value = response.data.data.invoices;
     invoice_id.value = response.data.data.invoice_id;
@@ -157,31 +157,14 @@ async function fetchData() {
 
     localStorage.setItem("user_data", JSON.stringify(user_data));
 
-    if (billing.value.supplier_id === null) {
-      //admin
-      await configsStores.getFeature("company");
-      await configsStores.getFeature("logo");
+    await configsStores.getFeature("company");
+    await configsStores.getFeature("logo");
+    await configsStores.getFeature("billings");
 
-      company.value = configsStores.getFeaturedConfig("company");
-      company.value.billings = response.data.data.billings;
-      company.value.logo = configsStores.getFeaturedConfig("logo").logo;
-
-      applyBillingSettings(configsStores.getFeaturedConfig("billings"));
-
-    } else {
-      //supplier
-      company.value = billing.value.supplier.user.user_detail;
-      company.value.email = billing.value.supplier.user.email;
-      company.value.billings = billing.value.supplier.billings;
-      company.value.name = billing.value.supplier.user.name;
-      company.value.last_name = billing.value.supplier.user.last_name;
-
-      if (role.value === "Supplier") {
-        applyBillingSettings(user_data?.supplier?.settings?.billing);
-      } else if (role.value === "User") {
-        applyBillingSettings(user_data?.supplier?.boss?.settings?.billing);
-      }
-    }
+    company.value = configsStores.getFeaturedConfig("company");
+    company.value.billings = response.data.data.billings;
+    company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+    applyBillingSettings(configsStores.getFeaturedConfig("billings"));
 
     JSON.parse(billing.value.detail).forEach((details) => {
       var item = {};
@@ -207,6 +190,10 @@ async function fetchData() {
     });
 
     isRequestOngoing.value = false;
+
+    nextTick(() => {
+      initialInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
+    });
   }
 }
 
@@ -324,7 +311,7 @@ const onSubmit = () => {
 
       formData.append("id", Number(route.params.id));
       formData.append("_method", "PUT");
-      formData.append("client_id", invoice.value.client_id);
+      formData.append("billing_period", invoice.value.period);
       formData.append("due_date", invoice.value.due_date);
       formData.append("invoice_id", invoice.value.id);
       formData.append("invoice_date", invoice.value.invoice_date);
@@ -335,7 +322,6 @@ const onSubmit = () => {
       formData.append("rabatt", rabattApplied.value === true ? 1 : 0);
       formData.append("discount", discount.value);
       formData.append("amount_discount", amount_discount.value);
-      formData.append("reference", invoice.value.reference);
       formData.append("payment_terms", invoice.value.days);
       formData.append("terms_and_conditions", invoice.value.terms);
 
@@ -350,8 +336,8 @@ const onSubmit = () => {
 
       isRequestOngoing.value = true;
 
-      billingsStores
-        .updateBilling(data)
+      supplierInvoices
+        .updateSupplierInvoice(data)
         .then((res) => {
           billing.value = res.data.data.billing;
           isRequestOngoing.value = false;
@@ -383,7 +369,9 @@ const editBilling = () => {
   };
 
   router.push({
-    name: "dashboard-admin-billings"
+    name: "dashboard-admin-suppliers-id",
+    params: { id: supplierId.value },
+    query: { tab: 'billing' }
   });
 
   emitter.emit("toast", data);
@@ -441,10 +429,11 @@ onBeforeRouteLeave((to, from, next) => {
         >
           <InvoiceEditable
             ref="invoiceEditableRef"
-            v-if="clients.length > 0"
+            v-if="userData"
             :data="invoiceData"
-            :clients="clients"
+            :clients="[]"
             :suppliers="suppliers"
+            :supplier_id="supplierId"
             :invoices="invoices"
             :invoice_id="invoice_id"
             :userData="userData"
@@ -455,10 +444,12 @@ onBeforeRouteLeave((to, from, next) => {
             :billing="billing"
             :isCreated="false"
             :isCredit="false"
+            :showSupplier="false"
             :hasUnsavedChanges="hasChangedSinceSave"
             :title="'Redigera fakturan'"
             :days="company.days"
             :terms="company.terms"
+            :period="invoice.period"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
@@ -495,7 +486,11 @@ onBeforeRouteLeave((to, from, next) => {
               <VBtn
                 class="btn-light"
                 :class="windowWidth < 1024 ? 'flex-1 order-1' : 'w-100'"
-                :to="{ name: 'dashboard-admin-billings' }"
+                :to="{ 
+                    name: 'dashboard-admin-suppliers-id', 
+                    params: { id: supplierId },
+                    query: { tab: 'billing' } 
+                }"
               >
                 <template #prepend>
                   <VIcon icon="custom-return" size="24" />
@@ -518,7 +513,7 @@ onBeforeRouteLeave((to, from, next) => {
         icon
         class="btn-white close-btn"
         @click="router.push({
-          name: 'dashboard-admin-billings-id',
+          name: 'dashboard-admin-suppliers-billings-id',
           params: { id: billing_id },
         })"
       >
@@ -610,5 +605,5 @@ onBeforeRouteLeave((to, from, next) => {
 <route lang="yaml">
 meta:
   action: edit
-  subject: billings
+  subject: suppliers
 </route>

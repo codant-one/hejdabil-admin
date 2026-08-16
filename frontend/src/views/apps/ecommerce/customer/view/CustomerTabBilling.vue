@@ -176,6 +176,13 @@ const addInvoice = () => {
   });
 };
 
+const editBilling = (billingData) => {
+  router.push({
+    name: "dashboard-admin-suppliers-billings-edit-id",
+    params: { id: billingData.invoice_id },
+  });
+};
+
 const updateBilling = (billingData) => {
   isConfirmStateDialogVisible.value = true;
   selectedBilling.value = { ...billingData };
@@ -967,6 +974,14 @@ const downloadCSV = async () => {
                     </template>
                     <VListItemTitle>Markera som obetald</VListItemTitle>
                   </VListItem>
+                  <VListItem
+                      v-if=" (billing.state_id === 4 || billing.state_id === 8) && billing.user_id !== null"
+                      @click="editBilling(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
                   <VListItem 
                     @click="printBilling(billing)">
                     <template #prepend>
@@ -1229,6 +1244,15 @@ const downloadCSV = async () => {
             <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
           </template>
           <VListItemTitle>Markera som obetald</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="(selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8) && selectedBillingForAction.user_id !== null"
+          @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-pencil" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Redigera</VListItemTitle>
         </VListItem>
         <VListItem
             @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
