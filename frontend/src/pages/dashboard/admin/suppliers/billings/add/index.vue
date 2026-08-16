@@ -98,7 +98,7 @@ async function fetchData() {
   isRequestOngoing.value = true;
 
   const applyBillingSettings = (settings) => {
-    company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
+    company.value.days = DEFAULT_BILLING_DUE_DATES;
     company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
       ? settings.terms_and_conditions
       : DEFAULT_BILLING_TERMS;
