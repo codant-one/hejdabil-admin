@@ -22,6 +22,16 @@ const advisor = ref({
   show: false,
 })
 
+const showAlert = function(alert) {
+  advisor.value.show = alert.value.show
+  advisor.value.type = alert.value.type
+  advisor.value.message = alert.value.message
+}
+
+const showLoading = function (value) {
+  isRequestOngoing.value = value;
+};
+
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
 const tabs = [
@@ -71,7 +81,7 @@ async function loadUserData() {
     isRequestOngoing.value = true
 
     //Supplier ID de prueba. Cambiar por el correcto
-    supplier_id.value = 22;
+    supplier_id.value = 23;
 
     var responses = await Suppliers.show(supplier_id.value);
     supplierData.value = responses?.data?.data?.supplier;
@@ -226,13 +236,12 @@ onBeforeUnmount(() => {
                 </VWindowItem>
 
                 <VWindowItem :value="1">
-                    <!-- <HistoryPaymentsTable
+                    <HistoryPaymentsTable
                         :customer-data="supplierData"
                         :is-supplier="true"
                         @alert="showAlert"
                         @loading="showLoading"
-                    /> -->
-                    ACA LOS PAGOS
+                    />
                 </VWindowItem>
 
             </VWindow>

@@ -6,15 +6,20 @@ import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import companyAvatar from "@/assets/images/avatars/company.svg";
+import refreshAvatar from "@/assets/images/avatars/refresh.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
 
 const { width: windowWidth } = useWindowSize();
 
-const route = useRoute()
-const supplierInvoicesStores = useSupplierInvoicesStores()
+// const route = useRoute()
+const route = {
+  params: {
+    id: 23
+  }
+}
+const supplierInvoices = useSupplierInvoicesStores()
 const exporteraMobile = ref(false);
 const date = ref(null)
 const selectedExportType = ref(null)
@@ -128,15 +133,15 @@ async function fetchData(cleanFilters = false) {
 
         emit("loading", true);
         
-        await supplierInvoicesStores.fetchSupplierInvoices(data)
+        await supplierInvoices.fetchSupplierInvoices(data)
 
         emit("loading", false);
 
-        const supplierInvoices = Array.isArray(supplierInvoicesStores.getSupplierInvoices)
-          ? supplierInvoicesStores.getSupplierInvoices
+        const invoices = Array.isArray(supplierInvoices.getSupplierInvoices)
+          ? supplierInvoices.getSupplierInvoices
           : []
 
-        billings.value = supplierInvoices.map(invoice => ({
+        billings.value = invoices.map(invoice => ({
           id: invoice.id,
           user_id: invoice.user_id,
           invoice_id: invoice.invoice_id,
@@ -160,14 +165,28 @@ async function fetchData(cleanFilters = false) {
           },
         }))
 
-        totalPages.value = supplierInvoicesStores.last_page
-        totalBillings.value = supplierInvoicesStores.supplierInvoicesTotalCount
+        totalPages.value = supplierInvoices.last_page
+        totalBillings.value = supplierInvoices.supplierInvoicesTotalCount
       } finally {
         emit("loading", false);
       }
     }
   }
 }
+
+const addInvoice = () => {
+  router.push({ 
+    name: "dashboard-admin-suppliers-billings-add", 
+    query: { supplier_id: Number(route.params.id) } 
+  });
+};
+
+const editBilling = (billingData) => {
+  router.push({
+    name: "dashboard-admin-suppliers-billings-edit-id",
+    params: { id: billingData.invoice_id },
+  });
+};
 
 const updateBilling = (billingData) => {
   isConfirmStateDialogVisible.value = true;
@@ -180,7 +199,7 @@ const updateState = async () => {
   try {
     emit("loading", true);
     
-    let res = await supplierInvoicesStores.updateState(selectedBilling.value.id);
+    let res = await supplierInvoices.updateState(selectedBilling.value.id);
     
     advisor.value = {
       type: res.data.success ? "success" : "error",
@@ -306,7 +325,7 @@ const onReplaceFileSelected = async event => {
   try {
     emit('loading', true)
 
-    const response = await supplierInvoicesStores.replaceFile({
+    const response = await supplierInvoices.replaceFile({
       id: billingToReplaceFile.value.id,
       data: formData,
     })
@@ -344,7 +363,7 @@ const kreditera = async () => {
   isConfirmKreditera.value = false
 
   try {
-    await supplierInvoicesStores.credit(Number(selectedBilling.value.id))
+    await supplierInvoices.credit(Number(selectedBilling.value.id))
     selectedBilling.value = {}
 
     advisor.value.show = true
@@ -592,7 +611,7 @@ const downloadPDF = async () => {
   try {
     const data = buildExportParams()
 
-    await supplierInvoicesStores.fetchSupplierInvoices(data)
+    await supplierInvoices.fetchSupplierInvoices(data)
 
     if (document.fonts?.load) {
       await Promise.all([
@@ -601,12 +620,12 @@ const downloadPDF = async () => {
       ])
     }
 
-    const supplierName = supplierInvoicesStores.getSupplierInfo?.supplier_name ?? null
+    const supplierName = supplierInvoices.getSupplierInfo?.supplier_name ?? null
 
-    company.value.company = supplierInvoicesStores.getSupplierInfo?.user.user_detail.company ?? null
-    company.value.name = supplierInvoicesStores.getSupplierInfo?.user?.name ?? null
-    company.value.last_name = supplierInvoicesStores.getSupplierInfo?.user?.last_name ?? null
-    company.value.email = supplierInvoicesStores.getSupplierInfo?.user?.email ?? null
+    company.value.company = supplierInvoices.getSupplierInfo?.user.user_detail.company ?? null
+    company.value.name = supplierInvoices.getSupplierInfo?.user?.name ?? null
+    company.value.last_name = supplierInvoices.getSupplierInfo?.user?.last_name ?? null
+    company.value.email = supplierInvoices.getSupplierInfo?.user?.email ?? null
 
     const supplier = `${supplierName}`
       .toLowerCase()
@@ -616,7 +635,7 @@ const downloadPDF = async () => {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '') || 'supplier-billings'
 
-    const rows = supplierInvoicesStores.getSupplierInvoices.map(element => ({
+    const rows = supplierInvoices.getSupplierInvoices.map(element => ({
       invoiceId: element.invoice_id ?? '-',
       period: element.billing_period ?? '-',
       invoiceDate: element.invoice_date ?? '-',
@@ -704,11 +723,11 @@ const downloadCSV = async () => {
 
   let data = buildExportParams()
 
-  await supplierInvoicesStores.fetchSupplierInvoices(data)
+  await supplierInvoices.fetchSupplierInvoices(data)
 
   let dataArray = [];
       
-  supplierInvoicesStores.getSupplierInvoices.forEach(element => {
+  supplierInvoices.getSupplierInvoices.forEach(element => {
 
     let data = {
       FAKTURA_ID: element.invoice_id ?? '-',
@@ -722,7 +741,7 @@ const downloadCSV = async () => {
     dataArray.push(data)
   })
 
-  const supplierName = supplierInvoicesStores.getSupplierInfo?.supplier_name ?? null
+  const supplierName = supplierInvoices.getSupplierInfo?.supplier_name ?? null
   const supplier = `${supplierName}`
     .toLowerCase()
     .normalize('NFD')
@@ -750,7 +769,7 @@ const downloadCSV = async () => {
       ]"
     >
       <div class="title-tabs">
-        Fakturahistorik
+        Betalningshistorik
       </div>
 
       <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
@@ -788,14 +807,6 @@ const downloadCSV = async () => {
         >
           <VIcon icon="custom-export" size="24" />
           Exportera
-        </VBtn>
-
-        <VBtn
-          class="btn-gradient"
-          block
-        >
-          <VIcon icon="custom-plus" size="24" />
-          Ny faktura
         </VBtn>
       </div>
 
@@ -849,7 +860,6 @@ const downloadCSV = async () => {
           <th scope="col" class="text-center"> Förfaller </th>
           <th scope="col" class="text-center"> Belopp </th>
           <th scope="col" class="text-center"> Status </th>
-          <th scope="col">Skapad av</th>
           <th scope="col"></th>
         </tr>
       </thead>
@@ -872,64 +882,15 @@ const downloadCSV = async () => {
               >
                 {{ billing.state_name }}
               </div>
-            </td>
-            <td style="width: 1%; white-space: nowrap">
-              <div class="d-flex align-center gap-x-1" v-if="billing.user_id !== null">
-                <VAvatar
-                  variant="outlined"
-                  size="38"
-                >
-                  <VImg
-                    v-if="billing.user?.avatar"
-                    style="border-radius: 50%"
-                    :src="themeConfig.settings.urlStorage + billing.user.avatar"
-                  />
-                  <PresetAvatarImage
-                    v-else
-                    :avatar-id="billing.user?.user_detail?.avatar_id"
-                  />
-                </VAvatar>
-                <div class="d-flex flex-column">
-                  <span class="font-weight-medium">
-                    {{ billing.user?.name ?? '-' }} {{ billing.user?.last_name ?? "" }}
-                  </span>
-                  <span class="text-sm text-disabled">
-                    <VTooltip 
-                      v-if="billing.user?.email && billing.user.email.length > 20"
-                      location="bottom">
-                      <template #activator="{ props }">
-                        <span v-bind="props" class="cursor-pointer">
-                          {{ truncateText(billing.user?.email, 20) }}
-                        </span>
-                      </template>
-                      <span>{{ billing.user?.email }}</span>
-                    </VTooltip>
-                    <span class="text-sm text-disabled"v-else>{{ billing.user?.email }}</span>
-                  </span>
-                </div>
-              </div>
-              <div class="d-flex align-center gap-x-1" v-else>
-                <VAvatar
-                  variant="outlined"
-                  size="38"
-                  class="supplier-company-logo-avatar"
-                >
-                  <VImg
-                    style="border-radius: 50%"
-                    :src="companyAvatar"
-                  />
-                </VAvatar>
-                <div class="d-flex flex-column">
-                  <span class="font-weight-medium text-aqua">
-                    automatisk
-                  </span>
-                  <span class="text-sm text-disabled">faktura</span>
-                </div>
-              </div>
-            </td>  
+            </td>    
             <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;">
-              <VMenu>
+              <VBtn
+                @click="downloadBillingPdf(billing)">
+                  <VIcon icon="custom-download" />
+              </VBtn>
+
+              <!-- <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
                     <VIcon icon="custom-dots-vertical" size="22" />
@@ -937,42 +898,7 @@ const downloadCSV = async () => {
                 </template>
 
                 <VList>
-                  <VListItem @click="showBilling(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-eye" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Se detaljer</VListItemTitle>
-                  </VListItem>
-                  <VListItem 
-                    v-if="billing.state_id === 4 || billing.state_id === 8"
-                    @click="updateBilling(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-bribery" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Markera som betald</VListItemTitle>
-                  </VListItem>
-                  <VListItem
-                      v-if="billing.state_id === 7 && billing.is_credit === 0"
-                      @click="updateBilling(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Markera som obetald</VListItemTitle>
-                  </VListItem>
-                  <VListItem 
-                    @click="printBilling(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-print" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Skriv ut</VListItemTitle>
-                  </VListItem>
-                  <VListItem 
-                    @click="openBillingPdf(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-pdf" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Visa som PDF</VListItemTitle>
-                  </VListItem>
+
                   <VListItem
                     @click="downloadBillingPdf(billing)">
                     <template #prepend>
@@ -980,24 +906,8 @@ const downloadCSV = async () => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem 
-                    @click="replaceFile(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-upload" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Ersätta faktura</VListItemTitle>
-                  </VListItem>
-                  <VListItem
-                    v-if="billing.state_id !== 9 && billing.is_credit === 0"
-                    @click="credit(billing)"
-                  >
-                    <template #prepend>
-                      <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Kreditera</VListItemTitle>
-                  </VListItem>
                 </VList>
-              </VMenu>
+              </VMenu> -->
             </td>
         </tr>
       </tbody>
@@ -1044,9 +954,15 @@ const downloadCSV = async () => {
               {{ billing.invoice_id }}
             </span>
             <div class="d-flex align-center justify-between w-100">
-              <div class="order-title-box">
-                <span class="title-panel">
+              <div class="order-title-box w-100">
+                <span class="title-panel d-flex justify-between align-center w-100">
                   {{ billing.period }}
+                  <div
+                    class="status-chip-mobile pb-2"
+                    :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
+                  >
+                    {{ billing.state_name }}
+                  </div>
                 </span>    
                 <div class="title-organization">
                   Belopp
@@ -1055,14 +971,6 @@ const downloadCSV = async () => {
                   </div>
                 </div>        
               </div>
-              <span class="text-neutral-3 me-4">
-                  <div
-                    class="status-chip-mobile pb-2"
-                    :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
-                  >
-                    {{ billing.state_name }}
-                  </div>
-                </span>
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
@@ -1082,15 +990,21 @@ const downloadCSV = async () => {
                 </div>
               </div>
             </div>
+
             <div class="d-flex gap-4">
-              <VBtn class="btn-light flex-1" @click="showBilling(billing)">
+              <VBtn class="btn-light flex-1" @click="downloadBillingPdf(billing)">
+                <VIcon icon="custom-download" size="24" class="mr-2" />
+                Ladda ner
+              </VBtn>
+
+              <!-- <VBtn class="btn-light flex-1" @click="showBilling(billing)">
                 <VIcon icon="custom-eye" size="24" />
                 Se detaljer
               </VBtn>
               
               <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
                 <VIcon icon="custom-dots-vertical" size="24" />
-              </VBtn>
+              </VBtn> -->
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
@@ -1163,6 +1077,15 @@ const downloadCSV = async () => {
             <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
           </template>
           <VListItemTitle>Markera som obetald</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="(selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8) && selectedBillingForAction.user_id !== null"
+          @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-pencil" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Redigera</VListItemTitle>
         </VListItem>
         <VListItem
             @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
@@ -1296,5 +1219,16 @@ const downloadCSV = async () => {
   }
   .facturing.v-card--variant-elevated {
       box-shadow: none !important;
+  }
+
+  .title-tabs {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 100%;
+    color: #454545; 
+    @media (max-width: 1023px) { 
+      font-weight: 700;
+      font-size: 20px;
+    }
   }
 </style>
