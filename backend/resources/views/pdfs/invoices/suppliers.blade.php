@@ -492,7 +492,7 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td width="30%">Leverantörer:</td>
+                                                    <td width="30%">Leverantörer nr:</td>
                                                     <td>{{ $billing->supplier_id }}</td>
                                                 </tr>
                                                 <tr>

@@ -289,7 +289,7 @@ const printInvoice = async () => {
 
 const editBilling = () => {
   router.push({
-    name: "dashboard-admin-billings-edit-id",
+    name: "dashboard-admin-suppliers-billings-edit-id",
     params: { id: Number(route.params.id) },
   });
 };
@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
           invoice.user_id !== null
         "
         class="btn-light mb-4"
-        :to="{ name: 'dashboard-admin-billings-edit-id', params: { id: Number(route.params.id) } }"
+        :to="{ name: 'dashboard-admin-suppliers-billings-edit-id', params: { id: Number(route.params.id) } }"
       >
         <template #prepend>
           <VIcon icon="custom-pencil" size="24" />

@@ -62,6 +62,15 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  showSupplier: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
+  supplier_id: {
+    type: Number,
+    required: false,
+  },
   title: {
     type: String,
     required: false,
@@ -71,6 +80,11 @@ const props = defineProps({
     type: Boolean,
     required: false,
     default: false
+  },
+  period: {
+    type: String,
+    required: false,
+    default: ''
   },
   days: {
     type: [Number, String],
@@ -203,6 +217,31 @@ const nonNegativeIntegerRules = [numericRangeValidator({ min: 0 })];
 const minOneIntegerRules = [numericRangeValidator({ min: 1 })];
 const percentageIntegerRules = [numericRangeValidator({ min: 0, max: 100 })];
 const nonNegativeDecimalRules = [decimalRangeValidator({ min: 0 })];
+const periodFormatValidator = value => {
+  const normalized = String(value ?? '').trim();
+
+  if (!normalized)
+    return true;
+
+  const match = normalized.match(/^(\d{4})(?:-(\d{2}))?$/);
+
+  if (!match)
+    return 'Ange en giltig period: YYYY eller YYYY-MM';
+
+  const year = Number(match[1]);
+  if (!Number.isInteger(year) || year < 1900 || year > 9999)
+    return 'Året måste vara mellan 1900 och 9999';
+
+  if (!match[2])
+    return true;
+
+  const month = Number(match[2]);
+  if (!Number.isInteger(month) || month < 1 || month > 12)
+    return 'Månaden måste vara mellan 01 och 12';
+
+  return true;
+};
+const periodRules = [periodFormatValidator];
 
 const pdfSource = computed(() => {
   if (!props.billing?.file) return null;
@@ -269,6 +308,7 @@ defineExpose({
 
 const invoice = ref({
   id: 1,
+  period: props.period,
   days: props.days,
   terms: props.terms,
   client_id: null,
@@ -497,6 +537,33 @@ async function fetchData() {
     invoice.value.invoice_date = `${year}-${month}-${day}`;
 
     invoice.value.id = getInitialInvoiceId(company.value?.billings, props.invoice_id);
+  }
+
+  if (props.supplier_id) {
+    const supplier = suppliers.value.find(
+      supplier => String(supplier?.id) === String(props.supplier_id)
+    );
+    const supplierDetails = supplier?.user?.user_detail;
+
+    if (!supplier || !supplierDetails) return;
+
+    client.value = client.value ?? {};
+
+    client.value.address = supplierDetails.address;
+    client.value.email = supplier.user.email;
+    client.value.fullname = supplier.user.name + " " + supplier.user.last_name;
+    client.value.organization_number = supplierDetails.organization_number;
+    client.value.id = supplier.id;
+    client.value.landline = supplierDetails.landline;
+    client.value.num_iva = supplierDetails.num_iva;
+    client.value.order_id = supplier.id;
+    client.value.phone = supplierDetails.phone;
+    client.value.postal_code = supplierDetails.postal_code;
+    client.value.street = supplierDetails.street;
+
+    selectedTax.value = 25;
+    invoice.value.tax = 25;
+    invoice.value.supplier_id = props.supplier_id;
   }
 }
 
@@ -796,7 +863,9 @@ const handleFocus = (element, fieldId) => {
             class="d-block d-md-flex align-center justify-sm-start mb-2 text-right"
             v-if="client"
           >
-            <span class="me-2 text-start w-40 text-black">Kund nr</span>
+            <span class="me-2 text-start w-40 text-black">
+              {{ showSupplier ? 'Kund nr' : 'Leverantörer nr' }}
+            </span>
             <span>
               <div class="form-field">
                 <VTextField
@@ -808,6 +877,23 @@ const handleFocus = (element, fieldId) => {
               </div>
             </span>
           </div>
+
+          <!-- 👉 Period -->
+          <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
+            <span class="me-2 text-start w-40 text-black">Period</span>
+
+            <span style="min-inline-size: 10.5rem">
+              <div class="form-field">
+                <VTextField
+                  v-model="invoice.period"
+                  placeholder="YYYY-MM"
+                  :rules="periodRules"
+                  style="inline-size: 10.5rem"
+                />
+              </div>
+            </span>
+          </div>
+
           <!-- 👉 Issue Date -->
           <div
             class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
@@ -852,7 +938,7 @@ const handleFocus = (element, fieldId) => {
                   v-else
                   v-model="invoice.due_date"
                   placeholder="YYYY-MM-DD"
-                  readonly
+                  disabled
                   class="cursor-none"
                 />
               </div>
@@ -873,7 +959,7 @@ const handleFocus = (element, fieldId) => {
                   v-model="invoice.days"
                   v-bind="numericTextFieldProps"
                   label="Dagar"
-                  :disabled="props.isCredit"
+                  :disabled="props.isCredit || !props.showSupplier"
                   :rules="nonNegativeIntegerRules"
                   @input="invoice.days = normalizeNumericTextInput(invoice.days)"
                   @keydown="handleNumericTextFieldKeydown"
@@ -901,7 +987,7 @@ const handleFocus = (element, fieldId) => {
           <span class="d-flex flex-column w-100"  v-if="client">
             <span>Org.nr. {{ client.organization_number }}</span>
           </span>
-          <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
+          <p class="mb-0 mt-2 form-field" v-if="client && showSupplier" style="min-width: 250px">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
             <VTextField
               v-model="invoice.reference"
@@ -925,6 +1011,7 @@ const handleFocus = (element, fieldId) => {
       </VCardText>
 
       <VCardText
+        v-if="props.showSupplier"
         class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 p-0 w-100"
       >
         <div class="rouded-select">
@@ -1190,6 +1277,7 @@ const handleFocus = (element, fieldId) => {
                         label="Moms"
                         @update:modelValue="handleTaxChange"
                         style="width: 150px"
+                        :disabled="!showSupplier"
                       />
 
                       <VTextField
@@ -1376,9 +1464,9 @@ const handleFocus = (element, fieldId) => {
                 class=""
                 v-if="client"
               >
-                <span class="mb-2 me-2 text-start w-40 text-black"
-                  >Kund nr</span
-                >
+                <span class="mb-2 me-2 text-start w-40 text-black">
+                  {{ showSupplier ? 'Kund nr' : 'Leverantörer nr' }}
+                </span>
                 <span>
                   <div class="form-field">
                     <VTextField
@@ -1390,6 +1478,22 @@ const handleFocus = (element, fieldId) => {
                   </div>
                 </span>
               </div>
+
+              <!-- 👉 Period -->
+              <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
+                <span class="mb-2 me-2 text-start w-40 text-black">Period</span>
+
+                <span style="min-inline-size: 10.5rem">
+                  <div class="form-field">
+                    <VTextField
+                      v-model="invoice.period"
+                      placeholder="YYYY-MM"
+                      :rules="periodRules"
+                    />
+                  </div>
+                </span>
+              </div>
+
               <!-- 👉 Issue Date -->
               <div
                 class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
@@ -1438,7 +1542,7 @@ const handleFocus = (element, fieldId) => {
                       v-else
                       v-model="invoice.due_date"
                       placeholder="YYYY-MM-DD"
-                      readonly
+                      disabled
                       class="cursor-none"
                     />
                   </div>
@@ -1459,7 +1563,7 @@ const handleFocus = (element, fieldId) => {
                       v-model="invoice.days"
                       v-bind="numericTextFieldProps"
                       label="Dagar"
-                      :disabled="props.isCredit"
+                      :disabled="props.isCredit || !props.showSupplier"
                       :rules="nonNegativeIntegerRules"
                       @input="invoice.days = normalizeNumericTextInput(invoice.days)"
                       @keydown="handleNumericTextFieldKeydown"
@@ -1479,7 +1583,7 @@ const handleFocus = (element, fieldId) => {
                 <span class="d-flex flex-column w-100"  v-if="client">
                   <span>Org.nr. {{ client.organization_number }}</span>
                 </span>
-                <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
+                <p class="mb-0 mt-2 form-field" v-if="client && showSupplier" style="min-width: 250px">
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
                   <VTextField
                     v-model="invoice.reference"
@@ -1505,7 +1609,8 @@ const handleFocus = (element, fieldId) => {
             <div 
               class="rouded-select" 
               v-if="
-                props.role === 'SuperAdmin' || props.role === 'Administrator'
+                (props.role === 'SuperAdmin' || props.role === 'Administrator') &&
+                props.showSupplier
               "
             >
               <AppAutocomplete
@@ -1536,7 +1641,7 @@ const handleFocus = (element, fieldId) => {
                 </template>
               </AppAutocomplete>
             </div>
-            <div class="rouded-select">
+            <div class="rouded-select" v-if="props.showSupplier">
               <AppAutocomplete
                 v-model="invoice.client_id"
                 :items="clients"
@@ -1772,6 +1877,7 @@ const handleFocus = (element, fieldId) => {
                             label="Moms"
                             @update:modelValue="handleTaxChange"
                             style="width: 125px"
+                            :disabled="!showSupplier"
                           />
 
                           <VTextField
