@@ -18,7 +18,7 @@ export default [
     icon: { icon: 'custom-card-back' },
     to: 'dashboard-settings-plan', 
     action: 'view', 
-    subject: 'company'
+    subject: 'plan'
   },
   { 
     title: 'Säkerhet', 

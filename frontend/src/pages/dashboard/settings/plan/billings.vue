@@ -5,8 +5,6 @@ import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import refreshAvatar from "@/assets/images/avatars/refresh.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
@@ -174,13 +172,6 @@ async function fetchData(cleanFilters = false) {
   }
 }
 
-const addInvoice = () => {
-  router.push({ 
-    name: "dashboard-admin-suppliers-billings-add", 
-    query: { supplier_id: Number(route.params.id) } 
-  });
-};
-
 const editBilling = (billingData) => {
   router.push({
     name: "dashboard-admin-suppliers-billings-edit-id",
@@ -215,26 +206,12 @@ const updateState = async () => {
   }
 }
 
-const truncateText = (text, length = 15) => {
-  if (text && text.length > length) {
-    return text.substring(0, length) + '...';
-  }
-  return text;
-};
-
 const openBillingPdf = billing => {
   if (!billing?.file)
     return
 
   window.open(themeConfig.settings.urlStorage + billing.file)
 }
-
-const showBilling = (billingData) => {
-  router.push({
-    name: "dashboard-admin-suppliers-billings-id",
-    params: { id: billingData.id },
-  });
-};
 
 const printBilling = async billing => {
   if (!billing?.file)
@@ -889,25 +866,6 @@ const downloadCSV = async () => {
                 @click="downloadBillingPdf(billing)">
                   <VIcon icon="custom-download" />
               </VBtn>
-
-              <!-- <VMenu>
-                <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-white">
-                    <VIcon icon="custom-dots-vertical" size="22" />
-                  </VBtn>
-                </template>
-
-                <VList>
-
-                  <VListItem
-                    @click="downloadBillingPdf(billing)">
-                    <template #prepend>
-                      <VIcon icon="custom-download" />
-                    </template>
-                    <VListItemTitle>Ladda ner</VListItemTitle>
-                  </VListItem>
-                </VList>
-              </VMenu> -->
             </td>
         </tr>
       </tbody>
@@ -955,8 +913,9 @@ const downloadCSV = async () => {
             </span>
             <div class="d-flex align-center justify-between w-100">
               <div class="order-title-box w-100">
-                <span class="title-panel d-flex justify-between align-center w-100">
+                <span class="title-panel d-flex align-center w-100">
                   {{ billing.period }}
+                  <VSpacer />
                   <div
                     class="status-chip-mobile pb-2"
                     :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
@@ -996,15 +955,6 @@ const downloadCSV = async () => {
                 <VIcon icon="custom-download" size="24" class="mr-2" />
                 Ladda ner
               </VBtn>
-
-              <!-- <VBtn class="btn-light flex-1" @click="showBilling(billing)">
-                <VIcon icon="custom-eye" size="24" />
-                Se detaljer
-              </VBtn>
-              
-              <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
-                <VIcon icon="custom-dots-vertical" size="24" />
-              </VBtn> -->
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
@@ -1165,51 +1115,51 @@ const downloadCSV = async () => {
     </VCard>
   </VDialog>
 
-      <!-- 👉 Update State -->
-    <VDialog
-      v-model="isConfirmStateDialogVisible"
-      persistent
-      class="action-dialog"
+  <!-- 👉 Update State -->
+  <VDialog
+    v-model="isConfirmStateDialogVisible"
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
     >
-      <!-- Dialog close btn -->
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
-      <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-cash-2" class="action-icon" />
-          <div class="dialog-title">
-            Uppdatera status
-          </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker på att du vill uppdatera fakturans status
-          <strong>#{{ selectedBilling.invoice_id }}</strong> till 
-          {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
-        </VCardText>
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+        <div class="dialog-title">
+          Uppdatera status
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Är du säker på att du vill uppdatera fakturans status
+        <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+        {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
+      </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+          Avbryt
+        </VBtn>
+        <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 
-    <input
-      ref="replaceFileInput"
-      type="file"
-      accept="application/pdf,.pdf"
-      style="display: none"
-      @change="onReplaceFileSelected"
-    >
+  <input
+    ref="replaceFileInput"
+    type="file"
+    accept="application/pdf,.pdf"
+    style="display: none"
+    @change="onReplaceFileSelected"
+  >
 </template>
 
 <style>

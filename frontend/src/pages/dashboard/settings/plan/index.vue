@@ -1,19 +1,16 @@
 <script setup>
 
-import { useDisplay } from "vuetify";
-import { themeConfig } from "@themeConfig";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import Toaster from "@/components/common/Toaster.vue";
 import Suppliers from '@/api/suppliers'
-import HistoryPaymentsTable from "@/pages/dashboard/settings/plan/HistoryPaymentsTable.vue";
+import billings from "@/pages/dashboard/settings/plan/billings.vue";
 
-const route = useRoute()
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
 const supplier_id = ref(0)
 const supplierData = ref(null)
 const plans = ref(null)
 const userTab = ref(0)
+const userData_ = ref(null)
 
 const isRequestOngoing = ref(false);
 const advisor = ref({
@@ -44,14 +41,6 @@ const TAB_INDEX_BY_KEY = {
     payment_history: 1,
 }
 
-// watch(
-//     () => route.query.tab,
-//     tab => {
-//         userTab.value = resolveTabFromQuery(tab)
-//     },
-//     { immediate: true }
-// )
-
 const resolveTabFromQuery = tab => {
     if (typeof tab === 'string') {
         const normalized = tab.trim().toLowerCase()
@@ -80,8 +69,8 @@ function resizeSectionToRemainingViewport() {
 async function loadUserData() {
     isRequestOngoing.value = true
 
-    //Supplier ID de prueba. Cambiar por el correcto
-    supplier_id.value = 23;
+    userData_.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    supplier_id.value = userData_.value.supplier.id;
 
     var responses = await Suppliers.show(supplier_id.value);
     supplierData.value = responses?.data?.data?.supplier;
@@ -154,9 +143,9 @@ onBeforeUnmount(() => {
         <VCardText class="pt-0 pb-6 card-form d-flex flex-column gap-8">
             <VTabs 
                 v-model="userTab"
-                    grow
+                grow
                 :show-arrows="false"
-                    class="suppliers-tabs">
+                class="suppliers-tabs">
                 <VTab
                     v-for="tab in tabs"
                     :key="tab.title">
@@ -236,7 +225,7 @@ onBeforeUnmount(() => {
                 </VWindowItem>
 
                 <VWindowItem :value="1">
-                    <HistoryPaymentsTable
+                    <billings
                         :customer-data="supplierData"
                         :is-supplier="true"
                         @alert="showAlert"
@@ -343,6 +332,29 @@ onBeforeUnmount(() => {
         font-size: 14px;
         font-weight: 400;
         color: #454545;
+    }
+
+    .v-tabs.suppliers-tabs {
+        .v-btn {
+        min-width: 50px !important;
+        .v-btn__content {
+            font-size: 14px !important;
+            color: #454545;
+        }
+        }
+    }
+
+    @media (max-width: 776px) {
+      .v-tabs.suppliers-tabs {
+          .v-icon {
+              display: none !important;
+          }
+          .v-btn {
+              .v-btn__content {
+                  white-space: break-spaces;
+              }
+          }
+      }
     }
 </style>
 

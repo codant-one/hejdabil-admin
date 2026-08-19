@@ -74,6 +74,7 @@ class MorePermissionSeeder extends Seeder
             //settings
             ['name' => 'view company'],
             ['name' => 'view sms'],
+            ['name' => 'view plan'],
 
         ]; 
         // Crear o actualizar permisos
