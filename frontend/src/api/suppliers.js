@@ -89,6 +89,10 @@ class Suppliers {
     plans() {
         return axios.get('/suppliers/plans/all')
     }
+
+    requestPlanUpgrade(data) {
+        return axios.post('/suppliers/request-plan-upgrade', data.data)
+    }
 }
 
 const suppliers = new Suppliers();

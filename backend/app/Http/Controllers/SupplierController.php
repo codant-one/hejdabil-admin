@@ -37,6 +37,7 @@ use App\Models\Note;
 use App\Models\Document;
 use App\Models\Vehicle;
 use App\Models\Setting;
+use App\Models\Plan;
 
 use App\Services\CacheService;
 
@@ -1643,6 +1644,119 @@ class SupplierController extends Controller
         } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle the request for a plan upgrade.
+     */
+    public function requestPlanUpgrade(Request $request)
+    {
+        try {
+            $supplier_id = $request->input('supplier_id');
+            $plan_id = $request->input('plan_id');
+            $phone = $request->input('phone');
+            $email = $request->input('email');
+
+            $supplier = Supplier::with(['user.userDetail', 'creator.userDetail', 'plan'])->find($supplier_id);
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'type' => 'error',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+
+            $newPlan = Plan::find($plan_id);
+
+            if (!$newPlan)
+                return response()->json([
+                    'success' => false,
+                    'type' => 'error',
+                    'feedback' => 'not_found',
+                    'message' => 'Planen hittades inte'
+                ], 404);
+
+            if ($supplier->plan_id === $newPlan->id) {
+                return response()->json([
+                    'success' => false,
+                    'type' => 'error',
+                    'feedback' => 'same_plan',
+                    'message' => 'Leverantören har redan denna plan'
+                ], 400);
+            }
+
+            //Send mail to Admin
+            $subject = 'Begäran om byte av abonnemang';
+            $text = $supplier->user->name . ' ' . $supplier->user->last_name . " har begärt att byta abonnemang i Bilflogg.<br><br>";
+            $text .= "Företag: " . ($supplier->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name)) . "<br>";
+            $text .= "Organisationsnummer: " . ($supplier->organization_number ?? '') . "<br>";
+            $text .= "Telefon: " . ($phone ?? '') . "<br>";
+            $text .= "E-post: " . ($email ?? '') . "<br>";
+            $text .= "Nuvarande abonnemang: " . ($supplier->plan->name ?? '') . "<br>";
+            $text .= "Önskat abonnemang: " . ($newPlan->name ?? '') . "<br><br>";
+            $text .= "Vänligen kontakta kunden för att hjälpa till med abonnemangsbytet.<br><br>";
+            $text .= "Detta är ett automatiskt meddelande från Bilflogg.<br><br>";
+            $text .= "Vänliga hälsningar,<br>";
+            $text .= "Bilflogg";
+
+
+            $data = [
+                'title' => 'Begäran om byte av abonnemang',
+                'icon' => asset('/images/important.png'),
+                'text' => $text,
+                'user' => Auth::user()->name . ' ' . Auth::user()->last_name,
+            ];
+
+            $fromAddress = config('mail.from.address');
+            $fromName = config('mail.from.name');
+            $toAddress = env('MAIL_ADMIN');
+
+            try {
+                Mail::send(
+                    'emails.plans.notifications-admin',
+                    $data,
+                    function ($message) use ($supplier, $subject, $fromAddress, $fromName, $toAddress) {
+                        if (!empty($fromAddress)) {
+                            $message->from($fromAddress, $fromName);
+                        }
+
+                        $message->to($toAddress)->subject($subject);
+                    }
+                );
+            } catch (Throwable $exception) {
+                Log::warning('Failed to send supplier upgrade plan email to Admin.', [
+                    'supplier_user_id' => $supplier->user->id,
+                    'email' => $supplier->user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'type' => 'error',
+                    'message' => $exception->getMessage(),
+                    'exception' => $exception->getMessage()
+                ], 500);
+            }
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Begäran vidarebefordrad till administrationsteamet',
+                'type' => 'success',
+                'data' => [ 
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'type' => 'error',
                 'message' => 'database_error',
                 'exception' => $ex->getMessage()
             ], 500);

@@ -6,6 +6,9 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import Suppliers from '@/api/suppliers'
 import HistoryPaymentsTable from "@/pages/dashboard/settings/plan/HistoryPaymentsTable.vue";
+import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
+import { handleNumericTextFieldKeydown as handlePhoneKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { formatNumberInteger } from "@/@core/utils/formatters";
 
 const { mdAndDown } = useDisplay();
@@ -20,6 +23,9 @@ const is_yearly = ref(0)
 const selectedPlan = ref(null)
 const isPlansDetailsVisible = ref(false)
 const isConfirmUpgradePlanDialogVisible = ref(false);
+const phoneToSend = ref('');
+const emailToSend = ref('');
+const refForm = ref(null)
 
 const isRequestOngoing = ref(false);
 const advisor = ref({
@@ -29,6 +35,28 @@ const advisor = ref({
 })
 
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
+
+const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
+const formatSupplierPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
+
+const hasPhoneValue = value => !!String(value ?? '').trim()
+
+const phoneOrLandlineRequiredValidator = value => {
+    return hasPhoneValue(value) || hasPhoneValue(phoneToSend.value) || 'krävs *'
+}
+
+const handlePhoneInput = () => {
+    phoneToSend.value = normalizeSupplierPhoneForInput(phoneToSend.value)
+}
+
+const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
+const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
+
+const supplierPhoneRules = computed(() => [
+    phoneOrLandlineRequiredValidator,
+    minLengthDigitsValidator(supplierPhoneDigits),
+    phoneValidator,
+])
 
 
 function resizeSectionToRemainingViewport() {
@@ -76,13 +104,56 @@ const availablePlans = computed(() => {
     })
 })
 
+const resetUpgradeForm = () => {
+        phoneToSend.value = ''
+        emailToSend.value = ''
+        refForm.value?.resetValidation?.()
+}
+
 const showConfirmUpgradePlanDialog = (plan) => {
+    const normalizedPlan = Number(plan)
+
+    if (Number.isFinite(normalizedPlan) && normalizedPlan > 0)
+        selectedPlan.value = normalizedPlan
+
+    resetUpgradeForm()
   isConfirmUpgradePlanDialogVisible.value = true;
 //   selectedPlan.value = { ...plan };
 };
 
-const upgradePlan = async () => {
-  // Implement the upgrade plan logic here
+const upgradePlan = async (supplier, plan) => {
+    isRequestOngoing.value = true
+
+    // Implement the upgrade plan logic here
+    let formData = new FormData()
+    formData.append('_method', 'POST')
+    formData.append('supplier_id', supplier.id)
+    formData.append('plan_id', plan)
+    formData.append('phone', formatSupplierPhoneForPayload(phoneToSend.value) )
+    formData.append('email', emailToSend.value)
+
+    let data = {
+        data: formData
+    }
+
+    Suppliers.requestPlanUpgrade(data)
+            .then((response) => {
+                advisor.value.show = true
+                advisor.value.type = response.data.type
+                advisor.value.message = response.data.message
+
+                isConfirmUpgradePlanDialogVisible.value = false
+
+            })
+            .catch((err) => {
+                advisor.value.show = true
+                advisor.value.type = err.type
+                advisor.value.message = err.message
+            });
+
+    
+
+    isRequestOngoing.value = false
 };
 
 onMounted(() => {
@@ -252,7 +323,12 @@ onBeforeUnmount(() => {
                         Tillbaka
                     </VBtn>
 
-                    <VBtn class="btn-gradient" type="submit"> Bekräfta byte </VBtn>
+                    <VBtn 
+                        class="btn-gradient" 
+                        @click="showConfirmUpgradePlanDialog(selectedPlan)"
+                    > 
+                        Bekräfta byte 
+                    </VBtn>
                     
                 </VCardText>
             </VCard>
@@ -539,38 +615,60 @@ onBeforeUnmount(() => {
       </VBtn>
 
       <!-- Dialog Content -->
-      <VCard>
-        <VCardText class="dialog-title-box">
-            <VIcon size="32" icon="custom-card" class="action-icon" />
-            <div class="dialog-title">
-                Byta abonnemang
-            </div>
-        </VCardText>
-        <VCardText class="dialog-text">
-            Genom att fortsätta skickas en förfrågan om abonnemangsbyte till Bilflogg.
-        </VCardText>
-        <VCardText class="dialog-text mt-6">
-            Vi kontaktar dig inom kort för att hjälpa dig med ändringen.
+       <VForm
+            ref="refForm"
+            class="card-form"
+            validate-on="submit"
+            @submit.prevent="upgradePlan(supplierData, selectedPlan)"
+        >
+        <VCard>
+            <VCardText class="dialog-title-box">
+                <VIcon size="32" icon="custom-card" class="action-icon" />
+                <div class="dialog-title">
+                    Byta abonnemang
+                </div>
+            </VCardText>
+            <VCardText class="dialog-text">
+                Genom att fortsätta skickas en förfrågan om abonnemangsbyte till Bilflogg.
+            </VCardText>
+            <VCardText class="dialog-text mt-6">
+                Vi kontaktar dig inom kort för att hjälpa dig med ändringen.
 
-            <VTextField
-                prefix="Telefon"
-                placeholder="072-277 22 97"
-                class="mt-4 always-show-prefix"
-            />
-            <VTextField
-                prefix="E-post"
-                placeholder="info@bilflogg.se"
-                class="mt-4 always-show-prefix"
-            />
-        </VCardText>
+                
+                <div class="mt-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Phone" />
+                    <VTextField
+                        v-model="phoneToSend"
+                        type="tel"
+                        class="always-show-prefix"
+                        :rules="supplierPhoneRules"
+                        :min-length="supplierPhoneDigits"
+                        :maxlength="supplierPhoneDigits"
+                        :prefix="supplierPhonePrefix"
+                        inputmode="numeric"
+                        @input="handlePhoneInput"
+                    />
+                </div>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmUpgradePlanDialogVisible = false">
-            Avbryt
-          </VBtn>
-          <VBtn class="btn-gradient" @click="upgradePlan"> Skicka förfrågan </VBtn>
-        </VCardText>
-      </VCard>
+                <div class="mt-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
+                    <VTextField
+                        v-model="emailToSend"
+                        :rules="[requiredValidator, emailValidator]"
+                        class=""
+                    />
+                </div>
+                
+            </VCardText>
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="isConfirmUpgradePlanDialogVisible = false">
+                Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit"> Skicka förfrågan </VBtn>
+            </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     </section>
