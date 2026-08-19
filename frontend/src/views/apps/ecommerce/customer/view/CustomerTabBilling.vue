@@ -6,7 +6,7 @@ import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import refreshAvatar from "@/assets/images/avatars/refresh.svg";
+import refreshAvatar from "@/assets/images/avatars/refresh-2.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
@@ -930,7 +930,7 @@ const downloadCSV = async () => {
                   class="supplier-company-logo-avatar"
                 >
                   <VImg
-                    style="border-radius: 50%"
+                    style="border-radius: 50%; width: 24px; height: 24px; flex: 0 0 24px;"
                     :src="refreshAvatar"
                   />
                 </VAvatar>
@@ -1006,7 +1006,7 @@ const downloadCSV = async () => {
                   <VListItem 
                     @click="replaceFile(billing)">
                     <template #prepend>
-                      <VIcon icon="custom-upload" size="24" class="mr-2" />
+                      <VIcon icon="custom-refresh" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ersätta faktura</VListItemTitle>
                   </VListItem>
@@ -1068,8 +1068,9 @@ const downloadCSV = async () => {
             </span>
             <div class="d-flex align-center justify-between w-100">
               <div class="order-title-box w-100">
-                <span class="title-panel d-flex justify-between align-center w-100">
+                <span class="title-panel d-flex align-center w-100">
                   {{ billing.period }}
+                  <VSpacer />
                   <div
                     class="status-chip-mobile pb-2"
                     :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
@@ -1149,7 +1150,7 @@ const downloadCSV = async () => {
                       class="supplier-company-logo-avatar"
                     >
                       <VImg
-                        style="border-radius: 50%"
+                        style="border-radius: 50%; width: 24px; height: 24px; flex: 0 0 24px;"
                         :src="refreshAvatar"
                       />
                     </VAvatar>
@@ -1279,7 +1280,7 @@ const downloadCSV = async () => {
           @click="replaceFile(selectedBillingForAction); isMobileActionDialogVisible = false;"
         >
           <template #prepend>
-            <VIcon icon="custom-upload" size="24" class="mr-2" />
+            <VIcon icon="custom-refresh" size="24" class="mr-2" />
           </template>
           <VListItemTitle>Ersätta faktura</VListItemTitle>
         </VListItem>
@@ -1383,6 +1384,10 @@ const downloadCSV = async () => {
   .iconsButton .v-btn--icon.v-btn--density-default {
     width: calc(var(--v-btn-height) + 0px) !important;
     height: 25px !important;
+  }
+  .supplier-company-logo-avatar {
+    background-color: #E7E7E7 !important;
+    border: 1px solid #E7E7E7 !important;
   }
   .facturing.v-card--variant-elevated {
       box-shadow: none !important;

@@ -18,6 +18,7 @@ class ActivitiesController extends Controller
 {
     private const PLAN_GATED_FEATURES = [
         'clients',
+        'suppliers',
         'billings',
         'invoices',
         'stock',
@@ -200,6 +201,9 @@ class ActivitiesController extends Controller
 
             if ($this->canViewWithPlan($user, 'clients'))
                 $allowEntityType('clients');
+            
+            if ($this->canViewWithPlan($user, 'suppliers'))
+                $allowEntityType('suppliers');
 
             if ($this->canViewWithPlan($user, 'my-team'))
                 $allowEntityType('users');

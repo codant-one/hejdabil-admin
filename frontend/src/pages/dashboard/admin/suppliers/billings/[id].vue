@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
               class="btn-light w-100 mb-4"
               @click="replaceFile(invoice)">
               <template #prepend>
-                <VIcon icon="custom-upload" size="24" />
+                <VIcon icon="custom-refresh" size="24" />
               </template>
               Ersätta faktura
             </VBtn>
@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
             @click="replaceFile(invoice); isMobileActionDialogVisible = false"
           >
             <template #prepend>
-              <VIcon icon="custom-upload" size="24" />
+              <VIcon icon="custom-refresh" size="24" />
             </template>
             <VListItemTitle>Ersätta faktura</VListItemTitle>
           </VListItem>

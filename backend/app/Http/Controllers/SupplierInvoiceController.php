@@ -111,8 +111,8 @@ class SupplierInvoiceController extends Controller
 
             SupplierActivity::createActivity([
                 'entity_id' => $supplierInvoice->id,
-                'entity_type' => 'suppliers',
-                'action_type' => 'create_supplier_billing',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'create_suppliers_invoices',
                 'title' => 'Faktura #'.$supplierInvoice->invoice_id.' - tillagd',
                 'description' => 'En ny faktura har lagts till.',
                 'icon' => 'custom-facture',
@@ -212,8 +212,8 @@ class SupplierInvoiceController extends Controller
 
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'suppliers',
-                'action_type' => 'update_supplier_billing',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'update_suppliers_invoices',
                 'title' => 'Faktura #'.$billing->invoice_id.' - uppdaterad',
                 'description' => 'Fakturan har uppdaterats.',
                 'icon' => 'custom-facture',
@@ -268,8 +268,8 @@ class SupplierInvoiceController extends Controller
 
            SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'suppliers',
-                'action_type' => 'update_supplier_billing_state',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'update_suppliers_invoices_state',
                 'title' => 'Faktura #'.$billing->invoice_id.' - ' . ($billing->state_id == 7 ? 'betald' : 'obetald'),
                 'description' => $billing->state_id == 7 ? 'Markerades som betald.' : 'Markerades som obetald.',
                 'icon' => 'custom-facture',
@@ -321,8 +321,8 @@ class SupplierInvoiceController extends Controller
 
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'suppliers',
-                'action_type' => 'create_supplier_credit',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'create_suppliers_invoices_credit',
                 'title' => 'Kreditfaktura #'.$billing->invoice_id.' - skapad',
                 'description' => 'En kreditfaktura har skapats.',
                 'icon' => 'custom-facture',
@@ -392,8 +392,8 @@ class SupplierInvoiceController extends Controller
 
             SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'suppliers',
-                'action_type' => 'replace_supplier_billing_file',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'replace_suppliers_invoices_file',
                 'title' => 'Faktura #'.$billing->invoice_id.' - fil ersatt',
                 'description' => 'Fakturans fil har ersatts.',
                 'icon' => 'custom-facture',
