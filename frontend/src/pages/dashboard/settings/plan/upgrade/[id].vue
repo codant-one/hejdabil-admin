@@ -1,16 +1,12 @@
 <script setup>
 
-import { useDisplay } from "vuetify";
+import { formatNumberInteger } from "@/@core/utils/formatters";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Suppliers from '@/api/suppliers'
-import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
-import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
-import { formatNumberInteger } from "@/@core/utils/formatters";
-
-const { mdAndDown } = useDisplay();
 
 const route = useRoute()
 const { width: windowWidth } = useWindowSize()
+
 const sectionEl = ref(null)
 const supplier_id = ref(0)
 const supplierData = ref(null)
@@ -19,8 +15,6 @@ const is_yearly = ref(0)
 const selectedPlan = ref(null)
 const isPlansDetailsVisible = ref(false)
 const isConfirmUpgradePlanDialogVisible = ref(false);
-const phoneToSend = ref('');
-const emailToSend = ref('');
 const refForm = ref(null)
 
 const isRequestOngoing = ref(false);
@@ -31,29 +25,6 @@ const advisor = ref({
 })
 
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
-
-const normalizeSupplierPhoneForInput = value => normalizePhoneInput(value, [], null, PHONE_INPUT_DEFAULTS)
-const formatSupplierPhoneForPayload = value => formatPhonePayload(value, [], null, PHONE_INPUT_DEFAULTS)
-
-const hasPhoneValue = value => !!String(value ?? '').trim()
-
-const phoneOrLandlineRequiredValidator = value => {
-    return hasPhoneValue(value) || hasPhoneValue(phoneToSend.value) || 'krävs *'
-}
-
-const handlePhoneInput = () => {
-    phoneToSend.value = normalizeSupplierPhoneForInput(phoneToSend.value)
-}
-
-const supplierPhonePrefix = `+${PHONE_INPUT_DEFAULTS.defaultPhoneCode}`
-const supplierPhoneDigits = PHONE_INPUT_DEFAULTS.defaultPhoneDigits
-
-const supplierPhoneRules = computed(() => [
-    phoneOrLandlineRequiredValidator,
-    minLengthDigitsValidator(supplierPhoneDigits),
-    phoneValidator,
-])
-
 
 function resizeSectionToRemainingViewport() {
     const el = sectionEl.value;
@@ -100,56 +71,47 @@ const availablePlans = computed(() => {
     })
 })
 
-const resetUpgradeForm = () => {
-        phoneToSend.value = ''
-        emailToSend.value = ''
-        refForm.value?.resetValidation?.()
-}
-
 const showConfirmUpgradePlanDialog = (plan) => {
     const normalizedPlan = Number(plan)
 
     if (Number.isFinite(normalizedPlan) && normalizedPlan > 0)
         selectedPlan.value = normalizedPlan
 
-    resetUpgradeForm()
-  isConfirmUpgradePlanDialogVisible.value = true;
-//   selectedPlan.value = { ...plan };
+    isConfirmUpgradePlanDialogVisible.value = true;
+    isPlansDetailsVisible.value = false;
+    //   selectedPlan.value = { ...plan };
 };
 
 const upgradePlan = async (supplier, plan) => {
-    isRequestOngoing.value = true
 
     // Implement the upgrade plan logic here
     let formData = new FormData()
     formData.append('_method', 'POST')
     formData.append('supplier_id', supplier.id)
     formData.append('plan_id', plan)
-    formData.append('phone', formatSupplierPhoneForPayload(phoneToSend.value) )
-    formData.append('email', emailToSend.value)
+    formData.append('is_yearly', is_yearly.value)
 
-    let data = {
-        data: formData
-    }
+    let data = { data: formData }
+
+    isRequestOngoing.value = true
+    isConfirmUpgradePlanDialogVisible.value = false
 
     Suppliers.requestPlanUpgrade(data)
-            .then((response) => {
-                advisor.value.show = true
-                advisor.value.type = response.data.type
-                advisor.value.message = response.data.message
+        .then((response) => {
+            advisor.value.show = true
+            advisor.value.type = response.data.type
+            advisor.value.message = response.data.message
 
-                isConfirmUpgradePlanDialogVisible.value = false
+            isRequestOngoing.value = false
+        })
+        .catch((err) => {
+            isRequestOngoing.value = false
 
-            })
-            .catch((err) => {
-                advisor.value.show = true
-                advisor.value.type = err.type
-                advisor.value.message = err.message
-            });
-
+            advisor.value.show = true
+            advisor.value.type = err.type
+            advisor.value.message = err.message
+        });
     
-
-    isRequestOngoing.value = false
 };
 
 onMounted(() => {
@@ -165,7 +127,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <section class="page-section bg-white" ref="sectionEl">
+    <section class="page-section bg-white suppliers-page" ref="sectionEl">
       <LoadingOverlay :is-loading="isRequestOngoing" />
       <VSnackbar
         v-model="advisor.show"
@@ -194,8 +156,8 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </VCardText>
-        <VCardText>
-            <div class="settings-layout">
+        <VCardText class="pb-0">
+            <div class="settings-layout pb-0 pb-md-4">
                 <div class="settings-layout__sidebar">
                     <div class="d-flex flex-column gap-4">
                         <span class="subtitle-settings">
@@ -211,7 +173,7 @@ onBeforeUnmount(() => {
             </div>
         </VCardText>
 
-        <VCardText class="pt-0 pb-6 card-form d-flex flex-column gap-8">
+        <VCardText class="pt-0 pt-md-4 pb-4 card-form d-flex flex-column gap-8">
             <VCard 
                 v-if="supplierData"
                 class="card-overview__main"
@@ -263,7 +225,7 @@ onBeforeUnmount(() => {
                                             :icon="plan.icon"
                                             size="40" 
                                         />
-                                        <span class="title-card" style="overflow: hidden; white-space: nowrap; flex: 1;">
+                                        <span class="title-card">
                                             {{ plan.name }}
                                         </span>
                                         <VSpacer />
@@ -288,7 +250,10 @@ onBeforeUnmount(() => {
 
                                         <VDivider class="border-card-line mb-3" />
 
-                                        <div class="gap-4 mt-6 align-center d-flex flex-row justify-content-center">
+                                        <div 
+                                            class="gap-4 mt-4 align-center d-flex flex-row justify-content-center cursor-pointer" 
+                                            @click="isPlansDetailsVisible = true"
+                                        >
                                             <span class="details-text">
                                                 Se vad som ingår
                                             </span>
@@ -296,8 +261,7 @@ onBeforeUnmount(() => {
                                                 icon="custom-arrow-right" 
                                                 size="24" 
                                                 class="cursor-pointer"
-                                                style="flex-shrink: 0;"
-                                                @click="isPlansDetailsVisible = true"
+                                                style="flex-shrink: 0;"                                                
                                             />
                                         </div>
                                     </div>
@@ -333,15 +297,15 @@ onBeforeUnmount(() => {
 
     <!-- 👉 Plans Details Dialog -->
     <VDialog 
-    v-model="isPlansDetailsVisible"
-    :fullscreen="windowWidth < 1024"
-    persistent
-    :scrim="windowWidth < 1024 ? false : true"
-    :scrollable="windowWidth >= 1024"
-    :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
-    :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-    :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
-    :width="windowWidth < 1024 ? '100%' : '800px'"
+        v-model="isPlansDetailsVisible"
+        :fullscreen="windowWidth < 1024"
+        persistent
+        :scrim="windowWidth < 1024 ? false : true"
+        :scrollable="false"
+        :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+        :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+        :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+        :width="windowWidth < 1024 ? '' : '800px'"
     >
         <!-- Dialog close btn -->
         <VBtn
@@ -352,20 +316,20 @@ onBeforeUnmount(() => {
             <VIcon size="16" icon="custom-close" />
         </VBtn>
 
-        <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
-            <VCardTitle class="dialog-title-box mt-3 pb-2">
-                <div class="dialog-title text-start">
+        <VCard class="plans-details-dialog-card" :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+            <VCardText class="dialog-title-box pb-0">
+                <div class="dialog-title">
                     Jämför planer
-                </div>
-                
-            </VCardTitle>
-            <VCardTitle class="text-settings py-0">
+                </div>                
+            </VCardText>
+            <VCardText class="dialog-text pe-0">
                 Se vad som ingår i varje plan innan du bekräftar bytet.
-            </VCardTitle>
+            </VCardText>
 
             <VDivider class="mt-4" />
             
-            <VCardText class="dialog-content">
+            <VCardText 
+                class="dialog-text mt-4 pb-6 plans-details-dialog-content">        
                 <div class="d-flex flex-row" style="width: 100%;">
                     <div class="text-start" style="width: 50%;">
                         
@@ -374,33 +338,47 @@ onBeforeUnmount(() => {
                         <div>
                             <VIcon 
                                 :icon="availablePlans[0].icon"
-                                size="24" 
+                                :size="windowWidth < 1024 ? 18 : 24" 
                             />
                             <span class="plan-details-content ms-2" style="overflow: hidden; white-space: nowrap; flex: 1;">
                                 {{ availablePlans[0].name }}
                             </span>
                         </div>
-                        <span class="plan-details-current-indicator py-1 px-2 mt-2"> Din nuvarande plan </span>
+                        <span class="plan-details-current-indicator py-1 px-2 mt-2" v-if="supplierData.plan_id === 1"> 
+                            <span v-if="windowWidth >= 1024">Din nuvarande plan</span>
+                            <span v-if="windowWidth < 1024">Nuvarande</span>                            
+                        </span>
+                        <span style="height: 19px;" class=" px-2 mt-2" v-else>                            
+                            
+                        </span>
                     </div>
                     <div class="d-flex flex-column justify-content-center align-center" style="width: 25%;">
                         <div>
                             <VIcon 
                                 :icon="availablePlans[1].icon"
-                                size="24" 
+                                :size="windowWidth < 1024 ? 18 : 24" 
                             />
-                            <span class="plan-details-content ms-2" style="overflow: hidden; white-space: nowrap; flex: 1;">
+                            <span class="plan-details-content ms-1" style="overflow: hidden; white-space: nowrap; flex: 1;">
                                 {{ availablePlans[1].name }}
                             </span>
                         </div>
-                        <span class="plan-details-most-popular-indicator py-1 px-2 mt-2"> Mest populär </span>
+                        <span class="plan-details-current-indicator py-1 px-2 mt-2" v-if="supplierData.plan_id === 2"> 
+                            <span v-if="windowWidth >= 1024">Din nuvarande plan</span>
+                            <span v-if="windowWidth < 1024">Nuvarande</span>                            
+                        </span>
+                        <span class="plan-details-most-popular-indicator py-1 px-2 mt-2" v-else>                            
+                            <span v-if="windowWidth >= 1024">Mest populär</span>
+                            <span v-if="windowWidth < 1024">Populär</span>
+                        </span>
                     </div>
                 </div>
 
                 <div class="my-4" style="width: 100%;">
                     <span class="plan-details-title ">Betalningar</span>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mt-2" style="width: 100%;">
-                    <div class="d-flex flex-column align-start" style="width: 50%;">
+                    <div class="text" style="width: 50%;">
                         <span class="plan-details-content">Swish-utbetalningar</span>
                     </div>
                     <div class="text-center" style="width: 25%;">
@@ -414,8 +392,9 @@ onBeforeUnmount(() => {
                 <div class="my-4" style="width: 100%;">    
                     <span class="plan-details-title ">Användare & fordon</span>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
-                    <div class="d-flex flex-column align-start" style="width: 50%;">
+                    <div class="text-start" style="width: 50%;">
                         <span class="plan-details-content">Användare</span>
                     </div>
                     <div class="text-center" style="width: 25%;">
@@ -425,6 +404,7 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Flera</span>
                     </div>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Fordon i lager</span>
@@ -440,6 +420,7 @@ onBeforeUnmount(() => {
                 <div class="my-4" style="width: 100%;">    
                     <span class="plan-details-title ">Fakturering & avtal</span>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Fakturering</span>
@@ -451,6 +432,7 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Obegränsad</span>
                     </div>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Digitala avtal med e-signering</span>
@@ -467,6 +449,7 @@ onBeforeUnmount(() => {
                         </span>
                     </div>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">E-signering för eget dokument</span>
@@ -483,7 +466,6 @@ onBeforeUnmount(() => {
                         </span>
                     </div>
                 </div>
-
 
                 <div class="my-4" style="width: 100%;">    
                     <span class="plan-details-title ">Kunder & insikter</span>
@@ -504,6 +486,7 @@ onBeforeUnmount(() => {
                         </span>
                     </div>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Insikter och analys</span>
@@ -524,6 +507,7 @@ onBeforeUnmount(() => {
                 <div class="my-4" style="width: 100%;">    
                     <span class="plan-details-title ">Säkerhet & historik</span>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Transaktionshistorik</span>
@@ -540,6 +524,7 @@ onBeforeUnmount(() => {
                         </span>
                     </div>
                 </div>
+
                 <div class="d-flex flex-row plan-details-box pb-2 mb-4" style="width: 100%;">
                     <div class="d-flex flex-column align-start" style="width: 50%;">
                         <span class="plan-details-content">Verifiering med säkerhetskod</span>
@@ -557,7 +542,6 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-
                 <div class="my-4" style="width: 100%;">
                     <span class="plan-details-title ">Support</span>
                 </div>
@@ -572,19 +556,18 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Prioriterad</span>
                     </div>
                 </div>
-
-
                 <VCardText 
                     class="d-flex justify-end gap-3 flex-wrap dialog-actions p-0 mt-6"
                     :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'"
                     :class="windowWidth < 1024 ? 'flex-column px-0' : 'flex-row pe-0'"
                 >
-                    <span class="py-3 text-center">
+                    <span class="py-3 text-center d-none">
                         Din nuvarande plan är Swish
                     </span>
 
                     <VBtn 
                         class="btn-gradient" 
+                        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 180px;'"
                         @click="showConfirmUpgradePlanDialog(supplierData)"
                     > 
                         Uppgradera till Pro 
@@ -610,7 +593,7 @@ onBeforeUnmount(() => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <!-- Dialog Content -->
+        <!-- Dialog Content -->
        <VForm
             ref="refForm"
             class="card-form"
@@ -627,32 +610,17 @@ onBeforeUnmount(() => {
             <VCardText class="dialog-text">
                 Genom att fortsätta skickas en förfrågan om abonnemangsbyte till Bilflogg.
             </VCardText>
-            <VCardText class="dialog-text mt-6">
+            <VCardText class="dialog-text mt-4">
                 Vi kontaktar dig inom kort för att hjälpa dig med ändringen.
 
-                
-                <div class="mt-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
-                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Phone" />
-                    <VTextField
-                        v-model="phoneToSend"
-                        type="tel"
-                        class="always-show-prefix"
-                        :rules="supplierPhoneRules"
-                        :min-length="supplierPhoneDigits"
-                        :maxlength="supplierPhoneDigits"
-                        :prefix="supplierPhonePrefix"
-                        inputmode="numeric"
-                        @input="handlePhoneInput"
-                    />
+                <div class="upgrade-contact-row mt-4">
+                    <span class="upgrade-contact-row__label">Telefon</span>
+                    <span class="upgrade-contact-row__value">072-277 22 97</span>
                 </div>
 
-                <div class="mt-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
-                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
-                    <VTextField
-                        v-model="emailToSend"
-                        :rules="[requiredValidator, emailValidator]"
-                        class=""
-                    />
+                <div class="upgrade-contact-row mt-2">
+                    <span class="upgrade-contact-row__label">E-post</span>
+                    <span class="upgrade-contact-row__value">info@bilflogg.se</span>
                 </div>
                 
             </VCardText>
@@ -671,6 +639,30 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+    .suppliers-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
+        margin-inline-end: 1.5rem !important;
+    }
+    
+    .scrollable-dialog-content {
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+
+    .plans-details-dialog-card {
+        @media (min-width: 1024px) {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    .plans-details-dialog-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+    }
+
     .card-form {
         .v-input {
             .v-input__control {
@@ -915,9 +907,13 @@ onBeforeUnmount(() => {
 
     .plan-details-content {
         font-weight: 600;
-        font-size: 14px;
+        font-size: 16px;
         line-height: 100%;
         color: #5D5D5D; 
+
+        @media (max-width: 1023px) {
+            font-size: 12px;
+        }
     }
 
     .plan-details-current-indicator {
@@ -938,6 +934,34 @@ onBeforeUnmount(() => {
         font-size: 11px;
         line-height: 100%;
         color: #FFFFFF; 
+    }
+
+    .upgrade-contact-row {
+        width: 100%;
+        height: 40px;
+        border: 1px solid #E7E7E7;
+        border-radius: 8px;
+        background-color: #F6F6F6;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .upgrade-contact-row__label {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
+        color:#878787;
+    }
+
+    .upgrade-contact-row__value {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
+        color: #454545;
     }
 </style>
 

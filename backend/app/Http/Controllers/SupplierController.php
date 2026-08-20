@@ -1658,8 +1658,7 @@ class SupplierController extends Controller
         try {
             $supplier_id = $request->input('supplier_id');
             $plan_id = $request->input('plan_id');
-            $phone = $request->input('phone');
-            $email = $request->input('email');
+            $is_yearly = $request->input('is_yearly', false);
 
             $supplier = Supplier::with(['user.userDetail', 'creator.userDetail', 'plan'])->find($supplier_id);
         
@@ -1681,68 +1680,44 @@ class SupplierController extends Controller
                     'message' => 'Planen hittades inte'
                 ], 404);
 
-            if ($supplier->plan_id === $newPlan->id) {
+            /*if ($supplier->plan_id === $newPlan->id) {
                 return response()->json([
                     'success' => false,
                     'type' => 'error',
                     'feedback' => 'same_plan',
                     'message' => 'Leverantören har redan denna plan'
                 ], 400);
-            }
+            }*/
+
+            $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+            $oldPlan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+            $newPlan = $newPlan->name . ' (' . ($is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
 
             //Send mail to Admin
+            $email = env('MAIL_ADMIN', null);
             $subject = 'Begäran om byte av abonnemang';
-            $text = $supplier->user->name . ' ' . $supplier->user->last_name . " har begärt att byta abonnemang i Bilflogg.<br><br>";
-            $text .= "Företag: " . ($supplier->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name)) . "<br>";
-            $text .= "Organisationsnummer: " . ($supplier->organization_number ?? '') . "<br>";
-            $text .= "Telefon: " . ($phone ?? '') . "<br>";
-            $text .= "E-post: " . ($email ?? '') . "<br>";
-            $text .= "Nuvarande abonnemang: " . ($supplier->plan->name ?? '') . "<br>";
-            $text .= "Önskat abonnemang: " . ($newPlan->name ?? '') . "<br><br>";
-            $text .= "Vänligen kontakta kunden för att hjälpa till med abonnemangsbytet.<br><br>";
-            $text .= "Detta är ett automatiskt meddelande från Bilflogg.<br><br>";
-            $text .= "Vänliga hälsningar,<br>";
-            $text .= "Bilflogg";
-
+            $text_primary = "har begärt att byta abonnemang i Bilflogg.<br><br>";
+            $text_primary .= "Företag: " . $company . "<br>";
+            $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
+            $text_primary .= "Nuvarande abonnemang: " . $oldPlan . "<br>";
+            $text_primary .= "Önskat abonnemang: " . $newPlan . "<br><br>";
+            $text_secondary = "Vänligen kontakta kunden för att hjälpa till med abonnemangsbytet.<br>";
 
             $data = [
-                'title' => 'Begäran om byte av abonnemang',
-                'icon' => asset('/images/important.png'),
-                'text' => $text,
-                'user' => Auth::user()->name . ' ' . Auth::user()->last_name,
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
             ];
 
-            $fromAddress = config('mail.from.address');
-            $fromName = config('mail.from.name');
-            $toAddress = env('MAIL_ADMIN');
-
-            try {
-                Mail::send(
-                    'emails.plans.notifications-admin',
-                    $data,
-                    function ($message) use ($supplier, $subject, $fromAddress, $fromName, $toAddress) {
-                        if (!empty($fromAddress)) {
-                            $message->from($fromAddress, $fromName);
-                        }
-
-                        $message->to($toAddress)->subject($subject);
-                    }
-                );
-            } catch (Throwable $exception) {
-                Log::warning('Failed to send supplier upgrade plan email to Admin.', [
-                    'supplier_user_id' => $supplier->user->id,
-                    'email' => $supplier->user->email,
-                    'error' => $exception->getMessage(),
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'type' => 'error',
-                    'message' => $exception->getMessage(),
-                    'exception' => $exception->getMessage()
-                ], 500);
-            }
-
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.admin.notifications',
+                $data,
+                $email,
+                $subject
+            );
 
             return response()->json([
                 'success' => true,

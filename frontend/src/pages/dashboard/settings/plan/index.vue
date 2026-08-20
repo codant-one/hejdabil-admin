@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </VCardText>
-        <VCardText>
+        <VCardText class="pb-0">
             <div class="settings-layout">
                 <div class="settings-layout__sidebar">
                     <div class="d-flex flex-column gap-4">
@@ -140,7 +140,7 @@ onBeforeUnmount(() => {
             </div>
         </VCardText>
 
-        <VCardText class="pt-0 pb-6 card-form d-flex flex-column gap-8">
+        <VCardText class="pt-0 pt-md-4 pb-4 card-form d-flex flex-column gap-8">
             <VTabs 
                 v-model="userTab"
                 grow
@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-column card-subtitle">
+                            <div class="d-none flex-column card-subtitle">
                                 <div class="p-0 card-subtitle">
                                     Förnyas
                                 </div>
