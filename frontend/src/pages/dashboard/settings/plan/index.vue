@@ -41,6 +41,8 @@ const TAB_INDEX_BY_KEY = {
     payment_history: 1,
 }
 
+const BILLINGS_TAB_HASH = '#tab-billings'
+
 const resolveTabFromQuery = tab => {
     if (typeof tab === 'string') {
         const normalized = tab.trim().toLowerCase()
@@ -83,14 +85,24 @@ async function loadUserData() {
     isRequestOngoing.value = false 
 }
 
+function syncTabWithHash() {
+    if (window.location.hash === BILLINGS_TAB_HASH) {
+        userTab.value = 1
+    }
+}
+
 onMounted(() => {
   loadUserData();
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+    window.addEventListener("hashchange", syncTabWithHash);
+
+    syncTabWithHash();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+    window.removeEventListener("hashchange", syncTabWithHash);
 });
 
 </script>

@@ -124,8 +124,8 @@ async function fetchData(cleanFilters = false) {
   }
 
   if(Number(route.params.id)) {
-    if(props.isSupplier && props.customerData.id !== null) {
-      data.supplier_id = props.customerData.id
+    if(props.isSupplier && Number(props.customerData?.id) > 0) {
+      data.supplier_id = Number(props.customerData?.id)
 
       try {
 

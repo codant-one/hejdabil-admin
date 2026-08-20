@@ -382,7 +382,7 @@ class GenerateSupplierBilling extends Command
         $text = 'Din faktura har skapats. Gå till Inställningar → Plan → Betalningshistorik för att granska och betala fakturan.';
         $color = 'primary';
         $icon = 'custom-facture';
-        $route = '/dashboard/panel';//la ruta que no teniamos
+        $route = '/dashboard/settings/plan#tab-billings';
 
         $dbNotification = Notification::create([
             'user_id' => $billing->supplier->user_id,
