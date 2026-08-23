@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
                 <div class="settings-layout__sidebar">
                     <div class="d-flex flex-column gap-4">
                         <span class="subtitle-settings">
-                            {{ windowWidth < 1024 ? 'Uppgradera plan' : 'Plan' }}
+                            {{ windowWidth < 1024 ? 'Byta plan' : 'Plan' }}
                         </span>
                         <span class="text-settings">
                             Välj den plan som passar dig bäst.

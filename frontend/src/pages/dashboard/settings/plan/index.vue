@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
                                 class="btn-gradient" 
                                 :to="{ name: 'dashboard-settings-plan-upgrade-id', params: { id: supplierData.id } }"
                             > 
-                                Uppgradera plan 
+                                Byta plan
                             </VBtn>
                             <VBtn 
                                 class="btn-light" 

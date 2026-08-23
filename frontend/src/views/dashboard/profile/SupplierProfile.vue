@@ -116,6 +116,8 @@ const isDeleteInfoLoading = ref(false)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const supplierSwitchStates = ref({})
+const pendingSwitchReset = ref(null)
 const deleteInfo = ref({
   can_force_delete: false,
   total_associations: 0,
@@ -165,6 +167,22 @@ watch(() =>
   props.avatarOld, (avatarOld_) => {
     avatarOld.value = avatarOld_
   });
+
+watch(() => props.supplier, supplierData => {
+  supplier.value = supplierData
+}, { deep: true })
+
+watch(() => supplier.value?.state_id, stateId => {
+  const supplierId = Number(supplier.value?.id)
+
+  if (!Number.isInteger(supplierId) || supplierId <= 0)
+    return
+
+  supplierSwitchStates.value = {
+    ...supplierSwitchStates.value,
+    [supplierId]: Number(stateId) === 2,
+  }
+}, { immediate: true })
 
 watch(() => alert.value.show, (show) => {
   if (show) {
@@ -351,12 +369,29 @@ const resolveStatus = state_id => {
 }
 
 const showActivateDialog = supplierData => {
+  pendingSwitchReset.value = {
+    supplierId: supplierData.id,
+    originalValue: supplierData.state_id === 2,
+  }
+
   isConfirmActiveDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
 }
 
+const resetPendingSwitch = () => {
+  if (!pendingSwitchReset.value)
+    return
+
+  supplierSwitchStates.value = {
+    ...supplierSwitchStates.value,
+    [pendingSwitchReset.value.supplierId]: pendingSwitchReset.value.originalValue,
+  }
+  pendingSwitchReset.value = null
+}
+
 const activateSupplier = async () => {
   isConfirmActiveDialogVisible.value = false
+  pendingSwitchReset.value = null
   isRequestOngoing.value = true
   let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
@@ -387,9 +422,15 @@ const activateSupplier = async () => {
 
 const closeActivateDialog = () => {
   isConfirmActiveDialogVisible.value = false
+  resetPendingSwitch()
 }
 
 const showDeleteDialog = async supplierData => {
+  pendingSwitchReset.value = {
+    supplierId: supplierData.id,
+    originalValue: supplierData.state_id === 2,
+  }
+
   selectedSupplier.value = { ...supplierData }
 
   deleteInfo.value = {
@@ -413,6 +454,7 @@ const showDeleteDialog = async supplierData => {
     deleteInfo.value = res.data?.data ?? deleteInfo.value
     isConfirmDeleteDialogVisible.value = true
   } catch (err) {
+      resetPendingSwitch()
 
       advisor.value = {
         type: 'error',
@@ -435,10 +477,12 @@ const showDeleteDialog = async supplierData => {
 
 const closeDeleteDialog = () => {
   isConfirmDeleteDialogVisible.value = false
+  resetPendingSwitch()
 }
 
 const removeSupplier = async () => {
   isConfirmDeleteDialogVisible.value = false
+  pendingSwitchReset.value = null
   isRequestOngoing.value = true
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
@@ -546,16 +590,16 @@ const removeSupplier = async () => {
                     </span>
                     <div class="d-flex flex-row ">
                       <div class="status-chip me-2 plan-color">
-                        {{ supplier.plan.name }}
+                        {{ supplier.plan?.name ?? '-' }}
                       </div>
                       <div class="status-chip me-2 plan-time">
                         {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
                       </div>
                       <div
                         class="status-chip"
-                        :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
+                        :class="`status-chip-${resolveStatus(supplier.state?.id)?.class}`"
                       >
-                        {{ supplier.state.name }}
+                        {{ supplier.state?.name ?? '-' }}
                       </div>
                     </div>
                   </div>
@@ -573,16 +617,16 @@ const removeSupplier = async () => {
                 </span>
                 <div class="d-flex flex-row ">
                   <div class="status-chip me-2 plan-color uppercase" >
-                    {{ supplier.plan.name }}
+                    {{ supplier.plan?.name ?? '-' }}
                   </div>
                   <div class="status-chip me-2 plan-time" >
                     {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
                   </div>
                   <div
                     class="status-chip"
-                    :class="`status-chip-${resolveStatus(supplier.state.id)?.class}`"
+                    :class="`status-chip-${resolveStatus(supplier.state?.id)?.class}`"
                   >
-                    {{ supplier.state.name }}
+                    {{ supplier.state?.name ?? '-' }}
                   </div>
                 </div>
               </div>
@@ -591,6 +635,26 @@ const removeSupplier = async () => {
                 v-if="windowWidth >= 1024"
                 class="profile-info-item profile-info-col-4 ">
 
+                <div class="switch-mobile">
+                  <span class="switch-text">Aktivera</span>
+                  <VSwitch
+                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                    v-model="supplierSwitchStates[supplier.id]"
+                    class="d-flex justify-center"
+                    hide-details
+                    inset
+                    @update:modelValue="showDeleteDialog(supplier)"
+                  />
+                  <VSwitch
+                    v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                    v-model="supplierSwitchStates[supplier.id]"
+                    class="d-flex justify-center"
+                    hide-details
+                    inset                
+                    @update:modelValue="showActivateDialog(supplier)"
+                  />
+                </div>
+                
                 <VBtn
                   v-if="supplier.state_id === 1"
                   id="payout-export-button"
@@ -687,6 +751,26 @@ const removeSupplier = async () => {
                 v-if="windowWidth < 1024"
                 class="profile-info-item profile-info-col-4 w-100">
 
+                <div class="switch-mobile">
+                  <span class="switch-text">Aktivera</span>
+                  <VSwitch
+                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                    v-model="supplierSwitchStates[supplier.id]"
+                    class="d-flex justify-center"
+                    hide-details
+                    inset
+                    @update:modelValue="showDeleteDialog(supplier)"
+                  />
+                  <VSwitch
+                    v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                    v-model="supplierSwitchStates[supplier.id]"
+                    class="d-flex justify-center"
+                    hide-details
+                    inset                
+                    @update:modelValue="showActivateDialog(supplier)"
+                  />
+                </div>
+                
                 <VBtn
                   v-if="supplier.state_id === 1"
                   id="payout-export-button"
@@ -1234,7 +1318,7 @@ const removeSupplier = async () => {
         </VCardText>
 
         <VCardText class="dialog-text">
-          Är du säker att du vill aktivera leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong> igen?.
+          Är du säker att du vill aktivera leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong> igen?.
         </VCardText>
 
         <VCardText class="dialog-text mt-2">
@@ -1259,6 +1343,46 @@ const removeSupplier = async () => {
 </template>
 
 <style lang="scss">
+
+  .switch-mobile .v-switch.v-switch--inset .v-switch__track,
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__wrapper {
+    block-size: 32px !important;
+    inline-size: 56px !important;
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input .v-switch__thumb {
+    block-size: 22px !important;
+    inline-size: 22px !important;
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control--dirty .v-selection-control__input {
+    transform: translateX(12px);
+  }
+
+  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input {
+    transform: translateX(-12px);
+  }
+
+  .switch-text {
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .switch-mobile {
+    border-radius: 8px;
+    border: 1px solid #BDD2C8;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    width: 72px;
+    height: 72px;
+  }
+  
   .v-list-item-title {
     white-space: normal;
   }
