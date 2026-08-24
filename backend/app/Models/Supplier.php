@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
 use App\Events\ForceLogoutUserEvent;
 use App\Services\OpenSslService;
 
+use App\Jobs\SendEmailJob;
+
 class Supplier extends Model
 {
     use HasFactory, SoftDeletes;
@@ -23,6 +25,13 @@ class Supplier extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+    ];
+
+    const PERMISSIONS = [
+        'view dashboard',
+        'view company',
+        'view plan',
+        'view sms'
     ];
 
     /**** Relationship ****/
@@ -187,9 +196,9 @@ class Supplier extends Model
         $supplier = self::create([
             'user_id' => $user->id,
             'creator_id' => Auth::user()->id,
-            'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
-            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null,
-            'sms_sender' => ( $request->has('sms_sender') ) ? $request->sms_sender : null,
+            'boss_id' => $request->boss_id === 'null' ? null : $request->boss_id,
+            'order_id' => $request->order_id === 'null' ? null : $request->order_id,
+            'sms_sender' => $request->sms_sender === 'null' ? null : $request->sms_sender,
             'plan_id' => $request->plan_id,
             'is_yearly' => $request->is_yearly,
             'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
@@ -210,7 +219,7 @@ class Supplier extends Model
         User::updateUser($request, $user);
 
         $supplier->update([
-            'sms_sender' => ($request->has('sms_sender')) ? $request->sms_sender : null,
+            'sms_sender' => $request->sms_sender === 'null' ? null : $request->sms_sender,
             'plan_id' => $request->plan_id,
             'is_yearly' => $request->is_yearly,
             'start_date' => $request->start_date  === 'null' ? null : $request->start_date,
@@ -223,9 +232,27 @@ class Supplier extends Model
         else
             $user->assignRole('Supplier');
 
-        $supplier->update([
-            'sms_sender' => $request->sms_sender === 'null' ? null : $request->sms_sender
-        ]);
+        //update plan to the supplier and all its children
+        $ids = self::collectBranchIds([$supplier->id]);
+
+        $suppliers = self::withTrashed()
+            ->with(['user' => function ($query) {
+                $query->withTrashed();
+            }])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($ids as $supplierId) {
+            $supplier = $suppliers->get($supplierId);
+
+            if (!$supplier) {
+                continue;
+            }
+
+            $supplier->plan_id = $request->plan_id;
+            $supplier->save();
+        }
 
         return $supplier;
     }
@@ -447,6 +474,175 @@ class Supplier extends Model
         User::updateUser($request, $user);
         
         $user->assignRole('User');
+
+        return $supplier;
+    }
+
+    public static function cancelSubscription($id) {
+
+        $cancellation_date = now();
+        $grace_end_date = now()->addMonths(3); // 3 months grace period
+
+        $supplier = self::where('id', $id)->first();
+        $supplier->cancellation_date = $cancellation_date;
+        $supplier->grace_end_date = $grace_end_date;
+        $supplier->save();
+
+        //Send mail to Admin
+        $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+        $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+
+        $email = env('MAIL_ADMIN', null);
+        $subject = 'Uppsägning av prenumeration';
+        $text_primary = "har begärt att avsluta sin prenumeration på Bilflogg.<br><br>";
+        $text_primary .= "Företag: " . $company . "<br>";
+        $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
+        $text_primary .= "Nuvarande plan: " . $plan . "<br>";
+        $text_primary .= "Uppsägning begärd: " . $cancellation_date->format('Y-m-d') . "<br>";
+        $text_primary .= "Uppsägningstid: 3 månader <br>";
+        $text_primary .= "Slutdatum: " . $grace_end_date->format('Y-m-d') . "<br>";
+        $text_secondary  = "Prenumerationen förblir aktiv under uppsägningstiden och avslutas på angivet slutdatum.<br>";
+        $text_secondary .= "Uppsägningen har registrerats i systemet.<br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.admin.notifications',
+            $data,
+            $email,
+            $subject
+        );
+
+        //-------------------------------------------------------------------------
+        //Send mail to Supplier
+
+        $email = $supplier->user->email;
+        $subject = 'Bekräftelse på uppsägning av din prenumeration';
+        $text_primary = "Vi bekräftar att vi har tagit emot och registrerat din uppsägning av prenumerationen hos Bilflogg.<br>";
+        $text_primary .= "Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt under uppsägningstiden.<br><br>";
+        $text_primary .= "Plan: " . $plan . "<br>";
+        $text_primary .= "Uppsägning registrerad: " . $cancellation_date->format('Y-m-d') . "<br>";
+        $text_primary .= "Prenumerationen avslutas: " . $grace_end_date->format('Y-m-d') . "<br>";
+        $text_secondary  = "Du har fortsatt tillgång till tjänsten fram till slutdatumet.<br>";
+        $text_secondary .= "Har du några frågor kring din uppsägning är du alltid välkommen att kontakta oss.<br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.suppliers.notifications',
+            $data,
+            $email,
+            $subject
+        );
+
+        return $supplier;
+    }
+    
+    public static function activeSubscription($id) {
+
+        $supplier = self::where('id', $id)->first();
+   
+        //Send mail to Admin
+        $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+        $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+
+        $email = env('MAIL_ADMIN', null);
+        $subject = 'Begäran om återaktivering';
+        $text_primary = "har skickat en begäran om att återaktivera sitt konto och abonnemang hos Bilflogg.<br><br>";
+        $text_primary .= "Företag: " . $company . "<br>";
+        $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
+        $text_primary .= "Tidigare plan: " . $plan . "<br>";
+        $text_primary .= "Förfrågan skickad: " . now()->format('Y-m-d') . "<br>";
+        $text_secondary  = "Kontakta leverantören för att hantera återaktiveringen och aktivera abonnemanget på nytt.<br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.admin.notifications',
+            $data,
+            $email,
+            $subject
+        );
+
+        return $supplier;
+    }
+
+    public static function reactiveSubscription($id) {
+        $supplier = self::where('id', $id)->first();
+        $supplier->is_subscription_active = 1;
+        $supplier->cancellation_date = null;
+        $supplier->grace_end_date = null;
+        $supplier->save();
+
+        //Send mail to Supplier
+        $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+        $email = $supplier->user->email;
+        $subject = 'Bekräftelse på återaktivering av din prenumeration';
+        $text_primary = "Vi bekräftar att din prenumeration hos Bilflogg har återaktiverats.<br>";
+        $text_primary .= "Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt.<br><br>";
+        $text_primary .= "Plan: " . $plan . "<br>";
+        $text_secondary  = "Du har fortsatt tillgång till tjänsten.<br>";
+        $text_secondary .= "Har du några frågor kring din prenumeration är du alltid välkommen att kontakta oss.<br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.suppliers.notifications',
+            $data,
+            $email,
+            $subject
+        );
+        
+        //forzar cierre de sesión del usuario
+        $ids = self::collectBranchIds([$id]);
+
+        $suppliers = self::withTrashed()
+            ->with(['user' => function ($query) {
+                $query->withTrashed();
+            }])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($ids as $supplierId) {
+            $supplier = $suppliers->get($supplierId);
+
+            if (!$supplier) {
+                continue;
+            }
+
+            if ($supplier->user) {
+                event(new ForceLogoutUserEvent($supplier->user->id));
+            }
+        }
 
         return $supplier;
     }

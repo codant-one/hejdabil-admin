@@ -17,6 +17,9 @@ const isPlansDetailsVisible = ref(false)
 const isConfirmUpgradePlanDialogVisible = ref(false);
 const refForm = ref(null)
 
+const userData = ref(null)
+const role = ref('')
+
 const isRequestOngoing = ref(false);
 const advisor = ref({
   type: '',
@@ -41,8 +44,12 @@ async function loadUserData() {
     //Supplier ID de prueba. Cambiar por el correcto
     
     if(Number(route.params.id) && route.name === 'dashboard-settings-plan-upgrade-id') {
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        role.value = userData.value?.roles?.[0]?.name ?? ''
         supplier_id.value = Number(route.params.id);
+
         var responses = await Suppliers.show(supplier_id.value);
+        
         supplierData.value = responses?.data?.data?.supplier;
         plans.value = responses?.data?.data?.plans;
         selectedPlan.value = Number(supplierData.value.plan_id ?? plans.value?.[0]?.id ?? 0)
@@ -190,6 +197,7 @@ onBeforeUnmount(() => {
                             :true-value="1"
                             hide-details
                             inset
+                            :readonly="role === 'User' || supplierData.cancellation_date !== null"
                         />
                         <VLabel class="title-comments ms-2" text="Årlig" />
                     </div>
@@ -233,6 +241,7 @@ onBeforeUnmount(() => {
                                         <VRadio
                                             class="mt-4 me-0 cursor-pointer delivery-method-option flex-0"
                                             :value="plan.id"
+                                            :disabled="role === 'User' || supplierData.cancellation_date !== null"
                                         />
                                     </VCardText>
 
@@ -284,10 +293,11 @@ onBeforeUnmount(() => {
                     </VBtn>
 
                     <VBtn 
+                        v-if="role !== 'User' && supplierData.cancellation_date === null"
                         class="btn-gradient" 
                         @click="showConfirmUpgradePlanDialog(selectedPlan)"
                     > 
-                        Bekräfta byte 
+                        Bekräfta byte
                     </VBtn>
                     
                 </VCardText>
@@ -566,6 +576,7 @@ onBeforeUnmount(() => {
                     </span>
 
                     <VBtn 
+                        v-if="role !== 'User' && supplierData.cancellation_date === null"
                         class="btn-gradient" 
                         :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 180px;'"
                         @click="showConfirmUpgradePlanDialog(supplierData)"

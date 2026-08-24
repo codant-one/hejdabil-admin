@@ -202,6 +202,9 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
         Route::get('/plans/all', [SupplierController::class, 'plans']);
         Route::post('/request-plan-upgrade', [SupplierController::class, 'requestPlanUpgrade']);
+        Route::get('/cancel-subscription/{id}', [SupplierController::class, 'cancelSubscription']);
+        Route::get('/active-subscription/{id}', [SupplierController::class, 'activeSubscription']);
+        Route::get('/reactive-subscription/{id}', [SupplierController::class, 'reactiveSubscription']);
     });
 
     //Clients

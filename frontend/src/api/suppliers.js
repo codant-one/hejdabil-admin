@@ -93,6 +93,18 @@ class Suppliers {
     requestPlanUpgrade(data) {
         return axios.post('/suppliers/request-plan-upgrade', data.data)
     }
+
+    cancelSubscription(id){
+        return axios.get(`/suppliers/cancel-subscription/${id}`)
+    }
+
+    activeSubscription(id){
+        return axios.get(`/suppliers/active-subscription/${id}`)
+    }
+
+    reactiveSubscription(id){
+        return axios.get(`/suppliers/reactive-subscription/${id}`)
+    }
 }
 
 const suppliers = new Suppliers();

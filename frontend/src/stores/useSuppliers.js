@@ -327,5 +327,41 @@ export const useSuppliersStores = defineStore('suppliers', {
                 })
             
         },
+        cancelSubscription(id) {
+            this.setLoading(true)
+
+            return Suppliers.cancelSubscription(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        activeSubscription(id) {
+            this.setLoading(true)
+
+            return Suppliers.activeSubscription(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        reactiveSubscription(id) {
+            this.setLoading(true)
+
+            return Suppliers.reactiveSubscription(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
     }
 })

@@ -50,7 +50,8 @@ const props = defineProps({
 const emit = defineEmits([
   'onImageSelected',
   'loading',
-  'alert'
+  'alert',
+  'data'
 ])
 
 const { mdAndDown } = useDisplay();
@@ -78,6 +79,9 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
+
+const isConfirmCancelDialogVisible = ref(false)
+const isConfirmReactiveDialogVisible = ref(false)
 
 const normalizeAvatarId = avatarId => {
   const parsed = Number(avatarId)
@@ -484,6 +488,7 @@ const removeSupplier = async () => {
   isConfirmDeleteDialogVisible.value = false
   pendingSwitchReset.value = null
   isRequestOngoing.value = true
+
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
@@ -508,6 +513,68 @@ const removeSupplier = async () => {
   }, 3000)
 
   return true
+}
+
+const showCancelDialog = supplierData => {
+  isConfirmCancelDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+}
+
+const showReactivateDialog = supplierData => {
+  isConfirmReactiveDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+}
+
+const cancelSubscription = async () => {
+    isConfirmCancelDialogVisible.value = false
+    isRequestOngoing.value = true
+
+    let res = await suppliersStores.cancelSubscription(selectedSupplier.value.id)
+
+    isRequestOngoing.value = false
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? (res.data.message ?? 'Prenumeration avbruten!') : res.data.message,
+        show: true
+    }
+
+    emit('data')
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
+}
+
+const reactiveSubscription = async () => {
+    isConfirmReactiveDialogVisible.value = false
+    isRequestOngoing.value = true
+
+    let res = await suppliersStores.reactiveSubscription(selectedSupplier.value.id)
+
+    isRequestOngoing.value = false
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? (res.data.message ?? 'Prenumeration återaktiverad!') : res.data.message,
+        show: true
+    }
+
+    emit('data')
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
 }
 </script>
 
@@ -656,12 +723,12 @@ const removeSupplier = async () => {
                 </div>
                 
                 <VBtn
-                  v-if="supplier.state_id === 1"
+                  v-if="supplier.cancellation_date !== null"
                   id="payout-export-button"
                   class="btn-light w-auto"
                   height="48"
                   v-bind="props"
-                  @click="showActivateDialog(supplier)"
+                  @click="showReactivateDialog(supplier)"
                 >
                   <VIcon icon="custom-check-mark" size="24" />
                   Starta abonnemang
@@ -672,7 +739,7 @@ const removeSupplier = async () => {
                   class="btn-light w-auto"
                   height="48"
                   v-bind="props"
-                  @click="showDeleteDialog(supplier)"
+                  @click="showCancelDialog(supplier)"
                 >
                   <VIcon icon="custom-unavailable" size="24" />
                   Avsluta abonnemang
@@ -770,14 +837,14 @@ const removeSupplier = async () => {
                     @update:modelValue="showActivateDialog(supplier)"
                   />
                 </div>
-                
+
                 <VBtn
-                  v-if="supplier.state_id === 1"
+                  v-if="supplier.cancellation_date !== null"
                   id="payout-export-button"
                   class="btn-light w-100"
                   height="48"
                   v-bind="props"
-                  @click="showActivateDialog(supplier)"
+                  @click="showReactivateDialog(supplier)"
                 >
                   <VIcon icon="custom-check-mark" size="24" />
                   Starta abonnemang
@@ -788,7 +855,7 @@ const removeSupplier = async () => {
                   class="btn-light w-100"
                   height="48"
                   v-bind="props"
-                  @click="showDeleteDialog(supplier)"
+                  @click="showCancelDialog(supplier)"
                 >
                   <VIcon icon="custom-unavailable" size="24" />
                   Avsluta abonnemang
@@ -1338,6 +1405,88 @@ const removeSupplier = async () => {
           </VBtn>
         </VCardText>
       </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm cancel subscription -->
+    <VDialog
+        v-model="isConfirmCancelDialogVisible"
+        persistent
+        class="action-dialog" >
+        <!-- Dialog close btn -->
+
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="isConfirmCancelDialogVisible = false"
+        >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
+            
+        <!-- Dialog Content -->
+        <VCard>
+            <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
+            <div class="dialog-title">
+                Avsluta prenumeration?
+            </div>
+            </VCardText>
+
+            <VCardText class="dialog-text">
+                Är du säker på att du vill avsluta din prenumeration?
+            </VCardText>
+
+            <VCardText class="dialog-text mt-2">
+                Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
+            </VCardText>               
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                <VBtn class="btn-light" @click="isConfirmCancelDialogVisible = false">
+                    Behåll prenumeration
+                </VBtn>
+                <VBtn class="btn-gradient" @click="cancelSubscription"> Bekräfta uppsägning </VBtn>
+            </VCardText>
+        </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm active subscription -->
+    <VDialog
+        v-model="isConfirmReactiveDialogVisible"
+        persistent
+        class="action-dialog" >
+        <!-- Dialog close btn -->
+
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="isConfirmReactiveDialogVisible = false"
+        >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
+            
+        <!-- Dialog Content -->
+        <VCard>
+            <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-check-mark-outlined" class="action-icon" />
+            <div class="dialog-title">
+                Återaktivera kontot?
+            </div>
+            </VCardText>
+
+            <VCardText class="dialog-text">
+                Vill du återaktivera detta konto hos Bilflogg?
+            </VCardText>
+
+            <VCardText class="dialog-text mt-2">
+                När du bekräftar återaktiveringen meddelas användaren automatiskt via e-post om att kontot och abonnemanget har återaktiverats.
+            </VCardText>               
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                <VBtn class="btn-light" @click="isConfirmReactiveDialogVisible = false">
+                    Avbryt
+                </VBtn>
+                <VBtn class="btn-gradient" @click="reactiveSubscription"> Återaktivera </VBtn>
+            </VCardText>
+        </VCard>
     </VDialog>
   </section>
 </template>

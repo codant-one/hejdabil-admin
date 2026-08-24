@@ -168,6 +168,9 @@ onBeforeUnmount(() => {
                     :avatarId="avatar_id"
                     :supplier="supplier"
                     :show-button="false"
+                    @alert="showAlert"
+                    @loading="showLoading"
+                    @data="fetchData"
                 />
             </VCardText>
 

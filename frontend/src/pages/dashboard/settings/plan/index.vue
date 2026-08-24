@@ -1,16 +1,24 @@
 <script setup>
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import Suppliers from '@/api/suppliers'
 import billings from "@/pages/dashboard/settings/plan/billings.vue";
+import { useSuppliersStores } from '@/stores/useSuppliers'
+
+const suppliersStores = useSuppliersStores()
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
+
 const supplier_id = ref(0)
 const supplierData = ref(null)
 const plans = ref(null)
 const userTab = ref(0)
-const userData_ = ref(null)
+
+const userData = ref(null)
+const role = ref('')
+
+const isConfirmCancelDialogVisible = ref(false)
+const isConfirmActiveDialogVisible = ref(false)
 
 const isRequestOngoing = ref(false);
 const advisor = ref({
@@ -58,7 +66,6 @@ const resolveTabFromQuery = tab => {
     return 0
 }
 
-
 function resizeSectionToRemainingViewport() {
     const el = sectionEl.value;
     if (!el) return;
@@ -71,12 +78,13 @@ function resizeSectionToRemainingViewport() {
 async function loadUserData() {
     isRequestOngoing.value = true
 
-    userData_.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-    supplier_id.value = userData_.value.supplier.id;
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    role.value = userData.value?.roles?.[0]?.name ?? ''
+    supplier_id.value = userData.value.supplier.id;
 
-    var responses = await Suppliers.show(supplier_id.value);
-    supplierData.value = responses?.data?.data?.supplier;
-    plans.value = responses?.data?.data?.plans;
+    supplierData.value = await suppliersStores.showSupplier(supplier_id.value);
+
+    plans.value = suppliersStores.getPlans;
 
     tab => {
         userTab.value = resolveTabFromQuery(tab)
@@ -105,149 +113,293 @@ onBeforeUnmount(() => {
     window.removeEventListener("hashchange", syncTabWithHash);
 });
 
+const cancelSubscription = async () => {
+    isConfirmCancelDialogVisible.value = false
+    isRequestOngoing.value = true
+
+    let res = await suppliersStores.cancelSubscription(supplier_id.value)
+
+    isRequestOngoing.value = false
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? (res.data.message ?? 'Prenumeration avbruten!') : res.data.message,
+        show: true
+    }
+
+    await loadUserData()
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
+}
+
+const activeSubscription = async () => {
+    isConfirmActiveDialogVisible.value = false
+    isRequestOngoing.value = true
+
+    let res = await suppliersStores.activeSubscription(supplier_id.value)
+
+    isRequestOngoing.value = false
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? (res.data.message ?? 'Prenumeration återaktiverad!') : res.data.message,
+        show: true
+    }
+
+    await loadUserData()
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
+}
+
 </script>
 
 <template>
     <section class="page-section bg-white" ref="sectionEl">
-      <LoadingOverlay :is-loading="isRequestOngoing" />
-      <VSnackbar
-        v-model="advisor.show"
-        transition="scroll-y-reverse-transition"
-        :location="snackbarLocation"
-        :color="advisor.type"
-        class="snackbar-alert snackbar-dashboard"
-      >
-        {{ advisor.message }}
-      </VSnackbar>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
+        <VSnackbar
+            v-model="advisor.show"
+            transition="scroll-y-reverse-transition"
+            :location="snackbarLocation"
+            :color="advisor.type"
+            class="snackbar-alert snackbar-dashboard"
+        >
+            {{ advisor.message }}
+        </VSnackbar>
 
-      <VCard class="card-fill">
-        <VCardText class="pb-0" v-if="windowWidth < 1024">
-          <div class="d-flex flex-column gap-4 flex-1">
-            <VBtn
-              class="btn-light"
-              style="width: 120px;"
-              :to="{ name: 'dashboard-settings' }"
-            >
-              <VIcon icon="custom-return" size="24" />
-              Tillbaka
-            </VBtn>
+        <VCard class="card-fill">
+            <VCardText class="pb-0" v-if="windowWidth < 1024">
+            <div class="d-flex flex-column gap-4 flex-1">
+                <VBtn
+                class="btn-light"
+                style="width: 120px;"
+                :to="{ name: 'dashboard-settings' }"
+                >
+                <VIcon icon="custom-return" size="24" />
+                Tillbaka
+                </VBtn>
 
-            <span class="title-settings pb-4 border-bottom-settings">
-              Plan
-            </span>
-          </div>
-        </VCardText>
-        <VCardText class="pb-0">
-            <div class="settings-layout">
-                <div class="settings-layout__sidebar">
-                    <div class="d-flex flex-column gap-4">
-                        <span class="subtitle-settings">Plan</span>
-                        <span class="text-settings">
-                            Hantera ditt abonnemang och betalningsuppgifter.
-                        </span>
-                    </div>
-                </div>
-
-                <div class="settings-layout__content"></div>
+                <span class="title-settings pb-4 border-bottom-settings">
+                Plan
+                </span>
             </div>
-        </VCardText>
+            </VCardText>
+            <VCardText class="pb-0">
+                <div class="settings-layout">
+                    <div class="settings-layout__sidebar">
+                        <div class="d-flex flex-column gap-4">
+                            <span class="subtitle-settings">Plan</span>
+                            <span class="text-settings">
+                                Hantera ditt abonnemang och betalningsuppgifter.
+                            </span>
+                        </div>
+                    </div>
 
-        <VCardText class="pt-0 pt-md-4 pb-4 card-form d-flex flex-column gap-8">
-            <VTabs 
-                v-model="userTab"
-                grow
-                :show-arrows="false"
-                class="suppliers-tabs">
-                <VTab
-                    v-for="tab in tabs"
-                    :key="tab.title">
-                    <VIcon
-                        :size="24"
-                        :icon="tab.icon"
+                    <div class="settings-layout__content"></div>
+                </div>
+            </VCardText>
+            <VCardText class="pt-0 pt-md-4 pb-4 card-form d-flex flex-column gap-8">
+                <VTabs 
+                    v-model="userTab"
+                    grow
+                    :show-arrows="false"
+                    class="suppliers-tabs">
+                    <VTab
+                        v-for="tab in tabs"
+                        :key="tab.title">
+                        <VIcon
+                            :size="24"
+                            :icon="tab.icon"
+                            />
+                        <span>{{ tab.title }}</span>
+                    </VTab>
+                </VTabs>
+
+                <VWindow v-model="userTab">
+                    <VWindowItem :value="0">
+                        <VCard 
+                            v-if="supplierData"
+                            class="card-overview__main"
+                            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 70%;'"
+                        >
+                            <VCardTitle class="p-0 card-subtitle d-flex flex-row justify-between">
+                                Nuvarande plan
+                                <div
+                                    class="status-chip-mobile"
+                                    :class="`status-chip-${supplierData.state_id === 2 ? 'success' : 'error'}`"
+                                >
+                                    {{ supplierData.state.name }} 
+                                </div>
+                            </VCardTitle>
+                            <VCardText class="card-title p-0 mb-4">
+                                {{ supplierData.plan.name }} 
+                            </VCardText>
+                            <VCardText 
+                                class="d-flex gap-2 align-start p-0"
+                                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                            >
+                                <div class="d-flex flex-column card-subtitle me-4">
+                                    <div class="p-0 card-subtitle">
+                                        Pris
+                                    </div>
+                                    <div class="p-0 card-content">
+                                        {{ supplierData.is_yearly ? supplierData.plan.price_annual : supplierData.plan.price_month }} kr / 
+                                        {{ supplierData.is_yearly ? 'år' : 'mån' }}
+                                    </div>
+                                </div>
+
+                                <div class="d-none flex-column card-subtitle">
+                                    <div class="p-0 card-subtitle">
+                                        Förnyas
+                                    </div>
+                                    <div class="p-0 card-content">
+                                        14 augusti 2026
+                                    </div>
+                                </div>
+                            </VCardText>
+
+                            <VDivider class="my-4" />
+
+                            <VCardText 
+                                class="d-flex justify-start gap-3 flex-wrap dialog-actions p-0"
+                                :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'"
+                                :class="windowWidth < 1024 ? 'flex-column px-0' : 'flex-row pe-0'"
+                            >
+                                <VBtn 
+                                    class="btn-gradient" 
+                                    :to="{ name: 'dashboard-settings-plan-upgrade-id', params: { id: supplierData.id } }"
+                                > 
+                                    Byta plan
+                                </VBtn>
+                                <VBtn 
+                                    v-if="role !== 'User' && supplierData.cancellation_date === null"
+                                    class="btn-light" 
+                                    @click="isConfirmCancelDialogVisible = true"
+                                >
+                                    <VIcon icon="custom-unavailable" size="24" />
+                                    Avsluta abonnemang
+                                </VBtn>
+
+                                <VBtn 
+                                    v-if="role !== 'User' && supplierData.cancellation_date !== null"
+                                    class="btn-light" 
+                                    @click="isConfirmActiveDialogVisible = true"
+                                >
+                                    <VIcon icon="custom-check-mark" size="24" />
+                                    Återaktivera abonnemang
+                                </VBtn>
+                                
+                            </VCardText>
+                        </VCard>
+                    </VWindowItem>
+
+                    <VWindowItem :value="1">
+                        <billings
+                            :customer-data="supplierData"
+                            :is-supplier="true"
+                            @alert="showAlert"
+                            @loading="showLoading"
                         />
-                    <span>{{ tab.title }}</span>
-                </VTab>
-            </VTabs>
+                    </VWindowItem>
 
-            <VWindow v-model="userTab">
-                <VWindowItem :value="0">
-                    <VCard 
-                        v-if="supplierData"
-                        class="card-overview__main"
-                        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 70%;'"
-                    >
-                        <VCardTitle class="p-0 card-subtitle d-flex flex-row justify-between">
-                            Nuvarande plan
-                            <div
-                                class="status-chip-mobile"
-                                :class="`status-chip-${supplierData.state_id === 2 ? 'success' : 'error'}`"
-                            >
-                                {{ supplierData.state.name }} 
-                            </div>
-                        </VCardTitle>
-                        <VCardText class="card-title p-0 mb-4">
-                            {{ supplierData.plan.name }} 
-                        </VCardText>
-                        <VCardText 
-                            class="d-flex gap-2 align-start p-0"
-                            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                        >
-                            <div class="d-flex flex-column card-subtitle me-4">
-                                <div class="p-0 card-subtitle">
-                                    Pris
-                                </div>
-                                <div class="p-0 card-content">
-                                    {{ supplierData.is_yearly ? supplierData.plan.price_annual : supplierData.plan.price_month }} kr / 
-                                    {{ supplierData.is_yearly ? 'år' : 'mån' }}
-                                </div>
-                            </div>
+                </VWindow>
+            </VCardText>
+        </VCard>
 
-                            <div class="d-none flex-column card-subtitle">
-                                <div class="p-0 card-subtitle">
-                                    Förnyas
-                                </div>
-                                <div class="p-0 card-content">
-                                    14 augusti 2026
-                                </div>
-                            </div>
-                        </VCardText>
+        <!-- 👉 Confirm cancel subscription -->
+        <VDialog
+            v-model="isConfirmCancelDialogVisible"
+            persistent
+            class="action-dialog" >
+            <!-- Dialog close btn -->
 
-                        <VDivider class="my-4" />
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmCancelDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+                
+            <!-- Dialog Content -->
+            <VCard>
+                <VCardText class="dialog-title-box">
+                <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
+                <div class="dialog-title">
+                    Avsluta prenumeration?
+                </div>
+                </VCardText>
 
-                        <VCardText 
-                            class="d-flex justify-start gap-3 flex-wrap dialog-actions p-0"
-                            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'"
-                            :class="windowWidth < 1024 ? 'flex-column px-0' : 'flex-row pe-0'"
-                        >
-                            <VBtn 
-                                class="btn-gradient" 
-                                :to="{ name: 'dashboard-settings-plan-upgrade-id', params: { id: supplierData.id } }"
-                            > 
-                                Byta plan
-                            </VBtn>
-                            <VBtn 
-                                class="btn-light" 
-                            >
-                                <VIcon icon="custom-unavailable" size="24" />
-                                Avsluta abonnemang
-                            </VBtn>
-                            
-                        </VCardText>
-                    </VCard>
-                </VWindowItem>
+                <VCardText class="dialog-text">
+                    Är du säker på att du vill avsluta din prenumeration?
+                </VCardText>
 
-                <VWindowItem :value="1">
-                    <billings
-                        :customer-data="supplierData"
-                        :is-supplier="true"
-                        @alert="showAlert"
-                        @loading="showLoading"
-                    />
-                </VWindowItem>
+                <VCardText class="dialog-text mt-2">
+                    Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
+                </VCardText>               
 
-            </VWindow>
-        </VCardText>
-      </VCard>
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="isConfirmCancelDialogVisible = false">
+                        Behåll prenumeration
+                    </VBtn>
+                    <VBtn class="btn-gradient" @click="cancelSubscription"> Bekräfta uppsägning </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <!-- 👉 Confirm active subscription -->
+        <VDialog
+            v-model="isConfirmActiveDialogVisible"
+            persistent
+            class="action-dialog" >
+            <!-- Dialog close btn -->
+
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmActiveDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+                
+            <!-- Dialog Content -->
+            <VCard>
+                <VCardText class="dialog-title-box">
+                <VIcon size="32" icon="custom-check-mark-outlined" class="action-icon" />
+                <div class="dialog-title">
+                    Återaktivera ditt konto?
+                </div>
+                </VCardText>
+
+                <VCardText class="dialog-text">
+                    Vill du återaktivera ditt konto hos Bilflogg?
+                </VCardText>
+
+                <VCardText class="dialog-text mt-2">
+                    När du skickar din förfrågan meddelas vi automatiskt via e-post. Vi kommer därefter att kontakta dig för att hjälpa dig att återaktivera ditt konto och abonnemang.
+                </VCardText>               
+
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="isConfirmActiveDialogVisible = false">
+                        Avbryt
+                    </VBtn>
+                    <VBtn class="btn-gradient" @click="activeSubscription"> Skicka förfrågan </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
     </section>
 </template>
 

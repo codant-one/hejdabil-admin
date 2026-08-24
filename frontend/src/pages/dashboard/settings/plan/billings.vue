@@ -33,6 +33,9 @@ const totalBillings = ref(0)
 const state_id = ref(null)
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot'
 
+const userData = ref(null)
+const role = ref('')
+
 const props = defineProps({
   customerData: {
     type: Object,
@@ -125,7 +128,10 @@ async function fetchData(cleanFilters = false) {
 
   if(Number(route.params.id)) {
     if(props.isSupplier && Number(props.customerData?.id) > 0) {
-      data.supplier_id = Number(props.customerData?.id)
+      userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+      role.value = userData.value?.roles?.[0]?.name ?? ''
+
+      data.supplier_id = Number(role.value === 'Supplier' ? props.customerData?.id : props.customerData?.boss_id)
 
       try {
 
