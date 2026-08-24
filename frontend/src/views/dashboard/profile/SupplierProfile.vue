@@ -1427,23 +1427,23 @@ const reactiveSubscription = async () => {
             <VCardText class="dialog-title-box">
             <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
             <div class="dialog-title">
-                Avsluta prenumeration?
+                Avsluta abonnemang?
             </div>
             </VCardText>
 
             <VCardText class="dialog-text">
-                Är du säker på att du vill avsluta din prenumeration?
+                Är du säker på att du vill avsluta abonnemanget för <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
             </VCardText>
 
             <VCardText class="dialog-text mt-2">
-                Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
+                Enligt avtalet gäller 3 månaders uppsägningstid.
             </VCardText>               
 
             <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                 <VBtn class="btn-light" @click="isConfirmCancelDialogVisible = false">
-                    Behåll prenumeration
+                    Avbryt
                 </VBtn>
-                <VBtn class="btn-gradient" @click="cancelSubscription"> Bekräfta uppsägning </VBtn>
+                <VBtn class="btn-gradient" @click="cancelSubscription"> Avsluta abonnemang </VBtn>
             </VCardText>
         </VCard>
     </VDialog>

@@ -488,66 +488,69 @@ class Supplier extends Model
         $supplier->grace_end_date = $grace_end_date;
         $supplier->save();
 
-        //Send mail to Admin
-        $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
-        $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
 
-        $email = env('MAIL_ADMIN', null);
-        $subject = 'Uppsägning av prenumeration';
-        $text_primary = "har begärt att avsluta sin prenumeration på Bilflogg.<br><br>";
-        $text_primary .= "Företag: " . $company . "<br>";
-        $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
-        $text_primary .= "Nuvarande plan: " . $plan . "<br>";
-        $text_primary .= "Uppsägning begärd: " . $cancellation_date->format('Y-m-d') . "<br>";
-        $text_primary .= "Uppsägningstid: 3 månader <br>";
-        $text_primary .= "Slutdatum: " . $grace_end_date->format('Y-m-d') . "<br>";
-        $text_secondary  = "Prenumerationen förblir aktiv under uppsägningstiden och avslutas på angivet slutdatum.<br>";
-        $text_secondary .= "Uppsägningen har registrerats i systemet.<br>";
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {//solicito la cancelación el propio proveedor
+            //Send mail to Admin
+            $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+            $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
 
-        $data = [
-            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
-            'text_primary' => $text_primary,
-            'text_secondary' => $text_secondary,
-            'title' => $subject,
-            'icon' => asset('/images/important.png')
-        ];
+            $email = env('MAIL_ADMIN', null);
+            $subject = 'Uppsägning av prenumeration';
+            $text_primary = "har begärt att avsluta sin prenumeration på Bilflogg.<br><br>";
+            $text_primary .= "Företag: " . $company . "<br>";
+            $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
+            $text_primary .= "Nuvarande plan: " . $plan . "<br>";
+            $text_primary .= "Uppsägning begärd: " . $cancellation_date->format('Y-m-d') . "<br>";
+            $text_primary .= "Uppsägningstid: 3 månader <br>";
+            $text_primary .= "Slutdatum: " . $grace_end_date->format('Y-m-d') . "<br>";
+            $text_secondary  = "Prenumerationen förblir aktiv under uppsägningstiden och avslutas på angivet slutdatum.<br>";
+            $text_secondary .= "Uppsägningen har registrerats i systemet.<br>";
 
-        // Send email asynchronously
-        SendEmailJob::dispatch(
-            'emails.admin.notifications',
-            $data,
-            $email,
-            $subject
-        );
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
 
-        //-------------------------------------------------------------------------
-        //Send mail to Supplier
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.admin.notifications',
+                $data,
+                $email,
+                $subject
+            );
 
-        $email = $supplier->user->email;
-        $subject = 'Bekräftelse på uppsägning av din prenumeration';
-        $text_primary = "Vi bekräftar att vi har tagit emot och registrerat din uppsägning av prenumerationen hos Bilflogg.<br>";
-        $text_primary .= "Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt under uppsägningstiden.<br><br>";
-        $text_primary .= "Plan: " . $plan . "<br>";
-        $text_primary .= "Uppsägning registrerad: " . $cancellation_date->format('Y-m-d') . "<br>";
-        $text_primary .= "Prenumerationen avslutas: " . $grace_end_date->format('Y-m-d') . "<br>";
-        $text_secondary  = "Du har fortsatt tillgång till tjänsten fram till slutdatumet.<br>";
-        $text_secondary .= "Har du några frågor kring din uppsägning är du alltid välkommen att kontakta oss.<br>";
+            //-------------------------------------------------------------------------
+            //Send mail to Supplier
 
-        $data = [
-            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
-            'text_primary' => $text_primary,
-            'text_secondary' => $text_secondary,
-            'title' => $subject,
-            'icon' => asset('/images/important.png')
-        ];
+            $email = $supplier->user->email;
+            $subject = 'Bekräftelse på uppsägning av din prenumeration';
+            $text_primary = "Vi bekräftar att vi har tagit emot och registrerat din uppsägning av prenumerationen hos Bilflogg.<br>";
+            $text_primary .= "Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt under uppsägningstiden.<br><br>";
+            $text_primary .= "Plan: " . $plan . "<br>";
+            $text_primary .= "Uppsägning registrerad: " . $cancellation_date->format('Y-m-d') . "<br>";
+            $text_primary .= "Prenumerationen avslutas: " . $grace_end_date->format('Y-m-d') . "<br>";
+            $text_secondary  = "Du har fortsatt tillgång till tjänsten fram till slutdatumet.<br>";
+            $text_secondary .= "Har du några frågor kring din uppsägning är du alltid välkommen att kontakta oss.<br>";
 
-        // Send email asynchronously
-        SendEmailJob::dispatch(
-            'emails.suppliers.notifications',
-            $data,
-            $email,
-            $subject
-        );
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
+
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.suppliers.notifications',
+                $data,
+                $email,
+                $subject
+            );
+        }
 
         return $supplier;
     }

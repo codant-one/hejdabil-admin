@@ -34,6 +34,10 @@ class Kernel extends ConsoleKernel
                     Artisan::call('suppliers:update-plan-date');
                  })
                  ->withoutOverlapping();
+
+        $schedule->command('suppliers:cancel-plan')
+                 ->daily()
+                 ->at('00:00');
     }
 
     /**
