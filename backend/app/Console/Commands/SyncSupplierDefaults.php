@@ -64,7 +64,7 @@ class SyncSupplierDefaults extends Command
             Permission::findOrCreate($permissionName, 'api');
         }
 
-        $suppliers = Supplier::query()
+        $suppliers = Supplier::withTrashed()
             ->with(['user' => function ($query) {
                 $query->with('permissions', 'roles');
             }])
@@ -115,7 +115,7 @@ class SyncSupplierDefaults extends Command
     private function plans() {
         $dryRun = (bool) $this->option('dry-run');
 
-        $suppliers = Supplier::query()
+        $suppliers = Supplier::withTrashed()
             ->with(['boss:id,plan_id'])
             ->whereNotNull('boss_id')
             ->whereNull('plan_id')
