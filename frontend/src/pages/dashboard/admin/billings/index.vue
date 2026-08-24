@@ -1674,7 +1674,7 @@ onBeforeUnmount(() => {
             <th class="text-center" scope="col">Status</th>
             <th class="text-center" scope="col">Skickad</th>
             <th scope="col">Skapad av</th>
-            <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1878,7 +1878,6 @@ onBeforeUnmount(() => {
             <td
               class="text-center"
               style="width: 3rem"
-              v-if="$can('edit', 'billings') || $can('delete', 'billings')"
             >
               <VMenu>
                 <template #activator="{ props }">
@@ -1916,7 +1915,7 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem
                     v-if="
-                      $can('view', 'billings') &&
+                      $can('edit', 'billings') &&
                       (billing.state_id === 4 || billing.state_id === 8) &&
                       billing.client.deleted_at === null
                     "
@@ -1964,7 +1963,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Påminnelse</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view', 'billings')"
+                    v-if="$can('edit', 'billings')"
                     @click="send(billing)"
                   >
                     <template #prepend>
@@ -2489,7 +2488,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Duplicera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings') && selectedBillingForAction.state_id === 8"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 8"
             @click="sendReminder(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2498,7 +2497,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('edit', 'billings')"
             @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

@@ -66,6 +66,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'jwt' => \App\Http\Middleware\VerifyJwt::class,
         'idle' => \App\Http\Middleware\CheckUserInactivity::class,
+        'subscription.readonly' => \App\Http\Middleware\EnforceSubscriptionReadOnly::class,
         'cors' => \Illuminate\Http\Middleware\HandleCors::class,
         '2fa' => \App\Http\Middleware\DoubleFaAuth::class,
     ];

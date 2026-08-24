@@ -88,7 +88,7 @@ Route::group([
 });
 
 //Private Endpoints
-Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], function(){
+Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','throttle:crm_limit']], function(){
      
     //Resources 
     Route::apiResource('users', UsersController::class);

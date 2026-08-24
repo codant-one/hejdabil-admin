@@ -1,4 +1,5 @@
 import ability from '@/plugins/casl/ability'
+import { getCurrentInstance } from 'vue'
 
 const PLAN_GATED_SUBJECTS = new Set([
   'clients',
@@ -14,6 +15,8 @@ const PLAN_GATED_SUBJECTS = new Set([
   'company',
   'sms'
 ])
+
+const WRITE_ACTIONS = new Set(['create', 'edit', 'delete'])
 
 const normalizeSubject = subject => String(subject || '').trim().toLowerCase()
 
@@ -45,6 +48,27 @@ const getPlanFeatureNames = supplier => {
     .filter(Boolean)
 }
 
+const hasSubscriptionAccess = action => {
+  const normalizedAction = String(action || '').toLowerCase()
+
+  if (!WRITE_ACTIONS.has(normalizedAction))
+    return true
+
+  const userData = getStoredUserData()
+  if (!userData)
+    return true
+
+  const userRole = userData.roles?.[0]?.name
+  const supplierSource = userRole === 'User'
+    ? userData.supplier?.boss
+    : userData.supplier
+
+  if (supplierSource && supplierSource.is_subscription_active === 0)
+    return false
+
+  return true
+}
+
 const hasPlanFeatureAccess = subject => {
   const normalizedSubject = normalizeSubject(subject)
 
@@ -74,11 +98,14 @@ const hasPlanFeatureAccess = subject => {
   return planFeatures.includes(normalizedSubject)
 }
 
-const hasAccessByRoleAndPlan = (hasPermission, subject) => {
+const hasAccessByRoleAndPlan = (hasPermission, subject, action) => {
   if (!hasPermission)
     return false
 
   if (!hasPlanFeatureAccess(subject))
+    return false
+
+  if (!hasSubscriptionAccess(action))
     return false
 
   if (subject === 'payouts') {
@@ -96,7 +123,7 @@ const hasAccessByRoleAndPlan = (hasPermission, subject) => {
 }
 
 export const canWithPlan = (action, subject) => {
-  return hasAccessByRoleAndPlan(ability.can(action, subject), subject)
+  return hasAccessByRoleAndPlan(ability.can(action, subject), subject, action)
 }
 
 /**
@@ -119,7 +146,7 @@ export const can = (action, subject, item = null) => {
   // Verificacion basica de permisos CASL.
   const hasPermission = localCan ? vm.proxy?.$can(action, subject) : true
 
-  return hasAccessByRoleAndPlan(hasPermission, subject)
+  return hasAccessByRoleAndPlan(hasPermission, subject, action)
 }
 
 /**

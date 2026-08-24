@@ -1772,7 +1772,7 @@ onBeforeUnmount(() => {
               </VTooltip>
             </th>
             <th scope="col" v-if="isColVisible('created_by')"> Skapad Av </th>
-            <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1933,7 +1933,7 @@ onBeforeUnmount(() => {
               </div>
             </td> 
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')">      
+            <td class="text-center" style="width: 3rem;">      
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white" :disabled="isAgreementSmsActionVisibilityLoading">

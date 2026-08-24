@@ -1059,7 +1059,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-start" v-if="isColVisible('buyer')"> Köparen </th>
             <th scope="col" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')"> Leverantör </th>
             <th scope="col" v-if="isColVisible('created_by')"> Skapad av </th>  
-            <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1190,7 +1190,7 @@ onBeforeUnmount(() => {
               </div>
             </td>     
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+            <td class="text-center" style="width: 3rem;">
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -1199,7 +1199,7 @@ onBeforeUnmount(() => {
                 </template>
 
                 <VList>
-                  <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id, false)">
+                  <VListItem v-if="$can('view', 'stock')" @click="showVehicle(vehicle.id, false)">
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
@@ -1223,7 +1223,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>                 
-                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
+                  <VListItem v-if="$can('view', 'stock')" @click="download(vehicle)" class="d-none">
                     <template #prepend>
                       <VIcon icon="custom-download" class="mr-2" size="24" />
                     </template>
@@ -1320,7 +1320,12 @@ onBeforeUnmount(() => {
                 <VIcon icon="custom-eye" size="24" class="me-2"/>
                 Se detaljer
               </VBtn>
-              <VBtn class="btn-light" icon @click="selectedVehicleForAction = vehicle; isMobileActionDialogVisible = true">
+              <VBtn 
+                v-if="$can('edit', 'stock')"
+                class="btn-light" 
+                icon 
+                @click="selectedVehicleForAction = vehicle; isMobileActionDialogVisible = true"
+              >
                 <VIcon icon="custom-dots-vertical" size="24" />
               </VBtn>
             </div>
@@ -1660,15 +1665,6 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <VList>
-          <VListItem
-            v-if="$can('view', 'stock')"
-            @click="showVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-eye" size="24" />
-            </template>
-            <VListItemTitle>Visa</VListItemTitle>
-          </VListItem>
           <VListItem 
             v-if="$can('edit', 'stock')" 
             @click="showCancelSend(selectedVehicleForAction); isMobileActionDialogVisible = false;"
@@ -1679,7 +1675,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ångra försäljning</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'stock')"
+            v-if="$can('edit', 'stock')"
             @click="editVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1688,7 +1684,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'stock')"
+            v-if="$can('delete', 'stock')"
             @click="showDeleteDialog(selectedVehicleForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

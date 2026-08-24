@@ -1642,7 +1642,7 @@ onBeforeUnmount(() => {
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col" class="text-center">Signera status</th>
             <th scope="col">Skapad av</th>
-            <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1743,7 +1743,6 @@ onBeforeUnmount(() => {
             <td
               class="text-center"
               style="width: 3rem"
-              v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"
             >
               <VMenu>
                 <template #activator="{ props }">
@@ -1798,7 +1797,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','signed-documents') && document.token?.signature_status === 'signed'"
+                  <VListItem v-if="$can('edit','signed-documents') && document.token?.signature_status === 'signed'"
                     @click="openSendDocumentDialog(document)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
@@ -2664,7 +2663,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'signed'"
+            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'signed'"
             @click="openSendDocumentDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

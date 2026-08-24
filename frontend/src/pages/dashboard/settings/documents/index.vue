@@ -25,6 +25,12 @@ const companyName = ref('')
 const deliveryMethod = ref(DEFAULT_DOCUMENT_DELIVERY_METHOD)
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 
+const isUserRole = () => role.value === 'User'
+const hasInactiveSupplierSubscription = () => {
+  return role.value === 'Supplier' && Number(userData.value?.supplier?.is_subscription_active) === 0
+}
+const isDisabled = () => isUserRole() || hasInactiveSupplierSubscription()
+
 const isRequestOngoing = ref(false);
 
 const advisor = ref({
@@ -278,7 +284,7 @@ onBeforeUnmount(() => {
                     <VTextField
                       v-bind="numericTextFieldProps"
                       v-model="due_date"
-                      :disabled="role === 'User'"
+                      :disabled="isDisabled()"
                       :rules="[requiredValidator, ...minOneNumericRules]"
                       @input="due_date = normalizeNumericTextInput(due_date)"
                       @keydown="handleNumericTextFieldKeydown"
@@ -288,7 +294,7 @@ onBeforeUnmount(() => {
                 <div class="d-flex gap-4 align-start">
                   <VSwitch
                     v-model="automaticRemindersEnabled"
-                    :readonly="role === 'User'"
+                    :readonly="isDisabled()"
                     class="reminders-switch"
                     hide-details
                     inset
@@ -319,7 +325,7 @@ onBeforeUnmount(() => {
               <VRadioGroup
                 v-model="deliveryMethod"
                 hide-details
-                :disabled="role === 'User'"
+                :disabled="isDisabled()"
                 false-icon="custom-settings-checkbox-false"
                 true-icon="custom-settings-checkbox-true"
                 class="delivery-method-group"
@@ -358,7 +364,8 @@ onBeforeUnmount(() => {
               </VRadioGroup>
 
               <!-- 👉 Form Actions -->
-              <div 
+              <div
+                v-if="role !== 'User' && !isDisabled()"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
               >
@@ -367,7 +374,7 @@ onBeforeUnmount(() => {
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   @click="onSubmit"
                 >
                   Spara

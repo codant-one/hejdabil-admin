@@ -23,12 +23,18 @@ const settingsData = ref(null)
 const role = ref('')
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 
+const isUserRole = () => role.value === 'User'
+const hasInactiveSupplierSubscription = () => {
+  return role.value === 'Supplier' && Number(userData.value?.supplier?.is_subscription_active) === 0
+}
+const isDisabled = () => isUserRole() || hasInactiveSupplierSubscription()
+
+
 const notifyViaSound = ref(DEFAULT_NOTIFY_VIA_SOUND)
 const notifyViaEmail = ref(DEFAULT_NOTIFY_VIA_EMAIL)
 const sendReminders = ref(DEFAULT_SEND_REMINDERS)
 const notifyOnDocumentSigned = ref(DEFAULT_NOTIFY_ON_DOCUMENT_SIGNED)
 const notifyOnAgreementSigned = ref(DEFAULT_NOTIFY_ON_AGREEMENT_SIGNED)
-
 
 const hoursOptions = ref ([
   { id: 1, name: "1 timme före" },
@@ -255,7 +261,7 @@ onBeforeUnmount(() => {
                   class="reminders-switch"
                   hide-details
                   inset
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -274,7 +280,7 @@ onBeforeUnmount(() => {
                   class="reminders-switch"
                   hide-details
                   inset
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -294,7 +300,7 @@ onBeforeUnmount(() => {
                   class="reminders-switch"
                   hide-details
                   inset
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column card-form gap-2">
@@ -340,7 +346,7 @@ onBeforeUnmount(() => {
                   class="reminders-switch"
                   hide-details
                   inset
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -359,7 +365,7 @@ onBeforeUnmount(() => {
                   class="reminders-switch"
                   hide-details
                   inset
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                 >
                   <template v-slot:label>
                     <div class="d-flex flex-column">
@@ -374,7 +380,7 @@ onBeforeUnmount(() => {
 
               <!-- 👉 Form Actions -->
               <div 
-                v-if="role !== 'User'"
+                v-if="role !== 'User' && !isDisabled()"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
               >              
@@ -382,7 +388,7 @@ onBeforeUnmount(() => {
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   @click="onSubmit"
                 >
                   Spara

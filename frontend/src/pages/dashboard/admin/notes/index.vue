@@ -1174,6 +1174,7 @@ onBeforeUnmount(() => {
                 </div>
                 <VSpacer />
                 <VIcon 
+                    v-if="$can('delete', 'notes')"
                     icon="custom-waste" 
                     size="24" 
                     class="cursor-pointer"
@@ -1234,6 +1235,7 @@ onBeforeUnmount(() => {
 
                     <div class="d-flex align-center">
                       <VIcon 
+                        v-if="$can('edit', 'notes')"
                         icon="custom-pencil" 
                         size="24" 
                         class="cursor-pointer me-2"
@@ -1566,7 +1568,7 @@ onBeforeUnmount(() => {
                   </span>
               </div>
 
-              <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
+              <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'" v-if="$can('edit', 'notes')">
                 <VTextField
                     v-model="comment"
                     placeholder="Skriv en kommentar"
@@ -1576,7 +1578,7 @@ onBeforeUnmount(() => {
                 </VBtn>
               </div>
 
-              <VDivider v-if="selectedNote.comments?.length > 0" :class="[
+              <VDivider v-if="selectedNote.comments?.length > 0 && $can('edit', 'notes')" :class="[
                 windowWidth < 1024 ? 'my-4' : 'my-6',
                 isEdit ? 'd-none' : ''
               ]" />
@@ -1615,10 +1617,21 @@ onBeforeUnmount(() => {
                   <VTextField
                       v-model="comment.comment"
                       placeholder="Kommentar.."
+                      :readonly="!$can('edit', 'notes')"
                   />
                   <div class="d-flex gap-4">
-                      <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
-                      <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                      <span 
+                        v-if="$can('edit', 'notes')"
+                        class="link-comments cursor-pointer" 
+                        @click="editComment(comment)">
+                        Redigera
+                      </span>
+                      <span 
+                        v-if="$can('delete', 'notes')" 
+                        class="link-comments cursor-pointer" 
+                        @click="deleteComment(comment)">
+                        Eliminera
+                      </span>
                   </div>
               </div>
             </VForm>
@@ -1754,7 +1767,7 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
 
-                <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
+                <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'" v-if="$can('edit', 'notes')">
                     <VTextField
                         v-model="comment"
                         placeholder="Skriv en kommentar"
@@ -1765,7 +1778,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <VDivider 
-                  v-if="selectedNote.comments?.length > 0" 
+                  v-if="selectedNote.comments?.length > 0 && $can('edit', 'notes')" 
                   :class="[
                     windowWidth < 1024 ? 'my-4' : 'my-6', 
                     isEdit ? 'd-none' : ''
@@ -1806,10 +1819,21 @@ onBeforeUnmount(() => {
                     <VTextField
                         v-model="comment.comment"
                         placeholder="Kommentar.."
+                        :readonly="!$can('edit', 'notes')"
                     />
                     <div class="d-flex gap-4">
-                        <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
-                        <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                        <span 
+                          v-if="$can('edit', 'notes')" 
+                          class="link-comments cursor-pointer" 
+                          @click="editComment(comment)">
+                          Redigera
+                        </span>
+                        <span 
+                          v-if="$can('delete', 'notes')" 
+                          class="link-comments cursor-pointer" 
+                          @click="deleteComment(comment)">
+                          Eliminera
+                        </span>
                     </div>
                 </div>
                 
