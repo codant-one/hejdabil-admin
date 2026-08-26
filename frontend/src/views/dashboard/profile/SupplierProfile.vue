@@ -1475,18 +1475,18 @@ const reactiveSubscription = async () => {
             </VCardText>
 
             <VCardText class="dialog-text">
-                Vill du återaktivera detta konto hos Bilflogg?
+              Är du säker på att du vill återaktivera kontot för <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
             </VCardText>
 
             <VCardText class="dialog-text mt-2">
-                När du bekräftar återaktiveringen meddelas användaren automatiskt via e-post om att kontot och abonnemanget har återaktiverats.
+                Kontot och abonnemanget aktiveras igen och leverantören får åter tillgång till Bilflogg.
             </VCardText>               
 
             <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                 <VBtn class="btn-light" @click="isConfirmReactiveDialogVisible = false">
                     Avbryt
                 </VBtn>
-                <VBtn class="btn-gradient" @click="reactiveSubscription"> Återaktivera </VBtn>
+                <VBtn class="btn-gradient" @click="reactiveSubscription"> Återaktivera konto </VBtn>
             </VCardText>
         </VCard>
     </VDialog>
