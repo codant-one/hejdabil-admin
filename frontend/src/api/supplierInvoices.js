@@ -37,6 +37,10 @@ class SupplierInvoices {
     all(params){
         return axios.get(`/supplier-invoices/data/all`, {params})
     }
+
+    sendBilling(data) {
+        return axios.post(`/supplier-invoices/sendBilling/${data.id}`, data)
+    }
 }
 
 const supplierInvoices = new SupplierInvoices();

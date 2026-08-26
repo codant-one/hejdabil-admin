@@ -5,6 +5,7 @@ import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { emailValidator } from '@/@core/utils/validators'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import refreshAvatar from "@/assets/images/avatars/refresh-2.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
@@ -67,6 +68,9 @@ const emit = defineEmits([
   'alert',
   'loading'
 ])
+
+const isConfirmSendMailVisible = ref(false);
+const email = ref(null);
 
 const isEditAddressDialogVisible = ref(false)
 const selectedAddress = ref({})
@@ -230,6 +234,41 @@ const showBilling = (billingData) => {
     params: { id: billingData.id },
   });
 };
+
+const send = (billingData) => {
+  isConfirmSendMailVisible.value = true;
+  selectedBilling.value = { ...billingData };
+  email.value = props.customerData.user.email ?? '';
+};
+
+const sendBilling = async () => {
+
+  try {
+
+    isConfirmSendMailVisible.value = false;
+    emit('loading', true)
+
+    await supplierInvoices.sendBilling({ email: email.value, id: selectedBilling.value.id });
+    selectedBilling.value = {}
+
+    advisor.value.show = true
+    advisor.value.type = 'success'
+    advisor.value.message = 'Fakturan har skickats via e-post'
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      emit('alert', advisor)
+    }, 5000)
+
+    await fetchData()
+  } finally {
+    emit("loading", false);
+  }
+}
 
 const printBilling = async billing => {
   if (!billing?.file)
@@ -982,6 +1021,12 @@ const downloadCSV = async () => {
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
+                  <VListItem @click="send(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Skicka</VListItemTitle>
+                  </VListItem>
                   <VListItem 
                     @click="printBilling(billing)">
                     <template #prepend>
@@ -1255,6 +1300,12 @@ const downloadCSV = async () => {
           </template>
           <VListItemTitle>Redigera</VListItemTitle>
         </VListItem>
+        <VListItem @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Skicka</VListItemTitle>
+        </VListItem>
         <VListItem
             @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
           <template #prepend>
@@ -1297,6 +1348,7 @@ const downloadCSV = async () => {
     </VCard>
   </VDialog>
 
+  <!-- 👉 Confirm Kreditera -->
   <VDialog
     v-model="isConfirmKreditera"
     persistent
@@ -1333,51 +1385,101 @@ const downloadCSV = async () => {
     </VCard>
   </VDialog>
 
-      <!-- 👉 Update State -->
-    <VDialog
-      v-model="isConfirmStateDialogVisible"
-      persistent
-      class="action-dialog"
+  <!-- 👉 Update State -->
+  <VDialog
+    v-model="isConfirmStateDialogVisible"
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
     >
-      <!-- Dialog close btn -->
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
-      <!-- Dialog Content -->
-      <VCard>
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+        <div class="dialog-title">
+          Uppdatera status
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Är du säker på att du vill uppdatera fakturans status
+        <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+        {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+          Avbryt
+        </VBtn>
+        <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <!-- 👉 Confirm send -->
+  <VDialog 
+    v-model="isConfirmSendMailVisible" 
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VForm
+      ref="refSendBillingForm"
+      @submit.prevent="sendBilling"
+    >
+      <VCard class="card-form"
+      >
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
-            Uppdatera status
+            Skicka fakturan
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker på att du vill uppdatera fakturans status
-          <strong>#{{ selectedBilling.invoice_id }}</strong> till 
-          {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
+          Ange den e-postadress till vilken du vill skicka fakturan.
+        </VCardText>
+        <VCardText class="dialog-text pt-2">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+          <VTextField
+            v-model="email"
+            placeholder="kund@exempel.com"
+            :rules="[emailValidator]"
+          />
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+          <VBtn class="btn-light" @click="isConfirmSendMailVisible = !isConfirmSendMailVisible">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+          <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
         </VCardText>
       </VCard>
-    </VDialog>
+    </VForm>
+  </VDialog>
 
-    <input
-      ref="replaceFileInput"
-      type="file"
-      accept="application/pdf,.pdf"
-      style="display: none"
-      @change="onReplaceFileSelected"
-    >
+  <input
+    ref="replaceFileInput"
+    type="file"
+    accept="application/pdf,.pdf"
+    style="display: none"
+    @change="onReplaceFileSelected"
+  >
 </template>
 
 <style>

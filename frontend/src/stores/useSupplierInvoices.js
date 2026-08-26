@@ -126,5 +126,18 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.setLoading(false)
                 })  
         },
+        sendBilling(data) {
+            this.setLoading(true)
+            
+            return SupplierInvoices.sendBilling(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
     }
 })

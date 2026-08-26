@@ -181,6 +181,7 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
         Route::get('/credit/{id}', [SupplierInvoiceController::class, 'credit']);
         Route::post('/replaceFile/{id}', [SupplierInvoiceController::class, 'replaceFile']);
         Route::get('/data/all', [SupplierInvoiceController::class, 'all']);
+        Route::post('/sendBilling/{id}', [SupplierInvoiceController::class, 'sendBilling']);
     });
 
     //Suppliers

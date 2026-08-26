@@ -445,6 +445,114 @@ class SupplierInvoiceController extends Controller
         }
     }
 
+    public function sendBilling(Request $request, $id)
+    {
+        try {
+
+            $billing = SupplierInvoice::with(['supplier.user'])->find($id);
+            $billing->is_sent = 1;
+            $billing->sent_at = now();
+            $billing->save();
+
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            $userName = trim(($billing->supplier->user->name ?? '') . ' ' . ($billing->supplier->user->last_name ?? ''));
+
+            $data = [
+                'company' => $company,
+                'user' => $userName !== '' ? $userName : ($billing->supplier->user->email ?? ''),
+                'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
+                'billing' => $billing,
+                'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+                'buttonText' => 'Ladda ner faktura',
+                'pdfFile' => asset('storage/'.$billing->file),
+                'title' => 'Ny faktura',
+                'icon' => asset('/images/invoices.png'),
+                'logo' => $logo
+            ];
+
+
+            $email = $request->email;
+            $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
+            
+            $pathToFile = storage_path('app/public/' . $billing->file);
+            $attachments = null;
+            if (file_exists($pathToFile)) {
+                $attachments = [[
+                    'path' => $pathToFile,
+                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
+                    'mime' => 'application/pdf'
+                ]];
+            }
+                
+            // Send email asynchronously with attachments
+            SendEmailJob::dispatch(
+                'emails.invoices.notifications',
+                $data,
+                $email,
+                $subject,
+                null,
+                null,
+                $attachments
+            );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'send_billing_email',
+                'title' => 'Faktura #'.$billing->invoice_id.' - skickad',
+                'description' => 'Fakturan skickades via e-post.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'new_values' => ['email' => $email]
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function billingActivityValues(SupplierInvoice $billing): array
     {
         $billingValues = $billing->only([
