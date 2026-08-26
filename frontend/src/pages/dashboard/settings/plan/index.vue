@@ -282,7 +282,7 @@ const activeSubscription = async () => {
                                     class="btn-gradient" 
                                     :to="{ name: 'dashboard-settings-plan-upgrade-id', params: { id: supplierData.id } }"
                                 > 
-                                    Byta plan
+                                    {{ supplierData.plan_id === 1 ? 'Uppgradera plan' : 'Byta plan' }}
                                 </VBtn>
                                 <VBtn 
                                     v-if="role !== 'User' && supplierData.cancellation_date === null"

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Event;
 use Carbon\Carbon;
 use App\Models\Supplier;
 
+use App\Jobs\SendEmailJob;
+
 class CancelPlanSupplier extends Command
 {
     /**
@@ -51,7 +53,7 @@ class CancelPlanSupplier extends Command
         $today = Carbon::today();
 
         $suppliers = 
-            Supplier::with('plan')
+            Supplier::with('plan', 'user')
                 ->where('state_id', 2)
                 ->whereNotNull('cancellation_date')
                 ->whereNotNull('grace_end_date')
@@ -61,6 +63,29 @@ class CancelPlanSupplier extends Command
         foreach($suppliers as $supplier) {
             $supplier->is_subscription_active = 0;//desactiva la suscripción
             $supplier->save();
+
+            $email = $supplier->user->email;
+            $subject = 'Ditt abonnemang hos Bilflogg har avslutats';
+            $text_primary = "Vi vill informera dig om att din uppsägningstid på tre månader nu har löpt ut och att ditt abonnemang hos Bilflogg därmed har avslutats.<br>";
+            $text_primary .= "Ditt konto är inte längre aktivt och du har inte längre tillgång till Bilfloggs tjänster.<br>";
+            $text_secondary  = "Om du framöver vill börja använda Bilflogg igen är du välkommen att kontakta oss för att återaktivera ditt konto och abonnemang.<br>";
+            $text_secondary .= "Har du några frågor är du alltid välkommen att höra av dig till oss.<br>";
+
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
+
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.suppliers.notifications',
+                $data,
+                $email,
+                $subject
+            );
         }    
 
         return 0;

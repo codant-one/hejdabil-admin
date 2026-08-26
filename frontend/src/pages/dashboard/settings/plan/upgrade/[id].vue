@@ -580,8 +580,8 @@ onBeforeUnmount(() => {
                         class="btn-gradient" 
                         :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 180px;'"
                         @click="showConfirmUpgradePlanDialog(supplierData)"
-                    > 
-                        Uppgradera till Pro 
+                    >                       
+                        {{ supplierData.plan_id === 1 ? 'Uppgradera till Pro' : 'Uppgradera plan' }}
                     </VBtn>
                     
                 </VCardText>
