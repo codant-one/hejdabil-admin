@@ -702,48 +702,50 @@ const reactiveSubscription = async () => {
                 v-if="windowWidth >= 1024"
                 class="profile-info-item profile-info-col-4 ">
 
-                <div class="switch-mobile">
-                  <span class="switch-text">Aktivera</span>
-                  <VSwitch
-                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                    v-model="supplierSwitchStates[supplier.id]"
-                    class="d-flex justify-center"
-                    hide-details
-                    inset
-                    @update:modelValue="showDeleteDialog(supplier)"
-                  />
-                  <VSwitch
-                    v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                    v-model="supplierSwitchStates[supplier.id]"
-                    class="d-flex justify-center"
-                    hide-details
-                    inset                
-                    @update:modelValue="showActivateDialog(supplier)"
-                  />
-                </div>
+                <div class="d-flex gap-2 ms-auto">
+                  <div class="switch-mobile-detail">
+                    <span class="switch-text">Aktivera</span>
+                    <VSwitch
+                      v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                      v-model="supplierSwitchStates[supplier.id]"
+                      class="d-flex justify-center"
+                      hide-details
+                      inset
+                      @update:modelValue="showDeleteDialog(supplier)"
+                    />
+                    <VSwitch
+                      v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                      v-model="supplierSwitchStates[supplier.id]"
+                      class="d-flex justify-center"
+                      hide-details
+                      inset                
+                      @update:modelValue="showActivateDialog(supplier)"
+                    />
+                  </div>
                 
-                <VBtn
-                  v-if="supplier.cancellation_date !== null"
-                  id="payout-export-button"
-                  class="btn-light w-auto"
-                  height="48"
-                  v-bind="props"
-                  @click="showReactivateDialog(supplier)"
-                >
-                  <VIcon icon="custom-check-mark" size="24" />
-                  Starta abonnemang
-                </VBtn>
-                <VBtn
-                  v-else
-                  id="payout-export-button"
-                  class="btn-light w-auto"
-                  height="48"
-                  v-bind="props"
-                  @click="showCancelDialog(supplier)"
-                >
-                  <VIcon icon="custom-unavailable" size="24" />
-                  Avsluta abonnemang
-                </VBtn>
+                  <VBtn
+                    v-if="supplier.cancellation_date !== null"
+                    id="payout-export-button"
+                    class="btn-light w-auto"
+                    height="48"
+                    v-bind="props"
+                    @click="showReactivateDialog(supplier)"
+                  >
+                    <VIcon icon="custom-check-mark" size="24" />
+                    Starta abonnemang
+                  </VBtn>
+                  <VBtn
+                    v-else
+                    id="payout-export-button"
+                    class="btn-light w-auto"
+                    height="48"
+                    v-bind="props"
+                    @click="showCancelDialog(supplier)"
+                  >
+                    <VIcon icon="custom-unavailable" size="24" />
+                    Avsluta abonnemang
+                  </VBtn>
+                </div>
               </div>
 
               <div
@@ -818,7 +820,7 @@ const reactiveSubscription = async () => {
                 v-if="windowWidth < 1024"
                 class="profile-info-item profile-info-col-4 w-100">
 
-                <div class="switch-mobile">
+                <div class="switch-mobile-detail">
                   <span class="switch-text">Aktivera</span>
                   <VSwitch
                     v-if="$can('delete','suppliers') && supplier.state_id === 2"
@@ -1493,43 +1495,24 @@ const reactiveSubscription = async () => {
 
 <style lang="scss">
 
-  .switch-mobile .v-switch.v-switch--inset .v-switch__track,
-  .switch-mobile .v-switch.v-switch--inset .v-selection-control__wrapper {
-    block-size: 32px !important;
-    inline-size: 56px !important;
-  }
-
-  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input .v-switch__thumb {
-    block-size: 22px !important;
-    inline-size: 22px !important;
-  }
-
-  .switch-mobile .v-switch.v-switch--inset .v-selection-control--dirty .v-selection-control__input {
-    transform: translateX(12px);
-  }
-
-  .switch-mobile .v-switch.v-switch--inset .v-selection-control__input {
-    transform: translateX(-12px);
-  }
-
   .switch-text {
-    font-weight: 400;
-    font-style: Regular;
-    font-size: 14px;
+    font-weight: 500;
+    font-size: 16px;
     line-height: 16px;
     letter-spacing: 0;
-    color: #878787;
+    color: #FFFFFF;
   }
 
-  .switch-mobile {
-    border-radius: 8px;
-    border: 1px solid #BDD2C8;
+  .switch-mobile-detail {
+    border-radius: 56px;
+    background: #6E9383;
+    border: 1px solid #6E9383;
     display: flex;
-    flex-direction: column;
-    padding: 8px;
+    padding: 4px 12px;
     gap: 8px;
-    width: 72px;
-    height: 72px;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
   }
   
   .v-list-item-title {
@@ -1886,12 +1869,11 @@ const reactiveSubscription = async () => {
     }
 
     #payout-export-button {
-      --v-btn-height: 48px !important;
-      height: 48px !important;
-      min-height: 48px !important;
-      max-height: 48px !important;
+      --v-btn-height: 40px !important;
+      height: 40px !important;
+      min-height: 40px !important;
+      max-height: 40px !important;
       align-self: flex-start;
-      margin-left: auto
     }
 
     .model-poster {

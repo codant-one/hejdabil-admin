@@ -1611,7 +1611,6 @@ onUnmounted (() => {
 
   .switch-text {
     font-weight: 400;
-    font-style: Regular;
     font-size: 14px;
     line-height: 16px;
     letter-spacing: 0;
