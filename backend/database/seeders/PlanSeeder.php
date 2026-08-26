@@ -26,7 +26,10 @@ class PlanSeeder extends Seeder
                 'description' => 'Ett exklusivt erbjudande som endast gäller för Swish-betalningar',
                 'price_month' => 499,
                 'price_annual' => 5399,
-                'features' => ['payouts'],
+                'features' => [
+                    'payouts',
+                    'my-team'
+                ],
             ],
             [
                 'name' => 'Pro',

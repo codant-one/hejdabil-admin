@@ -598,6 +598,23 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte'
                 ], 404);
+
+            if ((int) $supplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $supplier->boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $supplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
             
             $supplier->activateSupplier($id);
             $supplier->refresh()->load(['user', 'state', 'plan']);
@@ -1160,9 +1177,38 @@ class SupplierController extends Controller
         try{
             
             $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
+                                ->withTrashed()
                                 ->max('order_id');
 
             $boss_id = Auth::user()->getRoleNames()[0] === 'Supplier' ? Auth::user()->supplier->id : Auth::user()->supplier->boss_id;
+
+            $bossSupplier = Supplier::find($boss_id);
+
+            if (!$bossSupplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            if ((int) $bossSupplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $bossSupplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
+
             $request->merge(['boss_id' => $boss_id]);
             $request->merge(['plan_id' => Auth::user()->supplier->plan_id]);
             $request->merge(['is_yearly' => Auth::user()->supplier->is_yearly]);

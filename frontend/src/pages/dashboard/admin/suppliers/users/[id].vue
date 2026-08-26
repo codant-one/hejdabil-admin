@@ -1,5 +1,6 @@
 <script setup>
 
+import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
 import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
@@ -197,6 +198,7 @@ const onSubmit = async () => {
         hasInvalidLandline ||
         (email.value && emailValidator(email.value) !== true) ||
         !position.value
+    const hasTab1Errors = assignedPermissions.value.length === 0
 
     // Lógica de navegación entre tabs (0, 1, 2, 3)
     if (currentTab.value === 0) {
@@ -250,6 +252,24 @@ const onSubmit = async () => {
                 }
             }, 3000)
             
+            return
+        }
+
+        if (hasTab1Errors) {
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen välj minst en behörighet i fliken Behörigheter',
+                show: true
+            }
+
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+
             return
         }
 
@@ -563,37 +583,37 @@ const goToProfile = () => {
                                     >
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','clients') ||
-                                                $can('create','clients') ||
-                                                $can('edit','clients') ||
-                                                $can('delete','clients')
+                                                canWithPlan('view','clients') ||
+                                                canWithPlan('create','clients') ||
+                                                canWithPlan('edit','clients') ||
+                                                canWithPlan('delete','clients')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Kunder" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','clients')"
+                                                    v-if="canWithPlan('view','clients')"
                                                     v-model="assignedPermissions"
                                                     label="view clients"
                                                     value="view clients"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','clients')"
+                                                    v-if="canWithPlan('create','clients')"
                                                     v-model="assignedPermissions"
                                                     label="create clients"
                                                     value="create clients"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','clients')"
+                                                    v-if="canWithPlan('edit','clients')"
                                                     v-model="assignedPermissions"
                                                     label="edit clients"
                                                     value="edit clients"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','clients')"
+                                                    v-if="canWithPlan('delete','clients')"
                                                     v-model="assignedPermissions"
                                                     label="delete clients"
                                                     value="delete clients"
@@ -604,37 +624,37 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','billings') ||
-                                                $can('create','billings') ||
-                                                $can('edit','billings') ||
-                                                $can('delete','billings')
+                                                canWithPlan('view','billings') ||
+                                                canWithPlan('create','billings') ||
+                                                canWithPlan('edit','billings') ||
+                                                canWithPlan('delete','billings')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Fakturor" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','billings')"
+                                                    v-if="canWithPlan('view','billings')"
                                                     v-model="assignedPermissions"
                                                     label="view billings"
                                                     value="view billings"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','billings')"
+                                                    v-if="canWithPlan('create','billings')"
                                                     v-model="assignedPermissions"
                                                     label="create billings"
                                                     value="create billings"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','billings')"
+                                                    v-if="canWithPlan('edit','billings')"
                                                     v-model="assignedPermissions"
                                                     label="edit billings"
                                                     value="edit billings"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','billings')"
+                                                    v-if="canWithPlan('delete','billings')"
                                                     v-model="assignedPermissions"
                                                     label="delete billings"
                                                     value="delete billings"
@@ -645,12 +665,12 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','stock') ||
-                                                $can('create','stock') ||
-                                                $can('edit','stock') ||
-                                                $can('delete','stock') ||
-                                                $can('view','sold') ||
-                                                $can('delete','sold')
+                                                canWithPlan('view','stock') ||
+                                                canWithPlan('create','stock') ||
+                                                canWithPlan('edit','stock') ||
+                                                canWithPlan('delete','stock') ||
+                                                canWithPlan('view','sold') ||
+                                                canWithPlan('delete','sold')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt Fordonslager" />
@@ -658,43 +678,43 @@ const goToProfile = () => {
                                                 <div class="ml-5 w-100">
                                                     <VLabel class="mb-4 text-body-3 text-high-emphasis" text="I Lager" 
                                                         v-if="
-                                                            $can('view','stock') ||
-                                                            $can('create','stock') ||
-                                                            $can('edit','stock') ||
-                                                            $can('delete','stock')
+                                                            canWithPlan('view','stock') ||
+                                                            canWithPlan('create','stock') ||
+                                                            canWithPlan('edit','stock') ||
+                                                            canWithPlan('delete','stock')
                                                         "
                                                     />
                                                     <div class="demo-space-x mb-4 ml-2 permissions-grid"
                                                         v-if="
-                                                            $can('view','stock') ||
-                                                            $can('create','stock') ||
-                                                            $can('edit','stock') ||
-                                                            $can('delete','stock')
+                                                            canWithPlan('view','stock') ||
+                                                            canWithPlan('create','stock') ||
+                                                            canWithPlan('edit','stock') ||
+                                                            canWithPlan('delete','stock')
                                                         "
                                                     >
                                                         <VCheckbox
-                                                            v-if="$can('view','stock')"
+                                                            v-if="canWithPlan('view','stock')"
                                                             v-model="assignedPermissions"
                                                             label="view stock"
                                                             value="view stock"
                                                             :readonly="readonly"
                                                         />
                                                         <VCheckbox
-                                                            v-if="$can('create','stock')"
+                                                            v-if="canWithPlan('create','stock')"
                                                             v-model="assignedPermissions"
                                                             label="create stock"
                                                             value="create stock"
                                                             :readonly="readonly"
                                                         />
                                                         <VCheckbox
-                                                            v-if="$can('edit','stock')"
+                                                            v-if="canWithPlan('edit','stock')"
                                                             v-model="assignedPermissions"
                                                             label="edit stock"
                                                             value="edit stock"
                                                             :readonly="readonly"
                                                         />
                                                         <VCheckbox
-                                                            v-if="$can('delete','stock')"
+                                                            v-if="canWithPlan('delete','stock')"
                                                             v-model="assignedPermissions"
                                                             label="delete stock"
                                                             value="delete stock"
@@ -703,25 +723,25 @@ const goToProfile = () => {
                                                     </div>
                                                     <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Sålda Fordon" 
                                                         v-if="
-                                                            $can('view','sold') ||
-                                                            $can('delete','sold')
+                                                            canWithPlan('view','sold') ||
+                                                            canWithPlan('delete','sold')
                                                         "
                                                     />
                                                     <div class="ml-2 permissions-grid"
                                                         v-if="
-                                                            $can('view','sold') ||
-                                                            $can('delete','sold')
+                                                            canWithPlan('view','sold') ||
+                                                            canWithPlan('delete','sold')
                                                         "
                                                     >
                                                         <VCheckbox
-                                                            v-if="$can('view','sold')"
+                                                            v-if="canWithPlan('view','sold')"
                                                             v-model="assignedPermissions"
                                                             label="view sold"
                                                             value="view sold"
                                                             :readonly="readonly"
                                                         />
                                                         <VCheckbox
-                                                            v-if="$can('delete','sold')"
+                                                            v-if="canWithPlan('delete','sold')"
                                                             v-model="assignedPermissions"
                                                             label="delete sold"
                                                             value="delete sold"
@@ -735,37 +755,37 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','agreements') ||
-                                                $can('create','agreements') ||
-                                                $can('edit','agreements') ||
-                                                $can('delete','agreements')
+                                                canWithPlan('view','agreements') ||
+                                                canWithPlan('create','agreements') ||
+                                                canWithPlan('edit','agreements') ||
+                                                canWithPlan('delete','agreements')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Avtal" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','agreements')"
+                                                    v-if="canWithPlan('view','agreements')"
                                                     v-model="assignedPermissions"
                                                     label="view agreements"
                                                     value="view agreements"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','agreements')"
+                                                    v-if="canWithPlan('create','agreements')"
                                                     v-model="assignedPermissions"
                                                     label="create agreements"
                                                     value="create agreements"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','agreements')"
+                                                    v-if="canWithPlan('edit','agreements')"
                                                     v-model="assignedPermissions"
                                                     label="edit agreements"
                                                     value="edit agreements"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','agreements')"
+                                                    v-if="canWithPlan('delete','agreements')"
                                                     v-model="assignedPermissions"
                                                     label="delete agreements"
                                                     value="delete agreements"
@@ -776,10 +796,10 @@ const goToProfile = () => {
                                         
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','signed-documents') ||
-                                                $can('create','signed-documents') ||
-                                                $can('edit','signed-documents') ||
-                                                $can('delete','signed-documents')
+                                                canWithPlan('view','signed-documents') ||
+                                                canWithPlan('create','signed-documents') ||
+                                                canWithPlan('edit','signed-documents') ||
+                                                canWithPlan('delete','signed-documents')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="E-signering" />
@@ -787,28 +807,28 @@ const goToProfile = () => {
                                                 :class="windowWidth < 1024 ? 'd-flex flex-column align-start' : 'permissions-grid'"
                                             >
                                                 <VCheckbox
-                                                    v-if="$can('view','signed-documents')"
+                                                    v-if="canWithPlan('view','signed-documents')"
                                                     v-model="assignedPermissions"
                                                     label="view signed-documents"
                                                     value="view signed-documents"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','signed-documents')"
+                                                    v-if="canWithPlan('create','signed-documents')"
                                                     v-model="assignedPermissions"
                                                     label="create signed-documents"
                                                     value="create signed-documents"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','signed-documents')"
+                                                    v-if="canWithPlan('edit','signed-documents')"
                                                     v-model="assignedPermissions"
                                                     label="edit signed-documents"
                                                     value="edit signed-documents"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','signed-documents')"
+                                                    v-if="canWithPlan('delete','signed-documents')"
                                                     v-model="assignedPermissions"
                                                     label="delete signed-documents"
                                                     value="delete signed-documents"
@@ -819,37 +839,37 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','payouts') ||
-                                                $can('create','payouts') ||
-                                                $can('edit','payouts') ||
-                                                $can('delete','payouts')
+                                                canWithPlan('view','payouts') ||
+                                                canWithPlan('create','payouts') ||
+                                                canWithPlan('edit','payouts') ||
+                                                canWithPlan('delete','payouts')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Swish" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','payouts')"
+                                                    v-if="canWithPlan('view','payouts')"
                                                     v-model="assignedPermissions"
                                                     label="view payouts"
                                                     value="view payouts"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','payouts')"
+                                                    v-if="canWithPlan('create','payouts')"
                                                     v-model="assignedPermissions"
                                                     label="create payouts"
                                                     value="create payouts"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','payouts')"
+                                                    v-if="canWithPlan('edit','payouts')"
                                                     v-model="assignedPermissions"
                                                     label="edit payouts"
                                                     value="edit payouts"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','payouts')"
+                                                    v-if="canWithPlan('delete','payouts')"
                                                     v-model="assignedPermissions"
                                                     label="delete payouts"
                                                     value="delete payouts"
@@ -860,37 +880,37 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','notes') ||
-                                                $can('create','notes') ||
-                                                $can('edit','notes') ||
-                                                $can('delete','notes')
+                                                canWithPlan('view','notes') ||
+                                                canWithPlan('create','notes') ||
+                                                canWithPlan('edit','notes') ||
+                                                canWithPlan('delete','notes')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mina Värderingar" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','notes')"
+                                                    v-if="canWithPlan('view','notes')"
                                                     v-model="assignedPermissions"
                                                     label="view notes"
                                                     value="view notes"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','notes')"
+                                                    v-if="canWithPlan('create','notes')"
                                                     v-model="assignedPermissions"
                                                     label="create notes"
                                                     value="create notes"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','notes')"
+                                                    v-if="canWithPlan('edit','notes')"
                                                     v-model="assignedPermissions"
                                                     label="edit notes"
                                                     value="edit notes"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','notes')"
+                                                    v-if="canWithPlan('delete','notes')"
                                                     v-model="assignedPermissions"
                                                     label="delete notes"
                                                     value="delete notes"
@@ -901,45 +921,45 @@ const goToProfile = () => {
 
                                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                                             v-if="
-                                                $can('view','my-team') ||
-                                                $can('create','my-team') ||
-                                                $can('edit','my-team') ||
-                                                $can('delete','my-team') ||
-                                                $can('view','team-reports')
+                                                canWithPlan('view','my-team') ||
+                                                canWithPlan('create','my-team') ||
+                                                canWithPlan('edit','my-team') ||
+                                                canWithPlan('delete','my-team') ||
+                                                canWithPlan('view','team-reports')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
                                             <div class="ml-2 permissions-grid">
                                                 <VCheckbox
-                                                    v-if="$can('view','my-team')"
+                                                    v-if="canWithPlan('view','my-team')"
                                                     v-model="assignedPermissions"
                                                     label="view my-team"
                                                     value="view my-team"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('create','my-team')"
+                                                    v-if="canWithPlan('create','my-team')"
                                                     v-model="assignedPermissions"
                                                     label="create my-team"
                                                     value="create my-team"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('edit','my-team')"
+                                                    v-if="canWithPlan('edit','my-team')"
                                                     v-model="assignedPermissions"
                                                     label="edit my-team"
                                                     value="edit my-team"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('delete','my-team')"
+                                                    v-if="canWithPlan('delete','my-team')"
                                                     v-model="assignedPermissions"
                                                     label="delete my-team"
                                                     value="delete my-team"
                                                     :readonly="readonly"
                                                 />
                                                 <VCheckbox
-                                                    v-if="$can('view','team-reports')"
+                                                    v-if="canWithPlan('view','team-reports')"
                                                     v-model="assignedPermissions"
                                                     label="view team-reports"
                                                     value="view team-reports"
