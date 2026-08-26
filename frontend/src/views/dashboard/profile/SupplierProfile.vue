@@ -704,7 +704,7 @@ const reactiveSubscription = async () => {
 
                 <div class="d-flex gap-2 ms-auto">
                   <div class="switch-mobile-detail">
-                    <span class="switch-text">Aktivera</span>
+                    <span class="switch-text-detail">Aktivera</span>
                     <VSwitch
                       v-if="$can('delete','suppliers') && supplier.state_id === 2"
                       v-model="supplierSwitchStates[supplier.id]"
@@ -821,7 +821,7 @@ const reactiveSubscription = async () => {
                 class="profile-info-item profile-info-col-4 w-100">
 
                 <div class="switch-mobile-detail">
-                  <span class="switch-text">Aktivera</span>
+                  <span class="switch-text-detail">Aktivera</span>
                   <VSwitch
                     v-if="$can('delete','suppliers') && supplier.state_id === 2"
                     v-model="supplierSwitchStates[supplier.id]"
@@ -1495,7 +1495,7 @@ const reactiveSubscription = async () => {
 
 <style lang="scss">
 
-  .switch-text {
+  .switch-text-detail {
     font-weight: 500;
     font-size: 16px;
     line-height: 16px;
