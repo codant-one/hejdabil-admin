@@ -155,7 +155,7 @@ class SupplierInvoiceController extends Controller
                     'supplier.user.userDetail',
                     'state',
                     'user.userDetail'
-                ])->find($id);
+                ])->where('invoice_id', $id)->first();
 
             if (!$supplierInvoice)
                 return response()->json([
