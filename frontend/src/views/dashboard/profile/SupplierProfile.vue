@@ -595,15 +595,14 @@ const reactiveSubscription = async () => {
     <Toaster />
 
     <VCardText class="p-0">
-      <div class="bg-alert">
+      <div class="bg-alert-supplier">
         <div 
           class="d-flex"
-          :class="windowWidth < 1024 ? 'flex-column gap-4' : 'justify-between gap-7'">
+          :class="windowWidth < 1024 ? 'flex-column gap-4' : 'justify-between gap-8'">
           <!-- 👉 Details -->
           <div 
             v-if="windowWidth >= 1024"
-            :class="windowWidth < 1024 ? 'justify-center' : 'px-0'"
-            class="d-flex align-center"
+            class="d-flex align-center px-0"
           >
             <VAvatar
               rounded
@@ -625,14 +624,12 @@ const reactiveSubscription = async () => {
           <!-- 👉 Details -->
           <div
             class="d-flex align-center w-100"
-            :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-0'"
+            :class="windowWidth < 1024 ? 'flex-column' : 'px-0'"
           >
-            <div class="profile-info-grid">
-              <div 
-                v-if="windowWidth < 1024"
-                class="profile-info-item profile-info-col-7"
-              >
+            <div class="d-flex flex-column justify-between gap-6 w-100">
+              <div class="d-flex justify-between gap-4 w-100">
                 <div
+                  v-if="windowWidth < 1024"
                   class="d-flex justify-start flex-row align-center"
                   style="width: 100%;"
                 >
@@ -671,155 +668,142 @@ const reactiveSubscription = async () => {
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <VDivider v-if="windowWidth < 1024" class="mb-2 profile-info-item profile-info-col-7" />
+                <div v-else >
+                  <span class="span-body-profilename">
+                    {{ name }} {{ last_name }}
+                  </span>
+                  <div class="d-flex flex-row ">
+                    <div class="status-chip me-2 plan-color uppercase" >
+                      {{ supplier.plan?.name ?? '-' }}
+                    </div>
+                    <div class="status-chip me-2 plan-time" >
+                      {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
+                    </div>
+                    <div
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus(supplier.state?.id)?.class}`"
+                    >
+                      {{ supplier.state?.name ?? '-' }}
+                    </div>
+                  </div>
+                </div>
 
-              <div 
-                v-else
-                class="profile-info-item profile-info-col-7"
-              >
-                <span class="span-body-profilename">
-                  {{ name }} {{ last_name }}
-                </span>
-                <div class="d-flex flex-row ">
-                  <div class="status-chip me-2 plan-color uppercase" >
-                    {{ supplier.plan?.name ?? '-' }}
-                  </div>
-                  <div class="status-chip me-2 plan-time" >
-                    {{ supplier.is_yearly === 0 ? 'Månadsvis' : 'Årsvis' }}
-                  </div>
-                  <div
-                    class="status-chip"
-                    :class="`status-chip-${resolveStatus(supplier.state?.id)?.class}`"
-                  >
-                    {{ supplier.state?.name ?? '-' }}
+                <div v-if="windowWidth >= 1024">
+                  <div class="d-flex gap-2">
+                    <div class="switch-mobile-detail">
+                      <span class="switch-text-detail">Aktivera</span>
+                      <VSwitch
+                        v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                        v-model="supplierSwitchStates[supplier.id]"
+                        class="d-flex justify-center"
+                        hide-details
+                        inset
+                        @update:modelValue="showDeleteDialog(supplier)"
+                      />
+                      <VSwitch
+                        v-if="$can('delete','suppliers') && supplier.state_id === 1"
+                        v-model="supplierSwitchStates[supplier.id]"
+                        class="d-flex justify-center"
+                        hide-details
+                        inset                
+                        @update:modelValue="showActivateDialog(supplier)"
+                      />
+                    </div>
+                  
+                    <VBtn
+                      v-if="supplier.cancellation_date !== null"
+                      id="suscription-button"
+                      class="btn-light w-auto"
+                      height="48"
+                      v-bind="props"
+                      @click="showReactivateDialog(supplier)"
+                    >
+                      <VIcon icon="custom-check-mark" size="24" />
+                      Starta abonnemang
+                    </VBtn>
+                    <VBtn
+                      v-else
+                      id="suscription-button"
+                      class="btn-light w-auto"
+                      height="48"
+                      v-bind="props"
+                      @click="showCancelDialog(supplier)"
+                    >
+                      <VIcon icon="custom-unavailable" size="24" />
+                      Avsluta abonnemang
+                    </VBtn>
                   </div>
                 </div>
               </div>
 
-              <div 
-                v-if="windowWidth >= 1024"
-                class="profile-info-item profile-info-col-5 ">
-
-                <div class="d-flex gap-2 ms-auto">
-                  <div class="switch-mobile-detail">
-                    <span class="switch-text-detail">Aktivera</span>
-                    <VSwitch
-                      v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                      v-model="supplierSwitchStates[supplier.id]"
-                      class="d-flex justify-center"
-                      hide-details
-                      inset
-                      @update:modelValue="showDeleteDialog(supplier)"
+              <div class="d-flex flex-column flex-md-row" :class="windowWidth < 1024 ? 'gap-4' : 'gap-8'">
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-between' : 'flex-column'"
+                >
+                  <span class="text-body-profile">
+                    <VIcon
+                      class="me-1"
+                        icon="custom-user-profile"
+                        size="16"
                     />
-                    <VSwitch
-                      v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                      v-model="supplierSwitchStates[supplier.id]"
-                      class="d-flex justify-center"
-                      hide-details
-                      inset                
-                      @update:modelValue="showActivateDialog(supplier)"
-                    />
-                  </div>
-                
-                  <VBtn
-                    v-if="supplier.cancellation_date !== null"
-                    id="suscription-button"
-                    class="btn-light w-auto"
-                    height="48"
-                    v-bind="props"
-                    @click="showReactivateDialog(supplier)"
-                  >
-                    <VIcon icon="custom-check-mark" size="24" />
-                    Starta abonnemang
-                  </VBtn>
-                  <VBtn
-                    v-else
-                    id="suscription-button"
-                    class="btn-light w-auto"
-                    height="48"
-                    v-bind="props"
-                    @click="showCancelDialog(supplier)"
-                  >
-                    <VIcon icon="custom-unavailable" size="24" />
-                    Avsluta abonnemang
-                  </VBtn>
+                    ID
+                  </span>
+                  <span class="span-body-profile">
+                    #{{ supplier.id }}
+                  </span>
                 </div>
-              </div>
 
-              <div
-                class="profile-info-item profile-info-col-2"
-                :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
-              >
-                <span class="text-body-profile">
-                  <VIcon
-                    class="me-1"
-                      icon="custom-user-profile"
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-between' : 'flex-column'"
+                >
+                  <span class="text-body-profile">
+                    <VIcon
+                      class="me-1"
+                      icon="custom-pris-information-outlined"
                       size="16"
-                  />
-                  ID
-                </span>
-                <span class="span-body-profile">
-                  #{{ supplier.id }}
-                </span>
+                    />
+                    Prenumeration
+                  </span>
+                  <span class="span-body-profile">
+                    {{ formatDateSimple(supplier.start_date) }} - {{ formatDateSimple(supplier.end_date) }}
+                  </span>
+                </div>
+
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-between' : 'flex-column'"
+                >
+                  <span class="text-body-profile">
+                    <VIcon
+                      class="me-1"
+                      icon="custom-email-profile"
+                      size="16"
+                    />
+                    E-post
+                  </span>
+                  <span class="span-body-profile">
+                    {{ email }}
+                  </span>
+                </div>
+
+                <div class="d-flex"
+                  :class="windowWidth < 1024 ? 'flex-row justify-between' : 'flex-column'"
+                >
+                  <span class="text-body-profile">
+                    <VIcon
+                      class="me-1"
+                      icon="custom-phone-profile"
+                      size="16"
+                    />
+                    Telefon
+                  </span>
+                  <span class="span-body-profile">
+                    {{ phone }}
+                  </span>
+                </div>                
               </div>
 
-              <div 
-                class="profile-info-item profile-info-col-3"
-                :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
-              >
-                <span class="text-body-profile">
-                  <VIcon
-                    class="me-1"
-                    icon="custom-pris-information-outlined"
-                    size="16"
-                  />
-                  Prenumeration
-                </span>
-                <span class="span-body-profile">
-                  {{ formatDateSimple(supplier.start_date) }} - {{ formatDateSimple(supplier.end_date) }}
-                </span>
-              </div>
-
-              <div 
-                class="profile-info-item profile-info-col-4"
-                :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
-              >
-                <span class="text-body-profile">
-                  <VIcon
-                    class="me-1"
-                    icon="custom-email-profile"
-                    size="16"
-                  />
-                  E-post
-                </span>
-                <span class="span-body-profile">
-                  {{ email }}
-                </span>
-              </div>
-
-              <div 
-                class="profile-info-item profile-info-col-2"
-                :class="windowWidth < 1024 ? 'flex-row justify-between' : ''"
-              >
-                <span class="text-body-profile">
-                  <VIcon
-                    class="me-1"
-                    icon="custom-phone-profile"
-                    size="16"
-                  />
-                  Telefon
-                </span>
-                <span class="span-body-profile">
-                  {{ phone }}
-                </span>
-              </div>  
-              
-              <div 
-                v-if="windowWidth < 1024"
-                class="profile-info-item profile-info-col-4 w-100">
-
+              <div v-if="windowWidth < 1024" class="w-100 d-flex flex-column gap-2">
                 <div class="switch-mobile-detail">
                   <span class="switch-text-detail">Aktivera</span>
                   <VSwitch
@@ -921,7 +905,7 @@ const reactiveSubscription = async () => {
             <div class="dialog-form-grid">
               <div class="dialog-form-col-5">
                 <div 
-                    class="bg-alert ms-4"
+                    class="bg-alert-supplier ms-4"
                     :class="windowWidth < 1024 ? 'flex-column me-4' : 'flex-row'"
                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
@@ -1085,7 +1069,7 @@ const reactiveSubscription = async () => {
             <div class="dialog-form-grid">
               <div class="dialog-form-col-5">
                 <div 
-                    class="bg-alert ms-4"
+                    class="bg-alert-supplier ms-4"
                     :class="windowWidth < 1024 ? 'flex-column me-4' : 'flex-row'"
                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
@@ -1519,11 +1503,9 @@ const reactiveSubscription = async () => {
     white-space: normal;
   }
 
-  .bg-alert {
+  .bg-alert-supplier {
     background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
     border-radius: 16px;
-    gap: 16px;
-    opacity: 1;
     padding: 16px;
   }
 
@@ -1556,75 +1538,6 @@ const reactiveSubscription = async () => {
 
     @media (max-width: 1024px) {
       font-size: 20px;
-    }
-  }
-
-  .profile-info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    width: 100%;
-
-    @media (min-width: 1024px) {
-      grid-template-columns: repeat(12, 1fr);
-    }
-  }
-
-  .profile-info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    @media (max-width: 1023px) {
-      grid-column: span 1;
-    }
-
-    &.profile-info-col-2 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 1;
-      }
-    }
-
-    &.profile-info-col-3 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 3;
-      }
-    }
-
-    &.profile-info-col-4 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 4;
-      }
-    }
-
-    &.profile-info-col-5 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 5;
-      }
-    }
-
-    &.profile-info-col-6 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 6;
-      }
-    }
-
-    &.profile-info-col-7 {
-      grid-column: span 2;
-
-      @media (min-width: 1024px) {
-        grid-column: span 7;
-      }
     }
   }
 

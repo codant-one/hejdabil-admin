@@ -105,25 +105,10 @@ export const formatDateTime = (dateString) => {
 export const formatDateSimple = value => {
     if (!value) return ''
 
-  const swedishShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
-
-  // Keep date-like values timezone-agnostic to avoid shifting one day backwards.
-  // This also covers API values like 2026-08-01T00:00:00.000000Z.
-  if (typeof value === 'string') {
-    const normalizedValue = value.trim()
-    const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/)
-
-    if (dateOnlyMatch) {
-      const [, year, month, day] = dateOnlyMatch
-      const monthIndex = Number(month) - 1
-
-      if (monthIndex >= 0 && monthIndex < swedishShortMonths.length)
-        return `${Number(day)} ${swedishShortMonths[monthIndex]} ${year}`
-    }
-  }
-
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return ''
+
+    const swedishShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
     const day = date.getDate()
     const month = swedishShortMonths[date.getMonth()]
     const year = date.getFullYear()
