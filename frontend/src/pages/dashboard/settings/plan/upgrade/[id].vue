@@ -502,7 +502,12 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Insikter och analys</span>
                     </div>
                     <div class="text-center" style="width: 25%;">
-                        <span class="plan-details-content">-</span>
+                        <span class="plan-details-content">
+                            <VIcon 
+                                icon="custom-check-mark"
+                                size="24" 
+                            />
+                        </span>
                     </div>
                     <div class="text-center" style="width: 25%;">
                         <span class="plan-details-content">
@@ -523,7 +528,12 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Transaktionshistorik</span>
                     </div>
                     <div class="text-center" style="width: 25%;">
-                        <span class="plan-details-content">-</span>
+                        <span class="plan-details-content">
+                            <VIcon 
+                                icon="custom-check-mark"
+                                size="24" 
+                            />
+                        </span>
                     </div>
                     <div class="text-center" style="width: 25%;">
                         <span class="plan-details-content">
@@ -540,7 +550,12 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Verifiering med säkerhetskod</span>
                     </div>
                     <div class="text-center" style="width: 25%;">
-                        <span class="plan-details-content">-</span>
+                        <span class="plan-details-content">
+                            <VIcon 
+                                icon="custom-check-mark"
+                                size="24" 
+                            />
+                        </span>
                     </div>
                     <div class="text-center" style="width: 25%;">
                         <span class="plan-details-content">
