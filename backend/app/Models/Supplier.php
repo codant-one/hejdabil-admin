@@ -599,14 +599,11 @@ class Supplier extends Model
         $supplier->save();
 
         //Send mail to Supplier
-        $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
         $email = $supplier->user->email;
-        $subject = 'Bekräftelse på återaktivering av din prenumeration';
-        $text_primary = "Vi bekräftar att din prenumeration hos Bilflogg har återaktiverats.<br>";
-        $text_primary .= "Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt.<br><br>";
-        $text_primary .= "Plan: " . $plan . "<br>";
-        $text_secondary  = "Du har fortsatt tillgång till tjänsten.<br>";
-        $text_secondary .= "Har du några frågor kring din prenumeration är du alltid välkommen att kontakta oss.<br>";
+        $subject = 'Ditt konto hos Bilflogg har återaktiverats';
+        $text_primary = "Vi vill informera dig om att ditt konto hos Bilflogg nu har återaktiverats.<br>";
+        $text_primary .= "Du har åter tillgång till Bilfloggs tjänster och kan logga in och använda ditt konto som vanligt.<br><br>";
+        $text_secondary  = "Har du några frågor eller behöver hjälp är du alltid välkommen att kontakta oss.<br>";
 
         $data = [
             'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,

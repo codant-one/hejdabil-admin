@@ -44,7 +44,6 @@ const billing_id = ref(null);
 const billing = ref(null);
 const invoiceEditableRef = ref(null);
 const err = ref(null);
-const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const isConfirmLeaveVisible = ref(false);
 
@@ -274,7 +273,7 @@ const confirmLeave = () => {
 const onSubmit = () => {
   // If already saved and NO changes since save, show success dialog
   if (billing.value?.file && !hasChangedSinceSave.value) {
-    //skapatsDialog.value = true;
+
     let data = {
       message: "Fakturan är skapad!",
       error: false,
@@ -332,7 +331,6 @@ const onSubmit = () => {
           if (windowWidth.value < 1024 && invoiceEditableRef.value) {
             invoiceEditableRef.value.setPreviewTab();
           } else {
-            //skapatsDialog.value = true;
             let data = {
               message: "Fakturan är skapad!",
               error: false,
@@ -479,43 +477,6 @@ onBeforeRouteLeave((to, from, next) => {
         </VCol>
       </VRow>
     </VForm>
-
-    <!-- 👉 Dialogs Section -->
-    <VDialog
-      v-model="skapatsDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-    >
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="router.push({
-          name: 'dashboard-admin-suppliers-billings-id',
-          params: { id: billing_id },
-        })"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-        <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-create-order" />
-        </VCardText>
-        <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Fakturan är skapad!</div>
-        </VCardText>
-        <VCardText class="dialog-text text-center">
-          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
-        </VCardText>
-
-        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="createBilling">
-            Gå till fakturalistan
-          </VBtn>
-          <VBtn class="btn-gradient" @click="reloadPage"> Skapa ny faktura </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
 
     <VDialog
       v-model="inteSkapatsDialog"

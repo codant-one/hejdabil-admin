@@ -183,7 +183,7 @@ const addInvoice = () => {
 const editBilling = (billingData) => {
   router.push({
     name: "dashboard-admin-suppliers-billings-edit-id",
-    params: { id: billingData.invoice_id },
+    params: { id: billingData.id },
   });
 };
 
@@ -231,7 +231,7 @@ const openBillingPdf = billing => {
 const showBilling = (billingData) => {
   router.push({
     name: "dashboard-admin-suppliers-billings-id",
-    params: { id: billingData.id },
+    params: { id: billingData.id},
   });
 };
 

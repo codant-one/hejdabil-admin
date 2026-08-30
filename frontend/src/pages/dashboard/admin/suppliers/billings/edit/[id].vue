@@ -29,12 +29,13 @@ const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
+const billing_id = ref(null);
+
 const initialInvoiceData = ref(null);
 const savedInvoiceData = ref(null);
 const allowNavigation = ref(false);
 const nextRoute = ref(null);
 const invoiceEditableRef = ref(null);
-const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const isConfirmLeaveVisible = ref(false);
 const err = ref(null);
@@ -197,10 +198,6 @@ async function fetchData() {
   }
 }
 
-function reloadPage() {
-  window.location.reload();
-}
-
 const showError = () => {
   inteSkapatsDialog.value = false;
 
@@ -297,7 +294,17 @@ const confirmLeave = () => {
 const onSubmit = () => {
   // If already saved and NO changes since save, show success dialog
   if (billing.value?.file && !hasChangedSinceSave.value) {
-    skapatsDialog.value = true;
+    let data = {
+      message: "Fakturan uppdaterades framgångsrikt",
+      error: false,
+    };
+
+    router.push({
+      name: "dashboard-admin-suppliers-billings-id",
+      params: { id: billing_id.value },
+    });
+
+    emitter.emit("toast", data);
     return;
   }
 
@@ -339,6 +346,7 @@ const onSubmit = () => {
       supplierInvoices
         .updateSupplierInvoice(data)
         .then((res) => {
+          billing_id.value = res.data.data.billing.id;
           billing.value = res.data.data.billing;
           isRequestOngoing.value = false;
           allowNavigation.value = true;
@@ -350,7 +358,17 @@ const onSubmit = () => {
           if (windowWidth.value < 1024 && invoiceEditableRef.value) {
             invoiceEditableRef.value.setPreviewTab();
           } else {
-            skapatsDialog.value = true;
+            let data = {
+              message: "Fakturan uppdaterades framgångsrikt",
+              error: false,
+            };
+
+            router.push({
+              name: "dashboard-admin-suppliers-billings-id",
+              params: { id: billing_id.value },
+            });
+
+            emitter.emit("toast", data);
           }
         })
         .catch((error) => {
@@ -360,21 +378,6 @@ const onSubmit = () => {
         });
     }
   });
-};
-
-const editBilling = () => {
-  let data = {
-    message: "Fakturan uppdaterades framgångsrikt",
-    error: false,
-  };
-
-  router.push({
-    name: "dashboard-admin-suppliers-id",
-    params: { id: supplierId.value },
-    query: { tab: 'billing' }
-  });
-
-  emitter.emit("toast", data);
 };
 
 function resizeSectionToRemainingViewport() {
@@ -503,44 +506,6 @@ onBeforeRouteLeave((to, from, next) => {
       </VRow>
     </VForm>
 
-    <!-- 👉 Dialogs Section -->
-    <VDialog
-      v-model="skapatsDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-    >
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="router.push({
-          name: 'dashboard-admin-suppliers-billings-id',
-          params: { id: billing_id },
-        })"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-        <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-create-order" />
-        </VCardText>
-        <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Fakturan är uppdaterad!</div>
-        </VCardText>
-        <VCardText class="dialog-text text-center">
-           Ditt Fakturan har uppdaterats och ändringarna har sparats.
-        </VCardText>
-
-        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="editBilling">
-            Gå till fakturalistan
-          </VBtn>
-          <VBtn class="btn-gradient" @click="reloadPage"> 
-            Redigera fakturan
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
 
     <VDialog
       v-model="inteSkapatsDialog"

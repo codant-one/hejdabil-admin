@@ -8,6 +8,7 @@ import sampleFaktura from "@images/sample-faktura.jpg";
 import VuePdfEmbed from "vue-pdf-embed";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import draggable from "vuedraggable";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
 const props = defineProps({
   data: {
@@ -211,37 +212,120 @@ const supplierOptions = computed(() => {
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
 const isAlertPreviewVisible = ref(false);
+const isPeriodMenuVisible = ref(false);
 const previousTab = ref("redigera");
 const pdfCacheKey = ref(Date.now());
 const nonNegativeIntegerRules = [numericRangeValidator({ min: 0 })];
 const minOneIntegerRules = [numericRangeValidator({ min: 1 })];
 const percentageIntegerRules = [numericRangeValidator({ min: 0, max: 100 })];
 const nonNegativeDecimalRules = [decimalRangeValidator({ min: 0 })];
-const periodFormatValidator = value => {
-  const normalized = String(value ?? '').trim();
+const periodRange = ref([]);
 
-  if (!normalized)
-    return true;
+const normalizePeriodDate = value => {
+  if (!value)
+    return '';
 
-  const match = normalized.match(/^(\d{4})(?:-(\d{2}))?$/);
+  const normalized = String(value).trim().replace(/\./g, '-');
+  const match = normalized.match(/^(\d{2}|\d{4})-(\d{2})-(\d{2})$/);
 
   if (!match)
-    return 'Ange en giltig period: YYYY eller YYYY-MM';
+    return '';
 
-  const year = Number(match[1]);
-  if (!Number.isInteger(year) || year < 1900 || year > 9999)
-    return 'Året måste vara mellan 1900 och 9999';
+  const year = match[1].length === 2 ? `20${match[1]}` : match[1];
 
-  if (!match[2])
-    return true;
+  return `${year}-${match[2]}-${match[3]}`;
+};
 
-  const month = Number(match[2]);
-  if (!Number.isInteger(month) || month < 1 || month > 12)
-    return 'Månaden måste vara mellan 01 och 12';
+const parsePeriodRangeValue = periodValue => {
+  const normalized = String(periodValue ?? '').trim();
+
+  if (!normalized)
+    return [];
+
+  const chunks = normalized.includes(' - ')
+    ? normalized.split(' - ')
+    : normalized.split(/\s+to\s+|\s+till\s+/i);
+
+  if (chunks.length < 2)
+    return [];
+
+  const start = normalizePeriodDate(chunks[0]);
+  const end = normalizePeriodDate(chunks[1]);
+
+  if (!start || !end)
+    return [];
+
+  return [start, end];
+};
+
+const toDotDate = value => {
+  const normalized = normalizePeriodDate(value);
+  if (!normalized)
+    return '';
+
+  const [year, month, day] = normalized.split('-');
+  const shortYear = year.slice(-2);
+
+  return `${shortYear}.${month}.${day}`;
+};
+
+const formatPeriodFromRange = rangeValue => {
+  const values = Array.isArray(rangeValue) ? rangeValue : [];
+  const start = toDotDate(values[0]);
+  const end = toDotDate(values[1]);
+
+  if (!start || !end)
+    return '';
+
+  return `${start} - ${end}`;
+};
+
+const periodRangeRules = [value => {
+  const periodValues = Array.isArray(value) ? value : [];
+  const start = normalizePeriodDate(periodValues[0]);
+  const end = normalizePeriodDate(periodValues[1]);
+
+  if (!start || !end)
+    return 'Välj startdatum och slutdatum';
 
   return true;
+}];
+
+const periodTextRules = [value => String(value ?? '').trim() ? true : 'Välj startdatum och slutdatum'];
+
+const periodRangePickerConfig = {
+  inline: true,
+  mode: 'range',
+  rangePresets: true,
+  splitRangeInputs: true,
+  dateFormat: "Y-m-d",
 };
-const periodRules = [periodFormatValidator];
+
+const syncPeriodFromRange = () => {
+  const normalizedRange = Array.isArray(periodRange.value)
+    ? periodRange.value.map(item => normalizePeriodDate(item)).filter(Boolean)
+    : [];
+
+  const [start = '', end = ''] = normalizedRange;
+  const nextPeriod = start && end
+    ? formatPeriodFromRange([start, end])
+    : '';
+
+  if (invoice.value.period !== nextPeriod) {
+    invoice.value.period = nextPeriod;
+    emit("data", invoice.value);
+  }
+};
+
+const onPeriodDatePickerUpdate = value => {
+  periodRange.value = Array.isArray(value) ? value : [];
+  syncPeriodFromRange();
+};
+
+const onPeriodFilterApply = applied => {
+  if (applied)
+    isPeriodMenuVisible.value = false;
+};
 
 const pdfSource = computed(() => {
   if (!props.billing?.file) return null;
@@ -321,6 +405,27 @@ const invoice = ref({
   reference: null,
   details: structuredClone(toRaw(props.data)),
 });
+
+periodRange.value = parsePeriodRangeValue(invoice.value.period);
+
+watch(
+  () => invoice.value.period,
+  value => {
+    const parsed = parsePeriodRangeValue(value);
+    const current = Array.isArray(periodRange.value) ? periodRange.value : [];
+    if (JSON.stringify(current) !== JSON.stringify(parsed))
+      periodRange.value = parsed;
+  },
+  { immediate: true }
+);
+
+watch(
+  periodRange,
+  () => {
+    syncPeriodFromRange();
+  },
+  { deep: true }
+);
 
 const selectedSupplierOption = computed(() => {
   const matchedSupplier = supplierOptions.value.find(option => String(option?.id) === String(invoice.value.supplier_id))
@@ -854,7 +959,7 @@ const handleFocus = (element, fieldId) => {
                   prefix="#"
                   @input="invoice.id = normalizeNumericTextInput(invoice.id); inputData()"
                   @keydown="handleNumericTextFieldKeydown"
-                  style="inline-size: 10.5rem"
+                  style="inline-size: 11rem"
                 />
               </div>
             </span>
@@ -872,7 +977,7 @@ const handleFocus = (element, fieldId) => {
                   v-model="client.order_id"
                   disabled
                   prefix="#"
-                  style="inline-size: 10.5rem"
+                  style="inline-size: 11rem"
                 />
               </div>
             </span>
@@ -882,16 +987,34 @@ const handleFocus = (element, fieldId) => {
           <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
             <span class="me-2 text-start w-40 text-black">Period</span>
 
-            <span style="min-inline-size: 10.5rem">
-              <div class="form-field">
+            <span class="d-flex align-center">
+              <div class="form-field" style="flex: 1">
                 <VTextField
                   v-model="invoice.period"
-                  placeholder="YYYY-MM"
-                  :rules="periodRules"
-                  style="inline-size: 10.5rem"
+                  placeholder="YYYY.MM.DD - YYYY.MM.DD"
+                  :rules="periodTextRules"
+                  readonly
+                  style="inline-size: 11rem"
                 />
               </div>
+              <VBtn id="billing-period-button" class="btn-ghost ms-4" icon @click="isPeriodMenuVisible = true">
+                <VIcon icon="custom-calendar-2" size="20" />
+              </VBtn>
             </span>
+
+            <ExportDateMenu
+              v-model="periodRange"
+              v-model:menuVisible="isPeriodMenuVisible"
+              :show-activator="false"
+              :is-mobile="windowWidth < 1024"
+              activator="#billing-period-button"
+              :picker-config="periodRangePickerConfig"
+              button-text="Välj period"
+              button-icon="custom-calendar-2"
+              picker-placeholder="Startdatum - Slutdatum"
+              @update:modelValue="onPeriodDatePickerUpdate"
+              @update:filtrera="onPeriodFilterApply"
+            />
           </div>
 
           <!-- 👉 Issue Date -->
@@ -900,13 +1023,13 @@ const handleFocus = (element, fieldId) => {
           >
             <span class="me-2 text-start w-40 text-black">Fakturadatum</span>
 
-            <span style="inline-size: 10.5rem">
+            <span style="inline-size: 11rem">
               <div class="form-field">
                 <VTextField
                   v-if="props.isCredit"
                   v-model="invoice.invoice_date"
                   disabled
-                  style="inline-size: 10.5rem"
+                  style="inline-size: 11rem"
                 />
                 <AppDateTimePicker
                   v-else
@@ -926,13 +1049,13 @@ const handleFocus = (element, fieldId) => {
           <div class="d-block d-md-flex align-center justify-sm-start mb-0">
             <span class="me-2 text-start w-40 text-black">Förfallodatum</span>
 
-            <span style="min-inline-size: 10.5rem">
+            <span style="min-inline-size: 11rem">
               <div class="form-field">
                 <VTextField
                   v-if="props.isCredit"
                   v-model="invoice.due_date"
                   disabled
-                  style="inline-size: 10.5rem"
+                  style="inline-size: 11rem"
                 />
                 <AppDateTimePicker
                   v-else
@@ -1473,7 +1596,7 @@ const handleFocus = (element, fieldId) => {
                       v-model="client.order_id"
                       disabled
                       prefix="#"
-                      style="inline-size: 10.5rem"
+                      style="inline-size: 11rem"
                     />
                   </div>
                 </span>
@@ -1483,15 +1606,34 @@ const handleFocus = (element, fieldId) => {
               <div class="d-block d-md-flex align-center justify-sm-start mb-2" v-if="!props.showSupplier">
                 <span class="mb-2 me-2 text-start w-40 text-black">Period</span>
 
-                <span style="min-inline-size: 10.5rem">
-                  <div class="form-field">
+                <span class="d-flex align-center">
+                  <div class="form-field" style="flex: 1">
                     <VTextField
                       v-model="invoice.period"
-                      placeholder="YYYY-MM"
-                      :rules="periodRules"
+                       placeholder="YYYY.MM.DD - YYYY.MM.DD"
+                      :rules="periodTextRules"
+                      readonly
+                      
                     />
                   </div>
+                  <VBtn id="billing-period-button-mobile" class="btn-ghost ms-4" icon @click="isPeriodMenuVisible = true">
+                    <VIcon icon="custom-calendar-2" size="20" />
+                  </VBtn>
                 </span>
+
+                <ExportDateMenu
+                  v-model="periodRange"
+                  v-model:menuVisible="isPeriodMenuVisible"
+                  :show-activator="false"
+                  :is-mobile="windowWidth < 1024"
+                  activator="#billing-period-button-mobile"
+                  :picker-config="periodRangePickerConfig"
+                  button-text="Välj period"
+                  button-icon="custom-calendar-2"
+                  picker-placeholder="Startdatum - Slutdatum"
+                  @update:modelValue="onPeriodDatePickerUpdate"
+                  @update:filtrera="onPeriodFilterApply"
+                />
               </div>
 
               <!-- 👉 Issue Date -->
@@ -1502,13 +1644,13 @@ const handleFocus = (element, fieldId) => {
                   >Fakturadatum</span
                 >
 
-                <span style="inline-size: 10.5rem">
+                <span style="inline-size: 11rem">
                   <div class="form-field">
                     <VTextField
                       v-if="props.isCredit"
                       v-model="invoice.invoice_date"
                       disabled
-                      style="inline-size: 10.5rem"
+                      style="inline-size: 11rem"
                     />
                     <AppDateTimePicker
                       v-else
@@ -1530,13 +1672,13 @@ const handleFocus = (element, fieldId) => {
                   >Förfallodatum</span
                 >
 
-                <span style="min-inline-size: 10.5rem">
+                <span style="min-inline-size: 11rem">
                   <div class="form-field">
                     <VTextField
                       v-if="props.isCredit"
                       v-model="invoice.due_date"
                       disabled
-                      style="inline-size: 10.5rem"
+                      style="inline-size: 11rem"
                     />
                     <AppDateTimePicker
                       v-else

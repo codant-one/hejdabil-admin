@@ -725,7 +725,7 @@ const reactiveSubscription = async () => {
                 
                   <VBtn
                     v-if="supplier.cancellation_date !== null"
-                    id="payout-export-button"
+                    id="suscription-button"
                     class="btn-light w-auto"
                     height="48"
                     v-bind="props"
@@ -736,7 +736,7 @@ const reactiveSubscription = async () => {
                   </VBtn>
                   <VBtn
                     v-else
-                    id="payout-export-button"
+                    id="suscription-button"
                     class="btn-light w-auto"
                     height="48"
                     v-bind="props"
@@ -842,7 +842,7 @@ const reactiveSubscription = async () => {
 
                 <VBtn
                   v-if="supplier.cancellation_date !== null"
-                  id="payout-export-button"
+                  id="suscription-button"
                   class="btn-light w-100"
                   height="48"
                   v-bind="props"
@@ -853,7 +853,7 @@ const reactiveSubscription = async () => {
                 </VBtn>
                 <VBtn
                   v-else
-                  id="payout-export-button"
+                  id="suscription-button"
                   class="btn-light w-100"
                   height="48"
                   v-bind="props"
@@ -1868,7 +1868,7 @@ const reactiveSubscription = async () => {
       background-color: #FFFFFF;
     }
 
-    #payout-export-button {
+    #suscription-button {
       --v-btn-height: 40px !important;
       height: 40px !important;
       min-height: 40px !important;

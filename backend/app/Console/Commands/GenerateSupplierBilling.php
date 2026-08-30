@@ -121,110 +121,118 @@ class GenerateSupplierBilling extends Command
     private function processBilling(Supplier $supplier): bool
     {
         return DB::transaction(function () use ($supplier) {
+            $today = Carbon::today();
             $lockedSupplier = Supplier::where('id', $supplier->id)->lockForUpdate()->first();
+            $createdAny = false;
 
-            $billingPeriod = $supplier->is_yearly
-                ? Carbon::parse($lockedSupplier->next_billing_date)->format('Y')
-                : Carbon::parse($lockedSupplier->next_billing_date)->format('Y-m');
+            $billingCursor = $lockedSupplier->next_billing_date
+                ? Carbon::parse($lockedSupplier->next_billing_date)->startOfDay()
+                : ($lockedSupplier->start_date ? Carbon::parse($lockedSupplier->start_date)->startOfDay() : null);
 
-            $alreadyBilled = SupplierInvoice::where('supplier_id', $lockedSupplier->id)
-                ->where('billing_period', $billingPeriod)
-                ->exists();
+            while ($billingCursor && $billingCursor->lte($today)) {
+                $periodStart = (clone $billingCursor)->startOfDay();
+                $periodEnd = $supplier->is_yearly
+                    ? (clone $periodStart)->addYear()
+                    : (clone $periodStart)->addMonth();
+                $billingPeriod = $periodStart->format('y.m.d') . ' - ' . $periodEnd->format('y.m.d');
 
-            if ($alreadyBilled) {
-                return false;
-            }
+                $alreadyBilled = SupplierInvoice::where('supplier_id', $lockedSupplier->id)
+                    ->where('billing_period', $billingPeriod)
+                    ->exists();
 
-            $maxInvoiceId = SupplierInvoice::where('supplier_id', $supplier->id)
-                ->lockForUpdate()
-                ->max('invoice_id');
+                if ($alreadyBilled) {
+                    $billingCursor = (clone $periodEnd)->startOfDay();
+                    $lockedSupplier->next_billing_date = $billingCursor;
+                    $lockedSupplier->save();
 
-            $invoiceId = ((int) $maxInvoiceId) + 1;
+                    continue;
+                }
 
-            $pricePlan = $supplier->is_yearly
-                ? $supplier->plan->price_annual
-                : $supplier->plan->price_month;
+                $maxInvoiceId = SupplierInvoice::where('supplier_id', $supplier->id)
+                    ->lockForUpdate()
+                    ->max('invoice_id');
 
-            $smsSummary = [
-                'count' => 0,
-                'unit_price' => $supplier->sms_price ?? 1.0,
-                'total' => 0.0,
-                'from' => null,
-                'to' => null,
-            ];
+                $invoiceId = ((int) $maxInvoiceId) + 1;
 
-            if ($supplier->is_yearly === 0) {// mensual
-                $filterEnd = Carbon::parse($lockedSupplier->next_billing_date)->endOfDay();
-                $filterStart = (clone $filterEnd)->subMonth()->startOfDay();
-
-                $totalSMS = $this->getTeamDocumentTotalCount(
-                    SmsMessage::query()->where('supplier_id', $supplier->id)->where('billable_count', '>', 0),
-                    $filterStart,
-                    $filterEnd
-                );
+                $pricePlan = $supplier->is_yearly
+                    ? $supplier->plan->price_annual
+                    : $supplier->plan->price_month;
 
                 $smsSummary = [
-                    'count' => $totalSMS,
+                    'count' => 0,
                     'unit_price' => $supplier->sms_price ?? 1.0,
-                    'total' => round($totalSMS * ($supplier->sms_price ?? 1.0), 2),
-                    'from' => $filterStart,
-                    'to' => $filterEnd,
+                    'total' => 0.0,
+                    'from' => null,
+                    'to' => null,
                 ];
+
+                if ($supplier->is_yearly === 0) {// mensual
+                    $filterStart = $periodStart ? (clone $periodStart)->startOfDay() : null;
+                    $filterEnd = (clone $periodEnd)->endOfDay();
+
+                    $totalSMS = $this->getTeamDocumentTotalCount(
+                        SmsMessage::query()->where('supplier_id', $supplier->id)->where('billable_count', '>', 0),
+                        $filterStart,
+                        $filterEnd
+                    );
+
+                    $smsSummary = [
+                        'count' => $totalSMS,
+                        'unit_price' => $supplier->sms_price ?? 1.0,
+                        'total' => round($totalSMS * ($supplier->sms_price ?? 1.0), 2),
+                        'from' => $filterStart,
+                        'to' => $filterEnd,
+                    ];
+                }
+
+                $details = $this->buildBillingDetail($supplier, $periodStart, $periodEnd, $pricePlan, $smsSummary);
+
+                $tax = 25;
+                $price = $pricePlan + (($supplier->is_yearly === 0) ? (float) ($smsSummary['total'] ?? 0) : 0);
+                $amountTax = round(($price * $tax) / 100, 2);
+                $subtotal = $price;
+                $total = $price + $amountTax;
+
+                $billing = SupplierInvoice::create([
+                    'user_id' => null,
+                    'supplier_id' => $supplier->id,
+                    'state_id' => 4,
+                    'billing_period' => $billingPeriod,
+                    'invoice_id' => $invoiceId,
+                    'invoice_date' => Carbon::now(),
+                    'due_date' => Carbon::now()->addDays(10),
+                    'payment_terms' => '10 dagar netto',
+                    'terms_and_conditions' => 'Efter förfallodagen debiteras ränta enligt räntelagen',
+                    'subtotal' => $subtotal,
+                    'tax' => $tax,
+                    'amount_tax' => $amountTax,
+                    'total' => $total,
+                    'amount_discount' => 0,
+                    'rabatt' => 0,
+                    'discount' => 0,
+                    'detail' => $details,
+                ]);
+
+                $createdAny = true;
+
+                $billingCursor = (clone $periodEnd)->startOfDay();
+                $lockedSupplier->next_billing_date = $billingCursor;
+                $lockedSupplier->save();
+
+                $this->generatePdf($billing);
+                $this->sendNotification($billing);
+                //$this->sendEmail($billing);
             }
 
-            $details = $this->buildBillingDetail($supplier, $lockedSupplier->next_billing_date, $pricePlan, $smsSummary);
-
-            $tax = 25;
-            $price = $pricePlan + (($supplier->is_yearly === 0) ? (float) ($smsSummary['total'] ?? 0) : 0);
-            $amountTax = round(($price * $tax) / 100, 2);
-            $subtotal = $price;
-            $total = $price + $amountTax;
-
-            $billing = SupplierInvoice::create([
-                'user_id' => null,
-                'supplier_id' => $supplier->id,
-                'state_id' => 4,
-                'billing_period' => $billingPeriod,
-                'invoice_id' => $invoiceId,
-                'invoice_date' => Carbon::now(),
-                'due_date' => Carbon::now()->addDays(10),
-                'payment_terms' => '10 dagar netto',
-                'terms_and_conditions' => 'Efter förfallodagen debiteras ränta enligt räntelagen',
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'amount_tax' => $amountTax,
-                'total' => $total,
-                'amount_discount' => 0,
-                'rabatt' => 0,
-                'discount' => 0,
-                'detail' => $details,
-            ]);
-
-            // Advance from the current billing cursor to avoid re-billing the same month.
-            $nextBillingDate = Carbon::parse($lockedSupplier->next_billing_date);
-            $nextBillingDate = $supplier->is_yearly
-                ? $nextBillingDate->addYear()
-                : $nextBillingDate->addMonth();
-
-            $lockedSupplier->next_billing_date = $nextBillingDate;
-            $lockedSupplier->save();
-
-            $this->generatePdf($billing);
-            $this->sendNotification($billing);
-            $this->sendEmail($billing);
-
-            return true;
+            return $createdAny;
         });
     }
 
-    private function buildBillingDetail(Supplier $supplier, $nextBillingDate, float $price, array $smsSummary = []): string
+    private function buildBillingDetail(Supplier $supplier, ?Carbon $periodStart, ?Carbon $periodEnd, float $price, array $smsSummary = []): string
     {
         $supplier = Supplier::with(['user.userDetail'])->find($supplier->id);
         $formattedPrice = number_format($price, 2, '.', '');
-        $periodDate = Carbon::parse($nextBillingDate);
-        $period = $supplier->is_yearly
-            ? (string) $periodDate->year
-            : self::SWEDISH_MONTHS[(int) $periodDate->month] . ' ' . $periodDate->year;
+        $period = ($periodStart ? $periodStart->format('y.m.d') : '-') . ' - ' . ($periodEnd ? $periodEnd->format('y.m.d') : '-');
 
         $details = [
             [
@@ -246,8 +254,8 @@ class GenerateSupplierBilling extends Command
             if ($totalSMS > 0) {
                 $unitPrice = (float) ($smsSummary['unit_price'] ?? $supplier->sms_price ?? 1.0);
                 $priceSMS = number_format((float) ($smsSummary['total'] ?? round($totalSMS * $unitPrice, 2)), 2, '.', '');
-                $from = $smsSummary['from'] instanceof Carbon ? $smsSummary['from'] : null;
-                $to = $smsSummary['to'] instanceof Carbon ? $smsSummary['to'] : null;
+                $from = $periodStart;
+                $to = $periodEnd;
                 $time = ($from ? $from->format('y.m.d') : '-') . ' - ' . ($to ? $to->format('y.m.d') : '-');
                 $companyName = $supplier->user?->userDetail?->company ?? 'Okänd';
 
