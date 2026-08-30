@@ -630,7 +630,7 @@ const reactiveSubscription = async () => {
             <div class="profile-info-grid">
               <div 
                 v-if="windowWidth < 1024"
-                class="profile-info-item profile-info-col-8"
+                class="profile-info-item profile-info-col-7"
               >
                 <div
                   class="d-flex justify-start flex-row align-center"
@@ -673,11 +673,11 @@ const reactiveSubscription = async () => {
                 </div>
               </div>
 
-              <VDivider v-if="windowWidth < 1024" class="mb-2 profile-info-item profile-info-col-8" />
+              <VDivider v-if="windowWidth < 1024" class="mb-2 profile-info-item profile-info-col-7" />
 
               <div 
                 v-else
-                class="profile-info-item profile-info-col-8"
+                class="profile-info-item profile-info-col-7"
               >
                 <span class="span-body-profilename">
                   {{ name }} {{ last_name }}
@@ -700,7 +700,7 @@ const reactiveSubscription = async () => {
 
               <div 
                 v-if="windowWidth >= 1024"
-                class="profile-info-item profile-info-col-4 ">
+                class="profile-info-item profile-info-col-5 ">
 
                 <div class="d-flex gap-2 ms-auto">
                   <div class="switch-mobile-detail">
@@ -1619,11 +1619,11 @@ const reactiveSubscription = async () => {
       }
     }
 
-    &.profile-info-col-8 {
+    &.profile-info-col-7 {
       grid-column: span 2;
 
       @media (min-width: 1024px) {
-        grid-column: span 8;
+        grid-column: span 7;
       }
     }
   }
