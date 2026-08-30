@@ -1231,7 +1231,7 @@ onBeforeUnmount(() => {
                     v-if="role !== 'User' && !isDisabled()"
                     type="button"
                     :block="windowWidth < 1024"
-                    class="logo-button btn-ghost btn-white-logo"
+                    class="logo-button btn-ghost btn-white-logo-NO"
                     :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                     @click="isConfirmChangeLogoVisible = true"
                   >
@@ -2163,7 +2163,8 @@ onBeforeUnmount(() => {
   width: 144px;
   height: 144px;
   max-width: 144px;
-  background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+  /*background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);*/
+  background: #FFFFFF;
   border-radius: 50% !important;
   object-fit: cover;
   box-shadow: 0 0 30px 0 rgba(0, 0, 0, 0.25);
