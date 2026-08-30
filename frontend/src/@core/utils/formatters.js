@@ -107,10 +107,11 @@ export const formatDateSimple = value => {
 
   const swedishShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
-  // Keep date-only values timezone-agnostic to avoid shifting one day backwards.
+  // Keep date-like values timezone-agnostic to avoid shifting one day backwards.
+  // This also covers API values like 2026-08-01T00:00:00.000000Z.
   if (typeof value === 'string') {
     const normalizedValue = value.trim()
-    const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/)
 
     if (dateOnlyMatch) {
       const [, year, month, day] = dateOnlyMatch
