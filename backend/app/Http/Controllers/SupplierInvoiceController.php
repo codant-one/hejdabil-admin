@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\Config;
 use App\Models\Setting;
 use App\Models\SupplierActivity;
+use App\Models\Alert;
 
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
@@ -265,6 +266,19 @@ class SupplierInvoiceController extends Controller
             $oldStateId = $billing->state_id;
             $billing->state_id = ($billing->state_id === 4 || $billing->state_id === 8) ? 7 : 4;
             $billing->update();
+
+            $alert = Alert::withTrashed()
+                          ->where('supplier_id', $billing->supplier_id)
+                          ->where('alert_id', $billing->id)
+                          ->first();
+
+            if (in_array((int) $billing->state_id, [4, 8], true)) { // sin pagar o vencida
+                if ($alert && $alert->trashed())
+                    $alert->restore();
+            } else { // pagada
+                if ($alert && !$alert->trashed())
+                    $alert->delete();
+            }       
 
            SupplierActivity::createActivity([
                 'entity_id' => $billing->id,

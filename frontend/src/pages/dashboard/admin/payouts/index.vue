@@ -20,6 +20,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 import bilflogg from "@/assets/images/bilflogg_img.png";
 import swish from "@/assets/images/swish_img.svg";
@@ -1173,6 +1174,8 @@ const onDatePickerUpdate = value => {
     </VSnackbar>
 
     <VCard class="card-fill">
+      <AlertsList />
+      
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[

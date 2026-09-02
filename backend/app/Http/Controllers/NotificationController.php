@@ -76,7 +76,7 @@ class NotificationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(NotificationRequest $request)
+    public function store(Request $request)
     {
         //
     }
@@ -92,7 +92,7 @@ class NotificationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(NotificationRequest $request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         //
     }

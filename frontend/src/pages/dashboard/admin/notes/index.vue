@@ -22,6 +22,7 @@ import AddNewNoteMobile from "./AddNewNoteMobile.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 const notesStores = useNotesStores()
 const configsStores = useConfigsStores();
@@ -1035,6 +1036,7 @@ onBeforeUnmount(() => {
     </VSnackbar>
 
     <VCard class="card-fill">
+      <AlertsList />
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[

@@ -21,6 +21,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 const { width: windowWidth } = useWindowSize();
 
@@ -929,6 +930,8 @@ onBeforeUnmount(() => {
     <Toaster />
 
     <VCard class="card-fill">
+      <AlertsList />
+      
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[

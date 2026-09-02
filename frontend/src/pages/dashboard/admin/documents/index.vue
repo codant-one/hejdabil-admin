@@ -18,6 +18,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 const documentsStores = useSignableDocumentsStores()
 const clientsStores = useClientsStores()
@@ -1445,6 +1446,8 @@ onBeforeUnmount(() => {
     <Toaster />
 
     <VCard class="card-fill">
+      <AlertsList />
+      
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[

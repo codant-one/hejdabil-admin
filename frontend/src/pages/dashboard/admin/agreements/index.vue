@@ -17,6 +17,7 @@ import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import AlertsList from '@/components/common/AlertsList.vue'
 import AgreementsApi from '@/api/agreements'
 
 const { width: windowWidth } = useWindowSize();
@@ -545,7 +546,6 @@ async function fetchData(cleanFilters = false) {
   const agreementSmsVisibilityPromise = loadAgreementSmsActionVisibility(userData.value)
 
   await agreementsStores.fetchAgreements(data)
-
   agreements.value = Array.isArray(agreementsStores.getAgreements)
     ? agreementsStores.getAgreements
     : []
@@ -1573,6 +1573,8 @@ onBeforeUnmount(() => {
     <Toaster />
 
     <VCard class="card-fill">
+      <AlertsList />
+
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[

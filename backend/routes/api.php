@@ -44,7 +44,8 @@ use App\Http\Controllers\{
     SmsMessageController,
     ActivitiesController,
     PlanController,
-    SupplierInvoiceController
+    SupplierInvoiceController,
+    AlertController
 };
 
 use App\Http\Controllers\Services\{
@@ -118,6 +119,7 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     Route::apiResource('activities', ActivitiesController::class);
     Route::apiResource('plans', PlanController::class);
     Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
+    Route::apiResource('alerts', AlertController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {

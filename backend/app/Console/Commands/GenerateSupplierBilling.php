@@ -20,6 +20,7 @@ use App\Models\Invoice;
 use App\Models\SettingColor;
 use App\Models\SmsMessage;
 use App\Models\Notification;
+use App\Models\Alert;
 
 class GenerateSupplierBilling extends Command
 {
@@ -422,6 +423,18 @@ class GenerateSupplierBilling extends Command
         // Notificación privada
         $evento = new UserNotificationEvent($message, $billing->supplier->user_id);
         Event::dispatch($evento);
+
+        // Crear alerta 
+        Alert::create([
+            'user_id' => $billing->supplier->user_id,
+            'supplier_id' => $billing->supplier->id,
+            'alert_id' => $billing->id,
+            'title' => 'Du har en förfallen faktura',
+            'subtitle' => 'Din faktura till Bilflogg har förfallit och behöver betalas så snart som möjligt för att undvika att ditt abonnemang och tillgång till tjänsten pausas. <br>Du hittar fakturan under <strong>Inställningar</strong> i Bilflogg samt i din e-post.',
+            'color' => 'error',
+            'icon' => 'custom-alert-pending',
+            'route' => $route
+        ]);
     }
 
     private function sendEmail(SupplierInvoice $billing): void
