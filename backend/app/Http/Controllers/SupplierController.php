@@ -325,7 +325,7 @@ class SupplierController extends Controller
         }
     }
 
-     /**
+    /**
      * Update the specified resource in storage.
      */
     public function update(SupplierRequest $request, $id): JsonResponse
@@ -386,7 +386,7 @@ class SupplierController extends Controller
         }
     }
 
-     /**
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
