@@ -12,6 +12,7 @@ import { themeConfig } from '@themeConfig'
 import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import html2pdf from 'html2pdf.js'
 import show from "@/components/vehicles/show.vue";
 import showMobile from "@/components/vehicles/showMobile.vue";
@@ -463,8 +464,8 @@ const seeClient = clientData => {
   router.push({ name : 'dashboard-admin-clients-id', params: { id: clientData.id } })
 }
 
-const openLink = function (vehicleData) {
-  window.open(themeConfig.settings.urlStorage + vehicleData.file);
+const openLink = async function (vehicleData) {
+  await openOrDownloadFile(themeConfig.settings.urlStorage + vehicleData.file);
 };
 
 const download = async(vehicle) => {

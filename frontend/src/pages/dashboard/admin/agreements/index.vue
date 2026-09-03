@@ -11,6 +11,7 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { useRoute } from 'vue-router'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
@@ -1199,8 +1200,8 @@ const setSkapa = (newSkapa) => {
   addAgreements();
 };
 
-const openLink = function (agreementData) {
-  window.open(themeConfig.settings.urlStorage + agreementData.file)
+const openLink = async function (agreementData) {
+  await openOrDownloadFile(themeConfig.settings.urlStorage + agreementData.file)
 }
 
 const goToTracker = (agreementData) => {

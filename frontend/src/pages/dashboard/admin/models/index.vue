@@ -4,6 +4,7 @@ import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { useModelsStores } from '@/stores/useModels'
 import { excelParser } from '@/plugins/csv/excelParser'
+import { openExternalLink } from '@/composables/useExternalLink'
 import AddNewModelDrawer from './AddNewModelDrawer.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
@@ -201,8 +202,8 @@ const submitUpdate = modelData => {
     }, 3000)
 }
 
-const seeUrl = (brand) => {
-  window.open(brand.url, '_blank');
+const seeUrl = async (brand) => {
+  await openExternalLink(brand.url);
 }
 
 const downloadCSV = async () => {

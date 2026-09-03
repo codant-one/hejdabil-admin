@@ -13,6 +13,7 @@ import { themeConfig } from '@themeConfig'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import logo from "@images/logos/bilflogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
@@ -627,8 +628,8 @@ const handleSendDocument = () => {
   })
 }
 
-const openLink = function (documentData) {
-  window.open(themeConfig.settings.urlStorage + documentData.file)
+const openLink = async function (documentData) {
+  await openOrDownloadFile(themeConfig.settings.urlStorage + documentData.file)
 }
 
 const downloadCSV = async () => {

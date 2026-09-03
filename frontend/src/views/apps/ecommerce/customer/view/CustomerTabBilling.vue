@@ -6,6 +6,7 @@ import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import { emailValidator } from '@/@core/utils/validators'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import refreshAvatar from "@/assets/images/avatars/refresh-2.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
@@ -221,11 +222,11 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
-const openBillingPdf = billing => {
+const openBillingPdf = async billing => {
   if (!billing?.file)
     return
 
-  window.open(themeConfig.settings.urlStorage + billing.file)
+  await openOrDownloadFile(themeConfig.settings.urlStorage + billing.file)
 }
 
 const showBilling = (billingData) => {
