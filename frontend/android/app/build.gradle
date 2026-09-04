@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "com.bilflogg.app"
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdk 36
     defaultConfig {
         applicationId "com.bilflogg.app"
         minSdkVersion rootProject.ext.minSdkVersion
