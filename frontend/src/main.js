@@ -1,20 +1,26 @@
 /* eslint-disable import/order */
-import '@/@iconify/icons-bundle'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
+import { themeConfig } from '@themeConfig'
+import { StatusBar, Style } from '@capacitor/status-bar'
+import { SplashScreen } from '@capacitor/splash-screen'
+import { Capacitor } from '@capacitor/core'
+import { loadFonts } from '@/plugins/webfontloader'
+import { abilitiesPlugin } from '@casl/vue'
+import { App as CapacitorApp } from '@capacitor/app'
+
 import App from '@/App.vue'
 import ability from '@/plugins/casl/ability'
 import layoutsPlugin from '@/plugins/layouts'
 import vuetify from '@/plugins/vuetify'
-import { loadFonts } from '@/plugins/webfontloader'
 import router from '@/router'
 import axios from '@axios'
-import { abilitiesPlugin } from '@casl/vue'
+import mitt from 'mitt';
+import VueClipboard from 'vue-clipboard2'
+
+import '@/@iconify/icons-bundle'
 import '@core/scss/template/index.scss'
 import '@styles/styles.scss'
-import mitt from 'mitt';
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import VueClipboard from 'vue-clipboard2'
-import { themeConfig } from '@themeConfig'
 
 // Importa las librerías
 import Echo from 'laravel-echo';
@@ -53,6 +59,15 @@ if (isUnloadBlockedByPolicy() && Pusher?.Runtime?.addUnloadListener) {
 // desde Preferences (Capacitor) ya haya terminado antes de que se lea
 // accessToken/user_data por primera vez.
 async function bootstrap() {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await StatusBar.setStyle({ style: Style.Dark })
+      await StatusBar.setBackgroundColor({ color: '#1C2925' })
+    } catch (e) {
+      console.warn('[StatusBar] No se pudo configurar', e)
+    }
+  }
+
   // 1. Si corre dentro de la app nativa, restaura accessToken/user_data/
   //    userAbilities desde Preferences hacia localStorage (si localStorage
   //    estuviera vacío). En web normal esto no hace nada.
@@ -178,6 +193,22 @@ async function bootstrap() {
 
   // Mount vue app
   app.mount('#app')
+
+  if (Capacitor.isNativePlatform()) {
+    const ROOT_ROUTE_NAMES = ['login', 'dashboard-panel']
+
+    CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      const currentRouteName = router.currentRoute.value.name
+
+      if (ROOT_ROUTE_NAMES.includes(currentRouteName) || !canGoBack) {
+        CapacitorApp.exitApp()
+      } else {
+        router.back()
+      }
+    })
+
+    await SplashScreen.hide()
+  }
 }
 
 bootstrap()

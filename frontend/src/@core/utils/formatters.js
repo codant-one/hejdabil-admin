@@ -6,14 +6,14 @@ export const getRemoteFileSize = async filePath => {
 
     try {
         const url = openStorageFileUrl(filePath)
-        const response = await fetch(url, { method: 'HEAD' })
+        const proxyUrl = `${themeConfig.settings.urlbase}proxy-image?url=${url}`
+        const response = await fetch(proxyUrl)
+
         if (!response.ok) return null
 
-        const contentLength = response.headers.get('content-length')
-        if (!contentLength) return null
+        const blob = await response.blob()
 
-        const bytes = Number(contentLength)
-        return Number.isFinite(bytes) ? bytes : null
+        return Number.isFinite(blob.size) ? blob.size : null
     } catch {
         return null
     }

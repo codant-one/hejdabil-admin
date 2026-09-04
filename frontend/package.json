@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@capacitor/android": "^8.5.1",
+        "@capacitor/app": "^8.1.1",
         "@capacitor/browser": "^8.0.4",
         "@capacitor/cli": "^8.5.1",
         "@capacitor/core": "^8.5.1",
@@ -18,6 +19,8 @@
         "@capacitor/ios": "^8.5.1",
         "@capacitor/preferences": "^8.0.1",
         "@capacitor/share": "^8.0.1",
+        "@capacitor/splash-screen": "^8.0.2",
+        "@capacitor/status-bar": "^8.0.3",
         "@casl/ability": "^6.2.0",
         "@casl/vue": "^2.2.0",
         "@floating-ui/dom": "1.0.4",
@@ -71,6 +74,7 @@
     },
     "devDependencies": {
         "@antfu/eslint-config-vue": "^0.31.0",
+        "@capacitor/assets": "^3.0.5",
         "@fullcalendar/core": "^5.11.3",
         "@fullcalendar/daygrid": "^5.11.3",
         "@fullcalendar/interaction": "^5.11.3",
