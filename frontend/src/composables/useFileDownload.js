@@ -9,8 +9,17 @@
 import { Capacitor } from '@capacitor/core'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
+import { themeConfig } from '@themeConfig'
 
 const isNative = () => Capacitor.isNativePlatform()
+
+/**
+ * Los archivos bajo /storage/ se sirven estáticos (Nginx/Apache), sin pasar
+ * por el kernel HTTP de Laravel, así que el middleware de CORS nunca los toca.
+ * Por eso, dentro de la app nativa, pedimos el archivo a través del endpoint
+ * proxy-image (que sí pasa por Laravel) en vez de hacer fetch directo a storage.
+ */
+const toProxiedUrl = url => `${themeConfig.settings.urlbase}proxy-image?url=${url}`
 
 function getFileNameFromUrl(url) {
   try {
@@ -86,7 +95,7 @@ export async function openOrDownloadFile(url, fileName) {
 
   const finalName = fileName || getFileNameFromUrl(url)
 
-  const response = await fetch(url)
+  const response = await fetch(toProxiedUrl(url))
   if (!response.ok) {
     throw new Error(`No se pudo descargar el archivo (status ${response.status})`)
   }
