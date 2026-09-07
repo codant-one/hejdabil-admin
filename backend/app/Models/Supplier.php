@@ -488,7 +488,6 @@ class Supplier extends Model
         $supplier->grace_end_date = $grace_end_date;
         $supplier->save();
 
-
         if (Auth::user()->getRoleNames()[0] === 'Supplier') {//solicito la cancelación el propio proveedor
             //Send mail to Admin
             $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
@@ -550,6 +549,35 @@ class Supplier extends Model
                 $email,
                 $subject
             );
+        } else {// cancela el administrador
+            
+            $email = $supplier->user->email;
+            $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+
+            $subject = 'Din uppsägning är bekräftad';
+            $text_primary = "Vi bekräftar att uppsägningen av din prenumeration hos Bilflogg är registrerad och bekräftad.<br>";
+            $text_primary .= "Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten fortsätter därför som vanligt under uppsägningstiden.<br><br>";
+            $text_primary .= "Plan: " . $plan . "<br>";
+            $text_primary .= "Uppsägning bekräftad: " . $cancellation_date->format('Y-m-d') . "<br>";
+            $text_primary .= "Prenumerationen avslutas: " . $grace_end_date->format('Y-m-d') . "<br>";
+            $text_secondary  = "Du har fortsatt tillgång till tjänsten fram till slutdatumet. Därefter avslutas prenumerationen och tillgången till tjänsten upphör.<br>";
+            $text_secondary .= "Har du några frågor kring din uppsägning är du alltid välkommen att kontakta oss.<br>";
+
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
+
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.suppliers.notifications',
+                $data,
+                $email,
+                $subject
+            );
         }
 
         return $supplier;
@@ -592,7 +620,7 @@ class Supplier extends Model
     }
 
     public static function reactiveSubscription($id) {
-        $supplier = self::where('id', $id)->first();
+        $supplier = self::withTrashed()->where('id', $id)->first();
         $supplier->is_subscription_active = 1;
         $supplier->cancellation_date = null;
         $supplier->grace_end_date = null;
