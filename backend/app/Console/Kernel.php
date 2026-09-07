@@ -38,6 +38,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('suppliers:cancel-plan')
                  ->daily()
                  ->at('00:00');
+
+        $schedule->command('alerts:generate')
+                 ->daily()
+                 ->at('00:00');
     }
 
     /**

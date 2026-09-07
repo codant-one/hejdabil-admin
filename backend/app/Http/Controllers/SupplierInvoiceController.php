@@ -267,18 +267,22 @@ class SupplierInvoiceController extends Controller
             $billing->state_id = ($billing->state_id === 4 || $billing->state_id === 8) ? 7 : 4;
             $billing->update();
 
-            $alert = Alert::withTrashed()
+            $alerts = Alert::withTrashed()
                           ->where('supplier_id', $billing->supplier_id)
                           ->where('alert_id', $billing->id)
-                          ->first();
+                          ->get();
 
-            if (in_array((int) $billing->state_id, [4, 8], true)) { // sin pagar o vencida
-                if ($alert && $alert->trashed())
-                    $alert->restore();
-            } else { // pagada
-                if ($alert && !$alert->trashed())
-                    $alert->delete();
-            }       
+            foreach ($alerts as $alert) {
+                $alert = Alert::withTrashed()->find($alert->id);
+                
+                if (in_array((int) $billing->state_id, [4, 8], true)) { // sin pagar o vencida
+                    if ($alert && $alert->trashed())
+                        $alert->restore();
+                } else { // pagada
+                    if ($alert && !$alert->trashed())
+                        $alert->delete();
+                } 
+            }
 
            SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
