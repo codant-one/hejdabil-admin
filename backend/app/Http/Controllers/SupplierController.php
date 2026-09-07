@@ -1900,7 +1900,7 @@ class SupplierController extends Controller
     public function reactiveSubscription($id): JsonResponse
     {
         try {
-            $supplier = Supplier::find($id);
+            $supplier = Supplier::withTrashed()->find($id);
 
             if (!$supplier) {
                 return response()->json([
@@ -1910,7 +1910,29 @@ class SupplierController extends Controller
                 ], 404);
             }
 
+            //NUEVO
+            // como inactivamos su uso con la nueva modalidad, debemos activar de nuevo
+            if ((int) $supplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $supplier->boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $supplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
+
             $supplier->reactiveSubscription($id);
+            //NUEVO, como inactivamos su uso con la nueva modalidad, debemos activar de nuevo
+            $supplier->activateSupplier($id);
+
             $supplier->refresh()->load(['user', 'state', 'plan']);
 
             event(new ForceLogoutUserEvent($supplier->user->id));

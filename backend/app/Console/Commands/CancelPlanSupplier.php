@@ -64,6 +64,10 @@ class CancelPlanSupplier extends Command
             $supplier->is_subscription_active = 0;//desactiva la suscripción
             $supplier->save();
 
+            //NUEVO OJO
+            //inactivo, ya no usa mas la plataforma, se elimina el proveedor y sus usuarios
+            $supplier->deleteSupplier($supplier->id);
+
             $email = $supplier->user->email;
             $subject = 'Ditt abonnemang hos Bilflogg har avslutats';
             $text_primary = "Vi vill informera dig om att din uppsägningstid på tre månader nu har löpt ut och att ditt abonnemang hos Bilflogg därmed har avslutats.<br>";

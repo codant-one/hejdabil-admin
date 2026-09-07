@@ -699,6 +699,7 @@ const reactiveSubscription = async () => {
                         class="d-flex justify-center"
                         hide-details
                         inset
+                        :readonly="supplier.cancellation_date !== null"
                         @update:modelValue="showDeleteDialog(supplier)"
                       />
                       <VSwitch
@@ -706,7 +707,8 @@ const reactiveSubscription = async () => {
                         v-model="supplierSwitchStates[supplier.id]"
                         class="d-flex justify-center"
                         hide-details
-                        inset                
+                        inset             
+                        :readonly="supplier.cancellation_date !== null"   
                         @update:modelValue="showActivateDialog(supplier)"
                       />
                     </div>
@@ -812,6 +814,7 @@ const reactiveSubscription = async () => {
                     class="d-flex justify-center"
                     hide-details
                     inset
+                    :readonly="supplier.cancellation_date !== null"
                     @update:modelValue="showDeleteDialog(supplier)"
                   />
                   <VSwitch
@@ -820,6 +823,7 @@ const reactiveSubscription = async () => {
                     class="d-flex justify-center"
                     hide-details
                     inset                
+                    :readonly="supplier.cancellation_date !== null"
                     @update:modelValue="showActivateDialog(supplier)"
                   />
                 </div>
