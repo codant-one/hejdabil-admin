@@ -14,6 +14,13 @@ export default [
     subject: 'company'
   },
   { 
+    title: 'Plan', 
+    icon: { icon: 'custom-card-back' },
+    to: 'dashboard-settings-plan', 
+    action: 'view', 
+    subject: 'plan'
+  },
+  { 
     title: 'Säkerhet', 
     icon: { icon: 'custom-password-outlined' },
     to: 'dashboard-settings-security', 

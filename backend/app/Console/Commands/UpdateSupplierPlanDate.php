@@ -44,30 +44,34 @@ class UpdateSupplierPlanDate extends Command
      */
     public function handle()
     {
-        $today = now();
+        $today = now()->startOfDay();
 
         $suppliers = Supplier::with('plan')
             ->where('state_id', 2)// active suppliers
             ->whereNotNull('start_date')
             ->whereNotNull('end_date')
-            ->whereDate('end_date', $today) // end_date is in the past or today
+            ->whereDate('end_date', '<=', $today) // end_date is in the past or today
             ->get();
 
-        $suppliers->map(function ($supplier) {
+        $suppliers->map(function ($supplier) use ($today) {
 
             $startDate = Carbon::parse($supplier->start_date);
-            $nextStartDate = $supplier->is_yearly
-                ? $startDate->copy()->addYear()
-                : $startDate->copy()->addMonth();
-
             $endDate = Carbon::parse($supplier->end_date);
-            $nextEndDate = $supplier->is_yearly
-                ? $endDate->copy()->addYear()
-                : $endDate->copy()->addMonth();
 
-            $supplier->start_date = $nextStartDate;
-            $supplier->end_date = $nextEndDate;
-            $supplier->next_billing_date = $nextEndDate;
+            // Advance period repeatedly to catch up suppliers that are multiple cycles behind.
+            while ($endDate->lte($today)) {
+                if ($supplier->is_yearly) {
+                    $startDate->addYear();
+                    $endDate->addYear();
+                } else {
+                    $startDate->addMonth();
+                    $endDate->addMonth();
+                }
+            }
+
+            $supplier->start_date = $startDate;
+            $supplier->end_date = $endDate;
+            $supplier->next_billing_date = $endDate;
             $supplier->save();
         });
 

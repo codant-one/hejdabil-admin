@@ -4,41 +4,22 @@ import SupplierInvoices from '@/api/supplierInvoices'
 export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
     state: () => ({
         supplierInvoices: {},
-        suppliers: {},
-        clients: {},
         loading: false,
         last_page: 1,
         supplierInvoicesTotalCount: 6,
-        totalSum: 0,
-        totalTax: 0,
-        totalNeto: 0,
-        sum: 0,
-        tax: 0,
-        totalPending: 0,
-        totalPaid: 0,
-        totalExpired: 0,
-        pendingTax: 0,
-        paidTax: 0,
-        expiredTax: 0,
-        state_id: null
+        supplier_info: null,
     }),
     getters:{
         getSupplierInvoices(){
             return this.supplierInvoices
         },
-        getStateId(){
-            return this.state_id
+        getSupplierInfo(){
+            return this.supplier_info
         }
     },
     actions: {
         setLoading(payload) {
             this.loading = payload
-        },
-        setStateId(state_id) {
-            this.state_id = state_id
-        },
-        cleanData() {
-            this.state_id = null
         },
         fetchSupplierInvoices(params) {
             this.setLoading(true)
@@ -48,9 +29,7 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.supplierInvoices = response.data.data.supplierInvoices.data
                     this.last_page = response.data.data.supplierInvoices.last_page
                     this.supplierInvoicesTotalCount = response.data.data.supplierInvoicesTotalCount
-                    this.totalSum = response.data.data.totalSum
-                    this.totalTax = response.data.data.totalTax
-                    this.totalNeto = response.data.data.totalNeto
+                    this.supplier_info = response.data.data.supplier
                 })
                 .catch(error => console.log(error))
                 .finally(() => {
@@ -122,10 +101,23 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                     this.setLoading(false)
                 })  
         },
-        reminder(id) {
+        replaceFile(data) {
             this.setLoading(true)
 
-            return SupplierInvoices.reminder(id)
+            return SupplierInvoices.replaceFile(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        all(params) {
+            this.setLoading(true)
+
+            return SupplierInvoices.all(params)
                 .then((response) => {
                     return Promise.resolve(response)
                 })
@@ -133,6 +125,19 @@ export const useSupplierInvoicesStores = defineStore('supplierInvoices', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        sendBilling(data) {
+            this.setLoading(true)
+            
+            return SupplierInvoices.sendBilling(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
     }
 })

@@ -112,6 +112,11 @@ const form = ref({
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
+const isUserRole = () => role.value === 'User'
+const hasInactiveSupplierSubscription = () => {
+  return role.value === 'Supplier' && Number(userData.value?.supplier?.is_subscription_active) === 0
+}
+const isDisabled = () => isUserRole() || hasInactiveSupplierSubscription()
 
 const brandColorOptions = [
   '#C1272D',
@@ -1223,10 +1228,10 @@ onBeforeUnmount(() => {
 
                 <div class="logo-store">
                   <VBtn
-                    v-if="role !== 'User'"
+                    v-if="role !== 'User' && !isDisabled()"
                     type="button"
                     :block="windowWidth < 1024"
-                    class="logo-button btn-ghost btn-white-logo"
+                    class="logo-button btn-ghost btn-white-logo-NO"
                     :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                     @click="isConfirmChangeLogoVisible = true"
                   >
@@ -1256,7 +1261,7 @@ onBeforeUnmount(() => {
                     :key="color"
                     type="button"
                     class="brand-color-grid__item"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :class="{
                       'brand-color-grid__item--selected': isBrandPaletteReady && selectedBrandColor === color,
                       'brand-color-grid__item--customized': isBrandPaletteReady && color === customBrandColorOption && !!savedBrandColor,
@@ -1290,7 +1295,7 @@ onBeforeUnmount(() => {
                     :key="color"
                     type="button"
                     class="brand-color-grid__item"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :class="{
                       'brand-color-grid__item--selected': isBrandPaletteReady && selectedThemeColor === color,
                     }"
@@ -1337,7 +1342,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
                   <VTextField
                     v-model="form.company"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1376,7 +1381,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                   <VTextField
                     v-model="form.address"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1385,7 +1390,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
                   <VTextField
                     v-model="form.postal_code"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1394,7 +1399,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                   <VTextField
                     v-model="form.street"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1404,7 +1409,7 @@ onBeforeUnmount(() => {
                   <VTextField
                     v-model="form.phone"
                     class="always-show-prefix"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="companyPhoneRules"
                     :min-length="companyPhoneDigits"
                     :maxlength="companyPhoneDigits"
@@ -1432,7 +1437,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Hemsida" />
                   <VTextField
                     v-model="form.link"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[urlValidator]"
                   />
                 </div>
@@ -1441,7 +1446,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bank*" />
                   <VTextField
                     v-model="form.bank"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1450,7 +1455,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankgiro" />
                   <VTextField
                     v-model="form.iban"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                   />
                 </div>
 
@@ -1458,7 +1463,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontonummer*" />
                   <VTextField
                     v-model="form.account_number"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[requiredValidator]"
                   />
                 </div>
@@ -1467,7 +1472,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Iban nummer" />
                   <VTextField
                     v-model="form.iban_number"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                   />
                 </div>
 
@@ -1475,7 +1480,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="BIC" />
                   <VTextField
                     v-model="form.bic"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                   />
                 </div>
 
@@ -1483,7 +1488,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Plusgiro" />
                   <VTextField
                     v-model="form.plus_spin"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                   />
                 </div>
 
@@ -1491,7 +1496,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Swish" />
                   <VTextField
                     v-model="form.swish"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                     :rules="[phoneValidator]"
                   />
                 </div>
@@ -1500,7 +1505,7 @@ onBeforeUnmount(() => {
                   <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vat" />
                   <VTextField
                     v-model="form.vat"
-                    :disabled="role === 'User'"
+                    :disabled="isDisabled()"
                   />
                 </div>
 
@@ -1534,7 +1539,7 @@ onBeforeUnmount(() => {
                         type="button"
                         class="btn-light w-auto"
                         block
-                        :disabled="role === 'User'"
+                        :disabled="isDisabled()"
                         @click="isConfirmChangeSignatureVisible = true"
                       >
                         <VIcon icon="custom-upload" size="24" />
@@ -1543,7 +1548,7 @@ onBeforeUnmount(() => {
 
                       <VBtn
                         type="button"
-                        :disabled="role === 'User'"
+                        :disabled="isDisabled()"
                         class="btn-ghost w-auto"
                         @click="openSignaturePadDialog"
                       >
@@ -1553,7 +1558,7 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
 
-                  <div v-if="role !== 'User'" class="p-0 d-flex w-100">
+                  <div v-if="role !== 'User' && !isDisabled()" class="p-0 d-flex w-100">
                     <VBtn
                       type="submit"
                       :block="windowWidth < 1024"
@@ -2158,7 +2163,8 @@ onBeforeUnmount(() => {
   width: 144px;
   height: 144px;
   max-width: 144px;
-  background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+  /*background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);*/
+  background: #FFFFFF;
   border-radius: 50% !important;
   object-fit: cover;
   box-shadow: 0 0 30px 0 rgba(0, 0, 0, 0.25);

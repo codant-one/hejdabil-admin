@@ -47,6 +47,7 @@ const vehicleFilters = ref({
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
+const plan_id = ref('')
 
 const advisor = ref({
   type: '',
@@ -144,6 +145,7 @@ async function fetchData() {
   name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
 
   role.value = userDataJ.value.roles[0].name
+  plan_id.value = role.value === 'Supplier' ? userDataJ.value.supplier.plan_id : null
 
   if (role.value === 'Supplier' || role.value === 'User') {
     await loadProfit()
@@ -501,7 +503,7 @@ onBeforeUnmount(() => {
 
           <div
             class="dashboard-grid__item dashboard-grid__item--md-12" 
-            v-if="$can('view','team-reports') && canWithPlan('view', 'my-team')"
+            v-if="$can('view','team-reports') && canWithPlan('view', 'my-team') && plan_id === 2"
           >
             <Team
               :team-members="team?.teamMembers"

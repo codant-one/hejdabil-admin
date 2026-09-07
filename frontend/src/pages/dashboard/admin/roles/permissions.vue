@@ -152,6 +152,11 @@ const closeModal = function(){
                                 label="view sms"
                                 value="view sms"
                             />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view plan"
+                                value="view plan"
+                            />
                         </div>
                     </div>
                 </VCardText>

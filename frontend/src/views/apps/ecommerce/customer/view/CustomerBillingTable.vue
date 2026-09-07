@@ -1514,7 +1514,7 @@ onBeforeUnmount(() => {
                   <th scope="col" class="text-center">Status</th>
                   <th class="text-center" scope="col">Skickad</th>
                   <th scope="col">Skapad av</th>
-                  <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <!-- 👉 table body -->
@@ -1663,7 +1663,6 @@ onBeforeUnmount(() => {
                   <td
                     class="text-center"
                     style="width: 3rem"
-                    v-if="$can('edit', 'billings') || $can('delete', 'billings')"
                   >
                     <VMenu>
                       <template #activator="{ props }">
@@ -1701,7 +1700,7 @@ onBeforeUnmount(() => {
                         </VListItem>
                         <VListItem
                           v-if="
-                            $can('view', 'billings') &&
+                            $can('edit', 'billings') &&
                             (billing.state_id === 4 || billing.state_id === 8)
                           "
                           @click="editBilling(billing)"
@@ -1748,7 +1747,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Påminnelse</VListItemTitle>
                         </VListItem>
                         <VListItem
-                          v-if="$can('view', 'billings')"
+                          v-if="$can('edit', 'billings')"
                           @click="send(billing)"
                         >
                           <template #prepend>
@@ -1909,7 +1908,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                   </th>
                   <th scope="col"> Skapad Av </th>
-                  <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <!-- 👉 table body -->
@@ -2026,7 +2025,7 @@ onBeforeUnmount(() => {
                     </div>
                   </td> 
                   <!-- 👉 Actions -->
-                  <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')">      
+                  <td class="text-center" style="width: 3rem;">      
                     <VMenu>
                       <template #activator="{ props }">
                         <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -2076,7 +2075,7 @@ onBeforeUnmount(() => {
                           </template>
                           <VListItemTitle>Visa som PDF</VListItemTitle>
                         </VListItem>
-                        <VListItem v-if="$can('view','agreements') && agreement.token?.signature_status === 'signed'"
+                        <VListItem v-if="$can('edit','agreements') && agreement.token?.signature_status === 'signed'"
                           @click="send(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-send" class="mr-2" />
@@ -2490,7 +2489,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Duplicera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings') && selectedBillingForAction.state_id === 8"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 8"
             @click="sendReminder(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2499,7 +2498,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'billings')"
+            v-if="$can('edit', 'billings')"
             @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2560,7 +2559,7 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.token?.signature_status === 'signed'"
+          <VListItem v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'signed'"
             @click="send(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-send" class="mr-2" />

@@ -39,6 +39,12 @@ const is2faEnabled = ref(false)
 const qr = ref(null)
 const token = ref(null)
 
+const isUserRole = () => role.value === 'User'
+const hasInactiveSupplierSubscription = () => {
+  return role.value === 'Supplier' && Number(userData.value?.supplier?.is_subscription_active) === 0
+}
+const isDisabled = () => isUserRole() || hasInactiveSupplierSubscription()
+
 const isRequestOngoing = ref(false);
 const advisor = ref({
   type: '',
@@ -349,7 +355,7 @@ onBeforeUnmount(() => {
         <VCardText class="pb-0">
           <div 
             class="settings-layout pb-4" 
-            :class="role === 'Supplier' ? 'border-bottom-settings' : ''">
+            :class="role === 'Supplier' && !isDisabled() ? 'border-bottom-settings' : ''">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Tvåfaktorsautentisering (2FA)</span>
@@ -383,7 +389,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="pb-0" v-if="role === 'Supplier' && csrUrl !== null">
+        <VCardText class="pb-0" v-if="role === 'Supplier' && csrUrl !== null && !isDisabled()">
           <div class="settings-layout border-bottom-settings pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
@@ -435,7 +441,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText :class="windowWidth < 1024 ? '' : 'pb-0'" v-if="role === 'Supplier' && csrUrl !== null">
+        <VCardText :class="windowWidth < 1024 ? '' : 'pb-0'" v-if="role === 'Supplier' && csrUrl !== null && !isDisabled()">
           <div class="settings-layout">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">

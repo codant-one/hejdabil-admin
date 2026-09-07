@@ -51,6 +51,12 @@ const companyName = ref('')
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const isBillingPreviewReady = ref(false)
 
+const isUserRole = () => role.value === 'User'
+const hasInactiveSupplierSubscription = () => {
+  return role.value === 'Supplier' && Number(userData.value?.supplier?.is_subscription_active) === 0
+}
+const isDisabled = () => isUserRole() || hasInactiveSupplierSubscription()
+
 const advisor = ref({
   message: '',
   show: false,
@@ -476,7 +482,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'classic' }"
                   @click="selectedBillingTemplate = 'classic'"
                 >
@@ -488,7 +494,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-1' }"
                   @click="selectedBillingTemplate = 'modern-1'"
                 >
@@ -500,7 +506,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-2' }"
                   @click="selectedBillingTemplate = 'modern-2'"
                 >
@@ -512,7 +518,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
-                  :disabled="role === 'User'"
+                  :disabled="isDisabled()"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'compact' }"
                   @click="selectedBillingTemplate = 'compact'"
                 >
@@ -544,7 +550,7 @@ onBeforeUnmount(() => {
                     <VTextField
                       v-bind="numericTextFieldProps"
                       v-model="invoice_id"
-                      :disabled="role === 'User'"
+                      :disabled="isDisabled()"
                       :rules="[requiredValidator, ...minOneNumericRules]"
                       @input="invoice_id = normalizeNumericTextInput(invoice_id)"
                       @keydown="handleNumericTextFieldKeydown"
@@ -572,7 +578,7 @@ onBeforeUnmount(() => {
                     <VTextField
                       v-bind="numericTextFieldProps"
                       v-model="due_date"
-                      :disabled="role === 'User'"
+                      :disabled="isDisabled()"
                       :rules="[requiredValidator, ...minOneNumericRules]"
                       @input="due_date = normalizeNumericTextInput(due_date)"
                       @keydown="handleNumericTextFieldKeydown"
@@ -590,7 +596,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions"
-                      :disabled="role === 'User'"
+                      :disabled="isDisabled()"
                       :rules="[requiredValidator]"
                       readonly
                       class="terms-trigger-field"
@@ -617,7 +623,7 @@ onBeforeUnmount(() => {
               <div class="d-flex gap-4 align-start">
                 <VSwitch
                   v-model="automaticRemindersEnabled"
-                  :readonly="role === 'User'"
+                  :readonly="isDisabled()"
                   class="reminders-switch"
                   hide-details
                   inset
@@ -683,7 +689,7 @@ onBeforeUnmount(() => {
             <div class="settings-layout__content">
               <VRadioGroup
                 v-model="deliveryMethod"
-                :disabled="role === 'User'"
+                :disabled="isDisabled()"
                 hide-details
                 false-icon="custom-settings-checkbox-false"
                 true-icon="custom-settings-checkbox-true"
@@ -724,7 +730,7 @@ onBeforeUnmount(() => {
 
               <!-- 👉 Form Actions -->
               <div 
-                v-if="role !== 'User'"
+                v-if="role !== 'User' && !isDisabled()"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
               >

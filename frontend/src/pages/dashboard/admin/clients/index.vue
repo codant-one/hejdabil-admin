@@ -19,6 +19,7 @@ import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 const { width: windowWidth } = useWindowSize();
 
@@ -907,6 +908,8 @@ onBeforeUnmount(() => {
     </VSnackbar>      
 
     <VCard class="card-fill">
+      <AlertsList />
+      
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[
@@ -1088,7 +1091,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center">Adress</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
-            <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1209,7 +1212,6 @@ onBeforeUnmount(() => {
             <td
               class="text-center"
               style="width: 3rem"
-              v-if="$can('edit', 'clients') || $can('delete', 'clients')"
             >
               <VMenu>
                 <template #activator="{ props }">

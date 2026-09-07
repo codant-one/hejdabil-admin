@@ -492,7 +492,7 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td width="30%">Leverantörer:</td>
+                                                    <td width="30%">Leverantörer nr:</td>
                                                     <td>{{ $billing->supplier_id }}</td>
                                                 </tr>
                                                 <tr>
@@ -518,7 +518,7 @@
                                         <td style="width: 16px;"></td>
                                         <td width="35%" class="data-from card-classic" style="vertical-align: top;">
                                             <h3 class="m-0 title-classic" style="text-align: right;">
-                                                {{ $billing->supplier->user->name }} {{ $billing->supplier->user->last_name }}
+                                                {{ $billing->supplier->user->userDetail->company }}
                                             </h3>
                                             <div style="text-align: right;" class="mt-5 number-invoice">
                                                 <span class="number-invoice" style="line-height: 100%">

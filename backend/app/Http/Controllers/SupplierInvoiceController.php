@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Models\Config;
 use App\Models\Setting;
 use App\Models\SupplierActivity;
+use App\Models\Alert;
 
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
@@ -73,11 +75,20 @@ class SupplierInvoiceController extends Controller
                 $supplierInvoices = $query->paginate($limit);
             }
           
+            $supplier = $request->supplier_id
+                ? Supplier::with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email')->withTrashed()])
+                    ->withTrashed()
+                    ->find($request->supplier_id)
+                : null;
+
+            $supplier->supplier_name = trim(($supplier->user->name ?? '') . ' ' . ($supplier->user->last_name ?? ''));
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'supplierInvoices' => $supplierInvoices,
-                    'supplierInvoicesTotalCount' => $supplierInvoices->total()
+                    'supplierInvoicesTotalCount' => $supplierInvoices->total(),
+                    'supplier' => $supplier
                 ]
             ]);
 
@@ -95,7 +106,36 @@ class SupplierInvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+
+            $supplierInvoice = SupplierInvoice::createBilling($request);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $supplierInvoice->id,
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'create_suppliers_invoices',
+                'title' => 'Faktura #'.$supplierInvoice->invoice_id.' - tillagd',
+                'description' => 'En ny faktura har lagts till.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/suppliers/billings/'.$supplierInvoice->id,
+                'metadata' => json_encode([
+                    'billing_id' => $supplierInvoice->id,
+                    'new_values' => $this->billingActivityValues($supplierInvoice),
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'billing' => SupplierInvoice::with('state')->find($supplierInvoice->id)
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -103,7 +143,42 @@ class SupplierInvoiceController extends Controller
      */
     public function show($id)
     {
-        //
+        try {
+
+            $supplierInvoice = 
+                SupplierInvoice::with([
+                    'supplier' => function($query) {
+                        $query->withTrashed()
+                            ->with(['user' => function($query) {
+                                $query->withTrashed();
+                            }]);
+                    },
+                    'supplier.user.userDetail',
+                    'state',
+                    'user.userDetail'
+                ])->find($id);
+
+            if (!$supplierInvoice)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'supplierInvoice' => $supplierInvoice
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
       /**
@@ -111,7 +186,60 @@ class SupplierInvoiceController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        //
+         try {
+
+            $billing = SupplierInvoice::with(['supplier', 'user'])->find($id);
+        
+            if (!$billing)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+
+            $fields = [
+                'invoice_id', 'invoice_date', 'due_date',
+                'payment_terms', 'terms_and_conditions', 'billing_period',
+                'subtotal', 'tax', 'total', 'rabatt', 'discount',
+                'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
+                'amount_tax', 'sent_at'
+            ];
+
+            $oldValues = $this->billingActivityValues($billing);
+
+            $billing = $billing->updateBilling($request, $billing);
+
+            $newValues = $this->billingActivityValues($billing);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'update_suppliers_invoices',
+                'title' => 'Faktura #'.$billing->invoice_id.' - uppdaterad',
+                'description' => 'Fakturan har uppdaterats.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/suppliers/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'billing' => SupplierInvoice::with('state')->find($billing->id)
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -139,20 +267,37 @@ class SupplierInvoiceController extends Controller
             $billing->state_id = ($billing->state_id === 4 || $billing->state_id === 8) ? 7 : 4;
             $billing->update();
 
-           /* SupplierActivity::createActivity([
+            $alerts = Alert::withTrashed()
+                          ->where('supplier_id', $billing->supplier_id)
+                          ->where('alert_id', $billing->id)
+                          ->get();
+
+            foreach ($alerts as $alert) {
+                $alert = Alert::withTrashed()->find($alert->id);
+                
+                if (in_array((int) $billing->state_id, [4, 8], true)) { // sin pagar o vencida
+                    if ($alert && $alert->trashed())
+                        $alert->restore();
+                } else { // pagada
+                    if ($alert && !$alert->trashed())
+                        $alert->delete();
+                } 
+            }
+
+           SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'supplier_invoices',
-                'action_type' => 'update_supplier_invoice_state',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'update_suppliers_invoices_state',
                 'title' => 'Faktura #'.$billing->invoice_id.' - ' . ($billing->state_id == 7 ? 'betald' : 'obetald'),
                 'description' => $billing->state_id == 7 ? 'Markerades som betald.' : 'Markerades som obetald.',
                 'icon' => 'custom-facture',
-                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'route' => '/dashboard/admin/suppliers/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
                     'old_values' => ['state_id' => $oldStateId],
                     'new_values' => ['state_id' => $billing->state_id]
                 ])
-            ]);*/
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -192,14 +337,14 @@ class SupplierInvoiceController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
 
-           /* SupplierActivity::createActivity([
+            SupplierActivity::createActivity([
                 'entity_id' => $billing->id,
-                'entity_type' => 'billings',
-                'action_type' => 'create_credit',
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'create_suppliers_invoices_credit',
                 'title' => 'Kreditfaktura #'.$billing->invoice_id.' - skapad',
                 'description' => 'En kreditfaktura har skapats.',
                 'icon' => 'custom-facture',
-                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'route' => '/dashboard/admin/suppliers/billings/'.$billing->id,
                 'metadata' => json_encode([
                     'billing_id' => $billing->id,
                     'new_values' => [
@@ -208,7 +353,7 @@ class SupplierInvoiceController extends Controller
                         'state_id' => $billing->state_id,
                     ],
                 ]),
-            ]);*/
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -226,8 +371,219 @@ class SupplierInvoiceController extends Controller
         }
     }
 
-    public function reminder($id)
+    public function replaceFile(Request $request, $id): JsonResponse
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'invalid_data',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            $billing = SupplierInvoice::find($id);
+
+            if (!$billing) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+            }
+
+            if (!$billing->file) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'file_not_found',
+                    'message' => 'Fakturan saknar filväg'
+                ], 422);
+            }
+
+            $uploadedFile = $request->file('file');
+
+            Storage::disk('public')->put($billing->file, file_get_contents($uploadedFile->getRealPath()));
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'replace_suppliers_invoices_file',
+                'title' => 'Faktura #'.$billing->invoice_id.' - fil ersatt',
+                'description' => 'Fakturans fil har ersatts.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/suppliers/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fakturan har ersatts',
+                'data' => [
+                    'billing' => $billing,
+                ],
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function all(Request $request): JsonResponse
+    {
+        try {
+
+            $invoice_id = (int) (
+                SupplierInvoice::where('supplier_id', $request->supplier_id)->max('invoice_id') ?? 0
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'suppliers' => CacheService::getActiveSuppliers(),
+                    'invoices' => CacheService::getInvoices(),
+                    'invoice_id' => $invoice_id + 1
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendBilling(Request $request, $id)
+    {
+        try {
+
+            $billing = SupplierInvoice::with(['supplier.user'])->find($id);
+            $billing->is_sent = 1;
+            $billing->sent_at = now();
+            $billing->save();
+
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            $userName = trim(($billing->supplier->user->name ?? '') . ' ' . ($billing->supplier->user->last_name ?? ''));
+
+            $data = [
+                'company' => $company,
+                'user' => $userName !== '' ? $userName : ($billing->supplier->user->email ?? ''),
+                'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
+                'billing' => $billing,
+                'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+                'buttonText' => 'Ladda ner faktura',
+                'pdfFile' => asset('storage/'.$billing->file),
+                'title' => 'Ny faktura',
+                'icon' => asset('/images/invoices.png'),
+                'logo' => $logo
+            ];
+
+
+            $email = $request->email;
+            $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
+            
+            $pathToFile = storage_path('app/public/' . $billing->file);
+            $attachments = null;
+            if (file_exists($pathToFile)) {
+                $attachments = [[
+                    'path' => $pathToFile,
+                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
+                    'mime' => 'application/pdf'
+                ]];
+            }
+                
+            // Send email asynchronously with attachments
+            SendEmailJob::dispatch(
+                'emails.invoices.notifications',
+                $data,
+                $email,
+                $subject,
+                null,
+                null,
+                $attachments
+            );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'suppliers_invoices',
+                'action_type' => 'send_billing_email',
+                'title' => 'Faktura #'.$billing->invoice_id.' - skickad',
+                'description' => 'Fakturan skickades via e-post.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'new_values' => ['email' => $email]
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    private function billingActivityValues(SupplierInvoice $billing): array
+    {
+        $billingValues = $billing->only([
+            'invoice_id', 'invoice_date', 'due_date',
+            'payment_terms', 'terms_and_conditions', 'billing_period',
+            'subtotal', 'tax', 'total', 'rabatt', 'discount',
+            'amount_discount', 'credit_id', 'is_sent', 'is_credit', 
+            'amount_tax', 'sent_at'
+        ]);
+
+        $billingValues['state_id'] = $billing->state_id;
+        $billingValues['detail'] = json_decode($billing->detail, true) ?? $billing->detail;
+
+        return $billingValues;
     }
 }

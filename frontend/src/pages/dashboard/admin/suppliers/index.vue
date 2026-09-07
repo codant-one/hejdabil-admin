@@ -1152,7 +1152,7 @@ onUnmounted (() => {
                   <div class="expansion-panel-item-label">Kontakt:</div>
                   <div class="expansion-panel-item-value d-flex flex-column gap-2">
                     <span>{{ supplier.user.name }} {{ supplier.user.last_name ?? '' }}</span>
-                    <span>{{ supplier.user.email }}</span>
+                    <span>{{ truncateText(supplier.user.email, 22) }}</span>
                   </div>
                 </div>
                 <div class="mb-6">
@@ -1611,7 +1611,6 @@ onUnmounted (() => {
 
   .switch-text {
     font-weight: 400;
-    font-style: Regular;
     font-size: 14px;
     line-height: 16px;
     letter-spacing: 0;

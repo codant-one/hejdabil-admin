@@ -37,6 +37,7 @@ use App\Models\Note;
 use App\Models\Document;
 use App\Models\Vehicle;
 use App\Models\Setting;
+use App\Models\Plan;
 
 use App\Services\CacheService;
 
@@ -324,7 +325,7 @@ class SupplierController extends Controller
         }
     }
 
-     /**
+    /**
      * Update the specified resource in storage.
      */
     public function update(SupplierRequest $request, $id): JsonResponse
@@ -385,14 +386,14 @@ class SupplierController extends Controller
         }
     }
 
-     /**
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
         try {
 
-            $supplier = Supplier::with(['user', 'state'])->find($id);
+            $supplier = Supplier::with(['user', 'state', 'plan'])->find($id);
         
             if (!$supplier)
                 return response()->json([
@@ -421,7 +422,7 @@ class SupplierController extends Controller
             $supplier->deleteSupplier($id);
             $this->sendSupplierDeactivationEmail($supplierNotificationRecipient);
 
-            $supplier = Supplier::with(['user', 'state'])->withTrashed()->find($id);
+            $supplier = Supplier::with(['user', 'state', 'plan'])->withTrashed()->find($id);
 
             $message = 'Leverantör borttagen!';
 
@@ -597,9 +598,26 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte'
                 ], 404);
+
+            if ((int) $supplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $supplier->boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $supplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
             
             $supplier->activateSupplier($id);
-            $supplier->refresh()->load(['user', 'state']);
+            $supplier->refresh()->load(['user', 'state', 'plan']);
 
             SupplierActivity::createActivity([
                 'entity_id' => $supplier->id,
@@ -1159,9 +1177,42 @@ class SupplierController extends Controller
         try{
             
             $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
+                                ->withTrashed()
                                 ->max('order_id');
 
-            $request->merge(['boss_id' => Auth::user()->supplier->id]);
+            $boss_id = Auth::user()->getRoleNames()[0] === 'Supplier' ? Auth::user()->supplier->id : Auth::user()->supplier->boss_id;
+
+            $bossSupplier = Supplier::find($boss_id);
+
+            if (!$bossSupplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            if ((int) $bossSupplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $bossSupplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
+
+            $request->merge(['boss_id' => $boss_id]);
+            $request->merge(['plan_id' => Auth::user()->supplier->plan_id]);
+            $request->merge(['is_yearly' => Auth::user()->supplier->is_yearly]);
+            $request->merge(['sms_price' => Auth::user()->supplier->sms_price]);            
             $request->merge(['order_id' => $order_id + 1]);
             $request->merge(['company' => ""]);
             $request->merge(['organization_number' => ""]);
@@ -1184,8 +1235,13 @@ class SupplierController extends Controller
             );
 
             $user = User::with(['userDetail', 'permissions'])->find($supplier->user_id);
-            $user->syncPermissions($request->permissions);
-            $user->givePermissionTo('view dashboard');
+            $permissions = array_unique(
+                array_merge(
+                    $request->permissions ?? [], 
+                    Supplier::PERMISSIONS
+                )
+            );
+            $user->syncPermissions($permissions);
             $user->refresh()->load(['userDetail', 'permissions']);
             $supplier->refresh();
 
@@ -1399,8 +1455,13 @@ class SupplierController extends Controller
             $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
             $user->updateUser($request, $user); 
-            $user->syncPermissions($request->permissions);
-            $user->givePermissionTo('view dashboard');
+            $permissions = array_unique(
+                array_merge(
+                    $request->permissions ?? [], 
+                    Supplier::PERMISSIONS
+                )
+            );
+            $user->syncPermissions($permissions);
 
             $supplier = Supplier::where('user_id', $user->id)->first();
 
@@ -1464,8 +1525,13 @@ class SupplierController extends Controller
             $supplier = Supplier::where('user_id', $user->id)->first();
             $oldValues = $this->mapRelatedSupplierUserActivityValues($user, $supplier);
 
-            $user->syncPermissions($request->permissions);
-            $user->givePermissionTo('view dashboard');
+            $permissions = array_unique(
+                array_merge(
+                    $request->permissions ?? [], 
+                    Supplier::PERMISSIONS
+                )
+            );
+            $user->syncPermissions($permissions);
             $user->refresh()->load(['permissions']);
             $user->loadMissing(['userDetail']);
 
@@ -1639,6 +1705,259 @@ class SupplierController extends Controller
                     'plans' => CacheService::getPlans(),
                 ]
             ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle the request for a plan upgrade.
+     */
+    public function requestPlanUpgrade(Request $request)
+    {
+        try {
+            $supplier_id = $request->input('supplier_id');
+            $plan_id = $request->input('plan_id');
+            $is_yearly = $request->input('is_yearly', false);
+
+            $supplier = Supplier::with(['user.userDetail', 'creator.userDetail', 'plan'])->find($supplier_id);
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'type' => 'error',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+
+            $newPlan = Plan::find($plan_id);
+
+            if (!$newPlan)
+                return response()->json([
+                    'success' => false,
+                    'type' => 'error',
+                    'feedback' => 'not_found',
+                    'message' => 'Planen hittades inte'
+                ], 404);
+
+            /*if ($supplier->plan_id === $newPlan->id) {
+                return response()->json([
+                    'success' => false,
+                    'type' => 'error',
+                    'feedback' => 'same_plan',
+                    'message' => 'Leverantören har redan denna plan'
+                ], 400);
+            }*/
+
+            $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+            $oldPlan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+            $newPlan = $newPlan->name . ' (' . ($is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+
+            //Send mail to Admin
+            $email = env('MAIL_ADMIN', null);
+            $subject = 'Begäran om byte av abonnemang';
+            $text_primary = "har begärt att byta abonnemang i Bilflogg.<br><br>";
+            $text_primary .= "Företag: " . $company . "<br>";
+            $text_primary .= "Organisationsnummer: " . $supplier->user->userDetail->organization_number . "<br>";
+            $text_primary .= "Nuvarande abonnemang: " . $oldPlan . "<br>";
+            $text_primary .= "Önskat abonnemang: " . $newPlan . "<br><br>";
+            $text_secondary = "Vänligen kontakta kunden för att hjälpa till med abonnemangsbytet.<br>";
+
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
+
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.admin.notifications',
+                $data,
+                $email,
+                $subject
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Begäran vidarebefordrad till administrationsteamet',
+                'type' => 'success',
+                'data' => [ 
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'type' => 'error',
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelSubscription($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::find($id);
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            $supplier->cancelSubscription($id);
+            $supplier->refresh()->load(['user', 'state', 'plan']);
+
+            if (Auth::user()->getRoleNames()[0] !== 'Supplier') {
+                SupplierActivity::createActivity([
+                    'entity_id' => $supplier->id,
+                    'entity_type' => 'suppliers',
+                    'action_type' => 'cancel_subscription',
+                    'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' prenumeration avbruten',
+                    'description' => 'Leverantörens prenumeration har avbrutits.',
+                    'icon' => 'custom-supplier',
+                    'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                    'metadata' => json_encode([
+                        'supplier_id' => $supplier->id,
+                    ])
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function activeSubscription($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::find($id);
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            $supplier->activeSubscription($id);
+            $supplier->refresh()->load(['user', 'state', 'plan']);
+
+            if (Auth::user()->getRoleNames()[0] !== 'Supplier') {
+                SupplierActivity::createActivity([
+                    'entity_id' => $supplier->id,
+                    'entity_type' => 'suppliers',
+                    'action_type' => 'active_subscription',
+                    'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' prenumeration aktiverad',
+                    'description' => 'Leverantörens prenumeration har aktiverats.',
+                    'icon' => 'custom-supplier',
+                    'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                    'metadata' => json_encode([
+                        'supplier_id' => $supplier->id,
+                    ])
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reactiveSubscription($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::withTrashed()->find($id);
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            //NUEVO
+            // como inactivamos su uso con la nueva modalidad, debemos activar de nuevo
+            if ((int) $supplier->plan_id === 1) {
+                $relatedUsersCount = Supplier::where('boss_id', $supplier->boss_id)->count();
+
+                if ($relatedUsersCount >= 3) {
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'plan_user_limit_reached',
+                        'message' => 'Du kan inte lägga till fler än 3 användare med nuvarande abonnemang.',
+                        'data' => [
+                            'plan_id' => (int) $supplier->plan_id,
+                            'max_users' => 3,
+                            'current_users' => $relatedUsersCount,
+                        ]
+                    ], 422);
+                }
+            }
+
+            $supplier->reactiveSubscription($id);
+            //NUEVO, como inactivamos su uso con la nueva modalidad, debemos activar de nuevo
+            $supplier->activateSupplier($id);
+
+            $supplier->refresh()->load(['user', 'state', 'plan']);
+
+            event(new ForceLogoutUserEvent($supplier->user->id));
+            
+            if (Auth::user()->getRoleNames()[0] !== 'Supplier') {
+                SupplierActivity::createActivity([
+                    'entity_id' => $supplier->id,
+                    'entity_type' => 'suppliers',
+                    'action_type' => 'reactive_subscription',
+                    'title' => 'Leverantör #'.$supplier->id.' '.$supplier->user?->name.' '.$supplier->user?->last_name.' prenumeration återaktiverad',
+                    'description' => 'Leverantörens prenumeration har återaktiverats.',
+                    'icon' => 'custom-supplier',
+                    'route' => '/dashboard/admin/suppliers/'.$supplier->id,
+                    'metadata' => json_encode([
+                        'supplier_id' => $supplier->id,
+                    ])
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([

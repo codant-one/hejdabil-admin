@@ -43,6 +43,7 @@ const exporteraMobile = ref(false)
 
 const userData = ref(null)
 const role = ref(null)
+const plan_id = ref('')
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot'
 
 const readCachedCompany = () => {
@@ -137,6 +138,7 @@ onMounted(async () => {
   try {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value?.roles?.[0]?.name ?? null
+    plan_id.value = userData.value.supplier.plan_id
 
     if (!role.value) return
 
@@ -400,9 +402,9 @@ defineExpose({
                 <thead>
                     <tr>
                         <th scope="col"> Namn </th>
-                        <th class="text-center" scope="col"> Fakturor </th>
+                        <th class="text-center" scope="col" v-if="plan_id === 2"> Fakturor </th>
                         <th class="text-center" scope="col"> Swish </th>
-                        <th class="text-center" scope="col">Avtal</th>
+                        <th class="text-center" scope="col" v-if="plan_id === 2">Avtal</th>
                     </tr>
                 </thead>
 
@@ -426,13 +428,13 @@ defineExpose({
                         </td>
 
                         <!-- 👉 billings -->
-                        <td class="text-center"> {{ user.invoices }} </td>
+                        <td class="text-center" v-if="plan_id === 2"> {{ user.invoices }} </td>
 
                         <!-- 👉 payouts -->
                         <td class="text-center"> {{ user.swish }} </td>
 
                         <!-- 👉 agreements -->
-                        <td class="text-center"> {{ user.agreements }} </td>
+                        <td class="text-center" v-if="plan_id === 2"> {{ user.agreements }} </td>
                     </tr>
                 </tbody>
             </VTable>
@@ -480,7 +482,7 @@ defineExpose({
                         </div>
                     </VExpansionPanelTitle>
                     <VExpansionPanelText>
-                        <div class="mb-6">
+                        <div class="mb-6" v-if="plan_id === 2">
                             <div class="expansion-panel-item-label">Fakturor:</div>
                             <div class="expansion-panel-item-value">
                                 {{ user.invoices ?? "" }}
@@ -492,7 +494,7 @@ defineExpose({
                                 {{ user.swish ?? "" }}
                             </div>
                         </div>
-                        <div>
+                        <div v-if="plan_id === 2">
                             <div class="expansion-panel-item-label">Avtal:</div>
                             <div class="expansion-panel-item-value">
                                 {{ user.agreements ?? "" }}

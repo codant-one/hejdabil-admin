@@ -20,6 +20,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import AlertsList from '@/components/common/AlertsList.vue'
 
 import bilflogg from "@/assets/images/bilflogg_img.png";
 import swish from "@/assets/images/swish_img.svg";
@@ -1173,6 +1174,8 @@ const onDatePickerUpdate = value => {
     </VSnackbar>
 
     <VCard class="card-fill">
+      <AlertsList />
+      
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[
@@ -1381,7 +1384,7 @@ const onDatePickerUpdate = value => {
             <th scope="col" v-if="(role === 'SuperAdmin' || role === 'Administrator')"> Leverantör </th>
             <th scope="col" class="text-center"> Status </th>
             <th scope="col"> Skapad av </th>
-            <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -1468,7 +1471,7 @@ const onDatePickerUpdate = value => {
               </div>
             </td>            
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')">      
+            <td class="text-center" style="width: 3rem;">
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -1485,7 +1488,7 @@ const onDatePickerUpdate = value => {
                     <VListItemTitle>Visa detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 4 && (role === 'Supplier' || role === 'User')"
+                    v-if="$can('edit','payouts') && payout.state.id === 4 && (role === 'Supplier' || role === 'User')"
                     @click="shareReceipt(payout)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" />
@@ -1493,7 +1496,7 @@ const onDatePickerUpdate = value => {
                     <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
+                    v-if="$can('edit','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
                     @click="editPayout(payout)">
                     <template #prepend>
                       <VIcon icon="custom-check-mark" size="24" />
@@ -1501,7 +1504,7 @@ const onDatePickerUpdate = value => {
                     <VListItemTitle>Bekräfta betalning</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
+                    v-if="$can('edit','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
                     @click="showCancelDialog(payout)">
                     <template #prepend>
                       <VIcon icon="custom-unavailable" size="24" />
@@ -1678,7 +1681,7 @@ const onDatePickerUpdate = value => {
 
                 <div v-if="selectedPayout.payout_state_id === 4 && (role === 'Supplier' || role === 'User')" class="d-flex gap-2">
                   <VBtn
-                    v-if="selectedPayout.payout_state_id === 4"
+                    v-if="selectedPayout.payout_state_id === 4 && $can('edit', 'payouts')"
                     class="btn-light"
                     style="height: 40px !important;"
                     @click="shareReceipt(selectedPayout)"
@@ -1770,7 +1773,7 @@ const onDatePickerUpdate = value => {
             </VBtn>
             <div v-if="selectedPayout.payout_state_id === 4 && (role === 'Supplier' || role === 'User')" class="d-flex gap-2">
               <VBtn
-                v-if="selectedPayout.payout_state_id === 4"
+                v-if="selectedPayout.payout_state_id === 4 && $can('edit', 'payouts')"
                 class="btn-light"
                 @click="shareReceipt(selectedPayout)"
               >
@@ -2018,7 +2021,7 @@ const onDatePickerUpdate = value => {
             <VListItemTitle>Visa detaljer</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4 && (role === 'Supplier' || role === 'User')"
+            v-if="$can('edit','payouts') && selectedPayoutForAction.state.id === 4 && (role === 'Supplier' || role === 'User')"
             @click="shareReceipt(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-paper-plane" size="24" />
@@ -2026,7 +2029,7 @@ const onDatePickerUpdate = value => {
             <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
+            v-if="$can('edit','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
             @click="editPayout(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-check-mark" size="24" />
@@ -2034,7 +2037,7 @@ const onDatePickerUpdate = value => {
             <VListItemTitle>Bekräfta betalning</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
+            v-if="$can('edit','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
             @click="showCancelDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-unavailable" size="24" />

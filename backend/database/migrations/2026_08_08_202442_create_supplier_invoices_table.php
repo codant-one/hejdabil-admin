@@ -41,7 +41,7 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
-            $table->foreign('credit_id')->references('id')->on('invoices')->onDelete('cascade');
+            $table->foreign('credit_id')->references('id')->on('supplier_invoices')->onDelete('cascade');
         });
     }
 

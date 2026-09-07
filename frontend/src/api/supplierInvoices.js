@@ -30,8 +30,16 @@ class SupplierInvoices {
         return axios.get(`/supplier-invoices/credit/${id}`)
     }
 
-    reminder(id) {
-        return axios.get(`/supplier-invoices/reminder/${id}`)
+    replaceFile(data) {
+        return axios.post(`/supplier-invoices/replaceFile/${data.id}`, data.data)
+    }
+
+    all(params){
+        return axios.get(`/supplier-invoices/data/all`, {params})
+    }
+
+    sendBilling(data) {
+        return axios.post(`/supplier-invoices/sendBilling/${data.id}`, data)
     }
 }
 

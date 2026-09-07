@@ -44,7 +44,8 @@ use App\Http\Controllers\{
     SmsMessageController,
     ActivitiesController,
     PlanController,
-    SupplierInvoiceController
+    SupplierInvoiceController,
+    AlertController
 };
 
 use App\Http\Controllers\Services\{
@@ -88,7 +89,7 @@ Route::group([
 });
 
 //Private Endpoints
-Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], function(){
+Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','throttle:crm_limit']], function(){
      
     //Resources 
     Route::apiResource('users', UsersController::class);
@@ -118,6 +119,7 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
     Route::apiResource('activities', ActivitiesController::class);
     Route::apiResource('plans', PlanController::class);
     Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
+    Route::apiResource('alerts', AlertController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -179,7 +181,9 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
     Route::group(['prefix' => 'supplier-invoices'], function () {
         Route::get('/updateState/{id}', [SupplierInvoiceController::class, 'updateState']);
         Route::get('/credit/{id}', [SupplierInvoiceController::class, 'credit']);
-        Route::get('/reminder/{id}', [SupplierInvoiceController::class, 'reminder']);
+        Route::post('/replaceFile/{id}', [SupplierInvoiceController::class, 'replaceFile']);
+        Route::get('/data/all', [SupplierInvoiceController::class, 'all']);
+        Route::post('/sendBilling/{id}', [SupplierInvoiceController::class, 'sendBilling']);
     });
 
     //Suppliers
@@ -200,6 +204,10 @@ Route::group(['middleware' => ['cors','jwt','idle','throttle:crm_limit']], funct
         Route::post('/master-password/{id}', [SupplierController::class, 'masterPassword']);
         Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
         Route::get('/plans/all', [SupplierController::class, 'plans']);
+        Route::post('/request-plan-upgrade', [SupplierController::class, 'requestPlanUpgrade']);
+        Route::get('/cancel-subscription/{id}', [SupplierController::class, 'cancelSubscription']);
+        Route::get('/active-subscription/{id}', [SupplierController::class, 'activeSubscription']);
+        Route::get('/reactive-subscription/{id}', [SupplierController::class, 'reactiveSubscription']);
     });
 
     //Clients

@@ -223,6 +223,12 @@ const closeRoleDetailDialog = function(){
                                 value="view sms"
                                 :readonly="readonly"
                             />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view plan"
+                                value="view plan"
+                                :readonly="readonly"
+                            />
                         </div>
                     </div>
                 </VCardText>

@@ -43,7 +43,6 @@ const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
-const role = computed(() => userData.value?.roles?.[0]?.name ?? '');
 const canShowBillingSmsAction = ref(false)
 
 const pdfScale = computed(() => {
@@ -476,7 +475,7 @@ onBeforeUnmount(() => {
 
       <VBtn
         v-if="
-          $can('view', 'billings') &&
+          $can('edit', 'billings') &&
           (invoice.state_id === 4 || invoice.state_id === 8) &&
           invoice.client.deleted_at === null
         "
@@ -496,7 +495,7 @@ onBeforeUnmount(() => {
     </div>
     <div v-if="invoice" :class="windowWidth < 1024 ? 'd-block' : 'd-none'">
       <VBtn
-        v-if="$can('view', 'billings')"
+        v-if="$can('edit', 'billings')"
         class="btn-gradient w-100 mb-4"
         @click="send"
       >
@@ -557,7 +556,7 @@ onBeforeUnmount(() => {
           <VCardText :class="windowWidth < 1024 ? 'pa-6' : 'pa-4'">
             <VBtn 
               v-if="
-                $can('view', 'billings') &&
+                $can('edit', 'billings') &&
                 (invoice.state_id === 4 || invoice.state_id === 8) &&
                 invoice.client.deleted_at === null
               "
@@ -604,7 +603,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('view', 'billings')"
+              v-if="$can('edit', 'billings')"
               class="btn-light w-100 mb-4"
               @click="send"
             >

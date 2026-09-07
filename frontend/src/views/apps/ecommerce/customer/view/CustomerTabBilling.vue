@@ -1,24 +1,35 @@
 <script setup>
 
 import { formatNumber } from '@/@core/utils/formatters'
-import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
 import { themeConfig } from '@themeConfig'
+import { excelParser } from '@/plugins/csv/excelParser'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { emailValidator } from '@/@core/utils/validators'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import companyAvatar from "@/assets/images/avatars/company.svg";
+import refreshAvatar from "@/assets/images/avatars/refresh-2.svg";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import html2pdf from 'html2pdf.js'
+import router from "@/router";
 
 const { width: windowWidth } = useWindowSize();
 
 const route = useRoute()
-const suppliersStores = useSuppliersStores()
-const supplierInvoicesStores = useSupplierInvoicesStores()
+const supplierInvoices = useSupplierInvoicesStores()
 const exporteraMobile = ref(false);
+const date = ref(null)
+const selectedExportType = ref(null)
+const isExportTypeMenuVisible = ref(false)
+const isExportMenuVisible = ref(false)
+const isExportingFile = ref(false)
+const lastExportSelectionKey = ref(null)
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalBillings = ref(0)
 const state_id = ref(null)
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot'
 
 const props = defineProps({
   customerData: {
@@ -37,12 +48,29 @@ const advisor = ref({
   show: false
 })
 
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY)
+    if (!cached) return {}
+
+    const parsed = JSON.parse(cached)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const company = ref(readCachedCompany())
+
 const emit = defineEmits([
   'submit',
   'delete',
   'alert',
   'loading'
 ])
+
+const isConfirmSendMailVisible = ref(false);
+const email = ref(null);
 
 const isEditAddressDialogVisible = ref(false)
 const selectedAddress = ref({})
@@ -52,6 +80,9 @@ const isConfirmKreditera = ref(false)
 
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+const isConfirmStateDialogVisible = ref(false);
+const replaceFileInput = ref(null)
+const billingToReplaceFile = ref(null)
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -66,6 +97,11 @@ const paginationData = computed(() => {
 watchEffect(() => {
   if (!isEditAddressDialogVisible.value)
     selectedAddress.value = {}
+})
+
+watch(isExportMenuVisible, isVisible => {
+  if (isVisible)
+    lastExportSelectionKey.value = null
 })
 
 watchEffect(fetchData)
@@ -96,15 +132,15 @@ async function fetchData(cleanFilters = false) {
 
         emit("loading", true);
         
-        await supplierInvoicesStores.fetchSupplierInvoices(data)
+        await supplierInvoices.fetchSupplierInvoices(data)
 
         emit("loading", false);
 
-        const supplierInvoices = Array.isArray(supplierInvoicesStores.getSupplierInvoices)
-          ? supplierInvoicesStores.getSupplierInvoices
+        const invoices = Array.isArray(supplierInvoices.getSupplierInvoices)
+          ? supplierInvoices.getSupplierInvoices
           : []
 
-        billings.value = supplierInvoices.map(invoice => ({
+        billings.value = invoices.map(invoice => ({
           id: invoice.id,
           user_id: invoice.user_id,
           invoice_id: invoice.invoice_id,
@@ -128,8 +164,8 @@ async function fetchData(cleanFilters = false) {
           },
         }))
 
-        totalPages.value = supplierInvoicesStores.last_page
-        totalBillings.value = supplierInvoicesStores.supplierInvoicesTotalCount
+        totalPages.value = supplierInvoices.last_page
+        totalBillings.value = supplierInvoices.supplierInvoicesTotalCount
       } finally {
         emit("loading", false);
       }
@@ -137,12 +173,41 @@ async function fetchData(cleanFilters = false) {
   }
 }
 
-const updateBillingState = async billing => {
-  if (!billing?.id)
-    return
+const addInvoice = () => {
+  router.push({ 
+    name: "dashboard-admin-suppliers-billings-add", 
+    query: { supplier_id: Number(route.params.id) } 
+  });
+};
+
+const editBilling = (billingData) => {
+  router.push({
+    name: "dashboard-admin-suppliers-billings-edit-id",
+    params: { id: billingData.id },
+  });
+};
+
+const updateBilling = (billingData) => {
+  isConfirmStateDialogVisible.value = true;
+  selectedBilling.value = { ...billingData };
+};
+
+const updateState = async () => {
+  isConfirmStateDialogVisible.value = false;
 
   try {
-    await supplierInvoicesStores.updateState(billing.id)
+    emit("loading", true);
+    
+    let res = await supplierInvoices.updateState(selectedBilling.value.id);
+    
+    advisor.value = {
+      type: res.data.success ? "success" : "error",
+      message: res.data.success ? "Fakturan uppdaterad!" : res.data.message,
+      show: true,
+    };
+
+    emit('alert', advisor)
+
     await fetchData()
   } finally {
     emit("loading", false);
@@ -161,6 +226,48 @@ const openBillingPdf = billing => {
     return
 
   window.open(themeConfig.settings.urlStorage + billing.file)
+}
+
+const showBilling = (billingData) => {
+  router.push({
+    name: "dashboard-admin-suppliers-billings-id",
+    params: { id: billingData.id},
+  });
+};
+
+const send = (billingData) => {
+  isConfirmSendMailVisible.value = true;
+  selectedBilling.value = { ...billingData };
+  email.value = props.customerData.user.email ?? '';
+};
+
+const sendBilling = async () => {
+
+  try {
+
+    isConfirmSendMailVisible.value = false;
+    emit('loading', true)
+
+    await supplierInvoices.sendBilling({ email: email.value, id: selectedBilling.value.id });
+    selectedBilling.value = {}
+
+    advisor.value.show = true
+    advisor.value.type = 'success'
+    advisor.value.message = 'Fakturan har skickats via e-post'
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      emit('alert', advisor)
+    }, 5000)
+
+    await fetchData()
+  } finally {
+    emit("loading", false);
+  }
 }
 
 const printBilling = async billing => {
@@ -212,6 +319,68 @@ const downloadBillingPdf = async (billing) => {
   }
 }
 
+const replaceFile = billing => {
+  if (!billing?.id)
+    return
+
+  billingToReplaceFile.value = billing
+  replaceFileInput.value?.click()
+}
+
+const onReplaceFileSelected = async event => {
+  const target = event?.target
+  const file = target?.files?.[0]
+
+  if (!file || !billingToReplaceFile.value?.id) {
+    if (target)
+      target.value = ''
+
+    return
+  }
+
+  const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+
+  if (!isPdfFile) {
+    advisor.value = {
+      type: 'error',
+      message: 'Endast PDF-filer är tillåtna',
+      show: true,
+    }
+
+    emit('alert', advisor)
+
+    target.value = ''
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    emit('loading', true)
+
+    const response = await supplierInvoices.replaceFile({
+      id: billingToReplaceFile.value.id,
+      data: formData,
+    })
+
+    advisor.value = {
+      type: response?.data?.success ? 'success' : 'error',
+      message: response?.data?.success ? 'Fakturan har ersatts' : (response?.data?.message || 'Något gick fel'),
+      show: true,
+    }
+
+    emit('alert', advisor)
+
+    if (response?.data?.success)
+      await fetchData()
+  } finally {
+    emit('loading', false)
+    billingToReplaceFile.value = null
+    target.value = ''
+  }
+}
+
 const credit = billing => {
   if (!billing?.id)
     return
@@ -228,7 +397,7 @@ const kreditera = async () => {
   isConfirmKreditera.value = false
 
   try {
-    await supplierInvoicesStores.credit(Number(selectedBilling.value.id))
+    await supplierInvoices.credit(Number(selectedBilling.value.id))
     selectedBilling.value = {}
 
     advisor.value.show = true
@@ -261,6 +430,204 @@ const resolveStatus = state_id => {
     return { class: 'error' }
 }
 
+const toYmd = value => {
+  if (!value)
+    return null
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+
+    const parsed = new Date(normalized)
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear()
+      const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+      const day = `${parsed.getDate()}`.padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  }
+
+  return null
+}
+
+const resolveDateRange = value => {
+  if (!value)
+    return null
+
+  if (Array.isArray(value)) {
+    const from = toYmd(value[0])
+    const to = toYmd(value[1] ?? value[0])
+
+    return from && to ? [from, to] : null
+  }
+
+  if (typeof value === 'string') {
+    const splitByRange = value.split(/\s+-\s+|\s+to\s+|\s+till\s+|\s+a\s+/i)
+
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+
+      return from && to ? [from, to] : null
+    }
+
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  if (value instanceof Date) {
+    const single = toYmd(value)
+
+    return single ? [single, single] : null
+  }
+
+  return null
+}
+
+const getDateRangePayload = () => {
+  const dateRange = resolveDateRange(date.value)
+
+  if (!dateRange)
+    return {}
+
+  return {
+    date_from: dateRange[0],
+    date_to: dateRange[1],
+  }
+}
+
+const buildRangeSelectionKey = value => {
+  if (!value)
+    return null
+
+  const normalize = item => {
+    if (!item)
+      return ''
+
+    if (item instanceof Date && !Number.isNaN(item.getTime())) {
+      const year = item.getFullYear()
+      const month = `${item.getMonth() + 1}`.padStart(2, '0')
+      const day = `${item.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof item === 'string')
+      return item.trim()
+
+    return String(item)
+  }
+
+  if (Array.isArray(value)) {
+    const first = normalize(value[0])
+    const second = normalize(value[1] ?? value[0])
+
+    return `${first}__${second}`
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return `${chunks[0]}__${chunks[1]}`
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const single = normalize(value)
+  return `${single}__${single}`
+}
+
+const isCompleteRangeSelection = value => {
+  if (!value)
+    return false
+
+  if (Array.isArray(value))
+    return value.length >= 2 && !!value[0] && !!value[1]
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+  }
+
+  return false
+}
+
+const buildExportParams = () => {
+  const data = {
+    limit: -1,
+    ...getDateRangePayload(),
+    orderByField: 'id',
+    orderBy: 'desc',
+    state_id: state_id.value,
+  }
+
+  if (Number(route.params.id) && props.isSupplier && props.customerData?.id !== null)
+    data.supplier_id = props.customerData.id
+
+  return data
+}
+
+const exportPDFAndCloseMenu = async () => {
+  if (isExportingFile.value)
+    return
+
+  if (!selectedExportType.value)
+    return
+
+  isExportingFile.value = true
+
+  try {
+    if (selectedExportType.value === 'excel') {
+      await downloadCSV()
+    } else {
+      await downloadPDF()
+    }
+
+    isExportMenuVisible.value = false
+  } finally {
+    selectedExportType.value = null
+    isExportingFile.value = false
+  }
+}
+
+const openExportDateMenu = type => {
+  exporteraMobile.value = false
+  selectedExportType.value = type
+  isExportTypeMenuVisible.value = false
+
+  nextTick(() => {
+    isExportMenuVisible.value = true
+  })
+}
+
+const onDatePickerUpdate = value => {
+  if (!selectedExportType.value)
+    return
+
+  if (!isCompleteRangeSelection(value))
+    return
+
+  const selectionKey = buildRangeSelectionKey(value)
+  if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+    return
+
+  lastExportSelectionKey.value = selectionKey
+
+  if (!isExportingFile.value)
+    exportPDFAndCloseMenu()
+}
+
 const downloadPDF = async () => {
   exporteraMobile.value = false
   emit("loading", true);
@@ -276,13 +643,9 @@ const downloadPDF = async () => {
   let pdfContainer = null
 
   try {
-    const data = {
-      limit: -1 ,
-      orderByField: "id",
-      orderBy: "desc"
-    }
+    const data = buildExportParams()
 
-    await suppliersStores.fetchSuppliers(data)
+    await supplierInvoices.fetchSupplierInvoices(data)
 
     if (document.fonts?.load) {
       await Promise.all([
@@ -291,50 +654,47 @@ const downloadPDF = async () => {
       ])
     }
 
-    const rows = suppliersStores.getSuppliers.map(element => ({
-      id: element.id,
-      fullname: element.user.name + ' ' + (element.user.last_name ?? ''),
-      email: element.user.email,
-      company: element.user.user_detail.company ?? "",
-      swish: element.payout_number ?? "",
-      phone: element.user.user_detail.phone ?? "",
-      landline: element.user.user_detail.landline ?? "",
-      sender: element.sms_sender ?? '',
-      organizationNumber: element.user.user_detail.organization_number ?? "",
-      creator: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
-      status: element.state.name
+    const supplierName = supplierInvoices.getSupplierInfo?.supplier_name ?? null
+
+    company.value.company = supplierInvoices.getSupplierInfo?.user.user_detail.company ?? null
+    company.value.name = supplierInvoices.getSupplierInfo?.user?.name ?? null
+    company.value.last_name = supplierInvoices.getSupplierInfo?.user?.last_name ?? null
+    company.value.email = supplierInvoices.getSupplierInfo?.user?.email ?? null
+
+    const supplier = `${supplierName}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'supplier-billings'
+
+    const rows = supplierInvoices.getSupplierInvoices.map(element => ({
+      invoiceId: element.invoice_id ?? '-',
+      period: element.billing_period ?? '-',
+      invoiceDate: element.invoice_date ?? '-',
+      dueDate: element.due_date ?? '-',
+      total: `${formatNumber((Number(element.total ?? 0) + Number(element.amount_discount ?? 0))) ?? '0,00'} kr`,
+      state: element.state?.name ?? '-',
     }))
 
     const { headerMarkup } = await buildPdfTopHeader({
       company: company.value,
-      title: 'Leverantörer',
+      title: 'Fakturor',
       themeConfig,
       escapeHtml,
       showCompanyDetailsWhenLogo: true,
     })
 
     const rowsMarkup = rows.map(item => `
-      ${(() => {
-        const companyLines = [item.company, item.organizationNumber].filter(Boolean)
-        const companyMarkup = companyLines.map(line => escapeHtml(line)).join('<br />')
-
-        const contactLines = [item.fullname, item.email].filter(Boolean)
-        const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
-
-        const phoneLines = [item.phone, item.landline].filter(Boolean)
-        const phoneMarkup = phoneLines.map(line => escapeHtml(line)).join('<br />')
-
-        return `
       <tr style="height: 48px;">
-        <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
-        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${companyMarkup}</td>
-        <td style="width: 23%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.swish)}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${phoneMarkup}</td>
-        <td style="width: 15%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sender)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceId)}</td>
+        <td style="width: 18%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.period)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceDate)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.dueDate)}</td>
+        <td style="width: 17%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.total)}</td>
+        <td style="width: 17%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.state)}</td>
       </tr>
-    `
-      })()}
     `).join('')
 
     pdfContainer = document.createElement('div')
@@ -349,12 +709,12 @@ const downloadPDF = async () => {
                 <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
                   <thead>
                     <tr style="height: 48px;">
-                      <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
-                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Företag</td>
-                      <td style="text-align: center; width: 23%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Swish</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer/Telefon</td>
-                      <td style="text-align: center; width: 15%; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Sender</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Faktura ID</td>
+                      <td style="text-align: center; width: 18%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Period</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Fakturadatum</td>
+                      <td style="text-align: center; width: 16%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Förfaller</td>
+                      <td style="text-align: center; width: 17%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Belopp</td>
+                      <td style="text-align: center; width: 17%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Status</td>
                       
                     </tr>
                   </thead>
@@ -374,7 +734,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'suppliers.pdf',
+        filename: `${supplier}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -395,31 +755,37 @@ const downloadCSV = async () => {
   exporteraMobile.value = false
   emit("loading", true);
 
-  let data = { limit: -1 }
+  let data = buildExportParams()
 
-  await suppliersStores.fetchSuppliers(data)
+  await supplierInvoices.fetchSupplierInvoices(data)
 
   let dataArray = [];
       
-  suppliersStores.getSuppliers.forEach(element => {
+  supplierInvoices.getSupplierInvoices.forEach(element => {
 
     let data = {
-      ID: element.id,
-      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      E_POST: element.user.email,
-      FÖRETAG: element.user.user_detail.company ?? '',
-      ORGANISATIONSNUMMER: element.user.user_detail.organization_number ?? '',
-      SWISH: element.payout_number ?? '',
-      SENDER: element.sms_sender ?? '',
-      SKAPAD_AV: (element.creator.name ?? '') + ' ' + (element.creator.last_name ?? ''),
-      STATUS: element.state.name
+      FAKTURA_ID: element.invoice_id ?? '-',
+      PERIOD: element.billing_period ?? '-',
+      FAKTURADATUM: element.invoice_date ?? '-',
+      FÖRFALLER: element.due_date ?? '-',
+      BELOPP: `${formatNumber((Number(element.total ?? 0) + Number(element.amount_discount ?? 0))) ?? '0,00'} kr`,
+      STATUS: element.state?.name ?? '-',
     }
 
     dataArray.push(data)
   })
 
+  const supplierName = supplierInvoices.getSupplierInfo?.supplier_name ?? null
+  const supplier = `${supplierName}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'supplier-billings'
+
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, supplier, "csv");
 
   emit("loading", false)
 
@@ -443,7 +809,7 @@ const downloadCSV = async () => {
       <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
       <div class="d-flex gap-2">
-        <VMenu v-if="windowWidth >= 1024">
+        <VMenu v-if="windowWidth >= 1024" v-model="isExportTypeMenuVisible">
           <template #activator="{ props }">
             <VBtn
               id="payout-export-button"
@@ -457,10 +823,10 @@ const downloadCSV = async () => {
           </template>
 
           <VList>
-            <VListItem>
+            <VListItem @click="openExportDateMenu('pdf')">
               <VListItemTitle>Exportera PDF</VListItemTitle>
             </VListItem>
-            <VListItem>
+            <VListItem @click="openExportDateMenu('excel')">
               <VListItemTitle>Exportera Excel</VListItemTitle>
             </VListItem>
           </VList>
@@ -480,11 +846,21 @@ const downloadCSV = async () => {
         <VBtn
           class="btn-gradient"
           block
+          @click="addInvoice"
         >
           <VIcon icon="custom-plus" size="24" />
           Ny faktura
         </VBtn>
       </div>
+
+      <ExportDateMenu
+        v-model="date"
+        v-model:menuVisible="isExportMenuVisible"
+        :show-activator="false"
+        :is-mobile="windowWidth < 1024"
+        activator="#payout-export-button"
+        @update:modelValue="onDatePickerUpdate"
+      />
 
       <VDivider :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"/>
     </VCardText>
@@ -593,15 +969,15 @@ const downloadCSV = async () => {
                   class="supplier-company-logo-avatar"
                 >
                   <VImg
-                    style="border-radius: 50%"
-                    :src="companyAvatar"
+                    style="border-radius: 50%; width: 24px; height: 24px; flex: 0 0 24px;"
+                    :src="refreshAvatar"
                   />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium text-aqua">
-                    automatisk
+                    Automatisk fakturering
                   </span>
-                  <span class="text-sm text-disabled">faktura</span>
+                  <span class="text-sm text-disabled">Systemgenererad</span>
                 </div>
               </div>
             </td>  
@@ -615,9 +991,7 @@ const downloadCSV = async () => {
                 </template>
 
                 <VList>
-                  <VListItem
-                    v-if="$can('view', 'billings')"
-                  >
+                  <VListItem @click="showBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
@@ -625,7 +999,7 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem 
                     v-if="billing.state_id === 4 || billing.state_id === 8"
-                    @click="updateBillingState(billing)">
+                    @click="updateBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-bribery" size="24" class="mr-2" />
                     </template>
@@ -633,11 +1007,25 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem
                       v-if="billing.state_id === 7 && billing.is_credit === 0"
-                      @click="updateBillingState(billing)">
+                      @click="updateBilling(billing)">
                     <template #prepend>
                       <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Markera som obetald</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if=" (billing.state_id === 4 || billing.state_id === 8) && billing.user_id !== null"
+                      @click="editBilling(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="send(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Skicka</VListItemTitle>
                   </VListItem>
                   <VListItem 
                     @click="printBilling(billing)">
@@ -659,6 +1047,13 @@ const downloadCSV = async () => {
                       <VIcon icon="custom-download" />
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    @click="replaceFile(billing)">
+                    <template #prepend>
+                      <VIcon icon="custom-refresh" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ersätta faktura</VListItemTitle>
                   </VListItem>
                   <VListItem
                     v-if="billing.state_id !== 9 && billing.is_credit === 0"
@@ -717,9 +1112,16 @@ const downloadCSV = async () => {
               {{ billing.invoice_id }}
             </span>
             <div class="d-flex align-center justify-between w-100">
-              <div class="order-title-box">
-                <span class="title-panel">
+              <div class="order-title-box w-100">
+                <span class="title-panel d-flex align-center w-100">
                   {{ billing.period }}
+                  <VSpacer />
+                  <div
+                    class="status-chip-mobile pb-2"
+                    :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
+                  >
+                    {{ billing.state_name }}
+                  </div>
                 </span>    
                 <div class="title-organization">
                   Belopp
@@ -728,14 +1130,6 @@ const downloadCSV = async () => {
                   </div>
                 </div>        
               </div>
-              <span class="text-neutral-3 me-4">
-                  <div
-                    class="status-chip-mobile pb-2"
-                    :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
-                  >
-                    {{ billing.state_name }}
-                  </div>
-                </span>
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
@@ -755,8 +1149,68 @@ const downloadCSV = async () => {
                 </div>
               </div>
             </div>
+
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Skapad av:</div>
+                <div class="expansion-panel-item-value">
+                  <div class="d-flex align-center gap-x-1" v-if="billing.user_id !== null">
+                    <VAvatar
+                      variant="outlined"
+                      size="32"
+                    >
+                      <VImg
+                        v-if="billing.user?.avatar"
+                        style="border-radius: 50%"
+                        :src="themeConfig.settings.urlStorage + billing.user.avatar"
+                      />
+                      <PresetAvatarImage
+                        v-else
+                        :avatar-id="billing.user?.user_detail?.avatar_id"
+                      />
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium font-14">
+                        {{ billing.user?.name ?? '-' }} {{ billing.user?.last_name ?? "" }}
+                      </span>
+                      <span class="text-sm text-disabled">
+                        <VTooltip 
+                          v-if="billing.user?.email && billing.user.email.length > 20"
+                          location="bottom">
+                          <template #activator="{ props }">
+                            <span v-bind="props" class="cursor-pointer">
+                              {{ truncateText(billing.user?.email, 20) }}
+                            </span>
+                          </template>
+                          <span>{{ billing.user?.email }}</span>
+                        </VTooltip>
+                        <span class="text-sm text-disabled"v-else>{{ billing.user?.email }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="d-flex align-center gap-x-1" v-else>
+                    <VAvatar
+                      variant="outlined"
+                      size="32"
+                      class="supplier-company-logo-avatar"
+                    >
+                      <VImg
+                        style="border-radius: 50%; width: 24px; height: 24px; flex: 0 0 24px;"
+                        :src="refreshAvatar"
+                      />
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium text-aqua font-14">
+                        Automatisk fakturering
+                      </span>
+                      <span class="text-sm text-disabled">Systemgenererad</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="d-flex gap-4">
-              <VBtn class="btn-light flex-1">
+              <VBtn class="btn-light flex-1" @click="showBilling(billing)">
                 <VIcon icon="custom-eye" size="24" />
                 Se detaljer
               </VBtn>
@@ -800,11 +1254,11 @@ const downloadCSV = async () => {
   >
     <VCard>
       <VList>
-        <VListItem>
+        <VListItem @click="openExportDateMenu('pdf')">
           <VListItemTitle>Exportera PDF</VListItemTitle>
         </VListItem>
 
-        <VListItem>
+        <VListItem @click="openExportDateMenu('excel')">
           <VListItemTitle>Exportera Excel</VListItemTitle>
         </VListItem>
       </VList>
@@ -812,65 +1266,89 @@ const downloadCSV = async () => {
   </VDialog>
 
   <!-- 👉 Mobile Action Dialog -->
-    <VDialog
-      v-model="isMobileActionDialogVisible"
-      transition="dialog-bottom-transition"
-      content-class="dialog-bottom-full-width"
-    >
-      <VCard>
-        <VList>
-          <VListItem
-            v-if="selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8"
-            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-cash-2" size="24" />
-            </template>
-            <VListItemTitle>Markera som betald</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
-            @click="updateBillingState(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Markera som obetald</VListItemTitle>
-          </VListItem>
-          <VListItem
-              @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-print" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Skriv ut</VListItemTitle>
-          </VListItem>
-          <VListItem
-              @click="openBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-pdf" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Visa som PDF</VListItemTitle>
-          </VListItem>
-          <VListItem 
-            @click="downloadBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-download" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Ladda ner</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
-            @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
-          >
-            <template #prepend>
-              <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Kreditera</VListItemTitle>
-          </VListItem>
-        </VList>
-      </VCard>
-    </VDialog>
+  <VDialog
+    v-model="isMobileActionDialogVisible"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard>
+      <VList>
+        <VListItem
+          v-if="selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8"
+          @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-bribery" size="24" />
+          </template>
+          <VListItemTitle>Markera som betald</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
+          @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Markera som obetald</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="(selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8) && selectedBillingForAction.user_id !== null"
+          @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-pencil" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Redigera</VListItemTitle>
+        </VListItem>
+        <VListItem @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Skicka</VListItemTitle>
+        </VListItem>
+        <VListItem
+            @click="printBilling(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-print" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Skriv ut</VListItemTitle>
+        </VListItem>
+        <VListItem
+            @click="openBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-pdf" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Visa som PDF</VListItemTitle>
+        </VListItem>
+        <VListItem 
+          @click="downloadBillingPdf(selectedBillingForAction); isMobileActionDialogVisible = false;">
+          <template #prepend>
+            <VIcon icon="custom-download" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Ladda ner</VListItemTitle>
+        </VListItem>
+        <VListItem
+          @click="replaceFile(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-refresh" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Ersätta faktura</VListItemTitle>
+        </VListItem>
+        <VListItem
+          v-if="selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
+          @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
+        >
+          <template #prepend>
+            <VIcon icon="custom-cancel-contract" size="24" class="mr-2" />
+          </template>
+          <VListItemTitle>Kreditera</VListItemTitle>
+        </VListItem>
+      </VList>
+    </VCard>
+  </VDialog>
 
+  <!-- 👉 Confirm Kreditera -->
   <VDialog
     v-model="isConfirmKreditera"
     persistent
@@ -879,7 +1357,7 @@ const downloadCSV = async () => {
     <VBtn
       icon
       class="btn-white close-btn"
-      @click="isConfirmKreditera = false"
+      @click="isConfirmKreditera = !isConfirmKreditera"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
@@ -906,12 +1384,112 @@ const downloadCSV = async () => {
       </VCardText>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Update State -->
+  <VDialog
+    v-model="isConfirmStateDialogVisible"
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+        <div class="dialog-title">
+          Uppdatera status
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Är du säker på att du vill uppdatera fakturans status
+        <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+        {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+          Avbryt
+        </VBtn>
+        <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <!-- 👉 Confirm send -->
+  <VDialog 
+    v-model="isConfirmSendMailVisible" 
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VForm
+      ref="refSendBillingForm"
+      @submit.prevent="sendBilling"
+    >
+      <VCard class="card-form"
+      >
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+          <div class="dialog-title">
+            Skicka fakturan
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Ange den e-postadress till vilken du vill skicka fakturan.
+        </VCardText>
+        <VCardText class="dialog-text pt-2">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+          <VTextField
+            v-model="email"
+            placeholder="kund@exempel.com"
+            :rules="[emailValidator]"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailVisible = !isConfirmSendMailVisible">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
+        </VCardText>
+      </VCard>
+    </VForm>
+  </VDialog>
+
+  <input
+    ref="replaceFileInput"
+    type="file"
+    accept="application/pdf,.pdf"
+    style="display: none"
+    @change="onReplaceFileSelected"
+  >
 </template>
 
 <style>
   .iconsButton .v-btn--icon.v-btn--density-default {
     width: calc(var(--v-btn-height) + 0px) !important;
     height: 25px !important;
+  }
+  .supplier-company-logo-avatar {
+    background-color: #E7E7E7 !important;
+    border: 1px solid #E7E7E7 !important;
   }
   .facturing.v-card--variant-elevated {
       box-shadow: none !important;

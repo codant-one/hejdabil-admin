@@ -3,6 +3,7 @@
 import { useDisplay } from "vuetify";
 import { emailValidator, requiredValidator, phoneValidator, smsSenderValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
+import { handleNumericTextFieldKeydown as handlePhoneKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { formatNumberInteger } from "@/@core/utils/formatters";
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -48,10 +49,11 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
-const plan_id = ref(2)
 const is_yearly = ref(0)
 const start_date = ref(null)
 const end_date = ref(null)
+const sms_price = ref(1.00)
+const nonNegativeNumericRules = [numericRangeValidator({ min: 1 })]
 
 const allowNavigation = ref(false)
 const isConfirmLeaveVisible = ref(false)
@@ -309,6 +311,9 @@ const showTabValidationWarning = (message) => {
 const getTabValidationErrors = () => {
     const isPhoneValid = supplierPhoneRules.value.every(rule => rule(phone.value) === true)
     const isLandlineValid = landlineRules.value.every(rule => rule(landline.value) === true)
+    const smsPriceValue = String(sms_price.value ?? '').trim()
+    const smsPriceNumber = Number(smsPriceValue)
+    const hasInvalidSmsPrice = smsPriceValue === '' || Number.isNaN(smsPriceNumber) || smsPriceNumber < 1
 
     const hasTab0Errors = !company.value ||
                             !organization_number.value ||
@@ -324,7 +329,8 @@ const getTabValidationErrors = () => {
     const hasTab2Errors = !name.value ||
                           !last_name.value ||
                           (email.value && emailValidator(email.value) !== true) ||
-                          !start_date.value
+                          !start_date.value ||
+                          hasInvalidSmsPrice
 
     return {
         hasTab0Errors,
@@ -453,6 +459,7 @@ const onSubmit = async () => {
                 formData.append('is_yearly', is_yearly.value)
                 formData.append('start_date', start_date.value)
                 formData.append('end_date', end_date.value)
+                formData.append('sms_price', sms_price.value)
 
                 isRequestOngoing.value = true
 
@@ -552,6 +559,7 @@ const currentData = computed(() => ({
     is_yearly: is_yearly.value,
     start_date: start_date.value,
     end_date: end_date.value,
+    sms_price: sms_price.value
 }))
 
 const isDirty = computed(() => {
@@ -892,6 +900,17 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 class="field-solo-flat"
                                                 placeholder="Startdatum"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Priset för ett sms*" />
+                                            <VTextField
+                                                v-bind="numericTextFieldProps"
+                                                v-model="sms_price"
+                                                suffix="KR"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="sms_price = normalizeNumericTextInput(sms_price)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">

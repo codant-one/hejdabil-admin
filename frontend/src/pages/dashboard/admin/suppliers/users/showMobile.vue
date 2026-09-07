@@ -1,5 +1,6 @@
 <script setup>
 
+import { canWithPlan } from "@/@layouts/plugins/casl";
 const { width: windowWidth } = useWindowSize();
 
 const props = defineProps({
@@ -143,34 +144,34 @@ const hasAssignedPermission = permission => {
                     >
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','clients') ||
-                                $can('create','clients') ||
-                                $can('edit','clients') ||
-                                $can('delete','clients')
+                                canWithPlan('view','clients') ||
+                                canWithPlan('create','clients') ||
+                                canWithPlan('edit','clients') ||
+                                canWithPlan('delete','clients')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Kunder" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','clients') && hasAssignedPermission('view clients')"
+                                    v-if="canWithPlan('view','clients') && hasAssignedPermission('view clients')"
                                     class="permission-label"
                                 >
                                     view clients
                                 </div>
                                 <div
-                                    v-if="$can('create','clients') && hasAssignedPermission('create clients')"
+                                    v-if="canWithPlan('create','clients') && hasAssignedPermission('create clients')"
                                     class="permission-label"
                                 >
                                     create clients
                                 </div>
                                 <div
-                                    v-if="$can('edit','clients') && hasAssignedPermission('edit clients')"
+                                    v-if="canWithPlan('edit','clients') && hasAssignedPermission('edit clients')"
                                     class="permission-label"
                                 >
                                     edit clients
                                 </div>
                                 <div
-                                    v-if="$can('delete','clients') && hasAssignedPermission('delete clients')"
+                                    v-if="canWithPlan('delete','clients') && hasAssignedPermission('delete clients')"
                                     class="permission-label"
                                 >
                                     delete clients
@@ -180,34 +181,34 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','billings') ||
-                                $can('create','billings') ||
-                                $can('edit','billings') ||
-                                $can('delete','billings')
+                                canWithPlan('view','billings') ||
+                                canWithPlan('create','billings') ||
+                                canWithPlan('edit','billings') ||
+                                canWithPlan('delete','billings')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Fakturor" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','billings') && hasAssignedPermission('view billings')"
+                                    v-if="canWithPlan('view','billings') && hasAssignedPermission('view billings')"
                                     class="permission-label"
                                 >
                                     view billings
                                 </div>
                                 <div
-                                    v-if="$can('create','billings') && hasAssignedPermission('create billings')"
+                                    v-if="canWithPlan('create','billings') && hasAssignedPermission('create billings')"
                                     class="permission-label"
                                 >
                                     create billings
                                 </div>
                                 <div
-                                    v-if="$can('edit','billings') && hasAssignedPermission('edit billings')"
+                                    v-if="canWithPlan('edit','billings') && hasAssignedPermission('edit billings')"
                                     class="permission-label"
                                 >
                                     edit billings
                                 </div>
                                 <div
-                                    v-if="$can('delete','billings') && hasAssignedPermission('delete billings')"
+                                    v-if="canWithPlan('delete','billings') && hasAssignedPermission('delete billings')"
                                     class="permission-label"
                                 >
                                     delete billings
@@ -217,12 +218,12 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','stock') ||
-                                $can('create','stock') ||
-                                $can('edit','stock') ||
-                                $can('delete','stock') ||
-                                $can('view','sold') ||
-                                $can('delete','sold')
+                                canWithPlan('view','stock') ||
+                                canWithPlan('create','stock') ||
+                                canWithPlan('edit','stock') ||
+                                canWithPlan('delete','stock') ||
+                                canWithPlan('view','sold') ||
+                                canWithPlan('delete','sold')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt Fordonslager" />
@@ -230,40 +231,40 @@ const hasAssignedPermission = permission => {
                                 <div class="ml-5 w-100">
                                     <VLabel class="mb-4 text-body-3 text-high-emphasis" text="I Lager" 
                                         v-if="
-                                            $can('view','stock') ||
-                                            $can('create','stock') ||
-                                            $can('edit','stock') ||
-                                            $can('delete','stock')
+                                            canWithPlan('view','stock') ||
+                                            canWithPlan('create','stock') ||
+                                            canWithPlan('edit','stock') ||
+                                            canWithPlan('delete','stock')
                                         "
                                     />
                                     <div class="mb-4 permissions-grid"
                                         v-if="
-                                            $can('view','stock') ||
-                                            $can('create','stock') ||
-                                            $can('edit','stock') ||
-                                            $can('delete','stock')
+                                            canWithPlan('view','stock') ||
+                                            canWithPlan('create','stock') ||
+                                            canWithPlan('edit','stock') ||
+                                            canWithPlan('delete','stock')
                                         "
                                     >
                                         <div
-                                            v-if="$can('view','stock') && hasAssignedPermission('view stock')"
+                                            v-if="canWithPlan('view','stock') && hasAssignedPermission('view stock')"
                                             class="permission-label"
                                         >
                                             view stock
                                         </div>
                                         <div
-                                            v-if="$can('create','stock') && hasAssignedPermission('create stock')"
+                                            v-if="canWithPlan('create','stock') && hasAssignedPermission('create stock')"
                                             class="permission-label"
                                         >
                                             create stock
                                         </div>
                                         <div
-                                            v-if="$can('edit','stock') && hasAssignedPermission('edit stock')"
+                                            v-if="canWithPlan('edit','stock') && hasAssignedPermission('edit stock')"
                                             class="permission-label"
                                         >
                                             edit stock
                                         </div>
                                         <div
-                                            v-if="$can('delete','stock') && hasAssignedPermission('delete stock')"
+                                            v-if="canWithPlan('delete','stock') && hasAssignedPermission('delete stock')"
                                             class="permission-label"
                                         >
                                             delete stock
@@ -271,24 +272,24 @@ const hasAssignedPermission = permission => {
                                     </div>
                                     <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Sålda Fordon" 
                                         v-if="
-                                            $can('view','sold') ||
-                                            $can('delete','sold')
+                                            canWithPlan('view','sold') ||
+                                            canWithPlan('delete','sold')
                                         "
                                     />
                                     <div class="permissions-grid"
                                         v-if="
-                                            $can('view','sold') ||
-                                            $can('delete','sold')
+                                            canWithPlan('view','sold') ||
+                                            canWithPlan('delete','sold')
                                         "
                                     >
                                         <div
-                                            v-if="$can('view','sold') && hasAssignedPermission('view sold')"
+                                            v-if="canWithPlan('view','sold') && hasAssignedPermission('view sold')"
                                             class="permission-label"
                                         >
                                             view sold
                                         </div>
                                         <div
-                                            v-if="$can('delete','sold') && hasAssignedPermission('delete sold')"
+                                            v-if="canWithPlan('delete','sold') && hasAssignedPermission('delete sold')"
                                             class="permission-label"
                                         >
                                             delete sold
@@ -301,34 +302,34 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','agreements') ||
-                                $can('create','agreements') ||
-                                $can('edit','agreements') ||
-                                $can('delete','agreements')
+                                canWithPlan('view','agreements') ||
+                                canWithPlan('create','agreements') ||
+                                canWithPlan('edit','agreements') ||
+                                canWithPlan('delete','agreements')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Avtal" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','agreements') && hasAssignedPermission('view agreements')"
+                                    v-if="canWithPlan('view','agreements') && hasAssignedPermission('view agreements')"
                                     class="permission-label"
                                 >
                                     view agreements
                                 </div>
                                 <div
-                                    v-if="$can('create','agreements') && hasAssignedPermission('create agreements')"
+                                    v-if="canWithPlan('create','agreements') && hasAssignedPermission('create agreements')"
                                     class="permission-label"
                                 >
                                     create agreements
                                 </div>
                                 <div
-                                    v-if="$can('edit','agreements') && hasAssignedPermission('edit agreements')"
+                                    v-if="canWithPlan('edit','agreements') && hasAssignedPermission('edit agreements')"
                                     class="permission-label"
                                 >
                                     edit agreements
                                 </div>
                                 <div
-                                    v-if="$can('delete','agreements') && hasAssignedPermission('delete agreements')"
+                                    v-if="canWithPlan('delete','agreements') && hasAssignedPermission('delete agreements')"
                                     class="permission-label"
                                 >
                                     delete agreements
@@ -338,10 +339,10 @@ const hasAssignedPermission = permission => {
                         
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','signed-documents') ||
-                                $can('create','signed-documents') ||
-                                $can('edit','signed-documents') ||
-                                $can('delete','signed-documents')
+                                canWithPlan('view','signed-documents') ||
+                                canWithPlan('create','signed-documents') ||
+                                canWithPlan('edit','signed-documents') ||
+                                canWithPlan('delete','signed-documents')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="E-signering" />
@@ -349,25 +350,25 @@ const hasAssignedPermission = permission => {
                                 :class="windowWidth < 1024 ? 'd-flex flex-column align-start' : 'permissions-grid'"
                             >
                                 <div
-                                    v-if="$can('view','signed-documents') && hasAssignedPermission('view signed-documents')"
+                                    v-if="canWithPlan('view','signed-documents') && hasAssignedPermission('view signed-documents')"
                                     class="permission-label"
                                 >
                                     view signed-documents
                                 </div>
                                 <div
-                                    v-if="$can('create','signed-documents') && hasAssignedPermission('create signed-documents')"
+                                    v-if="canWithPlan('create','signed-documents') && hasAssignedPermission('create signed-documents')"
                                     class="permission-label"
                                 >
                                     create signed-documents
                                 </div>
                                 <div
-                                    v-if="$can('edit','signed-documents') && hasAssignedPermission('edit signed-documents')"
+                                    v-if="canWithPlan('edit','signed-documents') && hasAssignedPermission('edit signed-documents')"
                                     class="permission-label"
                                 >
                                     edit signed-documents
                                 </div>
                                 <div
-                                    v-if="$can('delete','signed-documents') && hasAssignedPermission('delete signed-documents')"
+                                    v-if="canWithPlan('delete','signed-documents') && hasAssignedPermission('delete signed-documents')"
                                     class="permission-label"
                                 >
                                     delete signed-documents
@@ -377,34 +378,34 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','payouts') ||
-                                $can('create','payouts') ||
-                                $can('edit','payouts') ||
-                                $can('delete','payouts')
+                                canWithPlan('view','payouts') ||
+                                canWithPlan('create','payouts') ||
+                                canWithPlan('edit','payouts') ||
+                                canWithPlan('delete','payouts')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Swish" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','payouts') && hasAssignedPermission('view payouts')"
+                                    v-if="canWithPlan('view','payouts') && hasAssignedPermission('view payouts')"
                                     class="permission-label"
                                 >
                                     view payouts
                                 </div>
                                 <div
-                                    v-if="$can('create','payouts') && hasAssignedPermission('create payouts')"
+                                    v-if="canWithPlan('create','payouts') && hasAssignedPermission('create payouts')"
                                     class="permission-label"
                                 >
                                     create payouts
                                 </div>
                                 <div
-                                    v-if="$can('edit','payouts') && hasAssignedPermission('edit payouts')"
+                                    v-if="canWithPlan('edit','payouts') && hasAssignedPermission('edit payouts')"
                                     class="permission-label"
                                 >
                                     edit payouts
                                 </div>
                                 <div
-                                    v-if="$can('delete','payouts') && hasAssignedPermission('delete payouts')"
+                                    v-if="canWithPlan('delete','payouts') && hasAssignedPermission('delete payouts')"
                                     class="permission-label"
                                 >
                                     delete payouts
@@ -414,34 +415,34 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','notes') ||
-                                $can('create','notes') ||
-                                $can('edit','notes') ||
-                                $can('delete','notes')
+                                canWithPlan('view','notes') ||
+                                canWithPlan('create','notes') ||
+                                canWithPlan('edit','notes') ||
+                                canWithPlan('delete','notes')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mina Värderingar" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','notes') && hasAssignedPermission('view notes')"
+                                    v-if="canWithPlan('view','notes') && hasAssignedPermission('view notes')"
                                     class="permission-label"
                                 >
                                     view notes
                                 </div>
                                 <div
-                                    v-if="$can('create','notes') && hasAssignedPermission('create notes')"
+                                    v-if="canWithPlan('create','notes') && hasAssignedPermission('create notes')"
                                     class="permission-label"
                                 >
                                     create notes
                                 </div>
                                 <div
-                                    v-if="$can('edit','notes') && hasAssignedPermission('edit notes')"
+                                    v-if="canWithPlan('edit','notes') && hasAssignedPermission('edit notes')"
                                     class="permission-label"
                                 >
                                     edit notes
                                 </div>
                                 <div
-                                    v-if="$can('delete','notes') && hasAssignedPermission('delete notes')"
+                                    v-if="canWithPlan('delete','notes') && hasAssignedPermission('delete notes')"
                                     class="permission-label"
                                 >
                                     delete notes
@@ -451,41 +452,41 @@ const hasAssignedPermission = permission => {
 
                         <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
                             v-if="
-                                $can('view','my-team') ||
-                                $can('create','my-team') ||
-                                $can('edit','my-team') ||
-                                $can('delete','my-team') ||
-                                $can('view','team-reports')
+                                canWithPlan('view','my-team') ||
+                                canWithPlan('create','my-team') ||
+                                canWithPlan('edit','my-team') ||
+                                canWithPlan('delete','my-team') ||
+                                canWithPlan('view','team-reports')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
                             <div class="permissions-grid">
                                 <div
-                                    v-if="$can('view','my-team') && hasAssignedPermission('view my-team')"
+                                    v-if="canWithPlan('view','my-team') && hasAssignedPermission('view my-team')"
                                     class="permission-label"
                                 >
                                     view my-team
                                 </div>
                                 <div
-                                    v-if="$can('create','my-team') && hasAssignedPermission('create my-team')"
+                                    v-if="canWithPlan('create','my-team') && hasAssignedPermission('create my-team')"
                                     class="permission-label"
                                 >
                                     create my-team
                                 </div>
                                 <div
-                                    v-if="$can('edit','my-team') && hasAssignedPermission('edit my-team')"
+                                    v-if="canWithPlan('edit','my-team') && hasAssignedPermission('edit my-team')"
                                     class="permission-label"
                                 >
                                     edit my-team
                                 </div>
                                 <div
-                                    v-if="$can('delete','my-team') && hasAssignedPermission('delete my-team')"
+                                    v-if="canWithPlan('delete','my-team') && hasAssignedPermission('delete my-team')"
                                     class="permission-label"
                                 >
                                     delete my-team
                                 </div>
                                 <div
-                                    v-if="$can('view','team-reports') && hasAssignedPermission('view team-reports')"
+                                    v-if="canWithPlan('view','team-reports') && hasAssignedPermission('view team-reports')"
                                     class="permission-label"
                                 >
                                     view team-reports
