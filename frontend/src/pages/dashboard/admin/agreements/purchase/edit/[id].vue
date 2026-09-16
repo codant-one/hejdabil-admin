@@ -300,7 +300,7 @@ async function fetchData() {
         iva_sale_exclusive.value = agreement.value.vehicle_client.vehicle.iva_sale_exclusive
         discount.value = agreement.value.vehicle_client.vehicle.discount
         total_sale.value = agreement.value.vehicle_client.vehicle.total_sale
-        sale_price.value = formatDecimal(agreement.value.vehicle_client.vehicle.sale_price)
+        sale_price.value = agreement.value.vehicle_client.vehicle.sale_price ? formatDecimal(agreement.value.vehicle_client.vehicle.sale_price) : null
         sale_date.value = agreement.value.vehicle_client.vehicle.sale_date ?? formatDate(new Date())
         iva_sale_id.value = agreement.value.vehicle_client.vehicle.iva_sale_id
         sale_comments.value = agreement.value.vehicle_client.vehicle.sale_comments
