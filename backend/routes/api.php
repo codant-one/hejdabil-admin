@@ -208,6 +208,9 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
         Route::get('/cancel-subscription/{id}', [SupplierController::class, 'cancelSubscription']);
         Route::get('/active-subscription/{id}', [SupplierController::class, 'activeSubscription']);
         Route::get('/reactive-subscription/{id}', [SupplierController::class, 'reactiveSubscription']);
+        Route::post('/send-deletion-code/{id}', [SupplierController::class, 'sendDeletionCode']);
+        Route::post('/request-deletion/{id}', [SupplierController::class, 'requestDeletion']);
+        Route::post('/cancel-deletion/{id}', [SupplierController::class, 'cancelDeletion']);
     });
 
     //Clients

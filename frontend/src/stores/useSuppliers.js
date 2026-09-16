@@ -363,5 +363,41 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.setLoading(false)
                 })  
         },
+        sendDeletionCode(id, data) {
+            this.setLoading(true)
+
+            return Suppliers.sendDeletionCode(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        requestDeletion(id, data) {
+            this.setLoading(true)
+
+            return Suppliers.requestDeletion(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        cancelDeletion(id, data) {
+            this.setLoading(true)
+
+            return Suppliers.cancelDeletion(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        }
     }
 })

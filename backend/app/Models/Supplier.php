@@ -674,6 +674,31 @@ class Supplier extends Model
 
         return $supplier;
     }
+    
+    public static function requestDeletion($id) {
+
+        $deletion_requested_at = now();
+        $deletion_scheduled_at = now()->addMonths(3); // 3 months grace period
+
+        $supplier = self::where('id', $id)->first();
+        $supplier->deletion_requested_at = $deletion_requested_at;
+        $supplier->deletion_scheduled_at = $deletion_scheduled_at;
+        $supplier->save();
+
+        return $supplier;
+    }
+
+    public static function cancelDeletion($id) {
+        $supplier = self::find($id);
+        
+        if ($supplier) {
+            $supplier->deletion_requested_at = null;
+            $supplier->deletion_scheduled_at = null;
+            $supplier->save();
+        }
+
+        return $supplier;
+    }
 
     /**** attributes ****/
     public function getFullNameAttribute()
