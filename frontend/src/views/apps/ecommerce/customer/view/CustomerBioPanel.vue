@@ -10,7 +10,15 @@ import {
 } from "@/@core/utils/validators";
 import { useSuppliersStores } from "@/stores/useSuppliers";
 
-import avatarImg from "@/assets/images/sample-avatar.jpg";
+import avatar1 from "@/assets/images/avatars/1.svg";
+import avatar2 from "@/assets/images/avatars/2.svg";
+import avatar3 from "@/assets/images/avatars/3.svg";
+import avatar4 from "@/assets/images/avatars/4.svg";
+import avatar5 from "@/assets/images/avatars/5.svg";
+import avatar6 from "@/assets/images/avatars/6.svg";
+
+const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6];
+const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
 
 const props = defineProps({
   customerData: {
@@ -159,7 +167,7 @@ const onSubmit = () => {
         :size="250"
         class="position-relative"
       >
-        <VImg :src="avatarImg" />
+        <VImg :src="randomAvatar" />
         <h4 class="avatar-username" v-if="props.isSupplier">
           {{ props.customerData.user.name }}
           <br />
@@ -405,7 +413,7 @@ const onSubmit = () => {
 @media (max-width: 767px) {
   .bio-panel {
     .v-avatar {
-      height: 170px !important;
+      /* height: 170px !important; */
     }
 
   }
