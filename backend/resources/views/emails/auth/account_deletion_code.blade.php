@@ -5,12 +5,12 @@
     <tr>
         <td align="center" style="padding:0;margin:0;padding-bottom:16px;">
             <p style="margin:0;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:24px;color:#454545;font-size:16px;">
-                {{ $action === 'request' ? 'Använd koden nedan för att bekräfta att ditt Bilflogg-konto ska raderas.' : 'Använd koden nedan för att avbryta den planerade raderingen av ditt Bilflogg-konto.' }}
+                Du har begärt att radera ditt Bilflogg-konto permanent. Använd verifieringskoden nedan för att bekräfta raderingen.
             </p>
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:24px;margin:0;">
+        <td align="center" style="padding:12px 24px 24px 24px;margin:0;">
             <strong style="font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:32px;line-height:40px;letter-spacing:8px;color:#1c2925;">
                 {{ $code }}
             </strong>
@@ -19,7 +19,7 @@
     <tr>
         <td align="center" style="padding:0;margin:0;padding-bottom:16px;">
             <p style="margin:0;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:24px;color:#454545;font-size:16px;">
-                Om du inte har begärt detta kan du bortse från mejlet. Ingen ändring sker utan koden och ditt lösenord.
+                Ange koden i Bilflogg för att fortsätta med raderingen. Om du inte har begärt att ditt konto ska raderas kan du bortse från detta mejl. Ditt konto påverkas inte så länge raderingen inte bekräftas.
             </p>
         </td>
     </tr>

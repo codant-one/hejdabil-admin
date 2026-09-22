@@ -1968,49 +1968,39 @@ class SupplierController extends Controller
         }
     }
 
-    public function sendDeletionCode(Request $request, $id)
+    public function sendDeletionCode($id)
     {
-        $request->validate([
-            'action' => 'required|in:request,cancel',
-        ]);
-
         $supplier = Supplier::with('user')->findOrFail($id);
 
         if ((int) $supplier->user_id !== (int) Auth::id()) {
             return response()->json([
                 'success' => false,
+                'feedback' => 'not_permission',
                 'message' => 'Du har inte behörighet att hantera detta konto.',
             ], 403);
         }
 
-        if ($request->action === 'request' && $supplier->deletion_requested_at) {
+        if ($supplier->deletion_requested_at) {
             return response()->json([
                 'success' => false,
+                'feedback' => 'already_requested',
                 'message' => 'Kontot är redan markerat för radering.',
             ], 422);
         }
 
-        if ($request->action === 'cancel' && !$supplier->deletion_requested_at) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Det finns ingen planerad kontoradering att avbryta.',
-            ], 422);
-        }
-
         $code = (string) random_int(100000, 999999);
-        $supplier->code = Hash::make($request->action.'|'.$code);
+        $supplier->code = Hash::make('request|'.$code);
         $supplier->save();
 
         SendEmailJob::dispatch(
             'emails.auth.account_deletion_code',
             [
+                'title' => 'Bekräfta radering av ditt Bilflogg-konto',
                 'code' => $code,
-                'action' => $request->action,
+                'icon' => asset('/images/user_deleted.png'),
             ],
             $supplier->user->email,
-            $request->action === 'request'
-                ? 'Bekräfta radering av ditt Bilflogg-konto'
-                : 'Bekräfta att kontoraderingen ska avbrytas'
+            'Bekräfta radering av ditt Bilflogg-konto'
         )->onQueue('emails');
 
         return response()->json([
@@ -2024,7 +2014,6 @@ class SupplierController extends Controller
         try {
             $request->validate([
                 'code' => 'required|digits:6',
-                'password' => 'required|string',
             ]);
 
             $supplier = Supplier::with('user')->findOrFail($id);
@@ -2032,20 +2021,15 @@ class SupplierController extends Controller
             if ((int) $supplier->user_id !== (int) Auth::id()) {
                 return response()->json([
                     'success' => false,
+                    'feedback' => 'not_permission',
                     'message' => 'Du har inte behörighet att hantera detta konto.',
                 ], 403);
-            }
-
-            if (!Hash::check($request->password, $supplier->user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Lösenordet är felaktigt.',
-                ], 422);
             }
 
             if (!$supplier->code || !Hash::check('request|'.$request->code, $supplier->code)) {
                 return response()->json([
                     'success' => false,
+                    'feedback' => 'invalid_code',
                     'message' => 'Verifieringskoden är ogiltig.',
                 ], 422);
             }
@@ -2057,58 +2041,6 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Kontot kommer att raderas om 3 månader.',
-                'data' => [
-                    'supplier' => $supplier
-                ]
-            ], 200);
-
-        } catch(\Illuminate\Database\QueryException $ex) {
-            return response()->json([
-                'success' => false,
-                'message' => 'database_error',
-                'exception' => $ex->getMessage()
-            ], 500);
-        }
-    }
-
-    public function cancelDeletion(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'code' => 'required|digits:6',
-                'password' => 'required|string',
-            ]);
-
-            $supplier = Supplier::with('user')->findOrFail($id);
-
-            if ((int) $supplier->user_id !== (int) Auth::id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Du har inte behörighet att hantera detta konto.',
-                ], 403);
-            }
-
-            if (!Hash::check($request->password, $supplier->user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Lösenordet är felaktigt.',
-                ], 422);
-            }
-
-            if (!$supplier->code || !Hash::check('cancel|'.$request->code, $supplier->code)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Verifieringskoden är ogiltig.',
-                ], 422);
-            }
-
-            $supplier->cancelDeletion($id);
-            $supplier->code = null;
-            $supplier->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Den planerade kontoraderingen har avbrutits.',
                 'data' => [
                     'supplier' => $supplier
                 ]

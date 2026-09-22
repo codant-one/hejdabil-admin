@@ -9,6 +9,7 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import InlineBanner from '@/components/common/InlineBanner.vue'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
@@ -38,6 +39,16 @@ const isDialogVisible = ref(false)
 const is2faEnabled = ref(false)
 const qr = ref(null)
 const token = ref(null)
+const isDeleteConfirmDialogVisible = ref(false)
+const isDeleteVerificationDialogVisible = ref(false)
+const deletionForm = ref(null)
+const deletionCode = ref('')
+const deletionError = ref('')
+const deletionOtpKey = ref(0)
+
+const err = ref(null);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
 
 const isUserRole = () => role.value === 'User'
 const hasInactiveSupplierSubscription = () => {
@@ -104,7 +115,6 @@ async function fetchData() {
       csrUrl.value = null
     }
   } catch (error) {
-    console.error(error)
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
     clearAdvisorLater(5000)
   } finally {
@@ -134,7 +144,6 @@ const submit2faCode = code => {
         setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
 
       clearAdvisorLater(5000)
-      console.error(error?.message ?? error)
     })
     .finally(() => {
       isRequestOngoing.value = false
@@ -193,7 +202,6 @@ const downloadFile = async url => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    console.error('Error:', error)
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
     clearAdvisorLater(5000)
   }
@@ -232,7 +240,6 @@ const onSubmitKey = async () => {
       setAdvisor('success', 'Aktuell information')
       clearAdvisorLater(5000)
     } catch (error) {
-      console.error(error)
       setAdvisor('error', 'Fel vid uppdatering av huvudlösenord')
       clearAdvisorLater(5000)
     } finally {
@@ -240,6 +247,118 @@ const onSubmitKey = async () => {
     }
   })
 }
+
+const deletionErrorMessage = error => error?.message ?? 'Ett serverfel uppstod. Försök igen.'
+
+const resetDeletionForm = () => {
+  deletionCode.value = ''
+  deletionError.value = ''
+  deletionOtpKey.value += 1
+  deletionForm.value?.resetValidation()
+}
+
+const openDeleteConfirmation = () => {
+  resetDeletionForm()
+  isDeleteConfirmDialogVisible.value = true
+}
+
+const sendDeletionCode = async () => {
+  const supplierId = userData.value?.supplier?.id
+
+  if (!supplierId)
+    return
+
+  isRequestOngoing.value = true
+  deletionError.value = ''
+
+  try {
+    await suppliersStores.sendDeletionCode(supplierId)
+    isDeleteConfirmDialogVisible.value = false
+    isDeleteVerificationDialogVisible.value = true
+    setAdvisor('success', 'En verifieringskod har skickats till din e-postadress.')
+    clearAdvisorLater(3000)
+  } catch (error) {
+    err.value = error;
+    isDeleteConfirmDialogVisible.value = false
+    inteSkapatsDialog.value = error?.response?.data?.feedback === "not_permission" ? false : true
+    clearAdvisorLater(5000)
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+const resendDeletionCode = async () => {
+  await sendDeletionCode()
+
+  if (isDeleteVerificationDialogVisible.value)
+    setAdvisor('success', 'En ny verifieringskod har skickats.')
+}
+
+const handleDeletionOtp = value => {
+  deletionCode.value = value
+  deletionError.value = ''
+}
+
+const closeDeleteVerification = () => {
+  isDeleteVerificationDialogVisible.value = false
+  resetDeletionForm()
+}
+
+const confirmAccountDeletion = async () => {
+  const { valid } = await deletionForm.value.validate()
+
+  if (!valid)
+    return
+
+  if (deletionCode.value.length !== 6) {
+    deletionError.value = 'Ange den sexsiffriga koden från e-postmeddelandet.'
+
+    return
+  }
+
+  isRequestOngoing.value = true
+  deletionError.value = ''
+
+  try {
+    await suppliersStores.requestDeletion(userData.value.supplier.id, {
+      code: deletionCode.value,
+    })
+
+    closeDeleteVerification()
+    skapatsDialog.value = true
+  } catch (error) {
+    deletionError.value = deletionErrorMessage(error)
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+const showError = () => {
+    inteSkapatsDialog.value = false;
+
+    advisor.value.show = true;
+    advisor.value.type = "error";
+        const responseData = err.value?.response?.data;
+    
+        if (responseData?.message) {
+            advisor.value.message = responseData.message;
+        } else if (responseData?.errors) {
+            advisor.value.message = Object.values(responseData.errors)
+                .flat()
+                .join("<br>");
+        } else if (err.value?.message) {
+            advisor.value.message = err.value.message;
+    } else {
+      advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+    }
+
+    setTimeout(() => {
+      advisor.value.show = false;
+      advisor.value.type = "";
+      advisor.value.message = "";
+    }, 3000);
+
+};
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -441,8 +560,8 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText :class="windowWidth < 1024 ? '' : 'pb-0'" v-if="role === 'Supplier' && csrUrl !== null && !isDisabled()">
-          <div class="settings-layout">
+        <VCardText class="pb-0" v-if="role === 'Supplier' && csrUrl !== null && !isDisabled()">
+          <div class="settings-layout border-bottom-settings pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Nedladdning av certifikat</span>
@@ -473,6 +592,209 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
+        <VCardText class="card-delete-account">
+          <div class="d-flex flex-column gap-4">
+            <span class="subtitle-settings">Radera konto permanent</span>
+            <span class="text-settings">
+              Om du endast vill avsluta ditt abonnemang behöver du inte radera ditt konto.<br>
+              Du kan istället säga upp abonnemanget separat. Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas. 
+              Om du väljer att radera ditt konto sägs även ditt abonnemang upp automatiskt.<br><br>
+
+              Enligt avtalet gäller 3 månaders uppsägningstid. Under denna period förblir ditt konto och abonnemang aktiva. 
+              När uppsägningstiden har löpt ut avslutas abonnemanget och ditt konto raderas permanent.<br><br>
+
+              Uppgifter som Bilflogg enligt lag är skyldigt att bevara kan komma att sparas under den tid som krävs.
+            </span>
+            
+          </div>
+          <VBtn 
+              type="button" 
+              :block="windowWidth < 1024"
+              class="btn-error-2 mt-4 px-2"
+              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+              @click="openDeleteConfirmation"
+            >
+              Radera konto
+            </VBtn>
+        </VCardText>
+
+        <VDialog
+          v-model="isDeleteConfirmDialogVisible"
+          persistent
+          class="action-dialog"
+        >
+          <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="isDeleteConfirmDialogVisible = false"
+          >
+            <VIcon size="16" icon="custom-close" />
+          </VBtn>
+
+          <VCard>
+            <VCardText class="dialog-title-box">
+              <VIcon size="32" icon="custom-waste-outlined" class="action-icon" />
+              <div class="dialog-title">Radera konto permanent?</div>
+            </VCardText>
+
+            <VCardText class="dialog-text">
+              Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas.
+            </VCardText>
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+              <VBtn class="btn-light" @click="isDeleteConfirmDialogVisible = false">
+                Avbryt
+              </VBtn>
+              <VBtn class="btn-error-2" @click="sendDeletionCode">
+                Radera konto
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
+        <VDialog
+          v-model="isDeleteVerificationDialogVisible"
+          :fullscreen="windowWidth < 1024"
+          persistent
+          :scrim="windowWidth < 1024 ? false : true"
+          :scrollable="windowWidth >= 1024"
+          :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+          :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+          :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+        >
+          <VBtn icon class="btn-white close-btn" @click="closeDeleteVerification">
+            <VIcon size="16" icon="custom-close" />
+          </VBtn>
+
+          <VCard
+            flat
+            :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
+          >
+            <VCardText 
+              class="dialog-title-box"
+              :style="windowWidth < 1024 ? 'max-height: 115px;' : ''"
+            >
+              <VIcon size="32" icon="custom-email-outlined" class="action-icon" />
+              <div class="dialog-title">Kontrollera din e-post</div>
+            </VCardText>
+
+            <VCardText
+              class="dialog-text"
+              :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+            >
+
+              <InlineBanner
+                v-if="deletionError"
+                variant="error"
+                title="Koden har inte kunnat bekräftas"
+                icon="custom-risk"
+                class="alert-no-shrink mb-4"
+                style="flex: none;"
+              >
+                {{ deletionError }}
+              </InlineBanner>
+                  
+              Vi har skickat en verifieringskod till din e-postadress. Ange koden och ditt lösenord för att bekräfta att du vill radera ditt konto.
+              
+              <VForm ref="deletionForm" @submit.prevent="confirmAccountDeletion">
+                
+                <VCardText class="dialog-text deletion-verification-form p-0">
+                  <AppOtpInput
+                    :key="deletionOtpKey"
+                    :show-label="false"
+                    type="text"
+                    class="deletion-otp"
+                    @updateOtp="handleDeletionOtp"
+                  />
+
+                  <div class="deletion-resend mb-4">
+                    Fick du inte koden?
+                    <button type="button" @click="resendDeletionCode">Skicka koden igen</button>
+                  </div>
+
+                  <div 
+                    class="card-delete-account deletion-resend mt-4" 
+                    style="margin: 0!important; text-align: start !important;">
+                    <span>Viktigt:</span> När du bekräftar kommer ditt konto och tillhörande uppgifter att raderas permanent efter 3 månader och kan inte återställas.
+                  </div>
+                </VCardText>
+
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0 px-0">
+                  <VBtn class="btn-light" @click="closeDeleteVerification">Avbryt</VBtn>
+                  <VBtn type="submit" class="btn-error-2">Radera konto</VBtn>
+                </VCardText>
+              </VForm>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
+        <VDialog
+          v-model="skapatsDialog"
+          persistent
+          class="action-dialog dialog-big-icon"
+        >
+
+        <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="skapatsDialog = !skapatsDialog"
+        >
+          <VIcon size="16" icon="custom-close" />
+        </VBtn>
+
+          <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="72" icon="custom-f-checkmark" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">
+                  Ditt konto har raderats korrekt!
+              </div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+              Ditt konto och tillhörande uppgifter har raderats.
+              Du kommer inte längre att kunna komma åt ditt konto eller återställa den raderade informationen.
+            </VCardText>
+            <VCardText class="d-flex justify-center dialog-actions">
+              <VBtn class="btn-gradient" @click="skapatsDialog = false">
+                Stäng
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
+        <VDialog
+            v-model="inteSkapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="inteSkapatsDialog = !inteSkapatsDialog"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-cancel" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Ett fel inträffade</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">                    
+                    Raderingen av kontot har inte genomförts korrekt,
+                    försök igen.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="showError">
+                        Stäng
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
         <VDialog v-model="isFileMissingDialogVisible" width="500">
           <VCard title="Information">
             <VCardText>
@@ -500,8 +822,41 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+  .card-delete-account {
+    border-radius: 16px;
+    padding: 24px;
+    gap: 24px;
+    margin: 16px;
+    background-color: #FFF1F1;
+  }
+
   .two_class {
     grid-template-areas: none;
+  }
+
+  .deletion-verification-form {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .deletion-otp {
+    .d-flex {
+      justify-content: center !important;
+    }
+  }
+
+  .deletion-resend {
+    margin-top: 4px;
+    color: #949494;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    text-align: center;
+
+    button, span {
+      color: #9B191B;
+    }
   }
 </style>
 

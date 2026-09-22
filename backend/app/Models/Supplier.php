@@ -677,25 +677,22 @@ class Supplier extends Model
     
     public static function requestDeletion($id) {
 
-        $deletion_requested_at = now();
-        $deletion_scheduled_at = now()->addMonths(3); // 3 months grace period
-
         $supplier = self::where('id', $id)->first();
-        $supplier->deletion_requested_at = $deletion_requested_at;
-        $supplier->deletion_scheduled_at = $deletion_scheduled_at;
-        $supplier->save();
 
-        return $supplier;
-    }
+        if ($supplier->cancellation_date) {// ya existe una fecha de cancelación, ajustar el cronograma de eliminación en consecuencia
+            $supplier->deletion_requested_at = $supplier->cancellation_date;
+            $supplier->deletion_scheduled_at = $supplier->grace_end_date;
+        } else {// cancela y elimina cuenta
+            $deletion_requested_at = now();
+            $deletion_scheduled_at = now()->addMonths(3); // 3 months grace period
 
-    public static function cancelDeletion($id) {
-        $supplier = self::find($id);
-        
-        if ($supplier) {
-            $supplier->deletion_requested_at = null;
-            $supplier->deletion_scheduled_at = null;
-            $supplier->save();
+            $supplier->cancellation_date = $deletion_requested_at;
+            $supplier->grace_end_date = $deletion_scheduled_at;
+            $supplier->deletion_requested_at = $deletion_requested_at;
+            $supplier->deletion_scheduled_at = $deletion_scheduled_at;
         }
+
+        $supplier->save();
 
         return $supplier;
     }

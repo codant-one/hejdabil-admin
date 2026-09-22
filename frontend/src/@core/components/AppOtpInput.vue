@@ -1,4 +1,5 @@
 <script setup>
+
 const props = defineProps({
   totalInput: {
     type: Number,
@@ -10,9 +11,20 @@ const props = defineProps({
     required: false,
     default: '',
   },
+  showLabel: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
+  type: {
+    type: String,
+    required: false,
+    default: 'password',
+  }
 })
 
 const emit = defineEmits(['updateOtp'])
+const { width: windowWidth } = useWindowSize()
 
 const digits = ref([])
 const refOtpComp = ref(null)
@@ -48,16 +60,20 @@ const handleKeyDown = (event, index) => {
 
 <template>
   <div>
-    <label class="text-base font-weight-bold mb-4 d-none d-md-block">
+    <label
+      v-if="props.showLabel"
+      class="text-base font-weight-bold mb-4 d-none d-md-block"
+    >
       Verifieringskod
     </label>
     <div
       ref="refOtpComp"
-      class="d-flex align-center justify-start gap-2"
+      class="d-flex align-center otp-form"
+      :class="windowWidth < 1024 ? 'justify-center gap-4' : 'justify-start gap-2'"
     >
       <VTextField
         v-for="i in props.totalInput"
-        type="password"
+        :type="props.type"
         :key="i"
         :model-value="digits[i - 1]"
         v-bind="defaultStyle"
@@ -69,4 +85,29 @@ const handleKeyDown = (event, index) => {
 </template>
 
 <style lang="scss">
+  .otp-form {
+    .v-input {
+      .v-input__control {
+        .v-field {
+          border: 1px solid #E7E7E7;
+          background-color: #f6f6f6;
+
+          .v-field__outline {
+            color: #454545 !important;
+          }
+
+          .v-field__input {
+            padding: 0;
+            text-align: center;
+          }
+
+          .v-field__outline__start,
+          .v-field__outline__notch,
+          .v-field__outline__end {
+            border-color: #e7e7e7 !important;
+          }
+        }
+      }
+    }
+  }
 </style>
