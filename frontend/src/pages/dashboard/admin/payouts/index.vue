@@ -356,6 +356,31 @@ const editPayout = payoutData => {
   isAddNewPayoutDrawerVisible.value = true
 }
 
+const hasDefinedState = stateId => stateId !== undefined && stateId !== null
+
+const didPayoutStateChange = (previousStateId, nextStateId) => {
+  return hasDefinedState(previousStateId)
+    && hasDefinedState(nextStateId)
+    && previousStateId !== nextStateId
+}
+
+const shouldRegenerateReceiptOnStateChange = ({ hadReceiptImage, previousStateId, nextStateId }) => {
+  return !!hadReceiptImage && didPayoutStateChange(previousStateId, nextStateId)
+}
+
+const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, payout }) => {
+  if (!shouldRegenerateReceiptOnStateChange({
+    hadReceiptImage,
+    previousStateId,
+    nextStateId: payout?.payout_state_id,
+  })) {
+    return false
+  }
+
+  await autoGenerateUpdatedReceiptImage(payout)
+  return true
+}
+
 const cancelPayout = async () => {
   const previousStateId = selectedPayout.value?.payout_state_id
   const hadReceiptImage = !!selectedPayout.value?.image
@@ -364,14 +389,9 @@ const cancelPayout = async () => {
   let res = await payoutsStores.cancelPayout(selectedPayout.value.id)
 
   const updatedPayout = res?.data?.data?.payout
-  const hasStateChanged = previousStateId !== undefined
-    && previousStateId !== null
-    && updatedPayout?.payout_state_id !== undefined
-    && updatedPayout?.payout_state_id !== null
-    && previousStateId !== updatedPayout?.payout_state_id
 
-  if (res?.data?.success && hadReceiptImage && hasStateChanged)
-    await autoGenerateUpdatedReceiptImage(updatedPayout)
+  if (res?.data?.success)
+    await regenerateReceiptIfNeeded({ hadReceiptImage, previousStateId, payout: updatedPayout })
 
   selectedPayout.value = {}
 
@@ -475,14 +495,6 @@ const submitUpdate = (payoutData, payoutId) => {
   const previousStateId = selectedPayout.value?.payout_state_id
   const hadReceiptImage = !!selectedPayout.value?.image
 
-  const didStateChange = nextStateId => {
-    return previousStateId !== undefined
-      && previousStateId !== null
-      && nextStateId !== undefined
-      && nextStateId !== null
-      && previousStateId !== nextStateId
-  }
-
   payoutData.payer_alias = payer_alias.value
 
   payoutsStores.updatePayout(payoutId, payoutData)
@@ -491,11 +503,11 @@ const submitUpdate = (payoutData, payoutId) => {
             skapatsDialog.value = true
             newlyCreatedPayout.value = res.data.data.payout
 
-            const newStateId = res.data.data.payout?.payout_state_id
-            const hasStateChanged = didStateChange(newStateId)
-
-            if (hadReceiptImage && hasStateChanged)
-              await autoGenerateUpdatedReceiptImage(res.data.data.payout)
+            await regenerateReceiptIfNeeded({
+              hadReceiptImage,
+              previousStateId,
+              payout: res.data.data.payout,
+            })
 
             await fetchData()
         }
@@ -508,10 +520,11 @@ const submitUpdate = (payoutData, payoutId) => {
 
       try {
         const refreshedPayout = await payoutsStores.showPayout(payoutId)
-        const hasStateChanged = didStateChange(refreshedPayout?.payout_state_id)
-
-        if (hadReceiptImage && hasStateChanged)
-          await autoGenerateUpdatedReceiptImage(refreshedPayout)
+        await regenerateReceiptIfNeeded({
+          hadReceiptImage,
+          previousStateId,
+          payout: refreshedPayout,
+        })
       } catch (refreshError) {
         console.error('Error refreshing payout after failed update:', refreshError)
       }
