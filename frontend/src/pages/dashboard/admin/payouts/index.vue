@@ -461,6 +461,14 @@ const submitUpdate = (payoutData, payoutId) => {
   const previousStateId = selectedPayout.value?.payout_state_id
   const hadReceiptImage = !!selectedPayout.value?.image
 
+  const didStateChange = nextStateId => {
+    return previousStateId !== undefined
+      && previousStateId !== null
+      && nextStateId !== undefined
+      && nextStateId !== null
+      && previousStateId !== nextStateId
+  }
+
   payoutData.payer_alias = payer_alias.value
 
   payoutsStores.updatePayout(payoutId, payoutData)
@@ -470,11 +478,7 @@ const submitUpdate = (payoutData, payoutId) => {
             newlyCreatedPayout.value = res.data.data.payout
 
             const newStateId = res.data.data.payout?.payout_state_id
-            const hasStateChanged = previousStateId !== undefined
-              && previousStateId !== null
-              && newStateId !== undefined
-              && newStateId !== null
-              && previousStateId !== newStateId
+            const hasStateChanged = didStateChange(newStateId)
 
             if (hadReceiptImage && hasStateChanged)
               await autoGenerateUpdatedReceiptImage(res.data.data.payout)
@@ -484,9 +488,20 @@ const submitUpdate = (payoutData, payoutId) => {
 
         isRequestOngoing.value = false
     })
-    .catch((error) => {
+    .catch(async (error) => {
       err.value = error
       inteSkapatsDialog.value = true
+
+      try {
+        const refreshedPayout = await payoutsStores.showPayout(payoutId)
+        const hasStateChanged = didStateChange(refreshedPayout?.payout_state_id)
+
+        if (hadReceiptImage && hasStateChanged)
+          await autoGenerateUpdatedReceiptImage(refreshedPayout)
+      } catch (refreshError) {
+        console.error('Error refreshing payout after failed update:', refreshError)
+      }
+
       isRequestOngoing.value = false
 
       fetchData()
