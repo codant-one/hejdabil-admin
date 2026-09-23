@@ -78,7 +78,6 @@ const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
-const forceRegenerateReceiptImage = ref(false)
 const isAutoGeneratingReceipt = ref(false)
 const date = ref(null)
 const selectedExportType = ref(null)
@@ -460,6 +459,7 @@ const submitForm = async (payoutData) => {
 
 const submitUpdate = (payoutData, payoutId) => {
   const previousStateId = selectedPayout.value?.payout_state_id
+  const hadReceiptImage = !!selectedPayout.value?.image
 
   payoutData.payer_alias = payer_alias.value
 
@@ -470,9 +470,13 @@ const submitUpdate = (payoutData, payoutId) => {
             newlyCreatedPayout.value = res.data.data.payout
 
             const newStateId = res.data.data.payout?.payout_state_id
-            forceRegenerateReceiptImage.value = previousStateId === 1 && newStateId === 4
+            const hasStateChanged = previousStateId !== undefined
+              && previousStateId !== null
+              && newStateId !== undefined
+              && newStateId !== null
+              && previousStateId !== newStateId
 
-            if (forceRegenerateReceiptImage.value)
+            if (hadReceiptImage && hasStateChanged)
               await autoGenerateUpdatedReceiptImage(res.data.data.payout)
 
             await fetchData()
@@ -654,11 +658,8 @@ const viewReceipt = async () => {
 
     // Capturar imagen del recibo después de que el dialog se muestre
     nextTick(() => {
-      setTimeout(async () => {
-        await captureAndSaveReceipt(selectedPayout.value, {
-          force: forceRegenerateReceiptImage.value,
-        })
-        forceRegenerateReceiptImage.value = false
+      setTimeout(() => {
+        captureAndSaveReceipt(selectedPayout.value)
       }, 500);
     });
   }
