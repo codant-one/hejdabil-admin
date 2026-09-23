@@ -78,6 +78,8 @@ const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
+const forceRegenerateReceiptImage = ref(false)
+const isAutoGeneratingReceipt = ref(false)
 const date = ref(null)
 const selectedExportType = ref(null)
 const isExportTypeMenuVisible = ref(false)
@@ -457,14 +459,23 @@ const submitForm = async (payoutData) => {
 }
 
 const submitUpdate = (payoutData, payoutId) => {
+  const previousStateId = selectedPayout.value?.payout_state_id
+
   payoutData.payer_alias = payer_alias.value
 
   payoutsStores.updatePayout(payoutId, payoutData)
-    .then((res) => {
+    .then(async (res) => {
         if (res.data.success) {
             skapatsDialog.value = true
             newlyCreatedPayout.value = res.data.data.payout
-            fetchData()
+
+            const newStateId = res.data.data.payout?.payout_state_id
+            forceRegenerateReceiptImage.value = previousStateId === 1 && newStateId === 4
+
+            if (forceRegenerateReceiptImage.value)
+              await autoGenerateUpdatedReceiptImage(res.data.data.payout)
+
+            await fetchData()
         }
 
         isRequestOngoing.value = false
@@ -643,8 +654,11 @@ const viewReceipt = async () => {
 
     // Capturar imagen del recibo después de que el dialog se muestre
     nextTick(() => {
-      setTimeout(() => {
-        captureAndSaveReceipt(selectedPayout.value);
+      setTimeout(async () => {
+        await captureAndSaveReceipt(selectedPayout.value, {
+          force: forceRegenerateReceiptImage.value,
+        })
+        forceRegenerateReceiptImage.value = false
       }, 500);
     });
   }
@@ -670,9 +684,39 @@ const canvasToBlob = canvas => new Promise(resolve => {
   canvas.toBlob(blob => resolve(blob), 'image/png')
 })
 
-const captureAndSaveReceipt = async (payout) => {
+const autoGenerateUpdatedReceiptImage = async payout => {
+  if (!payout)
+    return
+
+  const previousSelectedPayout = selectedPayout.value
+  const previousDesktopDialogState = isPayoutDetailDialogVisible.value
+  const previousMobileDialogState = isPayoutDetailMobileDialogVisible.value
+
+  try {
+    isAutoGeneratingReceipt.value = true
+
+    selectedPayout.value = { ...payout }
+    isPayoutDetailDialogVisible.value = windowWidth.value >= 1024
+    isPayoutDetailMobileDialogVisible.value = windowWidth.value < 1024
+
+    await nextTick()
+    await wait(500)
+
+    await captureAndSaveReceipt(selectedPayout.value, {
+      force: true,
+      refreshList: false,
+    })
+  } finally {
+    isPayoutDetailDialogVisible.value = previousDesktopDialogState
+    isPayoutDetailMobileDialogVisible.value = previousMobileDialogState
+    selectedPayout.value = previousSelectedPayout
+    isAutoGeneratingReceipt.value = false
+  }
+}
+
+const captureAndSaveReceipt = async (payout, { force = false, refreshList = true } = {}) => {
   // capturar si el payout si no tiene imagen (capture if the payout does not have an image)
-  if (payout.image) {
+  if (payout.image && !force) {
     return;
   }
 
@@ -728,8 +772,12 @@ const captureAndSaveReceipt = async (payout) => {
 
     try {
       await payoutsStores.saveReceiptImage(payout.id, formData);
-      // Refresh to get updated payout with image
-      await fetchData();
+
+      if (refreshList) {
+        // Refresh to get updated payout with image
+        await fetchData();
+      }
+
       return true
     } catch (error) {
       console.error('Error saving receipt image:', error);
@@ -1767,7 +1815,7 @@ const onDatePickerUpdate = value => {
     <VDialog
       :model-value="isPayoutDetailDialogVisible"
       persistent
-      class="action-dialog"
+      :class="['action-dialog', { 'receipt-capture-hidden': isAutoGeneratingReceipt }]"
     >
       <!-- Dialog close btn -->
       <VBtn
@@ -1874,7 +1922,7 @@ const onDatePickerUpdate = value => {
         persistent
         :scrim="false"
         transition="dialog-bottom-transition"
-        class="action-dialog dialog-fullscreen">
+      :class="['action-dialog dialog-fullscreen', { 'receipt-capture-hidden': isAutoGeneratingReceipt }]">
        <VCard ref="payoutReceiptMobileRef" class="payout-receipt-card">
         <VCardText 
           class="dialog-title-box px-4 pb-0 flex-row" 
@@ -2372,6 +2420,15 @@ const onDatePickerUpdate = value => {
   </section>
 </template>
 <style>
+  .receipt-capture-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .receipt-capture-hidden .v-overlay__scrim {
+    opacity: 0 !important;
+  }
+
   .dialog-scroll-content {
     overflow-y: auto;
     overflow-x: hidden;
