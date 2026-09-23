@@ -42,6 +42,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('alerts:generate')
                  ->daily()
                  ->at('00:00');
+
+        $schedule->command('suppliers:delete-account')
+                 ->daily()
+                 ->at('00:00');
     }
 
     /**

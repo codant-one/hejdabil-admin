@@ -592,7 +592,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="card-delete-account">
+        <VCardText class="card-delete-account" v-if="role === 'Supplier'">
           <div class="d-flex flex-column gap-4">
             <span class="subtitle-settings">Radera konto permanent</span>
             <span class="text-settings">

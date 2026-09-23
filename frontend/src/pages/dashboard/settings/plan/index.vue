@@ -219,7 +219,6 @@ const activeSubscription = async () => {
                     class="suppliers-tabs">
                     <VTab
                         v-for="(tab, index) in tabs"
-                        v-show="index === 0"
                         :key="index">
                         <VIcon
                             :size="24"

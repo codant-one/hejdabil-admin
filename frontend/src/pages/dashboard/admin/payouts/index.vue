@@ -324,8 +324,8 @@ const seePayout = (payoutData, isMobile = false) => {
     isPayoutDetailDialogVisible.value = true
   }
 
-  // Capturar imagen si el payout está PAID y no tiene imagen
-  if (payoutData.payout_state_id === 4 && !payoutData.image) {
+  // Capturar imagen si no tiene imagen
+  if ( !payoutData.image) {
     nextTick(() => {
       setTimeout(() => {
         captureAndSaveReceipt(payoutData);
@@ -664,9 +664,15 @@ const viewReceipt = async () => {
   }, 3000);
 };
 
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+const canvasToBlob = canvas => new Promise(resolve => {
+  canvas.toBlob(blob => resolve(blob), 'image/png')
+})
+
 const captureAndSaveReceipt = async (payout) => {
-  // Solo capturar si el payout está en estado PAID (4) y no tiene imagen
-  if (payout.payout_state_id !== 4 || payout.image) {
+  // capturar si el payout si no tiene imagen (capture if the payout does not have an image)
+  if (payout.image) {
     return;
   }
 
@@ -712,25 +718,127 @@ const captureAndSaveReceipt = async (payout) => {
       }
     });
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    const blob = await canvasToBlob(canvas)
 
-      const formData = new FormData();
-      formData.append('image', blob, `receipt_${payout.reference}.png`);
+    if (!blob)
+      return false
 
-      try {
-        await payoutsStores.saveReceiptImage(payout.id, formData);
-        // Refresh to get updated payout with image
-        await fetchData();
-      } catch (error) {
-        console.error('Error saving receipt image:', error);
-      }
-    }, 'image/png');
+    const formData = new FormData();
+    formData.append('image', blob, `receipt_${payout.reference}.png`);
+
+    try {
+      await payoutsStores.saveReceiptImage(payout.id, formData);
+      // Refresh to get updated payout with image
+      await fetchData();
+      return true
+    } catch (error) {
+      console.error('Error saving receipt image:', error);
+      return false
+    }
 
   } catch (error) {
     console.error('Error capturing receipt:', error);
+    return false
   }
 };
+
+const generateMissingReceipts = async () => {
+  if (role.value !== 'SuperAdmin') {
+    advisor.value = {
+      type: 'error',
+      message: 'Endast SuperAdmin kan generera saknade kvitton.',
+      show: true,
+    }
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+    return
+  }
+
+  if (isRequestOngoing.value)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const data = {
+      search: searchQuery.value,
+      orderByField: 'id',
+      orderBy: 'desc',
+      limit: -1,
+      supplier_id: supplier_id.value,
+      state_id: payoutsStores.getStateId ?? state_id.value,
+    }
+
+    await payoutsStores.fetchPayouts(data)
+
+    const missingImagePayouts = payoutsStores.getPayouts.filter(payout => !payout.image)
+
+    if (!missingImagePayouts.length) {
+      advisor.value = {
+        type: 'success',
+        message: 'Alla utbetalningar i urvalet har redan kvitto-bild.',
+        show: true,
+      }
+      return
+    }
+
+    let generatedCount = 0
+    let failedCount = 0
+
+    for (const payout of missingImagePayouts) {
+      selectedPayout.value = { ...payout }
+      isPayoutDetailDialogVisible.value = windowWidth.value >= 1024
+      isPayoutDetailMobileDialogVisible.value = windowWidth.value < 1024
+
+      await nextTick()
+      await wait(500)
+
+      const wasGenerated = await captureAndSaveReceipt(selectedPayout.value)
+
+      if (wasGenerated)
+        generatedCount += 1
+      else
+        failedCount += 1
+
+      await wait(250)
+    }
+
+    advisor.value = {
+      type: failedCount ? 'error' : 'success',
+      message: failedCount
+        ? `Klar. ${generatedCount} kvitton skapades, ${failedCount} misslyckades.`
+        : `Klar. ${generatedCount} kvitton skapades.`,
+      show: true,
+    }
+  } catch (error) {
+    console.error('Error generating missing receipts:', error)
+    advisor.value = {
+      type: 'error',
+      message: 'Kunde inte generera kvitto-bilder. Försök igen.',
+      show: true,
+    }
+  } finally {
+    isPayoutDetailDialogVisible.value = false
+    isPayoutDetailMobileDialogVisible.value = false
+    selectedPayout.value = {}
+
+    await fetchData()
+    isRequestOngoing.value = false
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 5000)
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -1188,6 +1296,15 @@ const onDatePickerUpdate = value => {
         </div>
 
         <div class="d-flex gap-4">
+          <VBtn
+            v-if="role === 'SuperAdmin' && hasLoaded"
+            class="btn-light w-auto"
+            :disabled="isRequestOngoing"
+            @click="generateMissingReceipts"
+          >
+            Generera kvitton
+          </VBtn>
+
           <VMenu 
             v-if="windowWidth >= 1024"
             v-model="isExportTypeMenuVisible">

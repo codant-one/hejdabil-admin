@@ -91,6 +91,10 @@ class Supplier extends Model
         return $this->belongsTo(Plan::class, 'plan_id', 'id');
     }
 
+    public function invoices() {
+        return $this->hasMany(SupplierInvoice::class, 'supplier_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeClientsCount($query)
     {

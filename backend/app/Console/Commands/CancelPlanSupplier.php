@@ -57,7 +57,7 @@ class CancelPlanSupplier extends Command
                 ->where('state_id', 2)
                 ->whereNotNull('cancellation_date')
                 ->whereNotNull('grace_end_date')
-                ->whereDate('grace_end_date', '>=', $today)// ya paso la fecha de gracia
+                ->whereDate('grace_end_date', '=', $today)// es la fecha de gracia
                 ->get();
 
         foreach($suppliers as $supplier) {
