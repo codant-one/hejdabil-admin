@@ -394,6 +394,21 @@ const getPayoutSnapshot = async (payoutId, fallback = null) => {
   }
 }
 
+const mergePayoutSnapshot = (payout, fallback = null) => {
+  if (!payout)
+    return fallback
+
+  const payoutStateId = getPayoutStateId(payout)
+  const fallbackStateId = getPayoutStateId(fallback)
+
+  return {
+    ...fallback,
+    ...payout,
+    payout_state_id: payoutStateId,
+    state: payout?.state ?? (payoutStateId === fallbackStateId ? fallback?.state : null),
+  }
+}
+
 const cancelPayout = async () => {
   const selectedSnapshot = selectedPayout.value ? { ...selectedPayout.value } : null
   const previousSnapshot = await getPayoutSnapshot(selectedPayout.value?.id, selectedSnapshot)
@@ -518,7 +533,8 @@ const submitUpdate = async (payoutData, payoutId) => {
     const res = await payoutsStores.updatePayout(payoutId, payoutData)
 
     if (res.data.success) {
-      const updatedPayout = await getPayoutSnapshot(payoutId, res.data.data.payout)
+      const responsePayout = res.data.data.payout
+      const updatedPayout = mergePayoutSnapshot(responsePayout, previousSnapshot)
       newlyCreatedPayout.value = updatedPayout
 
       await regenerateReceiptIfNeeded({
@@ -693,20 +709,9 @@ const goToPayouts = () => {
 
 const viewReceipt = async () => {
   skapatsDialog.value = false;
-  
-  // Refresh data to ensure the new payout is in the list with updated state
-  await fetchData();
 
   if (newlyCreatedPayout.value) {
-    // Find the updated payout in the newly loaded list
-    const updatedPayout = payouts.value.find(p => p.id === newlyCreatedPayout.value.id);
-    
-    if (updatedPayout) {
-      selectedPayout.value = updatedPayout;
-    } else {
-      // If not found in the current list (due to pagination), use the original value
-      selectedPayout.value = newlyCreatedPayout.value;
-    }
+    selectedPayout.value = { ...newlyCreatedPayout.value }
 
     isPayoutDetailDialogVisible.value = windowWidth.value >= 1024 ? true : false
     isPayoutDetailMobileDialogVisible.value = windowWidth.value >= 1024 ? false : true
