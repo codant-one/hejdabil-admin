@@ -356,6 +356,10 @@ const editPayout = payoutData => {
   isAddNewPayoutDrawerVisible.value = true
 }
 
+const getPayoutStateId = payout => payout?.payout_state_id ?? payout?.state?.id ?? null
+
+const hasReceiptImage = payout => !!payout?.image
+
 const hasDefinedState = stateId => stateId !== undefined && stateId !== null
 
 const didPayoutStateChange = (previousStateId, nextStateId) => {
@@ -372,7 +376,7 @@ const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, pay
   if (!shouldRegenerateReceiptOnStateChange({
     hadReceiptImage,
     previousStateId,
-    nextStateId: payout?.payout_state_id,
+    nextStateId: getPayoutStateId(payout),
   })) {
     return false
   }
@@ -381,14 +385,26 @@ const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, pay
   return true
 }
 
+const getPayoutSnapshot = async (payoutId, fallback = null) => {
+  try {
+    const payout = await payoutsStores.showPayout(payoutId)
+    return payout ?? fallback
+  } catch (error) {
+    console.error('Error loading payout snapshot:', error)
+    return fallback
+  }
+}
+
 const cancelPayout = async () => {
-  const previousStateId = selectedPayout.value?.payout_state_id
-  const hadReceiptImage = !!selectedPayout.value?.image
+  const selectedSnapshot = selectedPayout.value ? { ...selectedPayout.value } : null
+  const previousSnapshot = await getPayoutSnapshot(selectedPayout.value?.id, selectedSnapshot)
+  const previousStateId = getPayoutStateId(previousSnapshot)
+  const hadReceiptImage = hasReceiptImage(previousSnapshot)
 
   isConfirmCancelDialogVisible.value = false
   let res = await payoutsStores.cancelPayout(selectedPayout.value.id)
 
-  const updatedPayout = res?.data?.data?.payout
+  const updatedPayout = await getPayoutSnapshot(selectedPayout.value.id, res?.data?.data?.payout)
 
   if (res?.data?.success)
     await regenerateReceiptIfNeeded({ hadReceiptImage, previousStateId, payout: updatedPayout })
@@ -491,56 +507,55 @@ const submitForm = async (payoutData) => {
   }
 }
 
-const submitUpdate = (payoutData, payoutId) => {
-  const previousStateId = selectedPayout.value?.payout_state_id
-  const hadReceiptImage = !!selectedPayout.value?.image
+const submitUpdate = async (payoutData, payoutId) => {
+  const selectedSnapshot = selectedPayout.value ? { ...selectedPayout.value } : null
+  const previousSnapshot = await getPayoutSnapshot(payoutId, selectedSnapshot)
+  const previousStateId = getPayoutStateId(previousSnapshot)
+  const hadReceiptImage = hasReceiptImage(previousSnapshot)
 
   payoutData.payer_alias = payer_alias.value
 
-  payoutsStores.updatePayout(payoutId, payoutData)
-    .then(async (res) => {
-        if (res.data.success) {
-            skapatsDialog.value = true
-            newlyCreatedPayout.value = res.data.data.payout
+  try {
+    const res = await payoutsStores.updatePayout(payoutId, payoutData)
 
-            await regenerateReceiptIfNeeded({
-              hadReceiptImage,
-              previousStateId,
-              payout: res.data.data.payout,
-            })
+    if (res.data.success) {
+      skapatsDialog.value = true
+      newlyCreatedPayout.value = res.data.data.payout
 
-            await fetchData()
-        }
+      const updatedPayout = await getPayoutSnapshot(payoutId, res.data.data.payout)
 
-        isRequestOngoing.value = false
+      await regenerateReceiptIfNeeded({
+        hadReceiptImage,
+        previousStateId,
+        payout: updatedPayout,
+      })
+
+      await fetchData()
+    }
+  } catch (error) {
+    err.value = error
+    inteSkapatsDialog.value = true
+
+    const refreshedPayout = await getPayoutSnapshot(payoutId, null)
+
+    await regenerateReceiptIfNeeded({
+      hadReceiptImage,
+      previousStateId,
+      payout: refreshedPayout,
     })
-    .catch(async (error) => {
-      err.value = error
-      inteSkapatsDialog.value = true
 
-      try {
-        const refreshedPayout = await payoutsStores.showPayout(payoutId)
-        await regenerateReceiptIfNeeded({
-          hadReceiptImage,
-          previousStateId,
-          payout: refreshedPayout,
-        })
-      } catch (refreshError) {
-        console.error('Error refreshing payout after failed update:', refreshError)
+    fetchData()
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
       }
-
-      isRequestOngoing.value = false
-
-      fetchData()
-
-      setTimeout(() => {
-          advisor.value = {
-              type: '',
-              message: '',
-              show: false
-          }
-      }, 3000)
-    })
+    }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 const submitCreate = payoutData => {
@@ -1935,7 +1950,7 @@ const onDatePickerUpdate = value => {
               Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
             </span>
             <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-            <span v-if="selectedPayout.error_message">
+            <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
               Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
             </span>
           </VCardText>
@@ -2036,7 +2051,7 @@ const onDatePickerUpdate = value => {
             Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
           </span>
           <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-          <span v-if="selectedPayout.error_message">
+          <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
             Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
           </span>
         </VCardText>
