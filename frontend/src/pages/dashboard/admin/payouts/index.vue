@@ -381,8 +381,7 @@ const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, pay
     return false
   }
 
-  await autoGenerateUpdatedReceiptImage(payout)
-  return true
+  return await autoGenerateUpdatedReceiptImage(payout)
 }
 
 const getPayoutSnapshot = async (payoutId, fallback = null) => {
@@ -519,10 +518,8 @@ const submitUpdate = async (payoutData, payoutId) => {
     const res = await payoutsStores.updatePayout(payoutId, payoutData)
 
     if (res.data.success) {
-      skapatsDialog.value = true
-      newlyCreatedPayout.value = res.data.data.payout
-
       const updatedPayout = await getPayoutSnapshot(payoutId, res.data.data.payout)
+      newlyCreatedPayout.value = updatedPayout
 
       await regenerateReceiptIfNeeded({
         hadReceiptImage,
@@ -531,6 +528,7 @@ const submitUpdate = async (payoutData, payoutId) => {
       })
 
       await fetchData()
+      skapatsDialog.value = true
     }
   } catch (error) {
     err.value = error
@@ -744,7 +742,7 @@ const canvasToBlob = canvas => new Promise(resolve => {
 
 const autoGenerateUpdatedReceiptImage = async payout => {
   if (!payout)
-    return
+    return false
 
   const previousSelectedPayout = selectedPayout.value
   const previousDesktopDialogState = isPayoutDetailDialogVisible.value
@@ -760,7 +758,7 @@ const autoGenerateUpdatedReceiptImage = async payout => {
     await nextTick()
     await wait(500)
 
-    await captureAndSaveReceipt(selectedPayout.value, {
+    return await captureAndSaveReceipt(selectedPayout.value, {
       force: true,
       refreshList: false,
     })
@@ -2479,12 +2477,12 @@ const onDatePickerUpdate = value => {
 </template>
 <style>
   .receipt-capture-hidden {
-    opacity: 0 !important;
+    z-index: -1 !important;
     pointer-events: none !important;
   }
 
   .receipt-capture-hidden .v-overlay__scrim {
-    opacity: 0 !important;
+    display: none !important;
   }
 
   .dialog-scroll-content {
