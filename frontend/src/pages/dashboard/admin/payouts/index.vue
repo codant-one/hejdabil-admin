@@ -394,6 +394,21 @@ const getPayoutSnapshot = async (payoutId, fallback = null) => {
   }
 }
 
+const waitForPayoutStateChange = async (payoutId, previousStateId, fallback = null) => {
+  const maxAttempts = 20
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const payout = await getPayoutSnapshot(payoutId, fallback)
+
+    if (didPayoutStateChange(previousStateId, getPayoutStateId(payout)))
+      return payout
+
+    await wait(500)
+  }
+
+  return await getPayoutSnapshot(payoutId, fallback)
+}
+
 const mergePayoutSnapshot = (payout, fallback = null) => {
   if (!payout)
     return fallback
@@ -534,7 +549,12 @@ const submitUpdate = async (payoutData, payoutId) => {
 
     if (res.data.success) {
       const responsePayout = res.data.data.payout
-      const updatedPayout = mergePayoutSnapshot(responsePayout, previousSnapshot)
+      const responseSnapshot = mergePayoutSnapshot(responsePayout, previousSnapshot)
+      const updatedPayout = await waitForPayoutStateChange(
+        payoutId,
+        previousStateId,
+        responseSnapshot,
+      )
       newlyCreatedPayout.value = updatedPayout
 
       await regenerateReceiptIfNeeded({
