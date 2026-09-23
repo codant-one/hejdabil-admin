@@ -357,8 +357,22 @@ const editPayout = payoutData => {
 }
 
 const cancelPayout = async () => {
+  const previousStateId = selectedPayout.value?.payout_state_id
+  const hadReceiptImage = !!selectedPayout.value?.image
+
   isConfirmCancelDialogVisible.value = false
   let res = await payoutsStores.cancelPayout(selectedPayout.value.id)
+
+  const updatedPayout = res?.data?.data?.payout
+  const hasStateChanged = previousStateId !== undefined
+    && previousStateId !== null
+    && updatedPayout?.payout_state_id !== undefined
+    && updatedPayout?.payout_state_id !== null
+    && previousStateId !== updatedPayout?.payout_state_id
+
+  if (res?.data?.success && hadReceiptImage && hasStateChanged)
+    await autoGenerateUpdatedReceiptImage(updatedPayout)
+
   selectedPayout.value = {}
 
   advisor.value = {
