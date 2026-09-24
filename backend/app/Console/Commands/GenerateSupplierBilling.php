@@ -151,9 +151,9 @@ class GenerateSupplierBilling extends Command
                 }
 
                 $maxInvoiceId = 
-                    SupplierInvoice::latest('id')
+                    SupplierInvoice::latest('invoice_id')
                         ->first()
-                        ->id ?? 0;
+                        ->invoice_id ?? 0;
 
                 $invoiceId = ((int) $maxInvoiceId) + 1;
 
