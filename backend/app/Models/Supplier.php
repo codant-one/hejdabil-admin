@@ -23,8 +23,8 @@ class Supplier extends Model
     protected $guarded = [];
     protected $appends = ['full_name', 'user_name'];
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'date:Y-m-d',
+        'end_date' => 'date:Y-m-d',
     ];
 
     const PERMISSIONS = [
