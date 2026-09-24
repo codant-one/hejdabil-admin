@@ -442,7 +442,9 @@ class SupplierInvoiceController extends Controller
         try {
 
             $invoice_id = (int) (
-                SupplierInvoice::where('supplier_id', $request->supplier_id)->max('invoice_id') ?? 0
+                SupplierInvoice::latest('id')
+                        ->first()
+                        ->id ?? 0
             );
 
             return response()->json([

@@ -143,7 +143,6 @@ async function fetchData(cleanFilters = false) {
         billings.value = invoices.map(invoice => ({
           id: invoice.id,
           user_id: invoice.user_id,
-          invoice_id: invoice.invoice_id,
           period: invoice.billing_period,
           name: [invoice.supplier?.user?.name, invoice.supplier?.user?.last_name].filter(Boolean).join(' ') || '-',
           start_date: invoice.invoice_date,
@@ -670,7 +669,7 @@ const downloadPDF = async () => {
       .replace(/^-|-$/g, '') || 'supplier-billings'
 
     const rows = supplierInvoices.getSupplierInvoices.map(element => ({
-      invoiceId: element.invoice_id ?? '-',
+      id: element.id ?? '-',
       period: element.billing_period ?? '-',
       invoiceDate: element.invoice_date ?? '-',
       dueDate: element.due_date ?? '-',
@@ -688,7 +687,7 @@ const downloadPDF = async () => {
 
     const rowsMarkup = rows.map(item => `
       <tr style="height: 48px;">
-        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceId)}</td>
+        <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
         <td style="width: 18%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.period)}</td>
         <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.invoiceDate)}</td>
         <td style="width: 16%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.dueDate)}</td>
@@ -764,7 +763,7 @@ const downloadCSV = async () => {
   supplierInvoices.getSupplierInvoices.forEach(element => {
 
     let data = {
-      FAKTURA_ID: element.invoice_id ?? '-',
+      FAKTURA_ID: element.id ?? '-',
       PERIOD: element.billing_period ?? '-',
       FAKTURADATUM: element.invoice_date ?? '-',
       FÖRFALLER: element.due_date ?? '-',
@@ -914,7 +913,7 @@ const downloadCSV = async () => {
             :key="billing.id"
             style="height: 3rem;">
 
-            <td class="text-center"> {{ billing.invoice_id }} </td>
+            <td class="text-center"> {{ billing.id }} </td>
             <td class="text-center"> {{ billing.period }} </td>
             <td class="text-center"> {{ billing.start_date }} </td>
             <td class="text-center"> {{ billing.end_date }} </td>
@@ -1109,7 +1108,7 @@ const downloadCSV = async () => {
             expand-icon="custom-chevron-down"
           > 
             <span class="order-id">
-              {{ billing.invoice_id }}
+              {{ billing.id }}
             </span>
             <div class="d-flex align-center justify-between w-100">
               <div class="order-title-box w-100">
@@ -1372,7 +1371,7 @@ const downloadCSV = async () => {
       <VCardText class="dialog-text">
         En hel kreditering innebär att du tar bort din fordran på leverantörer till fullo.
         Är du säker på att du vill kreditera fakturan
-        <strong>#{{ selectedBilling.invoice_id }}</strong
+        <strong>#{{ selectedBilling.id }}</strong
         >?
       </VCardText>
 
