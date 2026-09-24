@@ -442,9 +442,9 @@ class SupplierInvoiceController extends Controller
         try {
 
             $invoice_id = (int) (
-                SupplierInvoice::latest('id')
+                SupplierInvoice::latest('invoice_id')
                         ->first()
-                        ->id ?? 0
+                        ->invoice_id ?? 0
             );
 
             return response()->json([
