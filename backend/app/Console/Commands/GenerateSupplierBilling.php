@@ -136,21 +136,24 @@ class GenerateSupplierBilling extends Command
                     : (clone $periodStart)->addMonth();
                 $billingPeriod = $periodStart->format('y.m.d') . ' - ' . $periodEnd->format('y.m.d');
 
-                $alreadyBilled = SupplierInvoice::where('supplier_id', $lockedSupplier->id)
-                    ->where('billing_period', $billingPeriod)
-                    ->exists();
+                // Comprueba si ya existe una factura (automática o manual) cuyo periodo
+                // se solape con el que se va a facturar. Devuelve hasta qué fecha llega
+                // la cobertura (fin exclusivo) o null si no está cubierto.
+                $coveredUntil = $this->getCoveredUntil($lockedSupplier->id, $periodStart, $periodEnd);
 
-                if ($alreadyBilled) {
-                    $billingCursor = (clone $periodEnd)->startOfDay();
+                if ($coveredUntil) {
+                    // Saltar hasta donde llega la factura que ya cubre este periodo
+                    $billingCursor = (clone $coveredUntil)->startOfDay();
                     $lockedSupplier->next_billing_date = $billingCursor;
                     $lockedSupplier->save();
 
                     continue;
                 }
 
-                $maxInvoiceId = SupplierInvoice::where('supplier_id', $supplier->id)
-                    ->lockForUpdate()
-                    ->max('invoice_id');
+                $maxInvoiceId = 
+                    SupplierInvoice::latest('id')
+                        ->first()
+                        ->id ?? 0;
 
                 $invoiceId = ((int) $maxInvoiceId) + 1;
 
@@ -228,6 +231,50 @@ class GenerateSupplierBilling extends Command
         });
     }
 
+    /**
+     * Si algún invoice existente se solapa con [$periodStart, $periodEnd),
+     * devuelve la fecha hasta donde llega la cobertura (fin exclusivo). Si no, null.
+     */
+    private function getCoveredUntil(int $supplierId, Carbon $periodStart, Carbon $periodEnd): ?Carbon
+    {
+        $periods = SupplierInvoice::where('supplier_id', $supplierId)
+            ->whereNotNull('billing_period')
+            // ->where('state_id', '!=', X) // excluye aquí las facturas anuladas/canceladas si existen
+            ->pluck('billing_period');
+
+        $coveredUntil = null;
+
+        foreach ($periods as $period) {
+            $parts = array_map('trim', explode(' - ', $period));
+
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            try {
+                $start = Carbon::createFromFormat('y.m.d', $parts[0])->startOfDay();
+                $end = Carbon::createFromFormat('y.m.d', $parts[1])->startOfDay();
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            // Normalizar a fin exclusivo: las facturas manuales terminan el último
+            // día del mes (26.06.30), las automáticas terminan el día 1 siguiente (26.10.01)
+            if ($end->isSameDay($end->copy()->endOfMonth())) {
+                $end = $end->copy()->addDay();
+            }
+
+            // ¿Se solapan?
+            if ($start->lt($periodEnd) && $end->gt($periodStart)) {
+                if (!$coveredUntil || $end->gt($coveredUntil)) {
+                    $coveredUntil = $end;
+                }
+            }
+        }
+
+        return $coveredUntil;
+    }
+
     private function buildBillingDetail(Supplier $supplier, ?Carbon $periodStart, ?Carbon $periodEnd, float $price, array $smsSummary = []): string
     {
         $supplier = Supplier::with(['user.userDetail'])->find($supplier->id);
@@ -272,7 +319,7 @@ class GenerateSupplierBilling extends Command
                 );
             }
         }
-        
+
         return json_encode($details, true);
     }
 
@@ -346,9 +393,9 @@ class GenerateSupplierBilling extends Command
         }
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->invoice_id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->invoice_id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->id . '.pdf';
         $billing->update();
     }
 
@@ -383,8 +430,8 @@ class GenerateSupplierBilling extends Command
 
     private function sendNotification(SupplierInvoice $billing): void
     {
-        // Prepare data for notification  
-        $period = $billing->supplier->is_yearly === 0 ? 'månadsfaktura' : 'årsvis faktura';     
+        // Prepare data for notification
+        $period = $billing->supplier->is_yearly === 0 ? 'månadsfaktura' : 'årsvis faktura';
         $title = 'Ny faktura tillgänglig';
         $subtitle = "Din {$period} har skapats och finns nu tillgänglig.";
         $text = 'Din faktura har skapats. Gå till Inställningar → Plan → Betalningshistorik för att granska och betala fakturan.';
@@ -434,34 +481,34 @@ class GenerateSupplierBilling extends Command
 
         $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
         $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
-        
+
         // Extraer el "value" soportando array u object
         $getValue = function ($cfg) {
-            if (is_array($cfg)) 
+            if (is_array($cfg))
                 return $cfg['value'] ?? '[]';
             if (is_object($cfg) && isset($cfg->value))
                 return $cfg->value;
             return '[]';
         };
-        
+
         $companyRaw = $getValue($configCompany);
         $logoRaw    = $getValue($configLogo);
-        
+
         $decodeSafe = function ($raw) {
             $decoded = json_decode($raw);
 
             if (is_string($decoded))
                 $decoded = json_decode($decoded);
-        
-            if (!is_object($decoded)) 
+
+            if (!is_object($decoded))
                 $decoded = (object) [];
-        
+
             return $decoded;
         };
-        
+
         $company = $decodeSafe($companyRaw);
         $logoObj = $decodeSafe($logoRaw);
-        
+
         $company->logo = $logoObj->logo ?? null;
         $logo = $company->logo ? asset('storage/' . $company->logo) : null;
 
