@@ -1150,6 +1150,8 @@ const handleFocus = (element, fieldId) => {
             class="mb-4 w-100"
             :class="{ 'deleted-supplier-selection': shouldStyleInactiveSupplier(selectedSupplierOption) }"
             @update:modelValue="selectSupplier"
+            eager
+            :open-on-focus="false"
             clearable
             menu-icon="custom-chevron-down"
           >
@@ -1178,6 +1180,8 @@ const handleFocus = (element, fieldId) => {
             class="w-100"
             :rules="[requiredValidator]"
             @update:modelValue="selectClient"
+            eager
+            :open-on-focus="false"
             clearable
             menu-icon="custom-chevron-down"
           />
@@ -1766,6 +1770,8 @@ const handleFocus = (element, fieldId) => {
                 class="w-100"
                 :class="{ 'deleted-supplier-selection': shouldStyleInactiveSupplier(selectedSupplierOption) }"
                 @update:modelValue="selectSupplier"
+                eager
+                :open-on-focus="false"
                 clearable
                 menu-icon="custom-chevron-down"
               >
@@ -1794,6 +1800,8 @@ const handleFocus = (element, fieldId) => {
                 class="w-100"
                 :rules="[requiredValidator]"
                 @update:modelValue="selectClient"
+                eager
+                :open-on-focus="false"
                 clearable
                 menu-icon="custom-chevron-down"
               />
