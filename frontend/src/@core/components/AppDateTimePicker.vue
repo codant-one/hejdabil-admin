@@ -134,6 +134,10 @@ const updateThemeClassInCalendar = activeTheme => {
 watch(theme, updateThemeClassInCalendar)
 onMounted(() => {
   updateThemeClassInCalendar(vuetifyTheme.name.value)
+  nextTick(() => {
+    centerListOn('hour', selectedHour.value)
+    centerListOn('minute', selectedMinute.value)
+  })
 })
 
 const normalizeTimePart = (value, max) => {
@@ -147,8 +151,6 @@ const normalizeTimePart = (value, max) => {
 
   return `${Math.min(Math.max(numericValue, 0), max)}`.padStart(2, '0')
 }
-
-const sanitizeTimePartInput = value => String(value ?? '').replace(/\D/g, '').slice(0, 2)
 
 const toHm = value => {
   if (!value)
@@ -208,6 +210,11 @@ watch(
     const { hour, minute } = toHm(getSingleModelValue(value))
     selectedHour.value = hour
     selectedMinute.value = minute
+
+    nextTick(() => {
+      centerListOn('hour', hour)
+      centerListOn('minute', minute)
+    })
   },
   { immediate: true },
 )
@@ -250,24 +257,6 @@ const commitInlineTimePart = (part, value) => {
   emitInlineDateTimeIfPossible()
 }
 
-const setInlineTimePartDraft = (part, value) => {
-  const sanitizedValue = sanitizeTimePartInput(value)
-
-  if (part === 'hour') {
-    selectedHour.value = sanitizedValue
-  } else {
-    selectedMinute.value = sanitizedValue
-  }
-
-  if (sanitizedValue.length === 2)
-    commitInlineTimePart(part, sanitizedValue)
-}
-
-const onInlineTimePartBlur = part => {
-  const rawValue = part === 'hour' ? selectedHour.value : selectedMinute.value
-  commitInlineTimePart(part, rawValue)
-}
-
 const toYmd = value => {
   if (!value)
     return ''
@@ -282,9 +271,11 @@ const toYmd = value => {
 
   if (typeof value === 'string') {
     const normalized = value.trim()
-    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+
+    // Acepta '-' o '/' como separador de entrada, pero siempre devuelve con '-'
+    const ymdMatch = normalized.match(/^(\d{4})[-/](\d{2})[-/](\d{2})/)
     if (ymdMatch)
-      return ymdMatch[0]
+      return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`
   }
 
   return ''
@@ -393,6 +384,99 @@ const applyPreset = preset => {
   )
 
   emitModelValue([startValue, endValue])
+}
+
+/* ---------------------------------------------------------------------- */
+/* Selector de hora tipo "rueda" (scroll-snap) en lugar de inputs de texto */
+/* ---------------------------------------------------------------------- */
+
+const WHEEL_ITEM_HEIGHT = 44 // debe coincidir con .app-inline-time-wheel-item { block-size }
+
+const hoursList = computed(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')))
+const minutesList = computed(() => Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')))
+
+const hourWheelEl = ref(null)
+const minuteWheelEl = ref(null)
+const activeHourIndex = ref(0)
+const activeMinuteIndex = ref(0)
+
+const isProgrammaticScroll = { hour: false, minute: false }
+let hourScrollTimer = null
+let minuteScrollTimer = null
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+const wheelElFor = part => (part === 'hour' ? hourWheelEl.value : minuteWheelEl.value)
+const listFor = part => (part === 'hour' ? hoursList.value : minutesList.value)
+
+// Centra visualmente la rueda en el valor indicado (sin disparar commit)
+const centerListOn = (part, value) => {
+  const list = listFor(part)
+  const idx = list.indexOf(value)
+
+  if (idx === -1)
+    return
+
+  const el = wheelElFor(part)
+
+  if (part === 'hour')
+    activeHourIndex.value = idx
+  else
+    activeMinuteIndex.value = idx
+
+  if (!el)
+    return
+
+  isProgrammaticScroll[part] = true
+  el.scrollTo({ top: idx * WHEEL_ITEM_HEIGHT, behavior: 'auto' })
+
+  // Libera el flag en el próximo frame, el scroll instantáneo ya se aplicó
+  requestAnimationFrame(() => {
+    isProgrammaticScroll[part] = false
+  })
+}
+
+// Se dispara mientras el usuario desliza: sólo actualiza el resaltado visual
+const onWheelScroll = part => {
+  const el = wheelElFor(part)
+
+  if (!el)
+    return
+
+  const rawIndex = Math.round(el.scrollTop / WHEEL_ITEM_HEIGHT)
+  const list = listFor(part)
+  const idx = clamp(rawIndex, 0, list.length - 1)
+
+  if (part === 'hour')
+    activeHourIndex.value = idx
+  else
+    activeMinuteIndex.value = idx
+
+  if (isProgrammaticScroll[part])
+    return
+
+  // Debounce: cuando el usuario deja de deslizar, confirmamos el valor
+  clearTimeout(part === 'hour' ? hourScrollTimer : minuteScrollTimer)
+
+  const timer = setTimeout(() => {
+    const finalList = listFor(part)
+    const finalIdx = part === 'hour' ? activeHourIndex.value : activeMinuteIndex.value
+    const value = finalList[clamp(finalIdx, 0, finalList.length - 1)]
+
+    commitInlineTimePart(part, value)
+    centerListOn(part, value)
+  }, 140)
+
+  if (part === 'hour')
+    hourScrollTimer = timer
+  else
+    minuteScrollTimer = timer
+}
+
+// Click directo sobre un valor de la lista
+const selectWheelItem = (part, value) => {
+  centerListOn(part, value)
+  commitInlineTimePart(part, value)
 }
 </script>
 
@@ -530,33 +614,57 @@ const applyPreset = preset => {
       />
     </div>
 
+    <!-- ======= NUEVO: selector de hora tipo "rueda" scrollable ======= -->
     <div v-if="showSingleInlineTimeFields" class="app-inline-time-section">
       <div class="app-inline-time-section__label">Välj en tid</div>
 
-      <div class="app-inline-time-fields">
-        <input
-          :value="selectedHour"
-          type="text"
-          inputmode="numeric"
-          maxlength="2"
-          class="app-inline-time-field"
-          @input="setInlineTimePartDraft('hour', $event.target.value)"
-          @blur="onInlineTimePartBlur('hour')"
-        >
+      <div class="app-inline-time-wheels">
+        <div class="app-inline-time-wheel-col">
+          <div
+            ref="hourWheelEl"
+            class="app-inline-time-wheel"
+            @scroll="onWheelScroll('hour')"
+          >
+            <div class="app-inline-time-wheel-spacer" />
+            <button
+              v-for="(h, i) in hoursList"
+              :key="`h-${h}`"
+              type="button"
+              class="app-inline-time-wheel-item"
+              :class="{ active: i === activeHourIndex }"
+              @click="selectWheelItem('hour', h)"
+            >
+              {{ h }}
+            </button>
+            <div class="app-inline-time-wheel-spacer" />
+          </div>
+        </div>
 
         <span class="app-inline-time-separator">:</span>
 
-        <input
-          :value="selectedMinute"
-          type="text"
-          inputmode="numeric"
-          maxlength="2"
-          class="app-inline-time-field"
-          @input="setInlineTimePartDraft('minute', $event.target.value)"
-          @blur="onInlineTimePartBlur('minute')"
-        >
+        <div class="app-inline-time-wheel-col">
+          <div
+            ref="minuteWheelEl"
+            class="app-inline-time-wheel"
+            @scroll="onWheelScroll('minute')"
+          >
+            <div class="app-inline-time-wheel-spacer" />
+            <button
+              v-for="(m, i) in minutesList"
+              :key="`m-${m}`"
+              type="button"
+              class="app-inline-time-wheel-item"
+              :class="{ active: i === activeMinuteIndex }"
+              @click="selectWheelItem('minute', m)"
+            >
+              {{ m }}
+            </button>
+            <div class="app-inline-time-wheel-spacer" />
+          </div>
+        </div>
       </div>
     </div>
+    <!-- ======= FIN NUEVO ======= -->
   </div>
 </template>
 
@@ -688,44 +796,80 @@ input[altinputclass="inlinePicker"] {
   letter-spacing: 0%;
 }
 
-.app-inline-time-fields {
+/* ---------- NUEVO: selector de hora tipo "rueda" ---------- */
+
+.app-inline-time-wheels {
   align-items: center;
   display: grid;
   gap: 10px;
   grid-template-columns: 1fr auto 1fr;
 }
 
-.app-inline-time-field {
-  appearance: textfield;
-  background: #F6F6F6;
-  border: 1px solid #E7E7E7;
-  border-radius: 12px;
-  color: #5D5D5D;
-  font-size: 16px;
-  line-height: 20px;
-  inline-size: 100%;
-  min-block-size: 52px;
-  outline: none;
-  padding: 10px 14px;
-  text-align: start;
+.app-inline-time-wheel-col {
+  position: relative;
 }
 
-.app-inline-time-field:focus {
-  border-color: #6E9383;
+// franja central que marca la fila "seleccionada"
+.app-inline-time-wheel-col::before {
+  block-size: 44px; // = WHEEL_ITEM_HEIGHT
+  border-block: 1px solid #E7E7E7;
+  content: "";
+  inline-size: 100%;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.app-inline-time-wheel {
+  block-size: 132px; // 3 filas de 44px
+  inline-size: 100%;
+  overflow-y: auto;
+  position: relative;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  z-index: 1;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.app-inline-time-wheel-spacer {
+  block-size: 44px; // (132 - 44) / 2, para poder centrar el primer/último item
+  flex-shrink: 0;
+}
+
+.app-inline-time-wheel-item {
+  align-items: center;
+  background: transparent;
+  block-size: 44px;
+  border: 0;
+  color: #5D5D5D;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  inline-size: 100%;
+  justify-content: center;
+  scroll-snap-align: center;
+  transition: color 0.15s ease-out, font-weight 0.15s ease-out;
+}
+
+.app-inline-time-wheel-item.active {
+  color: #454545;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .app-inline-time-separator {
   color: #5D5D5D;
   font-size: 24px;
   line-height: 1;
-  padding-block-end: 3px;
 }
 
-.app-inline-time-field::-webkit-outer-spin-button,
-.app-inline-time-field::-webkit-inner-spin-button {
-  appearance: none;
-  margin: 0;
-}
+/* ---------- FIN NUEVO ---------- */
 
 .flatpickr-calendar {
   background-color: white !important;
@@ -1247,9 +1391,12 @@ input[altinputclass="inlinePicker"] {
     line-height: 22px;
   }
 
-  .app-inline-time-field {
-    min-block-size: 40px;
-    font-size: 12px;
+  .app-inline-time-wheel {
+    block-size: 132px; // 3 filas de 44px en mobile
+  }
+
+  .app-inline-time-wheel-spacer {
+    block-size: 44px; // (132 - 44) / 2
   }
 
   .app-inline-picker-presets {
