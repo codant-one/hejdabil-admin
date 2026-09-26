@@ -63,8 +63,15 @@ class SwishPayoutController extends Controller
             'new_status' => $status
         ]);
 
+        $normalizedStatus = strtolower(trim($status));
+        $statusLabel = match ($normalizedStatus) {
+            'cancelled', 'canceled' => 'cancel',
+            'error' => 'failed',
+            default => $normalizedStatus,
+        };
+
         // Mapear a payout_states
-        $stateId = PayoutState::where('label', $status)->value('id');
+        $stateId = PayoutState::whereRaw('LOWER(label) = ?', [$statusLabel])->value('id');
         if ($stateId) {
             $payout->payout_state_id = $stateId;
             $this->generateLog($reference, 'State mapped', ['state_id' => $stateId]);

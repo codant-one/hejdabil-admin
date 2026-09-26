@@ -101,19 +101,16 @@ export const formatDateTime = (dateString) => {
   return `${year}/${month}/${day} ${hours}:${minutes}`;
 };
 
-
 export const formatDateSimple = value => {
     if (!value) return ''
 
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return ''
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (!match) return ''
 
     const swedishShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
-    const day = date.getDate()
-    const month = swedishShortMonths[date.getMonth()]
-    const year = date.getFullYear()
+    const [, year, month, day] = match
 
-    return `${day} ${month} ${year}`
+    return `${Number(day)} ${swedishShortMonths[Number(month) - 1]} ${year}`
 }
 
 /**

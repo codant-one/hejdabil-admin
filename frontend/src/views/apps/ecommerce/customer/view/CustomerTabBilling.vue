@@ -143,8 +143,8 @@ async function fetchData(cleanFilters = false) {
 
         billings.value = invoices.map(invoice => ({
           id: invoice.id,
-          user_id: invoice.user_id,
           invoice_id: invoice.invoice_id,
+          user_id: invoice.user_id,
           period: invoice.billing_period,
           name: [invoice.supplier?.user?.name, invoice.supplier?.user?.last_name].filter(Boolean).join(' ') || '-',
           start_date: invoice.invoice_date,
@@ -671,6 +671,7 @@ const downloadPDF = async () => {
       .replace(/^-|-$/g, '') || 'supplier-billings'
 
     const rows = supplierInvoices.getSupplierInvoices.map(element => ({
+      id: element.id ?? '-',
       invoiceId: element.invoice_id ?? '-',
       period: element.billing_period ?? '-',
       invoiceDate: element.invoice_date ?? '-',

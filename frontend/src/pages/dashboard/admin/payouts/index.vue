@@ -78,6 +78,7 @@ const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
+const isAutoGeneratingReceipt = ref(false)
 const date = ref(null)
 const selectedExportType = ref(null)
 const isExportTypeMenuVisible = ref(false)
@@ -324,8 +325,8 @@ const seePayout = (payoutData, isMobile = false) => {
     isPayoutDetailDialogVisible.value = true
   }
 
-  // Capturar imagen si el payout está PAID y no tiene imagen
-  if (payoutData.payout_state_id === 4 && !payoutData.image) {
+  // Capturar imagen si no tiene imagen
+  if ( !payoutData.image) {
     nextTick(() => {
       setTimeout(() => {
         captureAndSaveReceipt(payoutData);
@@ -355,9 +356,88 @@ const editPayout = payoutData => {
   isAddNewPayoutDrawerVisible.value = true
 }
 
+const getPayoutStateId = payout => payout?.payout_state_id ?? payout?.state?.id ?? null
+
+const hasReceiptImage = payout => !!payout?.image
+
+const hasDefinedState = stateId => stateId !== undefined && stateId !== null
+
+const didPayoutStateChange = (previousStateId, nextStateId) => {
+  return hasDefinedState(previousStateId)
+    && hasDefinedState(nextStateId)
+    && previousStateId !== nextStateId
+}
+
+const shouldRegenerateReceiptOnStateChange = ({ hadReceiptImage, previousStateId, nextStateId }) => {
+  return !!hadReceiptImage && didPayoutStateChange(previousStateId, nextStateId)
+}
+
+const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, payout }) => {
+  if (!shouldRegenerateReceiptOnStateChange({
+    hadReceiptImage,
+    previousStateId,
+    nextStateId: getPayoutStateId(payout),
+  })) {
+    return false
+  }
+
+  return await autoGenerateUpdatedReceiptImage(payout)
+}
+
+const getPayoutSnapshot = async (payoutId, fallback = null) => {
+  try {
+    const payout = await payoutsStores.showPayout(payoutId)
+    return payout ?? fallback
+  } catch (error) {
+    console.error('Error loading payout snapshot:', error)
+    return fallback
+  }
+}
+
+const waitForPayoutStateChange = async (payoutId, previousStateId, fallback = null) => {
+  const maxAttempts = 20
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const payout = await getPayoutSnapshot(payoutId, fallback)
+
+    if (didPayoutStateChange(previousStateId, getPayoutStateId(payout)))
+      return payout
+
+    await wait(500)
+  }
+
+  return await getPayoutSnapshot(payoutId, fallback)
+}
+
+const mergePayoutSnapshot = (payout, fallback = null) => {
+  if (!payout)
+    return fallback
+
+  const payoutStateId = getPayoutStateId(payout)
+  const fallbackStateId = getPayoutStateId(fallback)
+
+  return {
+    ...fallback,
+    ...payout,
+    payout_state_id: payoutStateId,
+    state: payout?.state ?? (payoutStateId === fallbackStateId ? fallback?.state : null),
+  }
+}
+
 const cancelPayout = async () => {
+  const selectedSnapshot = selectedPayout.value ? { ...selectedPayout.value } : null
+  const previousSnapshot = await getPayoutSnapshot(selectedPayout.value?.id, selectedSnapshot)
+  const previousStateId = getPayoutStateId(previousSnapshot)
+  const hadReceiptImage = hasReceiptImage(previousSnapshot)
+
   isConfirmCancelDialogVisible.value = false
   let res = await payoutsStores.cancelPayout(selectedPayout.value.id)
+
+  const updatedPayout = await getPayoutSnapshot(selectedPayout.value.id, res?.data?.data?.payout)
+
+  if (res?.data?.success)
+    await regenerateReceiptIfNeeded({ hadReceiptImage, previousStateId, payout: updatedPayout })
+
   selectedPayout.value = {}
 
   advisor.value = {
@@ -456,34 +536,60 @@ const submitForm = async (payoutData) => {
   }
 }
 
-const submitUpdate = (payoutData, payoutId) => {
+const submitUpdate = async (payoutData, payoutId) => {
+  const selectedSnapshot = selectedPayout.value ? { ...selectedPayout.value } : null
+  const previousSnapshot = await getPayoutSnapshot(payoutId, selectedSnapshot)
+  const previousStateId = getPayoutStateId(previousSnapshot)
+  const hadReceiptImage = hasReceiptImage(previousSnapshot)
+
   payoutData.payer_alias = payer_alias.value
 
-  payoutsStores.updatePayout(payoutId, payoutData)
-    .then((res) => {
-        if (res.data.success) {
-            skapatsDialog.value = true
-            newlyCreatedPayout.value = res.data.data.payout
-            fetchData()
-        }
+  try {
+    const res = await payoutsStores.updatePayout(payoutId, payoutData)
 
-        isRequestOngoing.value = false
+    if (res.data.success) {
+      const responsePayout = res.data.data.payout
+      const responseSnapshot = mergePayoutSnapshot(responsePayout, previousSnapshot)
+      const updatedPayout = await waitForPayoutStateChange(
+        payoutId,
+        previousStateId,
+        responseSnapshot,
+      )
+      newlyCreatedPayout.value = updatedPayout
+
+      await regenerateReceiptIfNeeded({
+        hadReceiptImage,
+        previousStateId,
+        payout: updatedPayout,
+      })
+
+      await fetchData()
+      skapatsDialog.value = true
+    }
+  } catch (error) {
+    err.value = error
+    inteSkapatsDialog.value = true
+
+    const refreshedPayout = await getPayoutSnapshot(payoutId, null)
+
+    await regenerateReceiptIfNeeded({
+      hadReceiptImage,
+      previousStateId,
+      payout: refreshedPayout,
     })
-    .catch((error) => {
-      err.value = error
-      inteSkapatsDialog.value = true
-      isRequestOngoing.value = false
 
-      fetchData()
+    fetchData()
 
-      setTimeout(() => {
-          advisor.value = {
-              type: '',
-              message: '',
-              show: false
-          }
-      }, 3000)
-    })
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 const submitCreate = payoutData => {
@@ -623,20 +729,9 @@ const goToPayouts = () => {
 
 const viewReceipt = async () => {
   skapatsDialog.value = false;
-  
-  // Refresh data to ensure the new payout is in the list with updated state
-  await fetchData();
 
   if (newlyCreatedPayout.value) {
-    // Find the updated payout in the newly loaded list
-    const updatedPayout = payouts.value.find(p => p.id === newlyCreatedPayout.value.id);
-    
-    if (updatedPayout) {
-      selectedPayout.value = updatedPayout;
-    } else {
-      // If not found in the current list (due to pagination), use the original value
-      selectedPayout.value = newlyCreatedPayout.value;
-    }
+    selectedPayout.value = { ...newlyCreatedPayout.value }
 
     isPayoutDetailDialogVisible.value = windowWidth.value >= 1024 ? true : false
     isPayoutDetailMobileDialogVisible.value = windowWidth.value >= 1024 ? false : true
@@ -644,7 +739,7 @@ const viewReceipt = async () => {
     // Capturar imagen del recibo después de que el dialog se muestre
     nextTick(() => {
       setTimeout(() => {
-        captureAndSaveReceipt(selectedPayout.value);
+        captureAndSaveReceipt(selectedPayout.value)
       }, 500);
     });
   }
@@ -664,9 +759,45 @@ const viewReceipt = async () => {
   }, 3000);
 };
 
-const captureAndSaveReceipt = async (payout) => {
-  // Solo capturar si el payout está en estado PAID (4) y no tiene imagen
-  if (payout.payout_state_id !== 4 || payout.image) {
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+const canvasToBlob = canvas => new Promise(resolve => {
+  canvas.toBlob(blob => resolve(blob), 'image/png')
+})
+
+const autoGenerateUpdatedReceiptImage = async payout => {
+  if (!payout)
+    return false
+
+  const previousSelectedPayout = selectedPayout.value
+  const previousDesktopDialogState = isPayoutDetailDialogVisible.value
+  const previousMobileDialogState = isPayoutDetailMobileDialogVisible.value
+
+  try {
+    isAutoGeneratingReceipt.value = true
+
+    selectedPayout.value = { ...payout }
+    isPayoutDetailDialogVisible.value = windowWidth.value >= 1024
+    isPayoutDetailMobileDialogVisible.value = windowWidth.value < 1024
+
+    await nextTick()
+    await wait(500)
+
+    return await captureAndSaveReceipt(selectedPayout.value, {
+      force: true,
+      refreshList: false,
+    })
+  } finally {
+    isPayoutDetailDialogVisible.value = previousDesktopDialogState
+    isPayoutDetailMobileDialogVisible.value = previousMobileDialogState
+    selectedPayout.value = previousSelectedPayout
+    isAutoGeneratingReceipt.value = false
+  }
+}
+
+const captureAndSaveReceipt = async (payout, { force = false, refreshList = true } = {}) => {
+  // capturar si el payout si no tiene imagen (capture if the payout does not have an image)
+  if (payout.image && !force) {
     return;
   }
 
@@ -712,25 +843,131 @@ const captureAndSaveReceipt = async (payout) => {
       }
     });
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    const blob = await canvasToBlob(canvas)
 
-      const formData = new FormData();
-      formData.append('image', blob, `receipt_${payout.reference}.png`);
+    if (!blob)
+      return false
 
-      try {
-        await payoutsStores.saveReceiptImage(payout.id, formData);
+    const formData = new FormData();
+    formData.append('image', blob, `receipt_${payout.reference}.png`);
+
+    try {
+      await payoutsStores.saveReceiptImage(payout.id, formData);
+
+      if (refreshList) {
         // Refresh to get updated payout with image
         await fetchData();
-      } catch (error) {
-        console.error('Error saving receipt image:', error);
       }
-    }, 'image/png');
+
+      return true
+    } catch (error) {
+      console.error('Error saving receipt image:', error);
+      return false
+    }
 
   } catch (error) {
     console.error('Error capturing receipt:', error);
+    return false
   }
 };
+
+const generateMissingReceipts = async () => {
+  if (role.value !== 'SuperAdmin') {
+    advisor.value = {
+      type: 'error',
+      message: 'Endast SuperAdmin kan generera saknade kvitton.',
+      show: true,
+    }
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+    return
+  }
+
+  if (isRequestOngoing.value)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const data = {
+      search: searchQuery.value,
+      orderByField: 'id',
+      orderBy: 'desc',
+      limit: -1,
+      supplier_id: supplier_id.value,
+      state_id: payoutsStores.getStateId ?? state_id.value,
+    }
+
+    await payoutsStores.fetchPayouts(data)
+
+    const missingImagePayouts = payoutsStores.getPayouts.filter(payout => !payout.image)
+
+    if (!missingImagePayouts.length) {
+      advisor.value = {
+        type: 'success',
+        message: 'Alla utbetalningar i urvalet har redan kvitto-bild.',
+        show: true,
+      }
+      return
+    }
+
+    let generatedCount = 0
+    let failedCount = 0
+
+    for (const payout of missingImagePayouts) {
+      selectedPayout.value = { ...payout }
+      isPayoutDetailDialogVisible.value = windowWidth.value >= 1024
+      isPayoutDetailMobileDialogVisible.value = windowWidth.value < 1024
+
+      await nextTick()
+      await wait(500)
+
+      const wasGenerated = await captureAndSaveReceipt(selectedPayout.value)
+
+      if (wasGenerated)
+        generatedCount += 1
+      else
+        failedCount += 1
+
+      await wait(250)
+    }
+
+    advisor.value = {
+      type: failedCount ? 'error' : 'success',
+      message: failedCount
+        ? `Klar. ${generatedCount} kvitton skapades, ${failedCount} misslyckades.`
+        : `Klar. ${generatedCount} kvitton skapades.`,
+      show: true,
+    }
+  } catch (error) {
+    console.error('Error generating missing receipts:', error)
+    advisor.value = {
+      type: 'error',
+      message: 'Kunde inte generera kvitto-bilder. Försök igen.',
+      show: true,
+    }
+  } finally {
+    isPayoutDetailDialogVisible.value = false
+    isPayoutDetailMobileDialogVisible.value = false
+    selectedPayout.value = {}
+
+    await fetchData()
+    isRequestOngoing.value = false
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 5000)
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -1188,6 +1425,15 @@ const onDatePickerUpdate = value => {
         </div>
 
         <div class="d-flex gap-4">
+          <VBtn
+            v-if="role === 'SuperAdmin' && hasLoaded"
+            class="btn-light w-auto"
+            :disabled="isRequestOngoing"
+            @click="generateMissingReceipts"
+          >
+            Generera kvitton
+          </VBtn>
+
           <VMenu 
             v-if="windowWidth >= 1024"
             v-model="isExportTypeMenuVisible">
@@ -1650,7 +1896,7 @@ const onDatePickerUpdate = value => {
     <VDialog
       :model-value="isPayoutDetailDialogVisible"
       persistent
-      class="action-dialog"
+      :class="['action-dialog', { 'receipt-capture-hidden': isAutoGeneratingReceipt }]"
     >
       <!-- Dialog close btn -->
       <VBtn
@@ -1727,7 +1973,7 @@ const onDatePickerUpdate = value => {
               Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
             </span>
             <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-            <span v-if="selectedPayout.error_message">
+            <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
               Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
             </span>
           </VCardText>
@@ -1757,7 +2003,7 @@ const onDatePickerUpdate = value => {
         persistent
         :scrim="false"
         transition="dialog-bottom-transition"
-        class="action-dialog dialog-fullscreen">
+      :class="['action-dialog dialog-fullscreen', { 'receipt-capture-hidden': isAutoGeneratingReceipt }]">
        <VCard ref="payoutReceiptMobileRef" class="payout-receipt-card">
         <VCardText 
           class="dialog-title-box px-4 pb-0 flex-row" 
@@ -1828,7 +2074,7 @@ const onDatePickerUpdate = value => {
             Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
           </span>
           <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-          <span v-if="selectedPayout.error_message">
+          <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
             Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
           </span>
         </VCardText>
@@ -2255,6 +2501,15 @@ const onDatePickerUpdate = value => {
   </section>
 </template>
 <style>
+  .receipt-capture-hidden {
+    z-index: -1 !important;
+    pointer-events: none !important;
+  }
+
+  .receipt-capture-hidden .v-overlay__scrim {
+    display: none !important;
+  }
+
   .dialog-scroll-content {
     overflow-y: auto;
     overflow-x: hidden;

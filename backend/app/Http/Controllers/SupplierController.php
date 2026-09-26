@@ -1968,4 +1968,91 @@ class SupplierController extends Controller
         }
     }
 
+    public function sendDeletionCode($id)
+    {
+        $supplier = Supplier::with('user')->findOrFail($id);
+
+        if ((int) $supplier->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'not_permission',
+                'message' => 'Du har inte behörighet att hantera detta konto.',
+            ], 403);
+        }
+
+        if ($supplier->deletion_requested_at) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'already_requested',
+                'message' => 'Kontot är redan markerat för radering.',
+            ], 422);
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $supplier->code = Hash::make('request|'.$code);
+        $supplier->save();
+
+        SendEmailJob::dispatch(
+            'emails.auth.account_deletion_code',
+            [
+                'title' => 'Bekräfta radering av ditt Bilflogg-konto',
+                'code' => $code,
+                'icon' => asset('/images/user_deleted.png'),
+            ],
+            $supplier->user->email,
+            'Bekräfta radering av ditt Bilflogg-konto'
+        )->onQueue('emails');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'En verifieringskod har skickats till din e-postadress.',
+        ]);
+    }
+
+    public function requestDeletion(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'code' => 'required|digits:6',
+            ]);
+
+            $supplier = Supplier::with('user')->findOrFail($id);
+
+            if ((int) $supplier->user_id !== (int) Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_permission',
+                    'message' => 'Du har inte behörighet att hantera detta konto.',
+                ], 403);
+            }
+
+            if (!$supplier->code || !Hash::check('request|'.$request->code, $supplier->code)) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'invalid_code',
+                    'message' => 'Verifieringskoden är ogiltig.',
+                ], 422);
+            }
+
+            $supplier->requestDeletion($id);
+            $supplier->code = null;
+            $supplier->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kontot kommer att raderas om 3 månader.',
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 }

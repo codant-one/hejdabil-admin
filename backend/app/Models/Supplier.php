@@ -23,8 +23,8 @@ class Supplier extends Model
     protected $guarded = [];
     protected $appends = ['full_name', 'user_name'];
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'date:Y-m-d',
+        'end_date' => 'date:Y-m-d',
     ];
 
     const PERMISSIONS = [
@@ -89,6 +89,10 @@ class Supplier extends Model
 
     public function plan() {
         return $this->belongsTo(Plan::class, 'plan_id', 'id');
+    }
+
+    public function invoices() {
+        return $this->hasMany(SupplierInvoice::class, 'supplier_id', 'id');
     }
 
     /**** Scopes ****/
@@ -671,6 +675,28 @@ class Supplier extends Model
                 event(new ForceLogoutUserEvent($supplier->user->id));
             }
         }
+
+        return $supplier;
+    }
+    
+    public static function requestDeletion($id) {
+
+        $supplier = self::where('id', $id)->first();
+
+        if ($supplier->cancellation_date) {// ya existe una fecha de cancelación, ajustar el cronograma de eliminación en consecuencia
+            $supplier->deletion_requested_at = $supplier->cancellation_date;
+            $supplier->deletion_scheduled_at = $supplier->grace_end_date;
+        } else {// cancela y elimina cuenta
+            $deletion_requested_at = now();
+            $deletion_scheduled_at = now()->addMonths(3); // 3 months grace period
+
+            $supplier->cancellation_date = $deletion_requested_at;
+            $supplier->grace_end_date = $deletion_scheduled_at;
+            $supplier->deletion_requested_at = $deletion_requested_at;
+            $supplier->deletion_scheduled_at = $deletion_scheduled_at;
+        }
+
+        $supplier->save();
 
         return $supplier;
     }

@@ -105,6 +105,14 @@ class Suppliers {
     reactiveSubscription(id){
         return axios.get(`/suppliers/reactive-subscription/${id}`)
     }
+
+    sendDeletionCode(id){
+        return axios.get(`/suppliers/send-deletion-code/${id}`)
+    }
+
+    requestDeletion(id, data){
+        return axios.post(`/suppliers/request-deletion/${id}`, data)
+    }
 }
 
 const suppliers = new Suppliers();
