@@ -33,27 +33,38 @@ digits.value = props.default.split('')
 
 const defaultStyle = { style: 'max-width: 40px; text-align: center;' }
 
+const focusInput = index => {
+  if (refOtpComp.value !== null && index > 0 && index <= refOtpComp.value.children.length) {
+    const inputEl = refOtpComp.value.children[index - 1].querySelector('input')
+    if (inputEl)
+      inputEl.focus()
+  }
+}
+
+const handleInputUpdate = (value, index) => {
+  const sanitizedValue = String(value ?? '').replace(/\D/g, '').slice(-1)
+  digits.value[index - 1] = sanitizedValue
+
+  if (sanitizedValue && index < props.totalInput)
+    focusInput(index + 1)
+
+  emit('updateOtp', digits.value.join(''))
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity
 const handleKeyDown = (event, index) => {
-  if (event.code !== 'Tab' && event.code !== 'ArrowRight' && event.code !== 'ArrowLeft')
+  const allowedControlCodes = ['Tab', 'ArrowRight', 'ArrowLeft', 'Backspace', 'Delete']
+  const isNumericKey = /^([0-9])$/.test(event.key)
+
+  if (!allowedControlCodes.includes(event.code) && !isNumericKey)
     event.preventDefault()
+
   if (event.code === 'Backspace') {
     digits.value[index - 1] = ''
-    if (refOtpComp.value !== null && index > 1) {
-      const inputEl = refOtpComp.value.children[index - 2].querySelector('input')
-      if (inputEl)
-        inputEl.focus()
-    }
+    if (index > 1)
+      focusInput(index - 1)
   }
-  const numberRegExp = /^([0-9])$/
-  if (numberRegExp.test(event.key)) {
-    digits.value[index - 1] = event.key
-    if (refOtpComp.value !== null && index !== 0 && index < refOtpComp.value.children.length) {
-      const inputEl = refOtpComp.value.children[index].querySelector('input')
-      if (inputEl)
-        inputEl.focus()
-    }
-  }
+
   emit('updateOtp', digits.value.join(''))
 }
 </script>
@@ -76,9 +87,12 @@ const handleKeyDown = (event, index) => {
         :type="props.type"
         :key="i"
         :model-value="digits[i - 1]"
+        inputmode="numeric"
+        pattern="[0-9]*"
         v-bind="defaultStyle"
         maxlength="1"
         @keydown="handleKeyDown($event, i)"
+        @update:model-value="handleInputUpdate($event, i)"
       />
     </div>
   </div>
