@@ -325,8 +325,8 @@ const seePayout = (payoutData, isMobile = false) => {
     isPayoutDetailDialogVisible.value = true
   }
 
-  // Capturar imagen si no tiene imagen
-  if ( !payoutData.image) {
+  // Solo capturar la imagen si no existe Y el pago ya salió de "pendiente"
+  if (!payoutData.image && isPayoutSettled(payoutData)) {
     nextTick(() => {
       setTimeout(() => {
         captureAndSaveReceipt(payoutData);
@@ -356,11 +356,28 @@ const editPayout = payoutData => {
   isAddNewPayoutDrawerVisible.value = true
 }
 
+// 👉 Estados de payout
+const PENDING_STATE_ID = 1
+
+const PAYOUT_STATE_NAMES = {
+  1: 'Väntande',
+  3: 'Avbruten',
+  4: 'Slutförd',
+  5: 'Misslyckad',
+}
+
 const getPayoutStateId = payout => payout?.payout_state_id ?? payout?.state?.id ?? null
 
 const hasReceiptImage = payout => !!payout?.image
 
 const hasDefinedState = stateId => stateId !== undefined && stateId !== null
+
+// Un pago está "finalizado" cuando tiene estado definido y ya no es pendiente
+const isPayoutSettled = payout => {
+  const stateId = getPayoutStateId(payout)
+
+  return hasDefinedState(stateId) && stateId !== PENDING_STATE_ID
+}
 
 const didPayoutStateChange = (previousStateId, nextStateId) => {
   return hasDefinedState(previousStateId)
@@ -368,8 +385,11 @@ const didPayoutStateChange = (previousStateId, nextStateId) => {
     && previousStateId !== nextStateId
 }
 
+// Solo se regenera si ya había imagen, el estado cambió y el nuevo estado es final
 const shouldRegenerateReceiptOnStateChange = ({ hadReceiptImage, previousStateId, nextStateId }) => {
-  return !!hadReceiptImage && didPayoutStateChange(previousStateId, nextStateId)
+  return !!hadReceiptImage
+    && didPayoutStateChange(previousStateId, nextStateId)
+    && nextStateId !== PENDING_STATE_ID
 }
 
 const regenerateReceiptIfNeeded = async ({ hadReceiptImage, previousStateId, payout }) => {
@@ -394,21 +414,8 @@ const getPayoutSnapshot = async (payoutId, fallback = null) => {
   }
 }
 
-const waitForPayoutStateChange = async (payoutId, previousStateId, fallback = null) => {
-  const maxAttempts = 20
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const payout = await getPayoutSnapshot(payoutId, fallback)
-
-    if (didPayoutStateChange(previousStateId, getPayoutStateId(payout)))
-      return payout
-
-    await wait(500)
-  }
-
-  return await getPayoutSnapshot(payoutId, fallback)
-}
-
+// Combina el payout recibido con el anterior sin dejar nunca `state` en null
+// cuando existe un payout_state_id válido.
 const mergePayoutSnapshot = (payout, fallback = null) => {
   if (!payout)
     return fallback
@@ -416,12 +423,44 @@ const mergePayoutSnapshot = (payout, fallback = null) => {
   const payoutStateId = getPayoutStateId(payout)
   const fallbackStateId = getPayoutStateId(fallback)
 
+  let state = payout?.state ?? null
+
+  if (!state) {
+    if (hasDefinedState(payoutStateId) && payoutStateId === fallbackStateId && fallback?.state)
+      state = fallback.state
+    else if (hasDefinedState(payoutStateId))
+      state = { id: payoutStateId, name: PAYOUT_STATE_NAMES[payoutStateId] ?? '' }
+    else
+      state = fallback?.state ?? null
+  }
+
   return {
     ...fallback,
     ...payout,
     payout_state_id: payoutStateId,
-    state: payout?.state ?? (payoutStateId === fallbackStateId ? fallback?.state : null),
+    state,
   }
+}
+
+// Espera (hasta ~10s) a que el pago salga de "pendiente".
+// Sirve tanto para crear como para actualizar.
+const waitForPayoutSettled = async (payoutId, fallback = null) => {
+  const maxAttempts = 20
+  let last = fallback
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const snapshot = await getPayoutSnapshot(payoutId, last)
+
+    last = mergePayoutSnapshot(snapshot, last)
+
+    if (isPayoutSettled(last))
+      return last
+
+    await wait(500)
+  }
+
+  // Sigue pendiente: no se generará imagen todavía
+  return last
 }
 
 const cancelPayout = async () => {
@@ -550,11 +589,10 @@ const submitUpdate = async (payoutData, payoutId) => {
     if (res.data.success) {
       const responsePayout = res.data.data.payout
       const responseSnapshot = mergePayoutSnapshot(responsePayout, previousSnapshot)
-      const updatedPayout = await waitForPayoutStateChange(
-        payoutId,
-        previousStateId,
-        responseSnapshot,
-      )
+
+      // Esperar a que el pago salga de "pendiente" antes de mostrar/generar el recibo
+      const updatedPayout = await waitForPayoutSettled(payoutId, responseSnapshot)
+
       newlyCreatedPayout.value = updatedPayout
 
       await regenerateReceiptIfNeeded({
@@ -592,34 +630,38 @@ const submitUpdate = async (payoutData, payoutId) => {
   }
 }
 
-const submitCreate = payoutData => {
+const submitCreate = async payoutData => {
   payoutData.payer_alias = payer_alias.value
 
-  payoutsStores.addPayout(payoutData)
-    .then((res) => {
-        if (res.data.success) {
-            skapatsDialog.value = true;
-            newlyCreatedPayout.value = res.data.data.payout
-            fetchData()
-        }
+  try {
+    const res = await payoutsStores.addPayout(payoutData)
 
-        isRequestOngoing.value = false
-    })
-    .catch((error) => {
-      err.value = error;
-      inteSkapatsDialog.value = true;
-      isRequestOngoing.value = false
+    if (res.data.success) {
+      const created = res.data.data.payout
 
-      fetchData()
+      // Swish responde "pendiente" y el paso a "Slutförd" llega por callback:
+      // esperamos al estado final para que el modal y la imagen coincidan.
+      newlyCreatedPayout.value = await waitForPayoutSettled(created.id, created)
 
-      setTimeout(() => {
-          advisor.value = {
-              type: '',
-              message: '',
-              show: false
-          }
-      }, 3000)
-    })
+      await fetchData()
+      skapatsDialog.value = true
+    }
+  } catch (error) {
+    err.value = error
+    inteSkapatsDialog.value = true
+
+    fetchData()
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 const openPayoutDialog = () => {  
@@ -733,15 +775,17 @@ const viewReceipt = async () => {
   if (newlyCreatedPayout.value) {
     selectedPayout.value = { ...newlyCreatedPayout.value }
 
-    isPayoutDetailDialogVisible.value = windowWidth.value >= 1024 ? true : false
-    isPayoutDetailMobileDialogVisible.value = windowWidth.value >= 1024 ? false : true
+    isPayoutDetailDialogVisible.value = windowWidth.value >= 1024
+    isPayoutDetailMobileDialogVisible.value = windowWidth.value < 1024
 
-    // Capturar imagen del recibo después de que el dialog se muestre
-    nextTick(() => {
-      setTimeout(() => {
-        captureAndSaveReceipt(selectedPayout.value)
-      }, 500);
-    });
+    // Capturar la imagen solo si el pago ya no está pendiente
+    if (isPayoutSettled(selectedPayout.value)) {
+      nextTick(() => {
+        setTimeout(() => {
+          captureAndSaveReceipt(selectedPayout.value)
+        }, 500);
+      });
+    }
   }
   
   advisor.value = {
@@ -795,10 +839,38 @@ const autoGenerateUpdatedReceiptImage = async payout => {
   }
 }
 
-const captureAndSaveReceipt = async (payout, { force = false, refreshList = true } = {}) => {
-  // capturar si el payout si no tiene imagen (capture if the payout does not have an image)
-  if (payout.image && !force) {
-    return;
+// 👉 Cola para serializar capturas: evita que una captura antigua
+// termine después de una nueva y sobrescriba la imagen final.
+let receiptQueue = Promise.resolve()
+
+const captureAndSaveReceipt = (payout, options = {}) => {
+  const run = () => doCaptureAndSaveReceipt(payout, options)
+  const result = receiptQueue.then(run, run)
+
+  receiptQueue = result.catch(() => {})
+
+  return result
+}
+
+const doCaptureAndSaveReceipt = async (payout, { force = false, refreshList = true } = {}) => {
+  if (!payout)
+    return false
+
+  // No capturar si ya tiene imagen (salvo que se fuerce)
+  if (payout.image && !force)
+    return false
+
+  // Nunca generar la imagen de un pago pendiente
+  if (!isPayoutSettled(payout))
+    return false
+
+  // El modal debe estar mostrando exactamente este payout, con este estado
+  if (
+    selectedPayout.value?.id !== payout.id
+    || getPayoutStateId(selectedPayout.value) !== getPayoutStateId(payout)
+    || !selectedPayout.value?.state
+  ) {
+    return false
   }
 
   try {
@@ -809,7 +881,7 @@ const captureAndSaveReceipt = async (payout, { force = false, refreshList = true
     
     if (!receiptElement) {
       console.warn('Receipt element not found');
-      return;
+      return false;
     }
 
     const waitForImageLoad = img => new Promise(resolve => {
@@ -832,6 +904,14 @@ const captureAndSaveReceipt = async (payout, { force = false, refreshList = true
 
     if (document.fonts?.ready)
       await document.fonts.ready
+
+    // Re-validar: durante las esperas el modal pudo cerrarse o cambiar de payout/estado
+    if (
+      selectedPayout.value?.id !== payout.id
+      || getPayoutStateId(selectedPayout.value) !== getPayoutStateId(payout)
+    ) {
+      return false
+    }
 
     const canvas = await html2canvas(receiptElement, {
       scale: 2,
@@ -905,7 +985,10 @@ const generateMissingReceipts = async () => {
 
     await payoutsStores.fetchPayouts(data)
 
-    const missingImagePayouts = payoutsStores.getPayouts.filter(payout => !payout.image)
+    // Solo pagos sin imagen y que ya no estén pendientes
+    const missingImagePayouts = payoutsStores.getPayouts.filter(
+      payout => !payout.image && isPayoutSettled(payout),
+    )
 
     if (!missingImagePayouts.length) {
       advisor.value = {
@@ -927,7 +1010,7 @@ const generateMissingReceipts = async () => {
       await nextTick()
       await wait(500)
 
-      const wasGenerated = await captureAndSaveReceipt(selectedPayout.value)
+      const wasGenerated = await captureAndSaveReceipt(selectedPayout.value, { refreshList: false })
 
       if (wasGenerated)
         generatedCount += 1
