@@ -170,8 +170,13 @@ class GenerateSupplierBilling extends Command
                 ];
 
                 if ($supplier->is_yearly === 0) {// mensual
-                    $filterStart = $periodStart ? (clone $periodStart)->startOfDay() : null;
-                    $filterEnd = (clone $periodEnd)->endOfDay();
+                    // Los SMS se facturan por mes vencido: el periodo anterior al de la suscripción.
+                    // Ej.: suscripción 26.09.01 - 26.10.01 => SMS 26.08.01 - 26.09.01
+                    $smsPeriodStart = (clone $periodStart)->subMonthNoOverflow()->startOfDay();
+                    $smsPeriodEnd = (clone $periodStart)->startOfDay();
+
+                    $filterStart = (clone $smsPeriodStart)->startOfDay();
+                    $filterEnd = (clone $smsPeriodEnd)->endOfDay();
 
                     $totalSMS = $this->getTeamDocumentTotalCount(
                         SmsMessage::query()->where('supplier_id', $supplier->id)->where('billable_count', '>', 0),
@@ -183,8 +188,8 @@ class GenerateSupplierBilling extends Command
                         'count' => $totalSMS,
                         'unit_price' => $supplier->sms_price ?? 1.0,
                         'total' => round($totalSMS * ($supplier->sms_price ?? 1.0), 2),
-                        'from' => $filterStart,
-                        'to' => $filterEnd,
+                        'from' => $smsPeriodStart,
+                        'to' => $smsPeriodEnd,
                     ];
                 }
 
@@ -301,8 +306,10 @@ class GenerateSupplierBilling extends Command
             if ($totalSMS > 0) {
                 $unitPrice = (float) ($smsSummary['unit_price'] ?? $supplier->sms_price ?? 1.0);
                 $priceSMS = number_format((float) ($smsSummary['total'] ?? round($totalSMS * $unitPrice, 2)), 2, '.', '');
-                $from = $periodStart;
-                $to = $periodEnd;
+
+                // Periodo de SMS (mes anterior al de la suscripción)
+                $from = $smsSummary['from'] ?? null;
+                $to = $smsSummary['to'] ?? null;
                 $time = ($from ? $from->format('y.m.d') : '-') . ' - ' . ($to ? $to->format('y.m.d') : '-');
                 $companyName = $supplier->user?->userDetail?->company ?? 'Okänd';
 
@@ -319,6 +326,10 @@ class GenerateSupplierBilling extends Command
                 );
             }
         }
+
+        $details[] = [
+            ['note' => 'Vänligen ange fakturanummer vid betalning'],
+        ];
 
         return json_encode($details, true);
     }
