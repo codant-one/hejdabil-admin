@@ -27,7 +27,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('reminders:delete --hours=24')
                  ->hourly();
 
-        /*$schedule->command('supplier:generate-billing')
+        $schedule->command('supplier:generate-billing')
                  ->daily()
                  ->at('00:00')
                  ->after(function () {
@@ -41,7 +41,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('alerts:generate')
                  ->daily()
-                 ->at('00:00');*/
+                 ->at('00:00');
     }
 
     /**

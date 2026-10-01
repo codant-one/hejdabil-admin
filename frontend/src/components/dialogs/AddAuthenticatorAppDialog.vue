@@ -29,6 +29,8 @@ const emit = defineEmits([
   'close'
 ])
 
+const { width: windowWidth } = useWindowSize()
+
 const authCode = ref(structuredClone(toRaw(props.authCode)))
 
 const formSubmit = () => {
@@ -53,8 +55,14 @@ const handleOtp = (value) => {
 <template>
   <VDialog
     :model-value="props.isDialogVisible"
-    @update:model-value="(val) => $emit('update:isDialogVisible', val)"
-    class="action-dialog"    
+    :fullscreen="windowWidth < 1024"
+    persistent
+    :scrim="windowWidth < 1024 ? false : true"
+    :scrollable="windowWidth >= 1024"
+    :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+    :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+    :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    @update:model-value="(val) => $emit('update:isDialogVisible', val)"    
   >
     <!-- Dialog close btn -->
     <VBtn
@@ -65,13 +73,19 @@ const handleOtp = (value) => {
         <VIcon size="16" icon="custom-close" />
     </VBtn>
 
-    <VCard>
+    <VCard
+      flat
+      :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
+    >
       <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-auth" class="action-icon" />
           <div class="dialog-title">Lägg till autentiseringsapp</div>
       </VCardText>
 
-      <VCardText class="dialog-text">
+      <VCardText
+        class="dialog-text"
+        :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+      >
         <h6 class="text-lg font-weight-medium mb-2 text-start">
           Appar för autentisering
         </h6>

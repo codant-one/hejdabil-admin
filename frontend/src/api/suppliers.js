@@ -106,16 +106,12 @@ class Suppliers {
         return axios.get(`/suppliers/reactive-subscription/${id}`)
     }
 
-    sendDeletionCode(id, data){
-        return axios.post(`/suppliers/send-deletion-code/${id}`, data)
+    sendDeletionCode(id){
+        return axios.get(`/suppliers/send-deletion-code/${id}`)
     }
 
     requestDeletion(id, data){
         return axios.post(`/suppliers/request-deletion/${id}`, data)
-    }
-
-    cancelDeletion(id, data){
-        return axios.post(`/suppliers/cancel-deletion/${id}`, data)
     }
 }
 

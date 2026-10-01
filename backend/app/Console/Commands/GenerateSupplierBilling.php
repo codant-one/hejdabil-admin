@@ -327,10 +327,6 @@ class GenerateSupplierBilling extends Command
             }
         }
 
-        $details[] = [
-            ['note' => 'Vänligen ange fakturanummer vid betalning'],
-        ];
-
         return json_encode($details, true);
     }
 

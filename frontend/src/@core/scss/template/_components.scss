@@ -178,7 +178,6 @@ body .v-btn {
   }
 
   .v-btn__content {
-    font-style: Regular;
     font-size: 15px;
     line-height: 100%;
     letter-spacing: 0;
@@ -461,6 +460,33 @@ body .v-btn {
       .v-btn__content,
       .v-btn__prepend {
         color: #FF4D4F !important;
+      }
+    }
+  }
+
+  &.btn-error-2 {
+    background-color: #9B191B !important;
+    
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #FFFFFF !important;
+      gap: 8px;
+    }
+
+    &:hover,
+    &:focus {
+      background:
+        linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),
+        linear-gradient(0deg, #FF4D4F, #FF4D4F) !important;
+      background-blend-mode: multiply;
+
+      .v-btn__content,
+      .v-btn__prepend {
+        color: #FFFFFF !important;
       }
     }
   }
