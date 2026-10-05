@@ -356,7 +356,7 @@ const activeSubscription = async () => {
             :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
             :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
             :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
-            width="520"
+            width="560"
         >
             <!-- Dialog close btn -->
             <VBtn
@@ -368,19 +368,20 @@ const activeSubscription = async () => {
             </VBtn>
                 
             <!-- Dialog Content -->
-            <VCard
-                flat
-                :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
-            >
-                <VCardText class="dialog-title-box" :class="windowWidth < 1024 ? 'pb-0' : ''">
+            <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+                <VCardText 
+                    class="dialog-title-box flex-row" 
+                    :class="windowWidth < 1024 ? 'pb-0' : ''"
+                    :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
+                >
                     <div class="dialog-title">
                         Innan du säger upp — hjälp oss förstå varför
                     </div>
                 </VCardText>
 
                 <VCardText 
-                    class="dialog-text d-flex flex-column gap-4 mt-4 card-form"
-                    :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+                    class="dialog-text d-flex flex-column gap-4 card-form"
+                    :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
                 >
 
                     <span class="dialog-text">
@@ -487,6 +488,12 @@ const activeSubscription = async () => {
 </template>
 
 <style lang="scss">
+
+    .scrollable-dialog-content {
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+
     .card-form {
         .v-input {
             .v-input__control {
