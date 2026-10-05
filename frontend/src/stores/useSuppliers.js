@@ -327,10 +327,10 @@ export const useSuppliersStores = defineStore('suppliers', {
                 })
             
         },
-        cancelSubscription(id) {
+        cancelSubscription(id, data = {}) {
             this.setLoading(true)
 
-            return Suppliers.cancelSubscription(id)
+            return Suppliers.cancelSubscription(id, data)
                 .then((response) => {
                     return Promise.resolve(response)
                 })

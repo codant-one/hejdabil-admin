@@ -19,6 +19,19 @@ const role = ref('')
 
 const isConfirmCancelDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
+const selectedCancellationReason = ref(null)
+const cancellationFeedback = ref('')
+
+const cancellationReasons = [
+    'För dyrt',
+    'Använder det inte tillräckligt',
+    'Saknar funktioner jag behöver',
+    'Tekniska problem',
+    'Byter till en annan lösning',
+    'Annat',
+]
+const defaultCancellationReason = cancellationReasons[0]
+selectedCancellationReason.value = defaultCancellationReason
 
 const isRequestOngoing = ref(false);
 const advisor = ref({
@@ -114,10 +127,18 @@ onBeforeUnmount(() => {
 });
 
 const cancelSubscription = async () => {
+    const cancellationReason = selectedCancellationReason.value
+    const cancellationFeedbackText = cancellationFeedback.value.trim()
+
     isConfirmCancelDialogVisible.value = false
+    selectedCancellationReason.value = defaultCancellationReason
+    cancellationFeedback.value = ''
     isRequestOngoing.value = true
 
-    let res = await suppliersStores.cancelSubscription(supplier_id.value)
+    let res = await suppliersStores.cancelSubscription(supplier_id.value, {
+        cancellation_reason: cancellationReason,
+        cancellation_feedback: cancellationFeedbackText,
+    })
 
     isRequestOngoing.value = false
     advisor.value = {
@@ -137,6 +158,12 @@ const cancelSubscription = async () => {
     }, 3000)
 
     return true
+}
+
+const closeCancelDialog = () => {
+    isConfirmCancelDialogVisible.value = false
+    selectedCancellationReason.value = defaultCancellationReason
+    cancellationFeedback.value = ''
 }
 
 const activeSubscription = async () => {
@@ -322,40 +349,96 @@ const activeSubscription = async () => {
         <!-- 👉 Confirm cancel subscription -->
         <VDialog
             v-model="isConfirmCancelDialogVisible"
+            :fullscreen="windowWidth < 1024"
             persistent
-            class="action-dialog" >
+            :scrim="windowWidth < 1024 ? false : true"
+            :scrollable="windowWidth >= 1024"
+            :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+            :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+            :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+            width="520"
+        >
             <!-- Dialog close btn -->
-
             <VBtn
                 icon
-                class="btn-white close-btn"
-                @click="isConfirmCancelDialogVisible = false"
+                class="btn-ghost close-btn me-2"
+                @click="closeCancelDialog"
             >
                 <VIcon size="16" icon="custom-close" />
             </VBtn>
                 
             <!-- Dialog Content -->
-            <VCard>
-                <VCardText class="dialog-title-box">
-                <VIcon size="32" icon="custom-warning-outlined" class="action-icon" />
-                <div class="dialog-title">
-                    Avsluta prenumeration?
-                </div>
+            <VCard
+                flat
+                :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
+            >
+                <VCardText class="dialog-title-box" :class="windowWidth < 1024 ? 'pb-0' : ''">
+                    <div class="dialog-title">
+                        Innan du säger upp — hjälp oss förstå varför
+                    </div>
                 </VCardText>
 
-                <VCardText class="dialog-text">
-                    Är du säker på att du vill avsluta din prenumeration?
-                </VCardText>
+                <VCardText 
+                    class="dialog-text d-flex flex-column gap-4 mt-4 card-form"
+                    :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+                >
 
-                <VCardText class="dialog-text mt-2">
-                    Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
-                </VCardText>               
+                    <span class="dialog-text">
+                        Din feedback hjälper oss att förbättra Bilflogg. Detta steg är valfritt.
+                    </span>
+                    
+                    <div class="cancel-feedback-dialog__label">
+                        Vad är den huvudsakliga anledningen?
+                    </div>
 
-                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" @click="isConfirmCancelDialogVisible = false">
-                        Behåll prenumeration
-                    </VBtn>
-                    <VBtn class="btn-gradient" @click="cancelSubscription"> Bekräfta uppsägning </VBtn>
+                    <VRadioGroup
+                        v-model="selectedCancellationReason"
+                        hide-details
+                        false-icon="custom-plan-checkbox-false"
+                        true-icon="custom-plan-checkbox-true"
+                        class="cancel-feedback-reason-group"
+                    >
+                        <VRadio
+                            v-for="reason in cancellationReasons"
+                            :key="reason"
+                            :value="reason"
+                            class="cancel-feedback-reason-option"
+                        >
+                            <template #label>
+                                <span class="cancel-feedback-reason-option__label">
+                                    {{ reason }}
+                                </span>
+                            </template>
+                        </VRadio>
+                    </VRadioGroup>
+
+                    <div class="cancel-feedback-dialog__label">
+                        Berätta gärna mer (valfritt)
+                    </div>
+
+                    <VTextarea
+                        v-model="cancellationFeedback"
+                        placeholder="Skriv här..."
+                        rows="2"
+                        auto-grow
+                    />
+                    
+                    <span class="dialog-text">
+                        Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
+                    </span>
+
+                    <VCardText class="d-flex gap-3 dialog-actions pt-0 px-0">
+                        <VBtn class="btn-light" block @click="closeCancelDialog">
+                            Avbryt
+                        </VBtn>
+                        <VBtn
+                            class="btn-gradient" block
+                            :disabled="!selectedCancellationReason"
+                            @click="cancelSubscription"
+                        >
+                            Säg upp abonnemang
+                        </VBtn>
+                    </VCardText>
                 </VCardText>
             </VCard>
         </VDialog>
@@ -378,10 +461,10 @@ const activeSubscription = async () => {
             <!-- Dialog Content -->
             <VCard>
                 <VCardText class="dialog-title-box">
-                <VIcon size="32" icon="custom-check-mark-outlined" class="action-icon" />
-                <div class="dialog-title">
-                    Återaktivera ditt konto?
-                </div>
+                    <VIcon size="32" icon="custom-check-mark-outlined" class="action-icon" />
+                    <div class="dialog-title">
+                        Återaktivera ditt konto?
+                    </div>
                 </VCardText>
 
                 <VCardText class="dialog-text">
@@ -519,6 +602,53 @@ const activeSubscription = async () => {
               }
           }
       }
+    }
+
+    .cancel-feedback-dialog__body {
+        padding: 28px 40px 0;
+    }
+
+    .cancel-feedback-dialog__label {
+        font-weight: 700;
+        font-size: 12.5px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #1C2925;
+    }
+
+    .cancel-feedback-reason-group .v-selection-control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .cancel-feedback-reason-group .v-selection-control {
+        width: 100%;
+        margin: 0 !important;
+        border: 1px solid #E5EAE8;
+        border-radius: 10px;
+        padding: 10px 14px;
+        transition: border-color .2s ease, background-color .2s ease;
+    }
+
+    .cancel-feedback-reason-group .v-radio .v-selection-control__input .iconify--custom {
+        block-size: 18px !important;
+        font-size: 18px !important;
+        inline-size: 18px !important;
+    }
+
+    .cancel-feedback-reason-group .v-selection-control--dirty {
+        border-color: #57F287;
+        background-color: #F3FCF7;
+    }
+
+    .cancel-feedback-reason-option__label {
+        font-weight: 600;
+        font-size: 13.5px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #1C2925;
+        margin-left: 8px;
     }
 </style>
 

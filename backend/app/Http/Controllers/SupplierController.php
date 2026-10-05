@@ -1803,7 +1803,7 @@ class SupplierController extends Controller
         }
     }
 
-    public function cancelSubscription($id): JsonResponse
+    public function cancelSubscription(Request $request, $id): JsonResponse
     {
         try {
             $supplier = Supplier::find($id);
@@ -1816,7 +1816,11 @@ class SupplierController extends Controller
                 ], 404);
             }
 
-            $supplier->cancelSubscription($id);
+            $supplier->cancelSubscription(
+                $id,
+                $request->input('cancellation_reason'),
+                $request->input('cancellation_feedback')
+            );
             $supplier->refresh()->load(['user', 'state', 'plan']);
 
             if (Auth::user()->getRoleNames()[0] !== 'Supplier') {

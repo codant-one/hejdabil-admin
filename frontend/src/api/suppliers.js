@@ -94,8 +94,8 @@ class Suppliers {
         return axios.post('/suppliers/request-plan-upgrade', data.data)
     }
 
-    cancelSubscription(id){
-        return axios.get(`/suppliers/cancel-subscription/${id}`)
+    cancelSubscription(id, data = {}){
+        return axios.post(`/suppliers/cancel-subscription/${id}`, data)
     }
 
     activeSubscription(id){

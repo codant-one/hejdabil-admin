@@ -482,7 +482,7 @@ class Supplier extends Model
         return $supplier;
     }
 
-    public static function cancelSubscription($id) {
+    public static function cancelSubscription($id, ?string $cancellationReason = null, ?string $cancellationFeedback = null) {
 
         $cancellation_date = now();
         $grace_end_date = now()->addMonths(3); // 3 months grace period
@@ -496,6 +496,8 @@ class Supplier extends Model
             //Send mail to Admin
             $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
             $plan = $supplier->plan->name . ' (' . ($supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang') . ')';
+            $trimmedCancellationReason = is_string($cancellationReason) ? trim($cancellationReason) : null;
+            $trimmedCancellationFeedback = is_string($cancellationFeedback) ? trim($cancellationFeedback) : null;
 
             $email = env('MAIL_ADMIN', null);
             $subject = 'Uppsägning av prenumeration';
@@ -506,6 +508,12 @@ class Supplier extends Model
             $text_primary .= "Uppsägning begärd: " . $cancellation_date->format('Y-m-d') . "<br>";
             $text_primary .= "Uppsägningstid: 3 månader <br>";
             $text_primary .= "Slutdatum: " . $grace_end_date->format('Y-m-d') . "<br>";
+            if (!empty($trimmedCancellationReason)) {
+                $text_primary .= "Orsak till uppsägning: " . $trimmedCancellationReason . "<br>";
+            }
+            if (!empty($trimmedCancellationFeedback)) {
+                $text_primary .= "Ytterligare feedback: " . nl2br(e($trimmedCancellationFeedback)) . "<br>";
+            }
             $text_secondary  = "Prenumerationen förblir aktiv under uppsägningstiden och avslutas på angivet slutdatum.<br>";
             $text_secondary .= "Uppsägningen har registrerats i systemet.<br>";
 
