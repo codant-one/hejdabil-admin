@@ -687,9 +687,11 @@ class Supplier extends Model
         return $supplier;
     }
     
-    public static function requestDeletion($id) {
+    public static function requestDeletion($id, ?string $cancellationReason = null, ?string $cancellationFeedback = null) {
 
         $supplier = self::where('id', $id)->first();
+        $trimmedCancellationReason = is_string($cancellationReason) ? trim($cancellationReason) : null;
+        $trimmedCancellationFeedback = is_string($cancellationFeedback) ? trim($cancellationFeedback) : null;
 
         if ($supplier->cancellation_date) {// ya existe una fecha de cancelación, ajustar el cronograma de eliminación en consecuencia
             $supplier->deletion_requested_at = $supplier->cancellation_date;
@@ -705,6 +707,45 @@ class Supplier extends Model
         }
 
         $supplier->save();
+
+        if (Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+            $planType = $supplier->plan && $supplier->plan->is_yearly ? 'Årsabonnemang' : 'Månadsabonnemang';
+            $plan = $supplier->plan ? $supplier->plan->name . ' (' . $planType . ')' : $planType;
+
+            $email = env('MAIL_ADMIN', null);
+            $subject = 'Begäran om permanent kontoradering av konto';
+            $text_primary = "har begärt permanent radering av sitt konto på Bilflogg.<br><br>";
+            $text_primary .= "Företag: " . $company . "<br>";
+            $text_primary .= "Organisationsnummer: " . ($supplier->user->userDetail->organization_number ?? '-') . "<br>";
+            $text_primary .= "Nuvarande plan: " . $plan . "<br>";
+            $text_primary .= "Begäran registrerad: " . $supplier->deletion_requested_at?->format('Y-m-d') . "<br>";
+            $text_primary .= "Planerad radering: " . $supplier->deletion_scheduled_at?->format('Y-m-d') . "<br>";
+            if (!empty($trimmedCancellationReason)) {
+                $text_primary .= "Orsak till radering: " . $trimmedCancellationReason . "<br>";
+            }
+            if (!empty($trimmedCancellationFeedback)) {
+                $text_primary .= "Ytterligare feedback: " . nl2br(e($trimmedCancellationFeedback)) . "<br>";
+            }
+
+            $text_secondary = "Kontot är markerat för radering efter uppsägningstiden.<br>";
+            $text_secondary .= "Vänligen följ upp ärendet vid behov.<br>";
+
+            $data = [
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
+                'text_primary' => $text_primary,
+                'text_secondary' => $text_secondary,
+                'title' => $subject,
+                'icon' => asset('/images/important.png')
+            ];
+
+            SendEmailJob::dispatch(
+                'emails.admin.notifications',
+                $data,
+                $email,
+                $subject
+            );
+        }
 
         return $supplier;
     }

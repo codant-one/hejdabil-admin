@@ -2018,6 +2018,8 @@ class SupplierController extends Controller
         try {
             $request->validate([
                 'code' => 'required|digits:6',
+                'cancellation_reason' => 'nullable|string|max:255',
+                'cancellation_feedback' => 'nullable|string|max:2000',
             ]);
 
             $supplier = Supplier::with('user')->findOrFail($id);
@@ -2038,7 +2040,11 @@ class SupplierController extends Controller
                 ], 422);
             }
 
-            $supplier->requestDeletion($id);
+            $supplier->requestDeletion(
+                $id,
+                $request->input('cancellation_reason'),
+                $request->input('cancellation_feedback')
+            );
             $supplier->code = null;
             $supplier->save();
 

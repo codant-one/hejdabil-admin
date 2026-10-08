@@ -266,6 +266,8 @@ const deletionErrorMessage = error => error?.message ?? 'Ett serverfel uppstod. 
 const resetDeletionForm = () => {
   deletionCode.value = ''
   deletionError.value = ''
+  selectedCancellationReason.value = defaultCancellationReason
+  cancellationFeedback.value = ''
   deletionOtpKey.value += 1
   deletionForm.value?.resetValidation()
 }
@@ -333,8 +335,13 @@ const confirmAccountDeletion = async () => {
   deletionError.value = ''
 
   try {
+    const cancellationReason = selectedCancellationReason.value
+    const cancellationFeedbackText = cancellationFeedback.value.trim()
+
     await suppliersStores.requestDeletion(userData.value.supplier.id, {
       code: deletionCode.value,
+      cancellation_reason: cancellationReason,
+      cancellation_feedback: cancellationFeedbackText,
     })
 
     closeDeleteVerification()
@@ -818,12 +825,16 @@ onBeforeUnmount(() => {
             </VCardText>
             <VCardText class="dialog-title-box justify-center">
               <div class="dialog-title">
-                  Ditt konto har raderats korrekt!
+                  Din begäran om kontoradering har bekräftats!
               </div>
             </VCardText>
-            <VCardText class="dialog-text text-center">
-              Ditt konto och tillhörande uppgifter har raderats.
-              Du kommer inte längre att kunna komma åt ditt konto eller återställa den raderade informationen.
+            <VCardText class="dialog-text text-center">              
+              Din begäran om att radera ditt Bilflogg-konto har bekräftats.
+              Kontot kommer att avslutas och raderas när uppsägningstiden på tre månader har löpt ut. 
+              Fram till dess har du fortsatt tillgång till ditt konto.
+              När raderingen har genomförts får du en bekräftelse via e-post. 
+              Observera att kontot och den raderade informationen inte kan återställas. 
+              Vissa uppgifter kan komma att sparas enligt lag.
             </VCardText>
             <VCardText class="d-flex justify-center dialog-actions">
               <VBtn class="btn-gradient" @click="skapatsDialog = false">
