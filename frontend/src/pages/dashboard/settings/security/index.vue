@@ -24,6 +24,19 @@ const passwordConfirmation = ref()
 const isNewPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
 
+const selectedCancellationReason = ref(null)
+const cancellationFeedback = ref('')
+
+const cancellationReasons = [
+    'Jag har stängt verksamheten',
+    'Jag byter till en annan plattform',
+    'För komplicerat att använda',
+    'Inte prisvärt längre',
+    'Annat',
+]
+const defaultCancellationReason = cancellationReasons[0]
+selectedCancellationReason.value = defaultCancellationReason
+
 const refForm = ref()
 const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
@@ -592,7 +605,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="card-delete-account d-none" v-if="role === 'Supplier'">
+        <VCardText class="card-delete-account" v-if="role === 'Supplier'">
           <div class="d-flex flex-column gap-4">
             <span class="subtitle-settings">Radera konto permanent</span>
             <span class="text-settings">
@@ -620,34 +633,91 @@ onBeforeUnmount(() => {
 
         <VDialog
           v-model="isDeleteConfirmDialogVisible"
+          :fullscreen="windowWidth < 1024"
           persistent
-          class="action-dialog"
+          :scrim="windowWidth < 1024 ? false : true"
+          :scrollable="windowWidth >= 1024"
+          :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+          :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+          :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+          width="560"
         >
           <VBtn
             icon
-            class="btn-white close-btn"
+            class="btn-ghost close-btn me-2"
             @click="isDeleteConfirmDialogVisible = false"
           >
             <VIcon size="16" icon="custom-close" />
           </VBtn>
 
-          <VCard>
-            <VCardText class="dialog-title-box">
-              <VIcon size="32" icon="custom-waste-outlined" class="action-icon" />
-              <div class="dialog-title">Radera konto permanent?</div>
+          <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+            <VCardText 
+                class="dialog-title-box flex-row"
+                :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
+            >
+              <div class="dialog-title">
+                Innan du raderar ditt konto
+              </div>
             </VCardText>
 
-            <VCardText class="dialog-text">
-              Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas.
-            </VCardText>
+            <VCardText 
+              class="dialog-text d-flex flex-column gap-4 card-form"
+              :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
+            >
 
-            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-              <VBtn class="btn-light" @click="isDeleteConfirmDialogVisible = false">
-                Avbryt
-              </VBtn>
-              <VBtn class="btn-error-2" @click="sendDeletionCode">
-                Radera konto
-              </VBtn>
+              <span class="dialog-text">
+                Hjälp oss förstå varför — din feedback är värdefull för oss, oavsett vad du väljer.
+              </span>
+
+              <div class="cancel-feedback-remember">
+                <span class="cancel-feedback-remember__highlight">Kom ihåg:</span> raderingen sker efter 3 månaders uppsägningstid. 
+                Under denna period kan du fortfarande ladda ner din information.
+              </div>              
+
+              <div class="cancel-feedback-dialog__label">
+                Vad är den huvudsakliga anledningen?
+              </div>
+
+              <VRadioGroup
+                v-model="selectedCancellationReason"
+                hide-details
+                false-icon="custom-plan-checkbox-false"
+                true-icon="custom-plan-checkbox-true"
+                class="cancel-feedback-reason-group"
+              >
+                <VRadio
+                  v-for="reason in cancellationReasons"
+                  :key="reason"
+                  :value="reason"
+                  class="cancel-feedback-reason-option"
+                >
+                  <template #label>
+                    <span class="cancel-feedback-reason-option__label">
+                      {{ reason }}
+                    </span>
+                  </template>
+                </VRadio>
+              </VRadioGroup>
+
+              <div class="cancel-feedback-dialog__label">
+                  Berätta gärna mer (valfritt)
+              </div>
+
+              <VTextarea
+                v-model="cancellationFeedback"
+                placeholder="Skriv här..."
+                rows="2"
+                auto-grow
+              />
+
+              <VCardText class="d-flex gap-3 dialog-actions pt-0 px-0">
+                <VBtn class="btn-light" block @click="isDeleteConfirmDialogVisible = false">
+                  Avbryt
+                </VBtn>
+                <VBtn class="btn-gradient" block @click="sendDeletionCode">
+                  Radera konto
+                </VBtn>
+              </VCardText>
             </VCardText>
           </VCard>
         </VDialog>
@@ -822,6 +892,70 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+  .cancel-feedback-remember {
+    border-radius: 8px;
+    padding: 16px;
+    background: #F6F6F6;
+
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .cancel-feedback-remember__highlight {
+    font-weight: 700;
+  }
+
+  .cancel-feedback-dialog__body {
+    padding: 28px 40px 0;
+  }
+
+  .cancel-feedback-dialog__label {
+    font-weight: 700;
+    font-size: 12.5px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1C2925;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control {
+    width: 100%;
+    margin: 0 !important;
+    border: 1px solid #E5EAE8;
+    border-radius: 10px;
+    padding: 10px 14px;
+    transition: border-color .2s ease, background-color .2s ease;
+  }
+
+  .cancel-feedback-reason-group .v-radio .v-selection-control__input .iconify--custom {
+    block-size: 18px !important;
+    font-size: 18px !important;
+    inline-size: 18px !important;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control--dirty {
+    border-color: #57F287;
+    background-color: #F3FCF7;
+  }
+
+  .cancel-feedback-reason-option__label {
+    font-weight: 600;
+    font-size: 13.5px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1C2925;
+    margin-left: 8px;
+  }
+
   .card-delete-account {
     border-radius: 16px;
     padding: 24px;

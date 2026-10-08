@@ -361,7 +361,7 @@ const activeSubscription = async () => {
             <!-- Dialog close btn -->
             <VBtn
                 icon
-                class="btn-ghost close-btn me-2"
+                class="btn-ghost close-btn me-1"
                 @click="closeCancelDialog"
             >
                 <VIcon size="16" icon="custom-close" />
@@ -371,7 +371,6 @@ const activeSubscription = async () => {
             <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
                 <VCardText 
                     class="dialog-title-box flex-row" 
-                    :class="windowWidth < 1024 ? 'pb-0' : ''"
                     :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
                 >
                     <div class="dialog-title">
@@ -387,6 +386,11 @@ const activeSubscription = async () => {
                     <span class="dialog-text">
                         Din feedback hjälper oss att förbättra Bilflogg. Detta steg är valfritt.
                     </span>
+
+                    <div class="cancel-feedback-remember">
+                        <span class="cancel-feedback-remember__highlight">Kom ihåg:</span> Enligt avtalet gäller 3 månaders uppsägningstid. 
+                        Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
+                    </div>
                     
                     <div class="cancel-feedback-dialog__label">
                         Vad är den huvudsakliga anledningen?
@@ -423,10 +427,6 @@ const activeSubscription = async () => {
                         rows="2"
                         auto-grow
                     />
-                    
-                    <span class="dialog-text">
-                        Enligt avtalet gäller 3 månaders uppsägningstid. Din prenumeration och tillgång till tjänsten förblir därför aktiv under uppsägningstiden och avslutas därefter automatiskt.
-                    </span>
 
                     <VCardText class="d-flex gap-3 dialog-actions pt-0 px-0">
                         <VBtn class="btn-light" block @click="closeCancelDialog">
@@ -609,6 +609,22 @@ const activeSubscription = async () => {
               }
           }
       }
+    }
+
+    .cancel-feedback-remember {
+        border-radius: 8px;
+        padding: 16px;
+        background: #F6F6F6;
+
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0;
+        color: #878787;
+    }
+
+    .cancel-feedback-remember__highlight {
+        font-weight: 700;
     }
 
     .cancel-feedback-dialog__body {
