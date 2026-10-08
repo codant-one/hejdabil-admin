@@ -73,10 +73,37 @@ const redirectToPayoutsAndOpenDialog = () => {
   });
 };
 
+const userData = ref(JSON.parse(localStorage.getItem('user_data') || 'null'))
+const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
+const isSupplier = computed(() => role.value === 'Supplier')
+const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
+const showDeletionAlert = computed(() => Boolean(supplierData.value?.deletion_scheduled_at))
+const deletionDaysLeft = computed(() => {
+  const deletionScheduledAt = supplierData.value?.deletion_scheduled_at;
+
+  if (!deletionScheduledAt)
+    return null;
+
+  const scheduledDate = new Date(deletionScheduledAt);
+
+  if (Number.isNaN(scheduledDate.getTime()))
+    return null;
+
+  const msLeft = scheduledDate.getTime() - Date.now();
+
+  if (msLeft <= 0)
+    return 0;
+
+  return Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+});
 </script>
 
 <template>
-  <VerticalNavLayout :nav-items="isSettingsRoute ? settingsNavItems : navItems">
+  <VerticalNavLayout
+    :nav-items="isSettingsRoute ? settingsNavItems : navItems"
+    :vertical-nav-attrs="{ showDeletionAlert }"
+    :class="{ 'has-delete-account-alert': showDeletionAlert }"
+  >
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
       <div class="d-flex h-100 align-center">
@@ -145,6 +172,40 @@ const redirectToPayoutsAndOpenDialog = () => {
           <UserProfile :can-show-swisha-button="canShowSwishaButton" />
         </div>
       </div>
+
+      <div 
+        v-if="showDeletionAlert"
+        class="nav-delete-account d-flex mt-3"
+        :class="windowWidth < 1024 ? 'flex-column gap-2': 'flex-row gap-6'"
+      >
+        <div 
+          class="d-flex align-center gap-6"
+          :class="windowWidth < 1024 ? '': 'nav-delete-account-days'">
+          <VIcon icon="custom-warning-danger" size="32" />
+          <div class="d-flex gap-2">
+            <span class="nav-delete-account-number">{{ deletionDaysLeft ?? '-' }}</span>
+            <span class="nav-delete-account-text">Dagar kvar</span>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column">
+          <span class="nav-delete-account-text" :class="windowWidth < 1024 ? 'text-center': ''">
+            Ditt konto raderas permanent
+          </span>
+          <span class="nav-delete-account-text-simple" :class="windowWidth < 1024 ? 'text-center': ''">
+            Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter. 
+            Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
+          </span>
+        </div>
+
+         <VBtn
+            class="btn-light px-4"
+            :class="windowWidth < 1024 ? 'w-100': ''"
+            :to="{ name: 'dashboard-settings-security' }"
+          >
+            Avbryt raderingen
+          </VBtn>
+      </div>
     </template>
 
     <!-- 👉 Pages -->
@@ -156,7 +217,7 @@ const redirectToPayoutsAndOpenDialog = () => {
 
     <!-- 👉 Mobile Bottom Bar -->
     <MobileBottomBar :nav-items="navItems" />
-  </VerticalNavLayout>
+  </VerticalNavLayout>  
 </template>
 
 <style>
@@ -179,6 +240,51 @@ const redirectToPayoutsAndOpenDialog = () => {
     left: 50%;                 
     transform: translateX(-50%);
   }
+
+  .nav-delete-account {
+      align-items: center;
+      padding: 16px 24px;
+      width: calc(100% + 48px);
+      margin-inline: -24px;
+      border-left: 3px solid #CC3E3F;
+      border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
+      border-image-slice: 1;
+      background: #FFF1F1;
+  }
+
+  .nav-delete-account-days {
+    border-right: 1px solid #CC3E3F;
+    border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
+    border-image-slice: 1;
+    background: #FFF1F1;
+    width: 230px;
+    height: 50px;
+  }
+
+  .nav-delete-account-number {
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #9B191B;
+  }
+
+  .nav-delete-account-text {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #9B191B;
+  }
+
+  .nav-delete-account-text-simple {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #9B191B;
+  }
+
 </style>
 <style lang="scss" scoped>
   :deep(
