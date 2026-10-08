@@ -64,6 +64,12 @@
       }
     }
 
+    &.has-delete-account-alert .layout-navbar {
+      @media (max-width: 1000px) {
+        padding-bottom: 0;
+      }
+    }
+
     /*
       ℹ️ If it's floating navbar
       Add `vertical-nav-floating-navbar-top` as margin top to .layout-page-content
