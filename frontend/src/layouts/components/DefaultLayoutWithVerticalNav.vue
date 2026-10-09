@@ -2,10 +2,13 @@
 
 import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useThemeConfig } from "@core/composable/useThemeConfig";
+import { useSuppliersStores } from "@/stores/useSuppliers";
+import { useAuthStores } from "@/stores/useAuth";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
 import navItems from "@/navigation/vertical";
 import settingsNavItems from "@/navigation/settings";
 import router from "@/router";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 // Components
 import UserProfile from "@/layouts/components/UserProfile.vue";
@@ -15,6 +18,9 @@ import { VerticalNavLayout } from "@layouts";
 import { VNodeRenderer } from "@layouts/components/VNodeRenderer";
 import { themeConfig } from "@themeConfig";
 import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
+
+const suppliersStores = useSuppliersStores()
+const authStores = useAuthStores()
 
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
@@ -26,6 +32,10 @@ const userData = ref(readUserDataFromStorage())
 const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
 const isSupplier = computed(() => role.value === 'Supplier')
 const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
+const isCancelDeletionRequestOngoing = ref(false)
+const isCancelDeletionSuccessDialogVisible = ref(false)
+const isCancelDeletionErrorDialogVisible = ref(false)
+const cancelDeletionErrorText = ref('Ett serverfel uppstod. Försök igen.')
 
 const syncUserData = event => {
   if (event?.detail)
@@ -94,6 +104,58 @@ const redirectToPayoutsAndOpenDialog = () => {
     query: { open_payout: 'true' },
   });
 };
+
+const syncUserDataAfterCancelDeletion = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+
+    return
+  }
+
+  const currentUserData = readUserDataFromStorage()
+
+  if (!currentUserData?.hash)
+    return
+
+  const { user_data } = await authStores.me(currentUserData)
+
+  if (!user_data)
+    return
+
+  localStorage.setItem('user_data', JSON.stringify(user_data))
+  userData.value = user_data
+}
+
+const cancelDeletionRequest = async () => {
+  const supplierId = supplierData.value?.id
+
+  if (!supplierId)
+    return
+
+  isCancelDeletionRequestOngoing.value = true
+  cancelDeletionErrorText.value = 'Ett serverfel uppstod. Försök igen.'
+
+  try {
+    const response = await suppliersStores.cancelDeletion(supplierId)
+
+    await syncUserDataAfterCancelDeletion(response)
+    isCancelDeletionSuccessDialogVisible.value = true
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message
+      ?? Object.values(error?.response?.data?.errors ?? {}).flat().join(' ')
+      ?? error?.message
+
+    if (errorMessage)
+      cancelDeletionErrorText.value = errorMessage
+
+    isCancelDeletionErrorDialogVisible.value = true
+  } finally {
+    isCancelDeletionRequestOngoing.value = false
+  }
+}
 
 const showDeletionAlert = computed(() => Boolean(supplierData.value?.deletion_scheduled_at))
 const deletionDaysLeft = computed(() => {
@@ -219,11 +281,61 @@ const deletionDaysLeft = computed(() => {
         <VBtn
           class="btn-light px-4"
           :class="windowWidth < 1024 ? 'w-100': ''"
-          :to="{ name: 'dashboard-settings-security' }"
+          @click="cancelDeletionRequest"
         >
           Avbryt raderingen
         </VBtn>
       </div>
+
+      <VDialog
+        v-model="isCancelDeletionSuccessDialogVisible"
+        persistent
+        class="action-dialog dialog-big-icon"
+      >
+        <VCard>
+          <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-crown" />
+          </VCardText>
+          <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">
+              Vad kul att du stannar!
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text text-center">
+            Din begäran om kontoradering har avbrutits. Ditt konto och abonnemang fortsätter som vanligt och du kan fortsätta använda Bilflogg precis som tidigare.
+          </VCardText>
+          <VCardText class="d-flex justify-center dialog-actions">
+            <VBtn class="btn-gradient" @click="isCancelDeletionSuccessDialogVisible = false">
+              Fortsätt till Bilflogg
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VDialog>
+
+      <VDialog
+        v-model="isCancelDeletionErrorDialogVisible"
+        persistent
+        class="action-dialog dialog-big-icon"
+      >
+        <VCard>
+          <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-cancel" />
+          </VCardText>
+          <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">
+              Ett fel inträffade
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text text-center">
+            {{ cancelDeletionErrorText }}
+          </VCardText>
+          <VCardText class="d-flex justify-center dialog-actions">
+            <VBtn class="btn-light" @click="isCancelDeletionErrorDialogVisible = false">
+              Stäng
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VDialog>
     </template>
 
     <!-- 👉 Pages -->
@@ -235,6 +347,8 @@ const deletionDaysLeft = computed(() => {
 
     <!-- 👉 Mobile Bottom Bar -->
     <MobileBottomBar :nav-items="navItems" />
+
+    <LoadingOverlay :is-loading="isCancelDeletionRequestOngoing" />
   </VerticalNavLayout>  
 </template>
 
