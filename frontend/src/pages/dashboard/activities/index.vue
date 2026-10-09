@@ -110,6 +110,8 @@ const advisor = ref({
   message: '',
   show: false,
 })
+const isDeleteAccountActive = computed(() =>
+  userData.value?.roles?.[0]?.name === 'Supplier' && Boolean(userData.value?.supplier?.deletion_scheduled_at))
 
 const activityModuleLabels = {
   users: 'Mitt team',
@@ -409,6 +411,13 @@ watchEffect(registerEvents)
 
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
+}
+
+const syncUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
 }
 
 function toggleActivity(activityId) {
@@ -1007,10 +1016,14 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
 });
 
 </script>
@@ -1028,7 +1041,7 @@ onBeforeUnmount(() => {
       {{ advisor.message }}
     </VSnackbar>
 
-    <VCard class="page-activities card-fill pa-6 d-flex flex-column">
+    <VCard :class="['page-activities', 'card-fill', 'pa-6', 'd-flex', 'flex-column', { 'page-activities-delete-active': isDeleteAccountActive }]">
       
       <DefaultLayoutWithoutVerticalNav />
 
@@ -2866,6 +2879,10 @@ onBeforeUnmount(() => {
           background: white;
           padding-bottom: 80px !important;
         }
+    }
+
+    .page-activities.page-activities-delete-active {
+      margin-top: 164px;
     }
 
     @media (max-width: 1400px) {

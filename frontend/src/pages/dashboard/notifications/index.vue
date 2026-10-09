@@ -32,6 +32,8 @@ const advisor = ref({
   message: '',
   show: false
 })
+const isDeleteAccountActive = computed(() =>
+  userData.value?.roles?.[0]?.name === 'Supplier' && Boolean(userData.value?.supplier?.deletion_scheduled_at))
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -83,6 +85,13 @@ watchEffect(registerEvents)
 
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
+}
+
+const syncUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
 }
 
 const onReadAll = async () => {
@@ -196,10 +205,14 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
 });
 
 </script>
@@ -217,10 +230,7 @@ onBeforeUnmount(() => {
       {{ advisor.message }}
     </VSnackbar>
 
-    <VCard 
-      class="page-notifications card-fill pa-6 d-flex flex-column" 
-      :class="windowWidth < 1024 ? '' : ''"
-    >
+    <VCard :class="['page-notifications', 'card-fill', 'pa-6', 'd-flex', 'flex-column', { 'page-notifications-delete-active': isDeleteAccountActive }]">
       
       <DefaultLayoutWithoutVerticalNav />
 
@@ -563,6 +573,10 @@ onBeforeUnmount(() => {
     @media (max-width: 1023px) {
       padding-bottom: 120px !important;
     }
+  }
+
+  .page-notifications.page-notifications-delete-active {
+    margin-top: 164px;
   }
 
   .notification-avatar .v-icon {
