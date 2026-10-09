@@ -19,6 +19,7 @@ const configsStores = useConfigsStores()
 const suppliersStores = useSuppliersStores()
 
 const refVForm = ref()
+const supplierData = ref(null)
 const password = ref()
 const passwordConfirmation = ref()
 const isNewPasswordVisible = ref(false)
@@ -58,6 +59,10 @@ const deletionForm = ref(null)
 const deletionCode = ref('')
 const deletionError = ref('')
 const deletionOtpKey = ref(0)
+const isCancelDeletionRequestOngoing = ref(false)
+const isCancelDeletionSuccessDialogVisible = ref(false)
+const isCancelDeletionErrorDialogVisible = ref(false)
+const cancelDeletionErrorText = ref('Ett serverfel uppstod. Försök igen.')
 
 const err = ref(null);
 const skapatsDialog = ref(false);
@@ -75,6 +80,37 @@ const advisor = ref({
   message: '',
   show: false,
 })
+
+const syncSupplierDeletionScheduledAt = () => {
+  if (role.value !== 'Supplier')
+    return
+
+  const deletionScheduledAt = userData.value?.supplier?.deletion_scheduled_at ?? null
+  const supplierId = userData.value?.supplier?.id ?? supplierData.value?.id ?? null
+
+  supplierData.value = {
+    ...(supplierData.value ?? {}),
+    id: supplierId,
+    deletion_scheduled_at: deletionScheduledAt,
+  }
+}
+
+const syncSecurityStateFromUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  role.value = userData.value?.roles?.[0]?.name ?? null
+
+  if (role.value !== 'Supplier') {
+    supplierData.value = null
+
+    return
+  }
+
+  syncSupplierDeletionScheduledAt()
+}
 
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
@@ -116,10 +152,11 @@ async function fetchData() {
       const supplierId = userData.value?.supplier?.id
 
       if (supplierId) {
-        const supplierData = await suppliersStores.getMasterPassword(supplierId)
+        supplierData.value = await suppliersStores.getMasterPassword(supplierId)
+        syncSupplierDeletionScheduledAt()
 
-        masterPassword.value = supplierData?.master_password ?? ''
-        csrUrl.value = supplierData?.csr_url ?? null
+        masterPassword.value = supplierData.value?.master_password ?? ''
+        csrUrl.value = supplierData.value?.csr_url ?? null
       }
     } else {
       await configsStores.getFeature('setting')
@@ -326,6 +363,7 @@ const syncUserDataAfterDeletionRequest = async response => {
     localStorage.setItem('user_data', JSON.stringify(responseUserData))
     userData.value = responseUserData
     role.value = responseUserData?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
 
     return
   }
@@ -344,8 +382,73 @@ const syncUserDataAfterDeletionRequest = async response => {
     localStorage.setItem('user_data', JSON.stringify(user_data))
     userData.value = user_data
     role.value = user_data?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
   } catch (error) {
     console.error('Failed to refresh user_data after deletion request:', error)
+  }
+}
+
+const syncUserDataAfterCancelDeletion = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+    role.value = responseUserData?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+
+    return
+  }
+
+  const currentUserData = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  if (!currentUserData?.hash)
+    return
+
+  try {
+    const { user_data } = await authStores.me(currentUserData)
+
+    if (!user_data)
+      return
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data
+    role.value = user_data?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+  } catch (error) {
+    console.error('Failed to refresh user_data after cancel deletion:', error)
+  }
+}
+
+const cancelDeletionRequest = async () => {
+  const supplierId = supplierData.value?.id ?? userData.value?.supplier?.id
+
+  if (!supplierId)
+    return
+
+  isCancelDeletionRequestOngoing.value = true
+  isRequestOngoing.value = true
+  cancelDeletionErrorText.value = 'Ett serverfel uppstod. Försök igen.'
+
+  try {
+    const response = await suppliersStores.cancelDeletion(supplierId)
+
+    await syncUserDataAfterCancelDeletion(response)
+    isCancelDeletionSuccessDialogVisible.value = true
+    setAdvisor('success', 'Kontoraderingen har avbrutits.')
+    clearAdvisorLater(5000)
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message
+      ?? Object.values(error?.response?.data?.errors ?? {}).flat().join(' ')
+      ?? error?.message
+
+    if (errorMessage)
+      cancelDeletionErrorText.value = errorMessage
+
+    isCancelDeletionErrorDialogVisible.value = true
+  } finally {
+    isCancelDeletionRequestOngoing.value = false
+    isRequestOngoing.value = false
   }
 }
 
@@ -424,10 +527,14 @@ onMounted(() => {
   fetchData();
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  window.addEventListener('user-data-updated', syncSecurityStateFromUserData)
+  window.addEventListener('storage', syncSecurityStateFromUserData)
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  window.removeEventListener('user-data-updated', syncSecurityStateFromUserData)
+  window.removeEventListener('storage', syncSecurityStateFromUserData)
 });
 </script>
 
@@ -643,7 +750,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="card-delete-account" v-if="role === 'Supplier'">
+        <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">
           <div class="d-flex flex-column gap-4">
             <span class="subtitle-settings">Radera konto permanent</span>
             <span class="text-settings">
@@ -666,6 +773,27 @@ onBeforeUnmount(() => {
               @click="openDeleteConfirmation"
             >
               Radera konto
+            </VBtn>
+        </VCardText>
+
+        <VCardText class="card-cancel-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at !== null">
+          <div class="d-flex flex-column gap-4">
+            <span class="subtitle-settings">Kontot är planerat för radering</span>
+            <span class="text-settings">  
+              Du har begärt att avsluta och radera ditt Bilflogg-konto.<br>
+              Ditt konto och abonnemang förblir aktiva under uppsägningstiden och kommer att avslutas och raderas den {{ supplierData?.deletion_scheduled_at }}.<br><br>
+              Har du ändrat dig? Du kan avbryta raderingen när som helst innan slutdatumet. Ditt konto och abonnemang fortsätter då som vanligt och ingen information raderas.
+            </span>
+            
+          </div>
+          <VBtn 
+              type="button" 
+              :block="windowWidth < 1024"
+              class="btn-gradient mt-4 px-2"
+              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+              @click="cancelDeletionRequest"
+            >
+              Avbryt radering
             </VBtn>
         </VCardText>
 
@@ -907,6 +1035,56 @@ onBeforeUnmount(() => {
             </VCard>
         </VDialog>
 
+        <VDialog
+          v-model="isCancelDeletionSuccessDialogVisible"
+          persistent
+          class="action-dialog dialog-big-icon"
+        >
+          <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="72" icon="custom-f-crown" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">
+                Vad kul att du stannar!
+              </div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+              Din begäran om kontoradering har avbrutits. Ditt konto och abonnemang fortsätter som vanligt och du kan fortsätta använda Bilflogg precis som tidigare.
+            </VCardText>
+            <VCardText class="d-flex justify-center dialog-actions">
+              <VBtn class="btn-gradient" @click="isCancelDeletionSuccessDialogVisible = false">
+                Fortsätt till Bilflogg
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
+        <VDialog
+          v-model="isCancelDeletionErrorDialogVisible"
+          persistent
+          class="action-dialog dialog-big-icon"
+        >
+          <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="72" icon="custom-f-cancel" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">
+                Ett fel inträffade
+              </div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+              {{ cancelDeletionErrorText }}
+            </VCardText>
+            <VCardText class="d-flex justify-center dialog-actions">
+              <VBtn class="btn-light" @click="isCancelDeletionErrorDialogVisible = false">
+                Stäng
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
         <VDialog v-model="isFileMissingDialogVisible" width="500">
           <VCard title="Information">
             <VCardText>
@@ -1004,6 +1182,15 @@ onBeforeUnmount(() => {
     gap: 24px;
     margin: 16px;
     background-color: #FFF1F1;
+  }
+
+  .card-cancel-delete-account {
+    border-radius: 16px;
+    padding: 24px;
+    gap: 24px;
+    margin: 16px;
+    border: 1px solid #57F287;
+    background-color: #F3FCF7;
   }
 
   .two_class {

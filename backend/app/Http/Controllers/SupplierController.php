@@ -759,6 +759,7 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
+                    'deletion_scheduled_at' => $supplier->deletion_scheduled_at,
                     'master_password' => $supplier->master_password,
                     'csr_url' => $supplier->csr_url,
                     'key_url' => $supplier->key_url,
