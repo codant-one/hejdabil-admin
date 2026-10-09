@@ -319,6 +319,36 @@ const closeDeleteVerification = () => {
   resetDeletionForm()
 }
 
+const syncUserDataAfterDeletionRequest = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+    role.value = responseUserData?.roles?.[0]?.name ?? null
+
+    return
+  }
+
+  const currentUserData = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  if (!currentUserData?.hash)
+    return
+
+  try {
+    const { user_data } = await authStores.me(currentUserData)
+
+    if (!user_data)
+      return
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data
+    role.value = user_data?.roles?.[0]?.name ?? null
+  } catch (error) {
+    console.error('Failed to refresh user_data after deletion request:', error)
+  }
+}
+
 const confirmAccountDeletion = async () => {
   const { valid } = await deletionForm.value.validate()
 
@@ -338,11 +368,12 @@ const confirmAccountDeletion = async () => {
     const cancellationReason = selectedCancellationReason.value
     const cancellationFeedbackText = cancellationFeedback.value.trim()
 
-    await suppliersStores.requestDeletion(userData.value.supplier.id, {
+    const response = await suppliersStores.requestDeletion(userData.value.supplier.id, {
       code: deletionCode.value,
       cancellation_reason: cancellationReason,
       cancellation_feedback: cancellationFeedbackText,
     })
+    await syncUserDataAfterDeletionRequest(response)
 
     closeDeleteVerification()
     skapatsDialog.value = true

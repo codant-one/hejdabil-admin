@@ -21,6 +21,29 @@ const { width: windowWidth } = useWindowSize();
 const route = useRoute();
 const emitter = inject('emitter');
 const vm = getCurrentInstance();
+const readUserDataFromStorage = () => JSON.parse(localStorage.getItem('user_data') || 'null')
+const userData = ref(readUserDataFromStorage())
+const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
+const isSupplier = computed(() => role.value === 'Supplier')
+const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
+
+const syncUserData = event => {
+  if (event?.detail)
+    userData.value = event.detail
+  else
+    userData.value = readUserDataFromStorage()
+}
+
+onMounted(() => {
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
+})
+
 const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
 const settingsButtonStyle = computed(() => (
   isSettingsRoute.value
@@ -33,17 +56,16 @@ const canShowSwishaButton = computed(() => {
   if (!hasPermission)
     return false;
 
-  const userData = JSON.parse(localStorage.getItem('user_data') || 'null');
-  if (!userData)
+  if (!userData.value)
     return false;
 
-  const userRole = userData.roles?.[0]?.name;
+  const userRole = userData.value.roles?.[0]?.name;
 
   if (userRole !== 'Supplier' && userRole !== 'User')
     return false;
 
   if (userRole === 'Supplier')
-    return userData.supplier?.is_payout === 1;
+    return userData.value.supplier?.is_payout === 1;
 
   return true;
 });
@@ -73,10 +95,6 @@ const redirectToPayoutsAndOpenDialog = () => {
   });
 };
 
-const userData = ref(JSON.parse(localStorage.getItem('user_data') || 'null'))
-const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
-const isSupplier = computed(() => role.value === 'Supplier')
-const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
 const showDeletionAlert = computed(() => Boolean(supplierData.value?.deletion_scheduled_at))
 const deletionDaysLeft = computed(() => {
   const deletionScheduledAt = supplierData.value?.deletion_scheduled_at;

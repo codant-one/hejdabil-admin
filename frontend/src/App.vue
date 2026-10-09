@@ -28,6 +28,46 @@ const appBackgroundStyle = computed(() => route.path.startsWith('/dashboard/sett
 syncInitialLoaderTheme()
 syncConfigThemeWithVuetifyTheme()
 
+const setupUserDataStorageSync = () => {
+  if (window.__userDataStorageSyncInitialized)
+    return
+
+  const originalSetItem = window.localStorage.setItem.bind(window.localStorage)
+  const originalRemoveItem = window.localStorage.removeItem.bind(window.localStorage)
+  const originalClear = window.localStorage.clear.bind(window.localStorage)
+
+  window.localStorage.setItem = (key, value) => {
+    originalSetItem(key, value)
+
+    if (key !== 'user_data')
+      return
+
+    let parsedUserData = null
+
+    try {
+      parsedUserData = JSON.parse(value)
+    } catch (error) {
+      console.error('Failed to parse user_data value from localStorage.setItem:', error)
+    }
+
+    window.dispatchEvent(new CustomEvent('user-data-updated', { detail: parsedUserData }))
+  }
+
+  window.localStorage.removeItem = key => {
+    originalRemoveItem(key)
+
+    if (key === 'user_data')
+      window.dispatchEvent(new CustomEvent('user-data-updated', { detail: null }))
+  }
+
+  window.localStorage.clear = () => {
+    originalClear()
+    window.dispatchEvent(new CustomEvent('user-data-updated', { detail: null }))
+  }
+
+  window.__userDataStorageSyncInitialized = true
+}
+
 const me = async () => {
   if (route.path.startsWith('/sign/'))
     return
@@ -53,6 +93,7 @@ const me = async () => {
   }
 }
 
+setupUserDataStorageSync()
 me()
 
 </script>
