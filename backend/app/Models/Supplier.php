@@ -707,73 +707,71 @@ class Supplier extends Model
         }
 
         $supplier->save();
+        
+        $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
 
-        if (Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
-
-            $email = env('MAIL_ADMIN', null);
-            $subject = 'Begäran om permanent kontoradering av konto';
-            $text_primary = "har bekräftat en begäran om att radera sitt Bilflogg-konto. Kontot ska avslutas och raderas efter den tre månader långa uppsägningstiden.<br><br>";
-            $text_primary .= "Företag: " . $company . "<br>";
-            $text_primary .= "Organisationsnummer: " . ($supplier->user->userDetail->organization_number ?? '-') . "<br>";
-            $text_primary .= "Kontaktperson: " . $supplier->user->name . ' ' . $supplier->user->last_name . "<br>";
-            $text_primary .= "E-post: " . $supplier->user->email . "<br>";
-            $text_primary .= "Telefon: " . ($supplier->user->userDetail->personal_phone ?? '-') . "<br>";
-            $text_primary .= "Begäran bekräftad den: " . $supplier->deletion_requested_at?->format('Y-m-d') . "<br>";
-            $text_primary .= "Planerat slutdatum: " . $supplier->deletion_scheduled_at?->format('Y-m-d') . "<br>";
-            if (!empty($trimmedCancellationReason)) {
-                $text_primary .= "Kundens angivna anledning: " . $trimmedCancellationReason . "<br>";
-            }
-            if (!empty($trimmedCancellationFeedback)) {
-                $text_primary .= "Anledning till radering: " . nl2br(e($trimmedCancellationFeedback)) . "<br>";
-            }
-
-            $text_secondary = "När uppsägningstiden har löpt ut ska kontot och tillhörande uppgifter raderas i enlighet med Bilfloggs rutiner för datalagring. Uppgifter som måste bevaras enligt lag ska fortsatt lagras under den tid som krävs.<br><br>";
-
-            $data = [
-                'user' => $company,
-                'text_primary' => $text_primary,
-                'text_secondary' => $text_secondary,
-                'title' => $subject,
-                'icon' => asset('/images/important.png')
-            ];
-
-            SendEmailJob::dispatch(
-                'emails.admin.notifications',
-                $data,
-                $email,
-                $subject
-            );
-
-            //-------------------------------------------------------------------------
-            //Send mail to Supplier
-
-            $email = $supplier->user->email;
-            $subject = 'Din begäran om kontoradering är bekräftad';
-            $text_primary = "Vi bekräftar att vi har tagit emot din begäran om att radera ditt Bilflogg-konto.<br>";
-            $text_primary .= "Enligt våra villkor gäller en uppsägningstid på tre månader. Ditt konto kommer därför att fortsätta vara aktivt och tillgängligt fram till <br><br>";
-            $text_primary .= $supplier->deletion_scheduled_at?->format('Y-m-d')  . "<br><br>";
-            $text_primary .= "Efter uppsägningstidens slut kommer ditt konto att avslutas och raderas. Uppgifter som Bilflogg enligt lag är skyldigt att bevara kan komma att sparas under den tid som krävs.<br><br>";
-            $text_primary .= "När raderingen har genomförts får du en bekräftelse via e-post. Observera att raderad information inte kan återställas.<br><br>";
-            $text_primary .= "Begäran bekräftad: " . $supplier->deletion_requested_at->format('Y-m-d') . "<br>";
-            $text_primary .= "Kontot avslutas och raderas: " . $supplier->deletion_scheduled_at->format('Y-m-d') . "<br>";
-
-            $data = [
-                'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
-                'text_primary' => $text_primary,
-                'text_secondary' => '',
-                'title' => $subject,
-                'icon' => asset('/images/important.png')
-            ];
-
-            // Send email asynchronously
-            SendEmailJob::dispatch(
-                'emails.suppliers.notifications',
-                $data,
-                $email,
-                $subject
-            );
+        $email = env('MAIL_ADMIN', null);
+        $subject = 'Begäran om permanent kontoradering av konto';
+        $text_primary = "har bekräftat en begäran om att radera sitt Bilflogg-konto. Kontot ska avslutas och raderas efter den tre månader långa uppsägningstiden.<br><br>";
+        $text_primary .= "Företag: " . $company . "<br>";
+        $text_primary .= "Organisationsnummer: " . ($supplier->user->userDetail->organization_number ?? '-') . "<br>";
+        $text_primary .= "Kontaktperson: " . $supplier->user->name . ' ' . $supplier->user->last_name . "<br>";
+        $text_primary .= "E-post: " . $supplier->user->email . "<br>";
+        $text_primary .= "Telefon: " . ($supplier->user->userDetail->personal_phone ?? '-') . "<br>";
+        $text_primary .= "Begäran bekräftad den: " . $supplier->deletion_requested_at?->format('Y-m-d') . "<br>";
+        $text_primary .= "Planerat slutdatum: " . $supplier->deletion_scheduled_at?->format('Y-m-d') . "<br>";
+        if (!empty($trimmedCancellationReason)) {
+            $text_primary .= "Kundens angivna anledning: " . $trimmedCancellationReason . "<br>";
         }
+        if (!empty($trimmedCancellationFeedback)) {
+            $text_primary .= "Anledning till radering: " . nl2br(e($trimmedCancellationFeedback)) . "<br>";
+        }
+
+        $text_secondary = "När uppsägningstiden har löpt ut ska kontot och tillhörande uppgifter raderas i enlighet med Bilfloggs rutiner för datalagring. Uppgifter som måste bevaras enligt lag ska fortsatt lagras under den tid som krävs.<br><br>";
+
+        $data = [
+            'user' => $company,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        SendEmailJob::dispatch(
+            'emails.admin.notifications',
+            $data,
+            $email,
+            $subject
+        );
+
+        //-------------------------------------------------------------------------
+        //Send mail to Supplier
+
+        $email = $supplier->user->email;
+        $subject = 'Din begäran om kontoradering är bekräftad';
+        $text_primary = "Vi bekräftar att vi har tagit emot din begäran om att radera ditt Bilflogg-konto.<br>";
+        $text_primary .= "Enligt våra villkor gäller en uppsägningstid på tre månader. Ditt konto kommer därför att fortsätta vara aktivt och tillgängligt fram till <br><br>";
+        $text_primary .= $supplier->deletion_scheduled_at?->format('Y-m-d')  . "<br><br>";
+        $text_primary .= "Efter uppsägningstidens slut kommer ditt konto att avslutas och raderas. Uppgifter som Bilflogg enligt lag är skyldigt att bevara kan komma att sparas under den tid som krävs.<br><br>";
+        $text_primary .= "När raderingen har genomförts får du en bekräftelse via e-post. Observera att raderad information inte kan återställas.<br><br>";
+        $text_primary .= "Begäran bekräftad: " . $supplier->deletion_requested_at->format('Y-m-d') . "<br>";
+        $text_primary .= "Kontot avslutas och raderas: " . $supplier->deletion_scheduled_at->format('Y-m-d') . "<br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => '',
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.suppliers.notifications',
+            $data,
+            $email,
+            $subject
+        );
 
         return $supplier;
     }
@@ -788,6 +786,62 @@ class Supplier extends Model
             $supplier->deletion_scheduled_at = null;
             $supplier->save();
         }
+
+        $company = $supplier->user->userDetail->company ?? ($supplier->user->name . ' ' . $supplier->user->last_name);
+
+        $email = env('MAIL_ADMIN', null);
+        $subject = 'Begäran om kontoradering återkallad - ' . $company;
+        $text_primary = "har återkallat sin tidigare begäran om att avsluta och radera sitt Bilflogg-konto.<br>";
+        $text_primary .= "Kontot kommer därför inte att avslutas eller raderas och kunden fortsätter använda Bilflogg som vanligt.<br><br>";
+        $text_primary .= "Företag: " . $company . "<br>";
+        $text_primary .= "Organisationsnummer: " . ($supplier->user->userDetail->organization_number ?? '-') . "<br>";
+        $text_primary .= "Kontaktperson: " . $supplier->user->name . ' ' . $supplier->user->last_name . "<br>";
+        $text_primary .= "E-post: " . $supplier->user->email . "<br>";
+        $text_primary .= "Telefon: " . ($supplier->user->userDetail->personal_phone ?? '-') . "<br>";
+        $text_primary .= "Begäran återkallad: " . now()->format('Y-m-d') . "<br>";
+
+        $text_secondary = "Kundens konto och abonnemang fortsätter att vara aktiva enligt tidigare villkor. Ingen ytterligare åtgärd krävs.<br><br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
+            'text_primary' => $text_primary,
+            'text_secondary' => $text_secondary,
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        SendEmailJob::dispatch(
+            'emails.admin.notifications',
+            $data,
+            $email,
+            $subject
+        );
+
+        //-------------------------------------------------------------------------
+        //Send mail to Supplier
+
+        $email = $supplier->user->email;
+        $subject = 'Din begäran om kontoradering har återkallats';
+        $text_primary = "Vi bekräftar att din tidigare begäran om att avsluta och radera ditt Bilflogg-konto har återkallats.<br>";
+        $text_primary .= "Ditt konto kommer därför inte att avslutas eller raderas. Ditt abonnemang och din tillgång till Bilflogg fortsätter som vanligt, precis som tidigare.<br><br>";
+        $text_primary .= "Du behöver inte göra något ytterligare och kan fortsätta använda alla funktioner som ingår i ditt abonnemang.<br><br>";
+        $text_primary .= "Tack för att du väljer att fortsätta med Bilflogg - vi är glada att ha dig kvar som kund! Har du några frågor är du alltid välkommen att kontakta oss på info@bilflogg.se.<br><br>";
+
+        $data = [
+            'user' => $supplier->user->name . ' ' . $supplier->user->last_name ,
+            'text_primary' => $text_primary,
+            'text_secondary' => '',
+            'title' => $subject,
+            'icon' => asset('/images/important.png')
+        ];
+
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            'emails.suppliers.notifications',
+            $data,
+            $email,
+            $subject
+        );
 
         return $supplier;
     }
