@@ -216,13 +216,13 @@ const deletionDaysLeft = computed(() => {
           </span>
         </div>
 
-         <VBtn
-            class="btn-light px-4"
-            :class="windowWidth < 1024 ? 'w-100': ''"
-            :to="{ name: 'dashboard-settings-security' }"
-          >
-            Avbryt raderingen
-          </VBtn>
+        <VBtn
+          class="btn-light px-4"
+          :class="windowWidth < 1024 ? 'w-100': ''"
+          :to="{ name: 'dashboard-settings-security' }"
+        >
+          Avbryt raderingen
+        </VBtn>
       </div>
     </template>
 

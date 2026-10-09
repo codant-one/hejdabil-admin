@@ -113,6 +113,10 @@ class Suppliers {
     requestDeletion(id, data){
         return axios.post(`/suppliers/request-deletion/${id}`, data)
     }
+
+    cancelDeletion(id){
+        return axios.get(`/suppliers/cancel-deletion/${id}`)
+    }
 }
 
 const suppliers = new Suppliers();

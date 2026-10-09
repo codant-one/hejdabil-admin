@@ -386,6 +386,18 @@ export const useSuppliersStores = defineStore('suppliers', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
+        },
+        cancelDeletion(id) {
+            this.setLoading(true)
+
+            return Suppliers.cancelDeletion(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
         }
     }
 })

@@ -750,6 +750,20 @@ class Supplier extends Model
         return $supplier;
     }
 
+    public static function cancelDeletion($id) {
+        $supplier = self::find($id);
+        
+        if ($supplier) {
+            $supplier->cancellation_date = null;
+            $supplier->grace_end_date = null;
+            $supplier->deletion_requested_at = null;
+            $supplier->deletion_scheduled_at = null;
+            $supplier->save();
+        }
+
+        return $supplier;
+    }
+
     /**** attributes ****/
     public function getFullNameAttribute()
     {

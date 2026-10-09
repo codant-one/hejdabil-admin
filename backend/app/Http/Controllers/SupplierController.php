@@ -2065,4 +2065,29 @@ class SupplierController extends Controller
         }
     }
 
+    public function cancelDeletion(Request $request, $id)
+    {
+        try {
+
+            $supplier = Supplier::with('user')->findOrFail($id);
+
+            $supplier->cancelDeletion($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Den planerade kontoraderingen har avbrutits.',
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 }
