@@ -275,7 +275,7 @@ const deletionDaysLeft = computed(() => {
     border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
     border-image-slice: 1;
     background: #FFF1F1;
-    width: 230px;
+    width: 226px;
     height: 50px;
   }
 

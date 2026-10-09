@@ -40,7 +40,26 @@ const props = defineProps({
 const refNav = ref();
 const { width: windowWidth } = useWindowSize();
 
-const userData = ref(JSON.parse(localStorage.getItem("user_data") || "null"));
+const readUserDataFromStorage = () => JSON.parse(localStorage.getItem("user_data") || "null")
+const userData = ref(readUserDataFromStorage())
+
+const syncUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = readUserDataFromStorage()
+}
+
+onMounted(() => {
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
+})
+
 const hasDeletionAlert = computed(() =>
   props.showDeletionAlert ||
   (userData.value?.roles?.[0]?.name === "Supplier" && Boolean(userData.value?.supplier?.deletion_scheduled_at))
@@ -73,7 +92,7 @@ const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/setting
 // The alert is rendered in the navbar, so the menu header must start below it (desktop only)
 const navHeaderStyle = computed(() =>
   hasDeletionAlert.value && !isLessThanOverlayNavBreakpoint.value(windowWidth.value)
-    ? { marginTop: "96px" }
+    ? { marginTop: isSettingsRoute.value ? "72px" : "96px" }
     : undefined
 );
 
@@ -110,7 +129,10 @@ const handleNavScroll = (evt) => {
     ]"
   >
     <!-- 👉 Header -->
-    <div :class="isSettingsRoute ? 'nav-header-logo-settings' : 'nav-header-logo'">
+    <div
+      :class="isSettingsRoute ? 'nav-header-logo-settings' : 'nav-header-logo'"
+      :style="isSettingsRoute && hasDeletionAlert ? { borderBottom: 'none' } : undefined"
+    >
       <RouterLink
         to="/info"
         :class="hideTitleAndIcon ? 'justify-center' : ''"
@@ -206,9 +228,9 @@ const handleNavScroll = (evt) => {
   background-color: transparent !important;
   box-shadow: none !important;
 
-  &.settings-route {
+  /*&.settings-route {
     background-color: #fff !important;
-  }
+  }*/
 
   .nav-header-logo {
     margin: 30px 24px 0 24px;

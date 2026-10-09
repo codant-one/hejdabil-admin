@@ -18,9 +18,28 @@ export default defineComponent({
     const { width: windowWidth } = useWindowSize()
     const { _layoutClasses: layoutClasses, isLessThanOverlayNavBreakpoint, isNavbarBlurEnabled } = useLayouts()
     const route = useRoute()
+    const readUserDataFromStorage = () => JSON.parse(localStorage.getItem('user_data') || 'null')
+    const userData = ref(readUserDataFromStorage())
     const isOverlayNavActive = ref(false)
     const isLayoutOverlayVisible = ref(false)
     const toggleIsOverlayNavActive = useToggle(isOverlayNavActive)
+
+    const syncUserData = event => {
+      if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+        userData.value = event.detail
+      else
+        userData.value = readUserDataFromStorage()
+    }
+
+    onMounted(() => {
+      window.addEventListener('user-data-updated', syncUserData)
+      window.addEventListener('storage', syncUserData)
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('user-data-updated', syncUserData)
+      window.removeEventListener('storage', syncUserData)
+    })
 
 
     // ℹ️ This is alternative to below two commented watcher
@@ -61,7 +80,12 @@ export default defineComponent({
       const navbarStyle = isSettingsRoute.value ? 'background: #fff !important; background-color: #fff !important;' : undefined
       const navbarContentStyle = isSettingsRoute.value ? 'background: #fff !important; background-color: #fff !important;' : undefined
 
-      const navbar = h('header', { class: ['layout-navbar', { 'navbar-blur': isNavbarBlurEnabled.value, 'settings-route': isSettingsRoute.value }], style: navbarStyle }, [
+      // With a scheduled deletion: no bottom padding in settings routes (any width) and on mobile everywhere else
+      const hasScheduledDeletion = userData.value?.roles?.[0]?.name === 'Supplier' && userData.value?.supplier?.deletion_scheduled_at != null
+      const removeNavbarBottomPadding = hasScheduledDeletion && (isSettingsRoute.value || isLessThanOverlayNavBreakpoint.value(windowWidth.value))
+      const navbarFinalStyle = [navbarStyle, removeNavbarBottomPadding ? 'padding-bottom: 0 !important;' : undefined].filter(Boolean).join(' ') || undefined
+
+      const navbar = h('header', { class: ['layout-navbar', { 'navbar-blur': isNavbarBlurEnabled.value, 'settings-route': isSettingsRoute.value }], style: navbarFinalStyle }, [
         h('div', { class: 'navbar-content-container', style: navbarContentStyle }, slots.navbar?.({
           toggleVerticalOverlayNavActive: toggleIsOverlayNavActive,
         })),
@@ -134,7 +158,7 @@ export default defineComponent({
     z-index: variables.$layout-vertical-nav-layout-navbar-z-index;
 
     &.settings-route {
-      background-color: #fff !important;
+      //background-color: #fff !important;
 
       .navbar-content-container {
         background-color: #fff !important;        
