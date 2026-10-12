@@ -768,7 +768,7 @@ onBeforeUnmount(() => {
           <VBtn 
               type="button" 
               :block="windowWidth < 1024"
-              class="btn-error-2 mt-4 px-2"
+              class="btn-error-2 mt-4"
               :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
               @click="openDeleteConfirmation"
             >
@@ -789,7 +789,7 @@ onBeforeUnmount(() => {
           <VBtn 
               type="button" 
               :block="windowWidth < 1024"
-              class="btn-gradient mt-4 px-2"
+              class="btn-gradient mt-4"
               :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
               @click="cancelDeletionRequest"
             >
