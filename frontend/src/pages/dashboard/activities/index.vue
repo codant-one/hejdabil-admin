@@ -2882,7 +2882,9 @@ onBeforeUnmount(() => {
     }
 
     .page-activities.page-activities-delete-active {
-      margin-top: 164px;
+      @media (min-width: 1024px) {
+        margin-top: 164px;
+      }
     }
 
     @media (max-width: 1400px) {

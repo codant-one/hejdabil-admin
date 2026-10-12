@@ -218,6 +218,15 @@ const deletionDaysLeft = computed(() => {
         Din logg
       </VBtn>
 
+      <VBtn
+        class="btn-error-3"
+        :class="windowWidth < 1024 ? 'px-3' : 'd-none'"
+        :to="{ name: 'dashboard-activities' }"
+        :style="logButtonStyle"
+      >
+        <VIcon icon="custom-warning-danger" size="24" />
+      </VBtn>
+
       <NavBarNotifications />
 
       <VBtn
@@ -237,41 +246,41 @@ const deletionDaysLeft = computed(() => {
     </div>
 
     <div
-    v-if="showDeletionAlert"
-    class="nav-delete-account d-flex"
-    :class="windowWidth < 1024 ? 'flex-column gap-2': 'flex-row gap-6'"
-  >
-    <div
-      class="d-flex align-center gap-6"
-      :class="windowWidth < 1024 ? '' : 'nav-delete-account-days'"
+      v-if="showDeletionAlert"
+      class="nav-delete-account mt-3"
+      :class="windowWidth < 1024 ? 'd-none': 'd-flex flex-row gap-6'"
     >
-      <VIcon icon="custom-warning-danger" size="32" />
-      <div class="d-flex gap-2">
-        <span class="nav-delete-account-number">{{ deletionDaysLeft ?? '-' }}</span>
-        <span class="nav-delete-account-text">Dagar kvar</span>
+      <div
+        class="d-flex align-center gap-6"
+        :class="windowWidth < 1024 ? '' : 'nav-delete-account-days'"
+      >
+        <VIcon icon="custom-warning-danger" size="32" />
+        <div class="d-flex gap-2">
+          <span class="nav-delete-account-number">{{ deletionDaysLeft ?? '-' }}</span>
+          <span class="nav-delete-account-text">Dagar kvar</span>
+        </div>
       </div>
-    </div>
 
-    <div class="d-flex flex-column">
-      <span class="nav-delete-account-text" :class="windowWidth < 1024 ? 'text-center': ''">
-        Ditt konto raderas permanent
-      </span>
-      <span class="nav-delete-account-text-simple" :class="windowWidth < 1024 ? 'text-center': ''">
-        Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter.
-        Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
-      </span>
-    </div>
+      <div class="d-flex flex-column">
+        <span class="nav-delete-account-text" :class="windowWidth < 1024 ? 'text-center': ''">
+          Ditt konto raderas permanent
+        </span>
+        <span class="nav-delete-account-text-simple" :class="windowWidth < 1024 ? 'text-center': ''">
+          Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter.
+          Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
+        </span>
+      </div>
 
-    <VBtn
-      class="btn-light px-4"
-      :class="windowWidth < 1024 ? 'w-100': ''"
-      :loading="isCancelDeletionRequestOngoing"
-      :disabled="isCancelDeletionRequestOngoing"
-      @click="cancelDeletionRequest"
-    >
-      Avbryt raderingen
-    </VBtn>
-  </div>
+      <VBtn
+        class="btn-light px-4"
+        :class="windowWidth < 1024 ? 'w-100': ''"
+        :loading="isCancelDeletionRequestOngoing"
+        :disabled="isCancelDeletionRequestOngoing"
+        @click="cancelDeletionRequest"
+      >
+        Avbryt raderingen
+      </VBtn>
+    </div>
   </div>
 
   <VDialog

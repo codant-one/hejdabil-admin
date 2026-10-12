@@ -576,7 +576,9 @@ onBeforeUnmount(() => {
   }
 
   .page-notifications.page-notifications-delete-active {
-    margin-top: 164px;
+    @media (min-width: 1024px) {
+      margin-top: 164px;
+    }
   }
 
   .notification-avatar .v-icon {

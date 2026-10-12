@@ -233,6 +233,15 @@ const deletionDaysLeft = computed(() => {
             Din logg
           </VBtn>
 
+          <VBtn
+            class="btn-error-3"
+            :class="windowWidth < 1024 ? 'px-3' : 'd-none'"
+            :to="{ name: 'dashboard-activities' }"
+            :style="logButtonStyle"
+          >
+            <VIcon icon="custom-warning-danger" size="24" />
+          </VBtn>
+
           <NavBarNotifications />
 
           <VBtn
@@ -255,8 +264,8 @@ const deletionDaysLeft = computed(() => {
 
       <div 
         v-if="showDeletionAlert"
-        class="nav-delete-account d-flex mt-3"
-        :class="windowWidth < 1024 ? 'flex-column gap-2': 'flex-row gap-6'"
+        class="nav-delete-account mt-3"
+        :class="windowWidth < 1024 ? 'd-none': 'd-flex flex-row gap-6'"
       >
         <div 
           class="d-flex align-center gap-6"
