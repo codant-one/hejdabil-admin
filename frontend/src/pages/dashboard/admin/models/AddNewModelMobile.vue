@@ -1,0 +1,334 @@
+<script setup>
+
+import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { requiredValidator } from '@/@core/utils/validators'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
+
+const props = defineProps({
+  isDrawerOpen: {
+    type: Boolean,
+    required: true
+  },
+  model: {
+    type: Object,
+    required: false
+  },
+  brands: {
+    type: Object,
+    required: false
+  }
+})
+
+const emit = defineEmits([
+  'update:isDrawerOpen',
+  'modelData',
+  "edited"
+])
+
+const isFormValid = ref(false)
+const refForm = ref()
+
+const id = ref(0)
+const brand_id = ref(null)
+const name = ref('')
+const isEdit = ref(false)
+
+const initialData = ref(null)
+const isConfirmLeaveVisible = ref(false)
+
+const getTitle = computed(() => {
+  return isEdit.value ? 'Uppdatera modell': 'Lägg till modell'
+})
+
+const currentData = computed(() => ({
+  id: id.value,
+  name: name.value,
+  brand_id: brand_id.value,
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false,
+})
+
+watchEffect(async() => {
+  if (props.isDrawerOpen) {
+
+    if (!(Object.entries(props.model).length === 0) && props.model.constructor === Object) {
+
+      isEdit.value = true
+      id.value = props.model.id
+      brand_id.value = props.model.brand_id
+      name.value = props.model.name
+    }
+
+    // snapshot initial state after fields are populated
+    nextTick(() => {
+      initialData.value = { ...currentData.value }
+      emit('edited', false)
+    })
+  }
+})
+
+// 👉 drawer close
+const reallyCloseAndReset = () => {
+  emit("update:isDrawerOpen", false)
+  // emit('resetDuplicate')
+  nextTick(() => {
+    refForm.value?.reset()
+    refForm.value?.resetValidation()
+
+    name.value = ''
+    brand_id.value = null
+
+    isEdit.value = false 
+    id.value = 0
+    initialData.value = null
+    emit('edited', false)
+  })
+}
+
+defineExpose({
+  reallyCloseAndReset,
+})
+
+const closeNavigationDrawer = () => {
+  if (isDirty.value) {
+    isConfirmLeaveVisible.value = true
+    
+    return
+  }
+  reallyCloseAndReset()
+}
+
+const onSubmit = () => {
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      let formData = new FormData()
+
+      formData.append('brand_id', brand_id.value)
+      formData.append('name', name.value)
+
+      emit('modelData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
+
+      // closeNavigationDrawer()
+    }
+  })
+}
+
+watch(currentData, () => {
+  if (!initialData.value) return
+  emit('edited', isDirty.value)
+}, { deep: true })
+
+</script>
+
+<template>
+  <!-- 👉 Form -->
+  <VForm
+    ref="refForm"
+    v-model="isFormValid"
+    class="card-form model-mobile"
+    validate-on="submit"
+    @submit.prevent="onSubmit"
+  >
+    <VList>
+      <VListItem
+        v-if="advisor.show"
+        class="m-4 p-5"
+      >
+        <VAlert
+          :color="advisor.type"
+          class="alert-no-shrink custom-alert"
+          style="flex: none; margin: 2px 2px 2px 1px"
+        >
+          <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+        </VAlert>
+      </VListItem>
+
+      <VListItem>
+        <VLabel
+          class="mb-1 text-body-2 text-high-emphasis"
+          text="Märke"
+        />
+        <VSelect
+          v-model="brand_id"
+          :items="brands"
+          :item-title="item => item.name"
+          :item-value="item => item.id"
+          autocomplete="off"
+          :menu-props="{ maxHeight: '300px' }"
+          :rules="[requiredValidator]"/>
+      </VListItem>
+      <VListItem>
+        <VLabel
+          class="mb-1 text-body-2 text-high-emphasis"
+          text="Namn*"
+        />
+        <VTextField
+            v-model="name"
+            :rules="[requiredValidator]"
+        />
+      </VListItem>
+    </VList>
+
+
+    <div class="pb-6 px-6 d-flex gap-4 form-actions">
+      <!-- 👉 Submit and Cancel -->
+      <VBtn
+        class="btn-light" 
+        type="reset"
+        @click="closeNavigationDrawer"
+      >
+        Avbryt
+      </VBtn>
+      <VBtn
+        class="btn-gradient"
+        type="submit"
+      >
+        {{ isEdit ? "Uppdatering" : "Lägg till" }}
+      </VBtn>
+    </div>
+  </VForm>
+
+
+</template>
+
+<style scoped>
+  @media (max-width: 1023px) {
+    .card-form.model-mobile {
+      .v-list {
+        padding: 28px 24px 40px !important;
+
+        .v-list-item {
+          margin-bottom: 0px;
+          padding: 4px 0 !important;
+          gap: 0px !important;
+
+          .v-input--density-compact {
+            --v-input-control-height: 48px !important;
+          }
+
+          .v-select .v-field {
+            .v-select__selection {
+              align-items: center;
+            }
+
+            .v-field__input > input {
+              top: 0px;
+              left: 0px;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .selector-country {
+            .v-input__prepend {
+              margin-inline-end: 6px !important;
+            }
+          }
+
+          .v-autocomplete .v-field {
+            .v-autocomplete__selection-text {
+              align-items: center;
+              display: flex;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .v-text-field {
+            .v-input__control {
+              padding-top: 0;
+
+              .v-field {
+                .v-text-field__prefix {
+                  height: 48px;
+                  color: #454545;
+                }
+              }
+
+              input {
+                min-height: 48px !important;
+                height: 48px !important;
+                padding: 12px 16px;
+              }
+            }
+          }
+
+          .v-input.always-show-prefix {
+            .v-input__control {
+              .v-field {
+                .v-field__input {
+                  padding: 8px 0 !important;
+                }
+              }
+            }
+          }
+        }
+      }
+      & .v-input:not(.v-textarea) {
+        & .v-input__control {
+          .v-field {
+            background-color: #f6f6f6;
+            min-height: 48px !important;
+            height: 48px !important;
+            .v-field-label {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .v-dialog .v-overlay__content {
+    max-height: calc(100dvh - 48px) !important;
+  }
+
+  :deep(.vue-simple-handler) {
+      background: #57F287 !important;
+  }
+
+  .v-btn {
+    width: 100%;
+  }
+
+  .form-actions {
+    .v-btn {
+      flex: 1;
+    }
+  }
+
+  .btn-close-model {
+    height: 32px !important;
+  }
+
+  .card-model {
+    border-radius: 0 !important;
+  }
+
+  .border-img {
+      border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
+      border-radius: 6px;
+  }
+  .border-img .v-img__img--contain {
+      padding: 10px;
+  }
+</style>
