@@ -25,6 +25,8 @@ const isCancelDeletionSuccessDialogVisible = ref(false)
 const isCancelDeletionErrorDialogVisible = ref(false)
 const cancelDeletionErrorText = ref('Ett serverfel uppstod. Försök igen.')
 
+const isDeleteAccountDialogVisible = ref(false)
+
 const syncUserData = event => {
   if (event?.detail)
     userData.value = event.detail
@@ -111,6 +113,7 @@ const cancelDeletionRequest = async () => {
   if (!supplierId)
     return
 
+  isDeleteAccountDialogVisible.value = false;
   isCancelDeletionRequestOngoing.value = true
   cancelDeletionErrorText.value = 'Ett serverfel uppstod. Försök igen.'
 
@@ -219,10 +222,10 @@ const deletionDaysLeft = computed(() => {
       </VBtn>
 
       <VBtn
+        v-if="showDeletionAlert"
         class="btn-error-3"
         :class="windowWidth < 1024 ? 'px-3' : 'd-none'"
-        :to="{ name: 'dashboard-activities' }"
-        :style="logButtonStyle"
+        @click="isDeleteAccountDialogVisible = true"
       >
         <VIcon icon="custom-warning-danger" size="24" />
       </VBtn>
@@ -284,6 +287,60 @@ const deletionDaysLeft = computed(() => {
   </div>
 
   <VDialog
+    v-model="isDeleteAccountDialogVisible"
+    fullscreen
+    persistent
+    scrim="false"
+    class="action-dialog dialog-fullscreen"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VBtn
+      icon
+      class="btn-ghost close-btn me-2"
+      @click="isDeleteAccountDialogVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard class="h-100 d-flex flex-column nav-delete-account-mobile" style="border-radius: 0 !important;">
+      <VCardText 
+        class="dialog-title-box flex-row"
+        style="overflow-y: hidden;"
+      >
+        <VIcon size="32" icon="custom-warning-danger" class="action-icon" />
+        <div class="dialog-title" style="color: #9B191B;">
+          {{ deletionDaysLeft ?? '-' }} Dagar kvar
+        </div>
+      </VCardText>
+
+      <VCardText 
+        class="dialog-text h-100 mt-6"
+        style="overflow-y: auto; overflow-x: hidden;">
+
+        <span class="dialog-text">
+          <div class="d-flex flex-column">
+            <span class="nav-delete-account-text text-center">
+              Ditt konto raderas permanent
+            </span>
+            <span class="nav-delete-account-text-simple text-center">
+              Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter. 
+              Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
+            </span>
+          </div>
+        </span>
+
+        <VBtn
+          class="btn-light px-4 mt-4 w-100"
+          @click="cancelDeletionRequest"
+        >
+          Avbryt raderingen
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog
     v-model="isCancelDeletionSuccessDialogVisible"
     persistent
     class="action-dialog dialog-big-icon"
@@ -340,6 +397,13 @@ const deletionDaysLeft = computed(() => {
 .nav-delete-account {
   align-items: center;
   padding: 16px 24px;
+  border-left: 3px solid #CC3E3F;
+  border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
+  border-image-slice: 1;
+  background: #FFF1F1;
+}
+
+.nav-delete-account-mobile {
   border-left: 3px solid #CC3E3F;
   border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
   border-image-slice: 1;
