@@ -19,10 +19,24 @@ const configsStores = useConfigsStores()
 const suppliersStores = useSuppliersStores()
 
 const refVForm = ref()
+const supplierData = ref(null)
 const password = ref()
 const passwordConfirmation = ref()
 const isNewPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
+
+const selectedCancellationReason = ref(null)
+const cancellationFeedback = ref('')
+
+const cancellationReasons = [
+    'Jag har stängt verksamheten',
+    'Jag byter till en annan plattform',
+    'För komplicerat att använda',
+    'Inte prisvärt längre',
+    'Annat',
+]
+const defaultCancellationReason = cancellationReasons[0]
+selectedCancellationReason.value = defaultCancellationReason
 
 const refForm = ref()
 const isFormValid = ref(false)
@@ -45,6 +59,10 @@ const deletionForm = ref(null)
 const deletionCode = ref('')
 const deletionError = ref('')
 const deletionOtpKey = ref(0)
+const isCancelDeletionRequestOngoing = ref(false)
+const isCancelDeletionSuccessDialogVisible = ref(false)
+const isCancelDeletionErrorDialogVisible = ref(false)
+const cancelDeletionErrorText = ref('Ett serverfel uppstod. Försök igen.')
 
 const err = ref(null);
 const skapatsDialog = ref(false);
@@ -62,6 +80,37 @@ const advisor = ref({
   message: '',
   show: false,
 })
+
+const syncSupplierDeletionScheduledAt = () => {
+  if (role.value !== 'Supplier')
+    return
+
+  const deletionScheduledAt = userData.value?.supplier?.deletion_scheduled_at ?? null
+  const supplierId = userData.value?.supplier?.id ?? supplierData.value?.id ?? null
+
+  supplierData.value = {
+    ...(supplierData.value ?? {}),
+    id: supplierId,
+    deletion_scheduled_at: deletionScheduledAt,
+  }
+}
+
+const syncSecurityStateFromUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  role.value = userData.value?.roles?.[0]?.name ?? null
+
+  if (role.value !== 'Supplier') {
+    supplierData.value = null
+
+    return
+  }
+
+  syncSupplierDeletionScheduledAt()
+}
 
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
@@ -103,10 +152,11 @@ async function fetchData() {
       const supplierId = userData.value?.supplier?.id
 
       if (supplierId) {
-        const supplierData = await suppliersStores.getMasterPassword(supplierId)
+        supplierData.value = await suppliersStores.getMasterPassword(supplierId)
+        syncSupplierDeletionScheduledAt()
 
-        masterPassword.value = supplierData?.master_password ?? ''
-        csrUrl.value = supplierData?.csr_url ?? null
+        masterPassword.value = supplierData.value?.master_password ?? ''
+        csrUrl.value = supplierData.value?.csr_url ?? null
       }
     } else {
       await configsStores.getFeature('setting')
@@ -253,6 +303,8 @@ const deletionErrorMessage = error => error?.message ?? 'Ett serverfel uppstod. 
 const resetDeletionForm = () => {
   deletionCode.value = ''
   deletionError.value = ''
+  selectedCancellationReason.value = defaultCancellationReason
+  cancellationFeedback.value = ''
   deletionOtpKey.value += 1
   deletionForm.value?.resetValidation()
 }
@@ -304,6 +356,102 @@ const closeDeleteVerification = () => {
   resetDeletionForm()
 }
 
+const syncUserDataAfterDeletionRequest = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+    role.value = responseUserData?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+
+    return
+  }
+
+  const currentUserData = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  if (!currentUserData?.hash)
+    return
+
+  try {
+    const { user_data } = await authStores.me(currentUserData)
+
+    if (!user_data)
+      return
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data
+    role.value = user_data?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+  } catch (error) {
+    console.error('Failed to refresh user_data after deletion request:', error)
+  }
+}
+
+const syncUserDataAfterCancelDeletion = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+    role.value = responseUserData?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+
+    return
+  }
+
+  const currentUserData = JSON.parse(localStorage.getItem('user_data') || 'null')
+
+  if (!currentUserData?.hash)
+    return
+
+  try {
+    const { user_data } = await authStores.me(currentUserData)
+
+    if (!user_data)
+      return
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+    userData.value = user_data
+    role.value = user_data?.roles?.[0]?.name ?? null
+    syncSupplierDeletionScheduledAt()
+  } catch (error) {
+    console.error('Failed to refresh user_data after cancel deletion:', error)
+  }
+}
+
+const cancelDeletionRequest = async () => {
+  const supplierId = supplierData.value?.id ?? userData.value?.supplier?.id
+
+  if (!supplierId)
+    return
+
+  isCancelDeletionRequestOngoing.value = true
+  isRequestOngoing.value = true
+  cancelDeletionErrorText.value = 'Ett serverfel uppstod. Försök igen.'
+
+  try {
+    const response = await suppliersStores.cancelDeletion(supplierId)
+
+    await syncUserDataAfterCancelDeletion(response)
+    isCancelDeletionSuccessDialogVisible.value = true
+    setAdvisor('success', 'Kontoraderingen har avbrutits.')
+    clearAdvisorLater(5000)
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message
+      ?? Object.values(error?.response?.data?.errors ?? {}).flat().join(' ')
+      ?? error?.message
+
+    if (errorMessage)
+      cancelDeletionErrorText.value = errorMessage
+
+    isCancelDeletionErrorDialogVisible.value = true
+  } finally {
+    isCancelDeletionRequestOngoing.value = false
+    isRequestOngoing.value = false
+  }
+}
+
 const confirmAccountDeletion = async () => {
   const { valid } = await deletionForm.value.validate()
 
@@ -320,9 +468,15 @@ const confirmAccountDeletion = async () => {
   deletionError.value = ''
 
   try {
-    await suppliersStores.requestDeletion(userData.value.supplier.id, {
+    const cancellationReason = selectedCancellationReason.value
+    const cancellationFeedbackText = cancellationFeedback.value.trim()
+
+    const response = await suppliersStores.requestDeletion(userData.value.supplier.id, {
       code: deletionCode.value,
+      cancellation_reason: cancellationReason,
+      cancellation_feedback: cancellationFeedbackText,
     })
+    await syncUserDataAfterDeletionRequest(response)
 
     closeDeleteVerification()
     skapatsDialog.value = true
@@ -373,10 +527,14 @@ onMounted(() => {
   fetchData();
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  window.addEventListener('user-data-updated', syncSecurityStateFromUserData)
+  window.addEventListener('storage', syncSecurityStateFromUserData)
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  window.removeEventListener('user-data-updated', syncSecurityStateFromUserData)
+  window.removeEventListener('storage', syncSecurityStateFromUserData)
 });
 </script>
 
@@ -592,7 +750,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="card-delete-account" v-if="role === 'Supplier'">
+        <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">
           <div class="d-flex flex-column gap-4">
             <span class="subtitle-settings">Radera konto permanent</span>
             <span class="text-settings">
@@ -618,36 +776,114 @@ onBeforeUnmount(() => {
             </VBtn>
         </VCardText>
 
+        <VCardText class="card-cancel-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at !== null">
+          <div class="d-flex flex-column gap-4">
+            <span class="subtitle-settings">Kontot är planerat för radering</span>
+            <span class="text-settings">  
+              Du har begärt att avsluta och radera ditt Bilflogg-konto.<br>
+              Ditt konto och abonnemang förblir aktiva under uppsägningstiden och kommer att avslutas och raderas den {{ supplierData?.deletion_scheduled_at }}.<br><br>
+              Har du ändrat dig? Du kan avbryta raderingen när som helst innan slutdatumet. Ditt konto och abonnemang fortsätter då som vanligt och ingen information raderas.
+            </span>
+            
+          </div>
+          <VBtn 
+              type="button" 
+              :block="windowWidth < 1024"
+              class="btn-gradient mt-4 px-2"
+              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+              @click="cancelDeletionRequest"
+            >
+              Avbryt radering
+            </VBtn>
+        </VCardText>
+
         <VDialog
           v-model="isDeleteConfirmDialogVisible"
+          :fullscreen="windowWidth < 1024"
           persistent
-          class="action-dialog"
+          :scrim="windowWidth < 1024 ? false : true"
+          :scrollable="windowWidth >= 1024"
+          :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+          :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+          :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+          width="560"
         >
           <VBtn
             icon
-            class="btn-white close-btn"
+            class="btn-ghost close-btn me-2"
             @click="isDeleteConfirmDialogVisible = false"
           >
             <VIcon size="16" icon="custom-close" />
           </VBtn>
 
-          <VCard>
-            <VCardText class="dialog-title-box">
-              <VIcon size="32" icon="custom-waste-outlined" class="action-icon" />
-              <div class="dialog-title">Radera konto permanent?</div>
+          <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+            <VCardText 
+                class="dialog-title-box flex-row"
+                :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
+            >
+              <div class="dialog-title">
+                Innan du raderar ditt konto
+              </div>
             </VCardText>
 
-            <VCardText class="dialog-text">
-              Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas.
-            </VCardText>
+            <VCardText 
+              class="dialog-text d-flex flex-column gap-4 card-form"
+              :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
+            >
 
-            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-              <VBtn class="btn-light" @click="isDeleteConfirmDialogVisible = false">
-                Avbryt
-              </VBtn>
-              <VBtn class="btn-error-2" @click="sendDeletionCode">
-                Radera konto
-              </VBtn>
+              <span class="dialog-text">
+                Hjälp oss förstå varför — din feedback är värdefull för oss, oavsett vad du väljer.
+              </span>
+
+              <div class="cancel-feedback-remember">
+                <span class="cancel-feedback-remember__highlight">Kom ihåg:</span> raderingen sker efter 3 månaders uppsägningstid. 
+                Under denna period kan du fortfarande ladda ner din information.
+              </div>              
+
+              <div class="cancel-feedback-dialog__label">
+                Vad är den huvudsakliga anledningen?
+              </div>
+
+              <VRadioGroup
+                v-model="selectedCancellationReason"
+                hide-details
+                false-icon="custom-plan-checkbox-false"
+                true-icon="custom-plan-checkbox-true"
+                class="cancel-feedback-reason-group"
+              >
+                <VRadio
+                  v-for="reason in cancellationReasons"
+                  :key="reason"
+                  :value="reason"
+                  class="cancel-feedback-reason-option"
+                >
+                  <template #label>
+                    <span class="cancel-feedback-reason-option__label">
+                      {{ reason }}
+                    </span>
+                  </template>
+                </VRadio>
+              </VRadioGroup>
+
+              <div class="cancel-feedback-dialog__label">
+                  Berätta gärna mer (valfritt)
+              </div>
+
+              <VTextarea
+                v-model="cancellationFeedback"
+                placeholder="Skriv här..."
+                rows="2"
+                auto-grow
+              />
+
+              <VCardText class="d-flex gap-3 dialog-actions pt-0 px-0">
+                <VBtn class="btn-light" block @click="isDeleteConfirmDialogVisible = false">
+                  Avbryt
+                </VBtn>
+                <VBtn class="btn-gradient" block @click="sendDeletionCode">
+                  Radera konto
+                </VBtn>
+              </VCardText>
             </VCardText>
           </VCard>
         </VDialog>
@@ -748,12 +984,16 @@ onBeforeUnmount(() => {
             </VCardText>
             <VCardText class="dialog-title-box justify-center">
               <div class="dialog-title">
-                  Ditt konto har raderats korrekt!
+                  Din begäran om kontoradering har bekräftats!
               </div>
             </VCardText>
-            <VCardText class="dialog-text text-center">
-              Ditt konto och tillhörande uppgifter har raderats.
-              Du kommer inte längre att kunna komma åt ditt konto eller återställa den raderade informationen.
+            <VCardText class="dialog-text text-center">              
+              Din begäran om att radera ditt Bilflogg-konto har bekräftats.
+              Kontot kommer att avslutas och raderas när uppsägningstiden på tre månader har löpt ut. 
+              Fram till dess har du fortsatt tillgång till ditt konto.
+              När raderingen har genomförts får du en bekräftelse via e-post. 
+              Observera att kontot och den raderade informationen inte kan återställas. 
+              Vissa uppgifter kan komma att sparas enligt lag.
             </VCardText>
             <VCardText class="d-flex justify-center dialog-actions">
               <VBtn class="btn-gradient" @click="skapatsDialog = false">
@@ -795,6 +1035,56 @@ onBeforeUnmount(() => {
             </VCard>
         </VDialog>
 
+        <VDialog
+          v-model="isCancelDeletionSuccessDialogVisible"
+          persistent
+          class="action-dialog dialog-big-icon"
+        >
+          <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="72" icon="custom-f-crown" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">
+                Vad kul att du stannar!
+              </div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+              Din begäran om kontoradering har avbrutits. Ditt konto och abonnemang fortsätter som vanligt och du kan fortsätta använda Bilflogg precis som tidigare.
+            </VCardText>
+            <VCardText class="d-flex justify-center dialog-actions">
+              <VBtn class="btn-gradient" @click="isCancelDeletionSuccessDialogVisible = false">
+                Fortsätt till Bilflogg
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
+        <VDialog
+          v-model="isCancelDeletionErrorDialogVisible"
+          persistent
+          class="action-dialog dialog-big-icon"
+        >
+          <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="72" icon="custom-f-cancel" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">
+                Ett fel inträffade
+              </div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+              {{ cancelDeletionErrorText }}
+            </VCardText>
+            <VCardText class="d-flex justify-center dialog-actions">
+              <VBtn class="btn-light" @click="isCancelDeletionErrorDialogVisible = false">
+                Stäng
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VDialog>
+
         <VDialog v-model="isFileMissingDialogVisible" width="500">
           <VCard title="Information">
             <VCardText>
@@ -822,12 +1112,85 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+  .cancel-feedback-remember {
+    border-radius: 8px;
+    padding: 16px;
+    background: #F6F6F6;
+
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;
+  }
+
+  .cancel-feedback-remember__highlight {
+    font-weight: 700;
+  }
+
+  .cancel-feedback-dialog__body {
+    padding: 28px 40px 0;
+  }
+
+  .cancel-feedback-dialog__label {
+    font-weight: 700;
+    font-size: 12.5px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1C2925;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control {
+    width: 100%;
+    margin: 0 !important;
+    border: 1px solid #E5EAE8;
+    border-radius: 10px;
+    padding: 10px 14px;
+    transition: border-color .2s ease, background-color .2s ease;
+  }
+
+  .cancel-feedback-reason-group .v-radio .v-selection-control__input .iconify--custom {
+    block-size: 18px !important;
+    font-size: 18px !important;
+    inline-size: 18px !important;
+  }
+
+  .cancel-feedback-reason-group .v-selection-control--dirty {
+    border-color: #57F287;
+    background-color: #F3FCF7;
+  }
+
+  .cancel-feedback-reason-option__label {
+    font-weight: 600;
+    font-size: 13.5px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1C2925;
+    margin-left: 8px;
+  }
+
   .card-delete-account {
     border-radius: 16px;
     padding: 24px;
     gap: 24px;
     margin: 16px;
     background-color: #FFF1F1;
+  }
+
+  .card-cancel-delete-account {
+    border-radius: 16px;
+    padding: 24px;
+    gap: 24px;
+    margin: 16px;
+    border: 1px solid #57F287;
+    background-color: #F3FCF7;
   }
 
   .two_class {

@@ -759,6 +759,7 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
+                    'deletion_scheduled_at' => $supplier->deletion_scheduled_at,
                     'master_password' => $supplier->master_password,
                     'csr_url' => $supplier->csr_url,
                     'key_url' => $supplier->key_url,
@@ -1803,7 +1804,7 @@ class SupplierController extends Controller
         }
     }
 
-    public function cancelSubscription($id): JsonResponse
+    public function cancelSubscription(Request $request, $id): JsonResponse
     {
         try {
             $supplier = Supplier::find($id);
@@ -1816,7 +1817,11 @@ class SupplierController extends Controller
                 ], 404);
             }
 
-            $supplier->cancelSubscription($id);
+            $supplier->cancelSubscription(
+                $id,
+                $request->input('cancellation_reason'),
+                $request->input('cancellation_feedback')
+            );
             $supplier->refresh()->load(['user', 'state', 'plan']);
 
             if (Auth::user()->getRoleNames()[0] !== 'Supplier') {
@@ -2014,6 +2019,8 @@ class SupplierController extends Controller
         try {
             $request->validate([
                 'code' => 'required|digits:6',
+                'cancellation_reason' => 'nullable|string|max:255',
+                'cancellation_feedback' => 'nullable|string|max:2000',
             ]);
 
             $supplier = Supplier::with('user')->findOrFail($id);
@@ -2034,13 +2041,42 @@ class SupplierController extends Controller
                 ], 422);
             }
 
-            $supplier->requestDeletion($id);
+            $supplier->requestDeletion(
+                $id,
+                $request->input('cancellation_reason'),
+                $request->input('cancellation_feedback')
+            );
             $supplier->code = null;
             $supplier->save();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Kontot kommer att raderas om 3 månader.',
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelDeletion(Request $request, $id)
+    {
+        try {
+
+            $supplier = Supplier::with('user')->findOrFail($id);
+
+            $supplier->cancelDeletion($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Den planerade kontoraderingen har avbrutits.',
                 'data' => [
                     'supplier' => $supplier
                 ]

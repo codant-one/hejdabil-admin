@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -21,7 +22,6 @@ class SendNotifications extends Command
     private const DEFAULT_SEND_REMINDERS = true;
     private const DEFAULT_NOTIFY_VIA_EMAIL = false;
     private const DEFAULT_HOURS = 24;
-    private const SCHEDULE_WINDOW_MINUTES = 60;
 
     /**
      * The name and signature of the console command.
@@ -38,151 +38,89 @@ class SendNotifications extends Command
     protected $description = 'Send notifications to users';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return int
      */
     public function handle()
     {
-        self::overdueTasks();
-        self::overdueReminders();
+        $this->overdueTasks();
+        $this->overdueReminders();
 
         return 0;
     }
 
-    private function overdueTasks() {
+    /* ---------------------------------------------------------------------
+     |  Tasks
+     | ------------------------------------------------------------------- */
+
+    private function overdueTasks(): void
+    {
         $now = now();
         $maxHours = $this->resolveMaxNotificationHours();
 
-        $tasks =
-            VehicleTask::with(['vehicle', 'user'])
-                ->where('is_cost', 0)
-                ->whereNotNull('end_date')
-                ->whereDate('end_date', '>=', $now->toDateString())
-                ->whereDate('end_date', '<=', $now->copy()->addHours($maxHours)->toDateString())
-                ->whereHas('vehicle', function($query) {
-                    $query->where('state_id', '!=', 12);
-                })
-                ->get();
-        
-        foreach($tasks as $task){
-            $notificationSettings = $this->getUserNotificationSettings($task->user_id);
+        $tasks = VehicleTask::with(['vehicle', 'user'])
+            ->where('is_cost', 0)
+            ->whereNotNull('end_date')
+            ->whereNull('notified_at')
+            ->where('end_date', '>', $now)
+            ->where('end_date', '<=', $now->copy()->addHours($maxHours))
+            ->whereHas('vehicle', function ($query) {
+                $query->where('state_id', '!=', 12);
+            })
+            ->get();
 
-            if (!$this->shouldSendReminderNotification($notificationSettings)) {
-                $this->info('Reminder notifications disabled for user_id: ' . ($task->user_id ?? 'N/A'));
-                continue;
-            }
+        $sent = 0;
 
-            $hours = $this->normalizeHours($this->configHours($notificationSettings));
-            $this->info('Notification hours for user_id ' . ($task->user_id ?? 'N/A') . ': ' . $hours);
-         
-
-            $dueAt = Carbon::parse($task->end_date)->startOfDay();
-            if (!$this->shouldSendReminderForWindow($dueAt, $hours, $now)) {
-                continue;
-            }
-            
-            // Prepare data for notification
-            $vehicle = $task->vehicle;
-            $regNum = $vehicle ? $vehicle->reg_num : 'N/A';
-            
-            $title = 'Åtgärd förfaller snart';
-            $subtitle = $regNum;
-            $text = 'Åtgärden "' . $task->measure . '" förfaller om ca ' . $hours . ' tim (' . $dueAt->format('Y/m/d H:i') . ').';
-            $color = 'error';
-            $icon = 'custom-atgarder-2';
-            $route = '/dashboard/admin/stock/edit/' . $task->vehicle_id . '#tab-tasks';
-
-            if ($this->isNotificationAlreadySentRecently($task->user_id, $task->id, $title, $route, $now)) {
-                $this->info('Skipped duplicate task notification for task_id: ' . $task->id);
-                continue;
-            }
-            
-            // Create notification directly in database
+        foreach ($tasks as $task) {
             try {
-                $dbNotification = Notification::create([
-                    'user_id' => $task->user_id,
-                    'notification_id' => $task->id,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'text' => $text,                
-                    'color' => $color,
-                    'icon' => $icon,
-                    'route' => $route,
-                    'read' => false,
-                ]);
-                
-                // Prepare message for WebSocket
-                $message = (object) [
-                    'id' => $dbNotification->id,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'time' => now()->format('H:i:s'),
-                    'img' => null,
-                    'color' => $color,
-                    'icon' => $icon,
-                    'text' => $text,
-                    'route' => $route,
-                    'read' => false,
-                ];
-                
-                // Send WebSocket event
-                if ($task->user_id) {
-                    $evento = new UserNotificationEvent($message, $task->user_id);
-                    Event::dispatch($evento);
-                }
-
-                if ($this->shouldSendReminderEmailNotification($notificationSettings)) {
-                    $this->sendNotificationInfoEmail($task->user, [
-                        'title' => $title,
-                        'subtitle' => $subtitle,
-                        'text' => $text,
-                        'route' => $route,
-                    ]);
-                }
-                
-                $this->info('Notification sent successfully for: ' . $task->measure);
+                $dueAt = Carbon::parse($task->end_date);
             } catch (\Exception $e) {
-                $this->error('Error creating notification: ' . $e->getMessage());
+                $this->error('Error parsing task end_date for task_id ' . $task->id . ': ' . $e->getMessage());
+                continue;
+            }
+
+            $ok = $this->processDueItem($task, $dueAt, $now, function (string $remainingText) use ($task, $dueAt) {
+                $regNum = $task->vehicle ? $task->vehicle->reg_num : 'N/A';
+
+                return [
+                    'title'    => 'Åtgärd förfaller snart',
+                    'subtitle' => $regNum,
+                    'text'     => 'Åtgärden "' . $task->measure . '" förfaller om ca ' . $remainingText . ' (' . $dueAt->format('Y/m/d H:i') . ').',
+                    'color'    => 'error',
+                    'icon'     => 'custom-atgarder-2',
+                    'route'    => '/dashboard/admin/stock/edit/' . $task->vehicle_id . '#tab-tasks',
+                ];
+            });
+
+            if ($ok) {
+                $sent++;
             }
         }
-        
-        $this->info('Total upcoming tasks evaluated: ' . $tasks->count());
+
+        $this->info('Total upcoming tasks evaluated: ' . $tasks->count() . ' | sent: ' . $sent);
     }
 
-    private function overdueReminders() {
+    /* ---------------------------------------------------------------------
+     |  Reminders
+     | ------------------------------------------------------------------- */
+
+    private function overdueReminders(): void
+    {
         $now = now();
         $maxHours = $this->resolveMaxNotificationHours();
 
-        $reminders =
-            Reminder::with(['user'])
-                ->where('is_done', 0)
-                ->whereNotNull('date')
-                ->where('date', '>', $now)
-                ->where('date', '<=', $now->copy()->addHours($maxHours))
-                ->get();
-        
-        foreach($reminders as $reminder){
-            $notificationSettings = $this->getUserNotificationSettings($reminder->user_id);
+        $reminders = Reminder::with(['user'])
+            ->where('is_done', 0)
+            ->whereNotNull('date')
+            ->whereNull('notified_at')
+            ->where('date', '>', $now)
+            ->where('date', '<=', $now->copy()->addHours($maxHours))
+            ->get();
 
-            if (!$this->shouldSendReminderNotification($notificationSettings)) {
-                $this->info('Reminder notifications disabled for user_id: ' . ($reminder->user_id ?? 'N/A'));
-                continue;
-            }
+        $sent = 0;
 
-            $hours = $this->normalizeHours($this->configHours($notificationSettings));
-            $this->info('Notification hours for user_id ' . ($reminder->user_id ?? 'N/A') . ': ' . $hours);
-
+        foreach ($reminders as $reminder) {
             try {
                 $dueAt = Carbon::parse($reminder->date);
             } catch (\Exception $e) {
@@ -190,75 +128,168 @@ class SendNotifications extends Command
                 continue;
             }
 
-            if (!$this->shouldSendReminderForWindow($dueAt, $hours, $now)) {
-                continue;
-            }
-            
-            // Prepare data for notification            
-            $title = 'Anteckning förfaller snart';
-            $subtitle = $reminder->description;
-            $formattedReminderDate = $dueAt->format('Y/m/d H:i');
-            $text = 'Anteckning "' . $reminder->description . '" förfaller om ca ' . $hours . ' tim (' . $formattedReminderDate . ').';
-            $color = 'error';
-            $icon = 'custom-coffee-2';
-            $route = '/dashboard/panel#reminders';
-
-            if ($this->isNotificationAlreadySentRecently($reminder->user_id, $reminder->id, $title, $route, $now)) {
-                $this->info('Skipped duplicate reminder notification for reminder_id: ' . $reminder->id);
-                continue;
-            }
-            
-            // Create notification directly in database
-            try {
-                $dbNotification = Notification::create([
-                    'user_id' => $reminder->user_id,
-                    'notification_id' => $reminder->id,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'text' => $text,                
-                    'color' => $color,
-                    'icon' => $icon,
-                    'route' => $route,
-                    'read' => false,
-                ]);
-                
-                // Prepare message for WebSocket
-                $message = (object) [
-                    'id' => $dbNotification->id,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'time' => now()->format('H:i:s'),
-                    'img' => null,
-                    'color' => $color,
-                    'icon' => $icon,
-                    'text' => $text,
-                    'route' => $route,
-                    'read' => false,
+            $ok = $this->processDueItem($reminder, $dueAt, $now, function (string $remainingText) use ($reminder, $dueAt) {
+                return [
+                    'title'    => 'Anteckning förfaller snart',
+                    'subtitle' => $reminder->description,
+                    'text'     => 'Anteckning "' . $reminder->description . '" förfaller om ca ' . $remainingText . ' (' . $dueAt->format('Y/m/d H:i') . ').',
+                    'color'    => 'error',
+                    'icon'     => 'custom-coffee-2',
+                    'route'    => '/dashboard/panel#reminders',
                 ];
-                
-                // Send WebSocket event
-                if ($reminder->user_id) {
-                    $evento = new UserNotificationEvent($message, $reminder->user_id);
-                    Event::dispatch($evento);
-                }
+            });
 
-                if ($this->shouldSendReminderEmailNotification($notificationSettings)) {
-                    $this->sendNotificationInfoEmail($reminder->user, [
-                        'title' => $title,
-                        'subtitle' => $subtitle,
-                        'text' => $text,
-                        'route' => $route,
-                    ]);
-                }
-                
-                $this->info('Notification sent successfully for: ' . $reminder->description);
-            } catch (\Exception $e) {
-                $this->error('Error creating notification: ' . $e->getMessage());
+            if ($ok) {
+                $sent++;
             }
         }
-        
-        $this->info('Total upcoming reminders evaluated: ' . $reminders->count());
+
+        $this->info('Total upcoming reminders evaluated: ' . $reminders->count() . ' | sent: ' . $sent);
     }
+
+    /* ---------------------------------------------------------------------
+     |  Core logic (shared by tasks and reminders)
+     | ------------------------------------------------------------------- */
+
+    /**
+     * Evaluates one item and, if it is inside the user's notification window
+     * and has not been notified yet, creates the notification.
+     *
+     * @param  Model     $item          Reminder or VehicleTask (must have user_id, user, notified_at)
+     * @param  Carbon    $dueAt         Moment the item is due
+     * @param  Carbon    $now
+     * @param  callable  $buildPayload  fn(string $remainingText): array{title,subtitle,text,color,icon,route}
+     * @return bool                     true if a notification was sent
+     */
+    private function processDueItem(Model $item, Carbon $dueAt, Carbon $now, callable $buildPayload): bool
+    {
+        $userId = $item->user_id;
+        $notificationSettings = $this->getUserNotificationSettings($userId);
+
+        if (!$this->shouldSendReminderNotification($notificationSettings)) {
+            $this->info('Reminder notifications disabled for user_id: ' . ($userId ?? 'N/A'));
+            return false;
+        }
+
+        $hours = $this->normalizeHours($this->configHours($notificationSettings));
+        $remainingMinutes = $this->minutesUntil($dueAt, $now);
+
+        // Send as soon as we are inside the window "hours before due" and the event has not passed.
+        if ($remainingMinutes <= 0 || $remainingMinutes > $hours * 60) {
+            return false;
+        }
+
+        // Atomically "claim" the item so overlapping runs can never send it twice.
+        if (!$this->claimItem($item, $now)) {
+            return false;
+        }
+
+        $payload = $buildPayload($this->formatRemaining($remainingMinutes));
+
+        // 1) Persist notification in DB
+        try {
+            $dbNotification = Notification::create([
+                'user_id'         => $userId,
+                'notification_id' => $item->id,
+                'title'           => $payload['title'],
+                'subtitle'        => $payload['subtitle'],
+                'text'            => $payload['text'],
+                'color'           => $payload['color'],
+                'icon'            => $payload['icon'],
+                'route'           => $payload['route'],
+                'read'            => false,
+            ]);
+        } catch (\Exception $e) {
+            $this->releaseItem($item); // allow retry on next run
+            $this->error('Error creating notification: ' . $e->getMessage());
+            return false;
+        }
+
+        // 2) WebSocket + email (a failure here must not trigger a duplicate DB notification)
+        try {
+            if ($userId) {
+                $message = (object) [
+                    'id'       => $dbNotification->id,
+                    'title'    => $payload['title'],
+                    'subtitle' => $payload['subtitle'],
+                    'time'     => now()->format('H:i:s'),
+                    'img'      => null,
+                    'color'    => $payload['color'],
+                    'icon'     => $payload['icon'],
+                    'text'     => $payload['text'],
+                    'route'    => $payload['route'],
+                    'read'     => false,
+                ];
+
+                Event::dispatch(new UserNotificationEvent($message, $userId));
+            }
+
+            if ($this->shouldSendReminderEmailNotification($notificationSettings)) {
+                $this->sendNotificationInfoEmail($item->user, [
+                    'title'    => $payload['title'],
+                    'subtitle' => $payload['subtitle'],
+                    'text'     => $payload['text'],
+                    'route'    => $payload['route'],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error dispatching notification event/email', [
+                'user_id' => $userId,
+                'item_id' => $item->id,
+                'error'   => $e->getMessage(),
+            ]);
+            $this->error('Error dispatching notification: ' . $e->getMessage());
+        }
+
+        $this->info('Notification sent for ' . class_basename($item) . ' #' . $item->id . ' (' . $remainingMinutes . ' min remaining)');
+
+        return true;
+    }
+
+    /**
+     * Marks the item as notified only if nobody else did it first.
+     * Uses the base query builder so updated_at is not touched.
+     */
+    private function claimItem(Model $item, Carbon $now): bool
+    {
+        $affected = $item->newQuery()
+            ->whereKey($item->getKey())
+            ->whereNull('notified_at')
+            ->toBase()
+            ->update(['notified_at' => $now]);
+
+        return $affected === 1;
+    }
+
+    private function releaseItem(Model $item): void
+    {
+        $item->newQuery()
+            ->whereKey($item->getKey())
+            ->toBase()
+            ->update(['notified_at' => null]);
+    }
+
+    /**
+     * Whole minutes from $now until $dueAt (negative if already past).
+     * Uses timestamps so it behaves the same on Carbon 2 and Carbon 3.
+     */
+    private function minutesUntil(Carbon $dueAt, Carbon $now): int
+    {
+        return (int) floor(($dueAt->getTimestamp() - $now->getTimestamp()) / 60);
+    }
+
+    private function formatRemaining(int $minutes): string
+    {
+        if ($minutes >= 60) {
+            return (int) round($minutes / 60) . ' tim';
+        }
+
+        return max(1, $minutes) . ' min';
+    }
+
+    /* ---------------------------------------------------------------------
+     |  Settings helpers
+     | ------------------------------------------------------------------- */
 
     private function getUserNotificationSettings($userId): ?SettingNotification
     {
@@ -295,32 +326,6 @@ class SendNotifications extends Command
         return $hours > 0 ? $hours : self::DEFAULT_HOURS;
     }
 
-    private function shouldSendReminderForWindow(Carbon $dueAt, int $hours, Carbon $now): bool
-    {
-        $remainingMinutes = $now->diffInMinutes($dueAt, false);
-        $windowEnd = $hours * 60;
-        $windowStart = max(0, $windowEnd - self::SCHEDULE_WINDOW_MINUTES);
-
-        return $remainingMinutes <= $windowEnd && $remainingMinutes > $windowStart;
-    }
-
-    private function isNotificationAlreadySentRecently($userId, $notificationId, string $title, string $route, Carbon $now): bool
-    {
-        if (!$userId || !$notificationId) {
-            return false;
-        }
-
-        $from = $now->copy()->subMinutes(self::SCHEDULE_WINDOW_MINUTES);
-
-        return Notification::query()
-            ->where('user_id', $userId)
-            ->where('notification_id', (string) $notificationId)
-            ->where('title', $title)
-            ->where('route', $route)
-            ->where('created_at', '>=', $from)
-            ->exists();
-    }
-
     private function shouldSendReminderNotification(?SettingNotification $notificationSettings): bool
     {
         if (!$notificationSettings) {
@@ -339,6 +344,10 @@ class SendNotifications extends Command
         return (int) ($notificationSettings->notify_via_email ?? (self::DEFAULT_NOTIFY_VIA_EMAIL ? 1 : 0)) === 1;
     }
 
+    /* ---------------------------------------------------------------------
+     |  Email
+     | ------------------------------------------------------------------- */
+
     private function sendNotificationInfoEmail($user, array $notificationData): void
     {
         $email = $user->email ?? null;
@@ -353,13 +362,13 @@ class SendNotifications extends Command
         $subject = trim(($notificationData['title'] ?? 'Ny notis') . (!empty($notificationData['subtitle']) ? ' - ' . $notificationData['subtitle'] : ''));
 
         $viewData = [
-            'title' => 'Ny notis',
-            'user' => $recipientName,
-            'notificationTitle' => $notificationData['title'] ?? 'Ny notis',
+            'title'                => 'Ny notis',
+            'user'                 => $recipientName,
+            'notificationTitle'    => $notificationData['title'] ?? 'Ny notis',
             'notificationSubtitle' => $notificationData['subtitle'] ?? null,
-            'notificationText' => $notificationData['text'] ?? '',
-            'notificationRoute' => $this->resolveNotificationRoute($notificationData['route'] ?? null),
-            'notificationDate' => now()->format('Y/m/d H:i'),
+            'notificationText'     => $notificationData['text'] ?? '',
+            'notificationRoute'    => $this->resolveNotificationRoute($notificationData['route'] ?? null),
+            'notificationDate'     => now()->format('Y/m/d H:i'),
         ];
 
         $fromAddress = config('mail.from.address');
@@ -375,9 +384,9 @@ class SendNotifications extends Command
             });
         } catch (\Exception $exception) {
             Log::error('Error sending notification email', [
-                'to' => $email,
+                'to'      => $email,
                 'subject' => $subject,
-                'error' => $exception->getMessage(),
+                'error'   => $exception->getMessage(),
             ]);
 
             $this->error('Error sending notification email to ' . $email . ': ' . $exception->getMessage());
@@ -402,5 +411,4 @@ class SendNotifications extends Command
 
         return $appDomain . '/' . ltrim($route, '/');
     }
-
 }

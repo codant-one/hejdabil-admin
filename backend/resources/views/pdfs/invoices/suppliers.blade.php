@@ -262,7 +262,25 @@
         <div class="page-background"></div>
 
         <!------------------------- BILL TO---------------------------------->
-        <div style="position: fixed; bottom: 90px; left: 45px; right: 45px; padding: 16px;" class="card-classic">
+        <div style="position: fixed; bottom: 236px; left: 45px; right: 45px;"
+            <table width="100%">
+                <tr>
+                    <td class="column-cell">
+                        <table class="info-table">
+                            <tr>
+                                <td>
+                                    <div class="value2-box">
+                                        <div class="value2-text">Vänligen ange fakturanummer vid betalning</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="position: fixed; bottom: 45px; left: 45px; right: 45px; padding: 16px;" class="card-classic">
             <table width="100%" class="table-supplier style-supplier">
                 <tr>
                     <td width="25%">
@@ -409,31 +427,13 @@
             </table>
         </div>
 
-        <div style="position: fixed; bottom: 45px; left: 45px; right: 45px;">
-            <table width="100%">
-                <tr>
-                    <td class="column-cell">
-                        <table class="info-table">
-                            <tr>
-                                <td>
-                                    <div class="value2-box">
-                                        <div class="value2-text">Vänligen ange fakturanummer vid betalning</div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
         @foreach($invoicePages as $pageIndex => $pageRows)
             @php
                 $pageNumber = $pageIndex + 1;
                 $isLastPage = $pageNumber === $totalPages;
                 $rowCount = count($pageRows);
                 $usedHeight = $reservedContentHeight + ($rowCount * $rowHeight);
-                $spacerPadding = max($minSpacerPadding, $availableHeight - $usedHeight + ($totalPages === 1 ? 38 : 0));
+                $spacerPadding = max($minSpacerPadding, $availableHeight - $usedHeight + ($totalPages === 1 ? 66 : 0));
             @endphp
             <div class="invoice-page {{ $isLastPage ? '' : 'invoice-page-break' }}">
                 <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
