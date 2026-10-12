@@ -4,6 +4,7 @@ import { useDisplay } from "vuetify";
 import { themeConfig } from "@themeConfig";
 import { useSupplierInvoicesStores } from "@/stores/useSupplierInvoices";
 import { loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
+import { emailValidator } from '@/@core/utils/validators'
 import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
@@ -26,6 +27,9 @@ const isConfirmStateDialogVisible = ref(false);
 const isConfirmKreditera = ref(false);
 const replaceFileInput = ref(null)
 const billingToReplaceFile = ref(null)
+
+const isConfirmSendMailVisible = ref(false);
+const email = ref(null);
 
 const advisor = ref({
   type: "",
@@ -323,6 +327,39 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
+const send = () => {
+  isConfirmSendMailVisible.value = true;
+  email.value = invoice.value.supplier.user.email ?? '';
+};
+
+const sendBilling = async () => {
+
+  try {
+
+    isConfirmSendMailVisible.value = false;
+    isRequestOngoing.value = true;
+
+    await supplierInvoicesStores.sendBilling({ email: email.value, id: invoice.value.id });
+
+    advisor.value.show = true
+    advisor.value.type = 'success'
+    advisor.value.message = 'Fakturan har skickats via e-post'
+
+    email.value = '';
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      isRequestOngoing.value = false;
+    }, 5000)
+
+    await fetchData()
+  } finally {
+    isRequestOngoing.value = false;
+  }
+}
+
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
@@ -379,6 +416,18 @@ onBeforeUnmount(() => {
         <VIcon icon="custom-dots-vertical" size="24" />
       </VBtn>
 
+    </div>
+    <div v-if="invoice" :class="windowWidth < 1024 ? 'd-block' : 'd-none'">
+      <VBtn
+        v-if="$can('edit', 'suppliers')"
+        class="btn-gradient w-100 mb-4"
+        @click="send"
+      >
+        <template #prepend>
+          <VIcon icon="custom-paper-plane" size="24" />
+        </template>
+        Skicka
+      </VBtn>
     </div>
     <VRow no-gutters v-if="invoice" class="card-fill w-100">
       <VCol
@@ -471,6 +520,17 @@ onBeforeUnmount(() => {
                 <VIcon icon="custom-money-transfer" size="24" />
               </template>
               Markera som obetald
+            </VBtn>
+
+            <VBtn
+              v-if="$can('edit', 'suppliers')"
+              class="btn-light w-100 mb-4"
+              @click="send"
+            >
+              <template #prepend>
+                <VIcon icon="custom-paper-plane" size="24" />
+              </template>
+              Skicka
             </VBtn>
 
             <VBtn 
@@ -660,6 +720,56 @@ onBeforeUnmount(() => {
           <VBtn class="btn-gradient" @click="kreditera"> Kreditera </VBtn>
         </VCardText>
       </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm send -->
+    <VDialog 
+      v-model="isConfirmSendMailVisible" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VForm
+        ref="refSendBillingForm"
+        @submit.prevent="sendBilling"
+      >
+        <VCard class="card-form"
+        >
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka fakturan
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill skicka fakturan.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress" />
+            <VTextField
+              v-model="email"
+              placeholder="kund@exempel.com"
+              :rules="[emailValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="isConfirmSendMailVisible = !isConfirmSendMailVisible">
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit"> Skicka </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <input

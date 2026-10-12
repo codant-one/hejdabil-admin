@@ -153,6 +153,8 @@ async function fetchData(cleanFilters = false) {
           state_name: invoice.state?.name ?? '-',
           file: invoice.file,
           is_credit: invoice.is_credit,
+          is_sent: invoice.is_sent,
+          sent_at: invoice.sent_at,
           user: {
             name: invoice.user?.name ?? '-',
             last_name: invoice.user?.last_name ?? '',
@@ -904,6 +906,7 @@ const downloadCSV = async () => {
           <th scope="col" class="text-center"> Förfaller </th>
           <th scope="col" class="text-center"> Belopp </th>
           <th scope="col" class="text-center"> Status </th>
+          <th class="text-center" scope="col">Skickad</th>
           <th scope="col">Skapad av</th>
           <th scope="col"></th>
         </tr>
@@ -927,6 +930,42 @@ const downloadCSV = async () => {
               >
                 {{ billing.state_name }}
               </div>
+            </td>
+            <td class="text-center">
+              <template v-if="billing.is_sent">
+                <VTooltip 
+                  v-if="billing.sent_at"
+                  location="bottom">
+                    <template #activator="{ props }">
+                      <span v-bind="props" class="cursor-pointer">
+                        <VIcon 
+                          icon="custom-check-mark-disabled" 
+                          size="24" 
+                        />
+                      </span>
+                    </template>
+                    <span>Skickaddatum:
+                      {{ new Date(billing.sent_at).toLocaleString('sv-SE', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                        }) }}
+                    </span>
+                  </VTooltip>
+
+                <VIcon 
+                  v-else
+                  icon="custom-check-mark-disabled" 
+                  size="24" 
+                />
+
+              </template>
+              <span v-else>
+                -
+              </span>
             </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1" v-if="billing.user_id !== null">
@@ -1147,6 +1186,21 @@ const downloadCSV = async () => {
                 <div class="expansion-panel-item-label">Förfaller:</div>
                 <div class="expansion-panel-item-value">
                   {{ billing.end_date ?? "---" }}
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-6" v-if="billing.is_sent">
+              <div class="expansion-panel-item-label">Status:</div>
+              <div class="expansion-panel-item-value d-flex gap-2">
+                <div
+                  class="status-chip d-none"
+                  :class="`status-chip-${resolveStatus(billing.state_id)?.class}`"
+                >
+                  {{ billing.state_name }}
+                </div>
+                <div class="status-chip status-chip-disabled">
+                    Skickad
                 </div>
               </div>
             </div>

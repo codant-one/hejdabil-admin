@@ -206,6 +206,8 @@ class GenerateSupplierBilling extends Command
                     'supplier_id' => $supplier->id,
                     'state_id' => 4,
                     'billing_period' => $billingPeriod,
+                    'is_sent' => 1,
+                    'sent_at' => Carbon::now(),
                     'invoice_id' => $invoiceId,
                     'invoice_date' => Carbon::now(),
                     'due_date' => Carbon::now()->addDays(10),
