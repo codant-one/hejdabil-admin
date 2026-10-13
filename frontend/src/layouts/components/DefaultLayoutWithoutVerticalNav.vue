@@ -1,15 +1,49 @@
 <script setup>
 
 import { canWithPlan } from "@/@layouts/plugins/casl";
+import { useAuthStores } from '@/stores/useAuth'
+import { useSuppliersStores } from '@/stores/useSuppliers'
+import { formatDateSimple } from '@/@core/utils/formatters'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import router from '@/router'
 import logo from '@images/logos/bilflogg-logo.svg'
 
+const suppliersStores = useSuppliersStores()
+const authStores = useAuthStores()
 const { width: windowWidth } = useWindowSize()
 const route = useRoute()
 const emitter = inject('emitter')
 const vm = getCurrentInstance()
+const readUserDataFromStorage = () => JSON.parse(localStorage.getItem('user_data') || 'null')
+const userData = ref(readUserDataFromStorage())
+const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
+const isSupplier = computed(() => role.value === 'Supplier')
+const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
+const isCancelDeletionRequestOngoing = ref(false)
+const isCancelDeletionSuccessDialogVisible = ref(false)
+const isCancelDeletionErrorDialogVisible = ref(false)
+const cancelDeletionErrorText = ref('Ett serverfel uppstod. Försök igen.')
+
+const isDeleteAccountDialogVisible = ref(false)
+
+const syncUserData = event => {
+  if (event?.detail)
+    userData.value = event.detail
+  else
+    userData.value = readUserDataFromStorage()
+}
+
+onMounted(() => {
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
+})
 
 const canShowSwishaButton = computed(() => {
   const hasPermission = vm?.proxy?.$can ? vm.proxy.$can('create', 'payouts') : true
@@ -17,17 +51,16 @@ const canShowSwishaButton = computed(() => {
   if (!hasPermission)
     return false
 
-  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-  if (!userData)
+  if (!userData.value)
     return false
 
-  const userRole = userData.roles?.[0]?.name
+  const userRole = userData.value.roles?.[0]?.name
 
   if (userRole !== 'Supplier' && userRole !== 'User')
     return false
 
   if (userRole === 'Supplier')
-    return userData.supplier?.is_payout === 1
+    return userData.value.supplier?.is_payout === 1
 
   return true
 })
@@ -50,86 +83,425 @@ const redirectToPayoutsAndOpenDialog = () => {
     query: { open_payout: 'true' },
   })
 }
+
+const syncUserDataAfterCancelDeletion = async response => {
+  const responseUserData = response?.data?.data?.user_data ?? response?.data?.user_data ?? null
+
+  if (responseUserData) {
+    localStorage.setItem('user_data', JSON.stringify(responseUserData))
+    userData.value = responseUserData
+
+    return
+  }
+
+  const currentUserData = readUserDataFromStorage()
+
+  if (!currentUserData?.hash)
+    return
+
+  const { user_data } = await authStores.me(currentUserData)
+
+  if (!user_data)
+    return
+
+  localStorage.setItem('user_data', JSON.stringify(user_data))
+  userData.value = user_data
+}
+
+const cancelDeletionRequest = async () => {
+  const supplierId = supplierData.value?.id
+
+  if (!supplierId)
+    return
+
+  isDeleteAccountDialogVisible.value = false;
+  isCancelDeletionRequestOngoing.value = true
+  cancelDeletionErrorText.value = 'Ett serverfel uppstod. Försök igen.'
+
+  try {
+    const response = await suppliersStores.cancelDeletion(supplierId)
+
+    await syncUserDataAfterCancelDeletion(response)
+    isCancelDeletionSuccessDialogVisible.value = true
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message
+      ?? Object.values(error?.response?.data?.errors ?? {}).flat().join(' ')
+      ?? error?.message
+
+    if (errorMessage)
+      cancelDeletionErrorText.value = errorMessage
+
+    isCancelDeletionErrorDialogVisible.value = true
+  } finally {
+    isCancelDeletionRequestOngoing.value = false
+  }
+}
+
+const showDeletionAlert = computed(() => Boolean(supplierData.value?.deletion_scheduled_at))
+const deletionDaysLeft = computed(() => {
+  const deletionScheduledAt = supplierData.value?.deletion_scheduled_at
+
+  if (!deletionScheduledAt)
+    return null
+
+  const scheduledDate = new Date(deletionScheduledAt)
+
+  if (Number.isNaN(scheduledDate.getTime()))
+    return null
+
+  const msLeft = scheduledDate.getTime() - Date.now()
+
+  if (msLeft <= 0)
+    return 0
+
+  return Math.ceil(msLeft / (1000 * 60 * 60 * 24))
+})
 </script>
 
 <template>
-    <div class="d-flex justify-between align-center mb-6 flex-wrap gap-y-4 navigation-bar">
-        <div
-            class="d-flex align-center flex-0 cursor-pointer"
-            :class="windowWidth < 1024 ? 'justify-center' : ''"
-            @click="redirectTo('dashboard-panel')"
-        >
-            <img
-                :src="logo"
-                :width="windowWidth < 1024 ? 95 : 121"
-                alt="Bilflogg"
-            >
-        </div>
-
-        <div class="d-flex align-center" :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
-            <VBtn
-                v-if="canWithPlan('create', 'agreements')"
-                class="btn-blue px-6"
-                :class="windowWidth < 1024 ? 'd-none' : ''"
-                @click="redirectTo('dashboard-admin-agreements-purchase')"
-            >
-                Köp
-                <VIcon
-                    icon="custom-car-close"
-                    size="24"
-                />
-            </VBtn>
-            <VBtn
-                v-if="canWithPlan('create', 'agreements')"
-                class="btn-green px-6"
-                :class="windowWidth < 1024 ? 'd-none' : ''"
-                @click="redirectTo('dashboard-admin-agreements-sales')"
-            >
-                Sälj
-                <VIcon
-                icon="custom-car-open"
-                size="24"
-                />
-            </VBtn>
-
-            <VBtn
-                v-if="canShowSwishaButton"
-                class="btn-gradient-2 px-4"
-                :class="windowWidth < 1024 ? 'd-none' : ''"
-                @click="redirectToPayoutsAndOpenDialog"
-            >
-                <VIcon
-                icon="custom-swish-outlined"
-                size="24"
-                />
-                Swisha
-            </VBtn>
-
-            <VBtn
-                class="btn-white-2"
-                :class="windowWidth < 1024 ? 'd-none' : 'px-4'"
-                :to="{ name: 'dashboard-activities' }"
-            >
-              <VIcon icon="custom-log-outlined" size="24" />
-              Din logg
-            </VBtn>
-
-            <NavBarNotifications />
-
-            <VBtn
-                variant="flat"
-                :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
-                class="btn-white-3"
-                height="48"
-                width="48"
-                :to="{ name: 'dashboard-settings' }"
-            >
-                <VIcon
-                icon="custom-settings"
-                size="24"
-                />
-            </VBtn>
-            <UserProfile :can-show-swisha-button="canShowSwishaButton" />
-        </div>
+  <div 
+    class="d-flex justify-between align-center flex-wrap navigation-bar" 
+    :class="showDeletionAlert ? 'gap-y-3 pb-0': 'mb-6 gap-y-4'">
+    <div
+      class="d-flex align-center flex-0 cursor-pointer"
+      :class="windowWidth < 1024 ? 'justify-center' : ''"
+      @click="redirectTo('dashboard-panel')"
+    >
+      <img
+        :src="logo"
+        :width="windowWidth < 1024 ? 95 : 121"
+        alt="Bilflogg"
+      >
     </div>
+
+    <div class="d-flex align-center" :class="windowWidth < 1024 ? 'gap-1' : 'gap-2'">
+      <VBtn
+        v-if="canWithPlan('create', 'agreements')"
+        class="btn-blue px-6"
+        :class="windowWidth < 1024 ? 'd-none' : ''"
+        @click="redirectTo('dashboard-admin-agreements-purchase')"
+      >
+        Köp
+        <VIcon
+          icon="custom-car-close"
+          size="24"
+        />
+      </VBtn>
+      <VBtn
+        v-if="canWithPlan('create', 'agreements')"
+        class="btn-green px-6"
+        :class="windowWidth < 1024 ? 'd-none' : ''"
+        @click="redirectTo('dashboard-admin-agreements-sales')"
+      >
+        Sälj
+        <VIcon
+          icon="custom-car-open"
+          size="24"
+        />
+      </VBtn>
+
+      <VBtn
+        v-if="canShowSwishaButton"
+        class="btn-gradient-2 px-4"
+        :class="windowWidth < 1024 ? 'd-none' : ''"
+        @click="redirectToPayoutsAndOpenDialog"
+      >
+        <VIcon
+          icon="custom-swish-outlined"
+          size="24"
+        />
+        Swisha
+      </VBtn>
+
+      <VBtn
+        class="btn-white-2"
+        :class="windowWidth < 1024 ? 'd-none' : 'px-4'"
+        :to="{ name: 'dashboard-activities' }"
+      >
+        <VIcon icon="custom-log-outlined" size="24" />
+        Din logg
+      </VBtn>
+
+      <NavBarNotifications />
+
+      <VBtn
+        variant="flat"
+        :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+        class="btn-white-3"
+        height="48"
+        width="48"
+        :to="{ name: 'dashboard-settings' }"
+      >
+        <VIcon
+          icon="custom-settings"
+          size="24"
+        />
+      </VBtn>
+      <UserProfile :can-show-swisha-button="canShowSwishaButton" />
+    </div>
+
+    <div 
+      v-if="showDeletionAlert"
+      class="d-flex flex-row nav-delete-account"
+      :class="windowWidth < 1024 ? 'justify-between' : 'gap-6 align-center'"
+    >
+      <div 
+        class="d-flex"
+        :class="windowWidth < 1024 ? 'justify-end align-end gap-1': 'nav-delete-account-days align-center gap-6'">
+        <VIcon icon="custom-warning-danger" :size="windowWidth < 1024 ? 18 : 32" />
+        <div class="d-flex" :class="windowWidth < 1024 ? 'gap-1': 'gap-2'">
+          <span class="nav-delete-account-number">{{ deletionDaysLeft ?? '-' }}</span>
+          <span class="nav-delete-account-text">Dagar kvar</span>
+        </div>
+      </div>
+
+      <div :class="windowWidth < 1024 ? 'd-none': 'd-flex flex-column'">
+        <span class="nav-delete-account-text" :class="windowWidth < 1024 ? 'text-center': ''">
+          Ditt konto raderas permanent
+        </span>
+        <span class="nav-delete-account-text-simple" :class="windowWidth < 1024 ? 'text-center': ''">
+          Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter. 
+          Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
+        </span>
+      </div>
+
+      <VBtn
+        class="btn-light px-4"
+        :class="windowWidth < 1024 ? 'd-none': ''"
+        @click="cancelDeletionRequest"
+      >
+        Avbryt raderingen
+      </VBtn>
+
+      <VBtn
+        class="btn-error"
+        :class="windowWidth < 1024 ? 'w-100': 'd-none'"
+        @click="isDeleteAccountDialogVisible = true"
+        style="height: 16px !important;"
+      >
+        Visa
+      </VBtn>
+    </div>
+
+  </div>
+
+  <VDialog
+    v-model="isDeleteAccountDialogVisible"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard>
+      <VCardText class="d-flex flex-column gap-2">
+        <span class="nav-delete-badge-modal">
+          Ditt konto raderas permanent
+        </span>
+        <div class="d-flex align-end gap-2">
+          <span class="nav-delete-account-number-modal">{{ deletionDaysLeft ?? '-' }}</span>
+          <span class="nav-delete-account-text-modal">Dagar kvar</span>
+        </div>
+
+        <span class="nav-delete-account-date-modal">
+          Raderas den {{ formatDateSimple(supplierData?.deletion_scheduled_at) }}
+        </span>
+
+        <VDivider class="my-2" />
+
+        <div class="nav-delete-account-info-modal">
+          Ladda ner din information under tiden som återstår —
+          <strong>gå till respektive sektion för att exportera dina
+          uppgifter.</strong> Du kan fortsätta använda Bilflogg som vanligt
+          under uppsägningstiden.
+        </div>
+
+        <div class="nav-delete-account-remember-modal">
+          Har du ändrat dig? Du kan avbryta raderingen när som
+          helst under uppsägningstiden.
+        </div>
+
+        <VBtn
+          class="btn-light px-4 w-100"
+          @click="cancelDeletionRequest"
+        >
+          Avbryt raderingen
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog
+    v-model="isCancelDeletionSuccessDialogVisible"
+    persistent
+    class="action-dialog dialog-big-icon"
+  >
+    <VCard>
+      <VCardText class="dialog-title-box big-icon justify-center pb-0">
+        <VIcon size="72" icon="custom-f-crown" />
+      </VCardText>
+      <VCardText class="dialog-title-box justify-center">
+        <div class="dialog-title">
+          Vad kul att du stannar!
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text text-center">
+        Din begäran om kontoradering har avbrutits. Ditt konto och abonnemang fortsätter som vanligt och du kan fortsätta använda Bilflogg precis som tidigare.
+      </VCardText>
+      <VCardText class="d-flex justify-center dialog-actions">
+        <VBtn class="btn-gradient" @click="isCancelDeletionSuccessDialogVisible = false">
+          Fortsätt till Bilflogg
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog
+    v-model="isCancelDeletionErrorDialogVisible"
+    persistent
+    class="action-dialog dialog-big-icon"
+  >
+    <VCard>
+      <VCardText class="dialog-title-box big-icon justify-center pb-0">
+        <VIcon size="72" icon="custom-f-cancel" />
+      </VCardText>
+      <VCardText class="dialog-title-box justify-center">
+        <div class="dialog-title">
+          Ett fel inträffade
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text text-center">
+        {{ cancelDeletionErrorText }}
+      </VCardText>
+      <VCardText class="d-flex justify-center dialog-actions">
+        <VBtn class="btn-light" @click="isCancelDeletionErrorDialogVisible = false">
+          Stäng
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <LoadingOverlay :is-loading="isCancelDeletionRequestOngoing" />
 </template>
+
+<style>
+.nav-delete-account {
+  padding: 16px 24px;
+  width: calc(100% + 48px);
+  margin-inline: -24px;
+  border-left: 3px solid #CC3E3F;
+  border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
+  border-image-slice: 1;
+  background: #FFF1F1;
+
+  @media (max-width: 1024px) {
+    padding: 12px !important;
+  }
+}
+
+.nav-delete-account-days {
+  border-right: 1px solid #CC3E3F;
+  border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
+  border-image-slice: 1;
+  background: #FFF1F1;
+  width: 226px;
+  height: 50px;
+}
+
+.nav-delete-account-number {
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #9B191B;
+
+  @media (max-width: 1024px) {
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 10px;
+    letter-spacing: 0;
+  }
+}
+
+.nav-delete-account-text {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #9B191B;
+
+  @media (max-width: 1024px) {
+    font-weight: 700;
+    font-size: 11.5px;
+    line-height: 100%;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+}
+
+.nav-delete-account-text-simple {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #9B191B;
+}
+
+.nav-delete-badge-modal {
+  padding: 5px;
+  background: #FDEDEC;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 100%;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #C0392B;
+}
+
+.nav-delete-account-number-modal {
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 36px;
+  letter-spacing: 0;
+  color: #9B191B;
+}
+
+.nav-delete-account-text-modal {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 100%;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #9B191B;
+}
+
+.nav-delete-account-date-modal {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  color: #6B7A75;
+}
+
+.nav-delete-account-info-modal {
+  font-weight: 400;
+  font-size: 13.5px;
+  line-height: 20.93px;
+  letter-spacing: 0%;
+  color: #4A5750;
+  
+  strong {
+    color: #1C2925;
+  }
+}
+
+.nav-delete-account-remember-modal {
+  border-radius: 10px;
+  padding: 10px;
+  background: #F4F6F5;
+
+
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 18.13px;
+  letter-spacing: 0;
+  color: #4A5750;
+}
+</style>

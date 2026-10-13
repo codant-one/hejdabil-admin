@@ -5,6 +5,7 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { requiredValidator, urlValidator } from '@/@core/utils/validators'
 import { Cropper, CircleStencil } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -20,6 +21,7 @@ const props = defineProps({
 const emit = defineEmits([
   'update:isDrawerOpen',
   'brandData',
+  "edited"
 ])
 
 const isFormValid = ref(false)
@@ -35,8 +37,34 @@ const url = ref('')
 const cropper = ref()
 const isEdit = ref(false)
 
+const initialData = ref(null)
+const isConfirmLeaveVisible = ref(false)
+
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera märke': 'Lägg till märke'
+})
+
+const currentData = computed(() => ({
+  id: id.value,
+  name: name.value,
+  logoOld: logoOld.value,
+  logoCropped: logoCropped.value,
+  url: url.value
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false,
 })
 
 watchEffect(async() => {
@@ -52,25 +80,48 @@ watchEffect(async() => {
       await nextTick()
       refForm.value?.resetValidation()
     }
+
+    // snapshot initial state after fields are populated
+    nextTick(() => {
+      initialData.value = { ...currentData.value }
+      emit('edited', false)
+    })
   }
 })
 
 // 👉 drawer close
-const closeNavigationDrawer = () => {
-  emit('update:isDrawerOpen', false)
+const reallyCloseAndReset = () => {
+  emit("update:isDrawerOpen", false)
+  // emit('resetDuplicate')
   nextTick(() => {
     refForm.value?.reset()
     refForm.value?.resetValidation()
 
-    filename.value = []
-      
     name.value = ''
+    logo.value = null
     logoCropped.value = null
+    logoOld.value = null
+    filename.value = []
     url.value = ''
-    
+
     isEdit.value = false 
     id.value = 0
+    initialData.value = null
+    emit('edited', false)
   })
+}
+
+defineExpose({
+  reallyCloseAndReset,
+})
+
+const closeNavigationDrawer = () => {
+  if (isDirty.value) {
+    isConfirmLeaveVisible.value = true
+    
+    return
+  }
+  reallyCloseAndReset()
 }
 
 const onCropChange = (coordinates) => {
@@ -183,14 +234,31 @@ const onSubmit = () => {
 
       emit('brandData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
-      closeNavigationDrawer()
+      // closeNavigationDrawer()
     }
   })
 }
 
 const handleDrawerModelValueUpdate = val => {
-  emit('update:isDrawerOpen', val)
+  if (val === false) {
+    if (isDirty.value) {
+      // keep drawer open and show confirm dialog
+      emit("update:isDrawerOpen", true)
+      isConfirmLeaveVisible.value = true
+      
+      return
+    }
+    reallyCloseAndReset()
+    
+    return
+  }
+  emit("update:isDrawerOpen", val)
 }
+
+watch(currentData, () => {
+  if (!initialData.value) return
+  emit('edited', isDirty.value)
+}, { deep: true })
 
 </script>
 
@@ -199,13 +267,13 @@ const handleDrawerModelValueUpdate = val => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content"
+    class="scrollable-content right-drawer rounded-left-4"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
     <!-- 👉 Title -->
-    <div class="d-flex align-center pa-6 pb-1">
-      <h6 class="text-h6">
+    <div class="d-flex align-center pa-6">
+      <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
 
@@ -213,85 +281,115 @@ const handleDrawerModelValueUpdate = val => {
 
       <!-- 👉 Close btn -->
       <VBtn
-        variant="tonal"
-        color="default"
         icon
-        size="32"
-        class="rounded btn-close-brand"
+        class="btn-white"
         @click="closeNavigationDrawer"
       >
         <VIcon
-          size="18"
-          icon="tabler-x"
+          size="20"
+          icon="custom-close"
         />
-      </VBTn>
+      </VBtn>
     </div>
     
-    <VDivider class="mt-4"/>
+    <VDivider />
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }">
-      <VCard flat class="card-brand">
+    <PerfectScrollbar 
+      :options="{ wheelPropagation: false }" 
+      class="scrollbar-no-border"
+    >
+      <VCard
+        flat
+        class="card-form brand-desktop"
+      >
         <VCardText>
           <!-- 👉 Form -->
           <VForm
             ref="refForm"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit"
           >
-          <VRow>
-             <VCol cols="12" md="12" v-if="logoCropped">
-                <Cropper
-                    ref="cropper"
-                    class="cropper-container"
-                    preview-class="cropper-preview"
-                    background-class="cropper-background"
-                    :src="logoCropped"
-                    :stencil-props="{
-                        previewClass: 'cropper-preview-circle'
-                    }"
-                    @change="onCropChange"
+            <VRow>
+              <VCol
+                  v-if="advisor.show"
+                  cols="12"
+                  md="12"
+                >
+                  <VAlert
+                    :color="advisor.type"
+                    class="alert-no-shrink custom-alert"
+                    style="flex: none;"
+                  >
+                    <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+                  </VAlert>
+              </VCol>
+
+              <VCol cols="12" md="12" v-if="logoCropped">
+                  <Cropper
+                      ref="cropper"
+                      class="cropper-container"
+                      preview-class="cropper-preview"
+                      background-class="cropper-background"
+                      :src="logoCropped"
+                      :stencil-props="{
+                          previewClass: 'cropper-preview-circle'
+                      }"
+                      @change="onCropChange"
+                  />
+              </VCol>
+              <VCol cols="12" md="12">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Logotyp"
                 />
-            </VCol>
-            <VCol cols="12" md="12">
-              <VFileInput 
-                v-model="filename"
-                label="Logotyp"
-                class="mb-2"
-                accept="image/png, image/jpeg, image/bmp, image/webp"
-                prepend-icon="tabler-camera"
-                :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
-                @change="onImageSelected"
-                @click:clear="resetAvatar"
-            />
-            </VCol>
-            <VCol cols="12" md="12">
+                <VFileInput 
+                  v-model="filename"
+                  class="mb-2"
+                  accept="image/png, image/jpeg, image/bmp, image/webp"
+                  prepend-icon="tabler-camera"
+                  :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
+                  @change="onImageSelected"
+                  @click:clear="resetAvatar"
+                />
+              </VCol>
+              <VCol cols="12" md="12">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Namn*"
+                />
                 <VTextField
                     v-model="name"
-                    label="Namn"
                     :rules="[requiredValidator]"
                 />
-            </VCol>
-            <VCol cols="12" md="12">
+              </VCol>
+              <VCol cols="12" md="12">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Hemsida*"
+                />
                 <VTextField
                     v-model="url"
-                    label="Hemsida"
                     :rules="[requiredValidator, urlValidator]"
                 />
-            </VCol>
+              </VCol>
               <!-- 👉 Submit and Cancel -->
-              <VCol cols="12">
+              <VCol
+                cols="12"
+                class="pb-0"
+              >
                 <VBtn
-                  type="submit"
-                  class="me-3"
-                >
-                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
-                </VBtn>
-                <VBtn
-                  variant="tonal"
-                  color="secondary"
+                  type="reset"
+                  class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
                   Avbryt
+                </VBtn>
+                <VBtn
+                  type="submit"
+                  class="btn-gradient"
+                >
+                  {{ isEdit ? "Uppdatering" : "Lägg till" }}
                 </VBtn>
               </VCol>
             </VRow>
@@ -300,9 +398,135 @@ const handleDrawerModelValueUpdate = val => {
       </VCard>
     </PerfectScrollbar>
   </VNavigationDrawer>
+
+  <!-- Confirm leave without saving -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>
+  @media (min-width: 1024px) {
+    .card-form.brand-desktop {
+      .v-input:not(.v-textarea) {
+        .v-input__control {
+          .v-field {
+            background-color: #f6f6f6 !important;
+            min-height: 40px !important;
+            /*height: 40px !important;*/
+
+            .v-text-field__suffix {
+              padding: 8px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 40px !important;
+              /*height: 40px !important;*/
+              padding: 8px 16px !important;
+
+              input {
+                min-height: 40px !important;
+                height: 40px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+
+            .v-text-field__prefix {
+              height: 40px;
+            }
+          }
+        }
+      }
+
+      .v-input.always-show-prefix {
+        .v-input__control {
+          .v-field {
+            .v-field__input {
+              padding: 8px 0 !important;
+            }
+          }
+        }
+      }
+
+      .v-select .v-field {
+        .v-select__selection {
+            align-items: center;
+            color: #454545;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 18px;
+
+        }
+
+        .v-field__input input::placeholder,
+        input.v-field__input::placeholder,
+        .v-field__input textarea::placeholder,
+        textarea.v-field__input::placeholder {
+            color: #454545 !important;
+            opacity: 1 !important;
+          }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
+        }
+      }
+
+    }
+  }
 
   :deep(.vue-simple-handler) {
       background: #57F287 !important;

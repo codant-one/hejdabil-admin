@@ -31,10 +31,39 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  showDeletionAlert: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const refNav = ref();
 const { width: windowWidth } = useWindowSize();
+
+const readUserDataFromStorage = () => JSON.parse(localStorage.getItem("user_data") || "null")
+const userData = ref(readUserDataFromStorage())
+
+const syncUserData = event => {
+  if (event && Object.prototype.hasOwnProperty.call(event, 'detail'))
+    userData.value = event.detail
+  else
+    userData.value = readUserDataFromStorage()
+}
+
+onMounted(() => {
+  window.addEventListener('user-data-updated', syncUserData)
+  window.addEventListener('storage', syncUserData)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('user-data-updated', syncUserData)
+  window.removeEventListener('storage', syncUserData)
+})
+
+const hasDeletionAlert = computed(() =>
+  props.showDeletionAlert ||
+  (userData.value?.roles?.[0]?.name === "Supplier" && Boolean(userData.value?.supplier?.deletion_scheduled_at))
+);
 
 // Provide hover state so children can inject it
 const isHovered = ref(false)
@@ -59,6 +88,13 @@ const resolveNavItemComponent = (item) => {
 const route = useRoute();
 
 const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
+
+// The alert is rendered in the navbar, so the menu header must start below it (desktop only)
+const navHeaderStyle = computed(() =>
+  hasDeletionAlert.value && !isLessThanOverlayNavBreakpoint.value(windowWidth.value)
+    ? { marginTop: isSettingsRoute.value ? "72px" : "96px" }
+    : undefined
+);
 
 watch(
   () => route.name,
@@ -93,7 +129,10 @@ const handleNavScroll = (evt) => {
     ]"
   >
     <!-- 👉 Header -->
-    <div :class="isSettingsRoute ? 'nav-header-logo-settings' : 'nav-header-logo'">
+    <div
+      :class="isSettingsRoute ? 'nav-header-logo-settings' : 'nav-header-logo'"
+      :style="isSettingsRoute && hasDeletionAlert ? { borderBottom: 'none' } : undefined"
+    >
       <RouterLink
         to="/info"
         :class="hideTitleAndIcon ? 'justify-center' : ''"
@@ -102,7 +141,11 @@ const handleNavScroll = (evt) => {
         <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" width="121" height="40" />
       </RouterLink>
     </div>
-    <div class="nav-header" :class="isSettingsRoute ? 'nav-items-settings' : ''">
+    <div
+      class="nav-header"
+      :class="isSettingsRoute ? 'nav-items-settings' : ''"
+      :style="navHeaderStyle"
+    >
       <slot name="nav-header" v-if="!isSettingsRoute">
         <span v-show="!hideTitleAndIcon">Meny</span>
 
@@ -185,9 +228,9 @@ const handleNavScroll = (evt) => {
   background-color: transparent !important;
   box-shadow: none !important;
 
-  &.settings-route {
+  /*&.settings-route {
     background-color: #fff !important;
-  }
+  }*/
 
   .nav-header-logo {
     margin: 30px 24px 0 24px;

@@ -31,7 +31,7 @@ class ModelController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = CarModel::with(['brand:id,name'])
+            $query = CarModel::with(['brand:id,name,url,logo'])
                            ->applyFilters(
                                 $request->only([
                                     'search',

@@ -206,10 +206,12 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
         Route::get('/plans/all', [SupplierController::class, 'plans']);
         Route::post('/request-plan-upgrade', [SupplierController::class, 'requestPlanUpgrade']);
         Route::get('/cancel-subscription/{id}', [SupplierController::class, 'cancelSubscription']);
+        Route::post('/cancel-subscription/{id}', [SupplierController::class, 'cancelSubscription']);
         Route::get('/active-subscription/{id}', [SupplierController::class, 'activeSubscription']);
         Route::get('/reactive-subscription/{id}', [SupplierController::class, 'reactiveSubscription']);
         Route::get('/send-deletion-code/{id}', [SupplierController::class, 'sendDeletionCode']);
         Route::post('/request-deletion/{id}', [SupplierController::class, 'requestDeletion']);
+        Route::get('/cancel-deletion/{id}', [SupplierController::class, 'cancelDeletion']);
     });
 
     //Clients
