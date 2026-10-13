@@ -643,14 +643,14 @@ const downloadCSV = async () => {
 
   documentsStores.getDocuments.forEach(element => {
 
-    const createdAt = element.created_at ? new Date(element.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
+    const createdAt = formatDateTime(element.created_at)
 
     let data = {
       TITEL: element.title ?? '',
       SKAPAD: createdAt,
       SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
-      SIGNATUR_STATUS: element.token?.signature_status ?? 'pending',
-      MOTTAGARE: element.token ? element.token.recipient_email : '',
+      SIGNATUR_STATUS: element.token ? resolveStatus(element.token?.signature_status)?.name : resolveStatus('pending')?.name,
+      MOTTAGARE: element.token ? (element.token.recipient_email ?? '') : '',
       FIL: element.file ? element.file.split('/').pop() : ''
     }
 
@@ -658,7 +658,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "documents", "csv");
+    .exportDataFromJSON(dataArray, "dokument", "csv");
 
   isRequestOngoing.value = false
 

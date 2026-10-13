@@ -130,7 +130,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "roles", "csv")
+    .exportDataFromJSON(dataArray, "roller", "csv")
 
   isRequestOngoing.value = false
 }

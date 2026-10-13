@@ -334,7 +334,7 @@ Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
 Route::get('agreement', [TestingController::class , 'agreement'])->name('agreement');
-Route::get('invoices', [TestingController::class , 'invoices'])->name('invoices');
+Route::get('invoicesPdf', [TestingController::class , 'invoices'])->name('invoices');
 
 // Public Signature Endpoints
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
