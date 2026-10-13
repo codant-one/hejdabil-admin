@@ -83,7 +83,7 @@ export default defineComponent({
       // With a scheduled deletion: remove bottom padding on desktop settings route
       const hasScheduledDeletion = userData.value?.roles?.[0]?.name === 'Supplier' && userData.value?.supplier?.deletion_scheduled_at != null
       const isDesktop = !isLessThanOverlayNavBreakpoint.value(windowWidth.value)
-      const removeNavbarBottomPadding = hasScheduledDeletion && isDesktop && isSettingsRoute.value
+      const removeNavbarBottomPadding = hasScheduledDeletion && (!isDesktop || isSettingsRoute.value)
       const navbarFinalStyle = [navbarStyle, removeNavbarBottomPadding ? 'padding-bottom: 0 !important;' : undefined].filter(Boolean).join(' ') || undefined
 
       const navbar = h('header', { class: ['layout-navbar', { 'navbar-blur': isNavbarBlurEnabled.value, 'settings-route': isSettingsRoute.value }], style: navbarFinalStyle }, [

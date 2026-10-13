@@ -41,10 +41,11 @@ const closeMenu = () => {
 
 <template>
   <VBtn icon variant="text" class="btn-custom-notifications" :style="notificationButtonStyle">
-    <VIcon class="d-none" icon="custom-bell" size="24" />
-    <span class="d-none">+{{ props.notifications.filter(n => !n.read).length }}</span>
+    <VIcon icon="custom-bell" size="24" />
+    <span>+{{ props.notifications.filter(n => !n.read).length }}</span>
     <VBadge 
       location="bottom right" 
+      class="d-none"
       floating 
       bordered
       :color="'#79fca2'" 

@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
   }
 
   .page-notifications {
-    margin-top: 80px;
+    margin-top: 110px;
     background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
 
     @media (max-width: 1023px) {
