@@ -809,6 +809,15 @@ const canvasToBlob = canvas => new Promise(resolve => {
   canvas.toBlob(blob => resolve(blob), 'image/png')
 })
 
+const sanitizeReceiptFilenamePart = (value) => {
+  const cleanedValue = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+
+  return cleanedValue || 'payout'
+}
+
 const autoGenerateUpdatedReceiptImage = async payout => {
   if (!payout)
     return false
@@ -928,8 +937,9 @@ const doCaptureAndSaveReceipt = async (payout, { force = false, refreshList = tr
     if (!blob)
       return false
 
+    const safeReference = sanitizeReceiptFilenamePart(payout.reference)
     const formData = new FormData();
-    formData.append('image', blob, `receipt_${payout.reference}.png`);
+    formData.append('image', blob, `receipt_${safeReference}.png`);
 
     try {
       await payoutsStores.saveReceiptImage(payout.id, formData);

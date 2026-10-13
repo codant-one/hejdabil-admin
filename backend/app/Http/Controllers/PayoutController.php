@@ -776,7 +776,13 @@ class PayoutController extends Controller
 
             // Save the image
             $image = $request->file('image');
-            $fileName = 'payouts/' . $payout->reference . '_' . time() . '.png';
+            $safeReference = Str::slug(Str::of((string) $payout->reference)->squish()->value(), '_');
+
+            if ($safeReference === '') {
+                $safeReference = 'payout_' . $payout->id;
+            }
+
+            $fileName = 'payouts/' . $safeReference . '_' . time() . '.png';
             
             // Save in storage/app/public/payouts
             $path = $image->storeAs('public/' . dirname($fileName), basename($fileName));
