@@ -1,12 +1,13 @@
 <script setup>
 
 import { canWithPlan } from "@/@layouts/plugins/casl";
+import { useAuthStores } from '@/stores/useAuth'
+import { useSuppliersStores } from '@/stores/useSuppliers'
+import { formatDateSimple } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import router from '@/router'
-import { useAuthStores } from '@/stores/useAuth'
-import { useSuppliersStores } from '@/stores/useSuppliers'
 import logo from '@images/logos/bilflogg-logo.svg'
 
 const suppliersStores = useSuppliersStores()
@@ -221,15 +222,6 @@ const deletionDaysLeft = computed(() => {
         Din logg
       </VBtn>
 
-      <VBtn
-        v-if="showDeletionAlert"
-        class="btn-error-3"
-        :class="windowWidth < 1024 ? 'px-3' : 'd-none'"
-        @click="isDeleteAccountDialogVisible = true"
-      >
-        <VIcon icon="custom-warning-danger" size="24" />
-      </VBtn>
-
       <NavBarNotifications />
 
       <VBtn
@@ -248,90 +240,86 @@ const deletionDaysLeft = computed(() => {
       <UserProfile :can-show-swisha-button="canShowSwishaButton" />
     </div>
 
-    <div
+    <div 
       v-if="showDeletionAlert"
-      class="nav-delete-account mt-3"
-      :class="windowWidth < 1024 ? 'd-none': 'd-flex flex-row gap-6'"
+      class="d-flex flex-row nav-delete-account"
+      :class="windowWidth < 1024 ? 'justify-between' : 'gap-6 align-center'"
     >
-      <div
-        class="d-flex align-center gap-6"
-        :class="windowWidth < 1024 ? '' : 'nav-delete-account-days'"
-      >
-        <VIcon icon="custom-warning-danger" size="32" />
-        <div class="d-flex gap-2">
+      <div 
+        class="d-flex"
+        :class="windowWidth < 1024 ? 'justify-end align-end gap-1': 'nav-delete-account-days align-center gap-6'">
+        <VIcon icon="custom-warning-danger" :size="windowWidth < 1024 ? 18 : 32" />
+        <div class="d-flex" :class="windowWidth < 1024 ? 'gap-1': 'gap-2'">
           <span class="nav-delete-account-number">{{ deletionDaysLeft ?? '-' }}</span>
           <span class="nav-delete-account-text">Dagar kvar</span>
         </div>
       </div>
 
-      <div class="d-flex flex-column">
+      <div :class="windowWidth < 1024 ? 'd-none': 'd-flex flex-column'">
         <span class="nav-delete-account-text" :class="windowWidth < 1024 ? 'text-center': ''">
           Ditt konto raderas permanent
         </span>
         <span class="nav-delete-account-text-simple" :class="windowWidth < 1024 ? 'text-center': ''">
-          Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter.
+          Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter. 
           Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
         </span>
       </div>
 
       <VBtn
         class="btn-light px-4"
-        :class="windowWidth < 1024 ? 'w-100': ''"
-        :loading="isCancelDeletionRequestOngoing"
-        :disabled="isCancelDeletionRequestOngoing"
+        :class="windowWidth < 1024 ? 'd-none': ''"
         @click="cancelDeletionRequest"
       >
         Avbryt raderingen
       </VBtn>
+
+      <VBtn
+        class="btn-error"
+        :class="windowWidth < 1024 ? 'w-100': 'd-none'"
+        @click="isDeleteAccountDialogVisible = true"
+        style="height: 16px !important;"
+      >
+        Visa
+      </VBtn>
     </div>
+
   </div>
 
   <VDialog
     v-model="isDeleteAccountDialogVisible"
-    fullscreen
-    persistent
-    scrim="false"
-    class="action-dialog dialog-fullscreen"
     transition="dialog-bottom-transition"
     content-class="dialog-bottom-full-width"
   >
-    <VBtn
-      icon
-      class="btn-ghost close-btn me-2"
-      @click="isDeleteAccountDialogVisible = false"
-    >
-      <VIcon size="16" icon="custom-close" />
-    </VBtn>
-
-    <VCard class="h-100 d-flex flex-column nav-delete-account-mobile" style="border-radius: 0 !important;">
-      <VCardText 
-        class="dialog-title-box flex-row"
-        style="overflow-y: hidden;"
-      >
-        <VIcon size="32" icon="custom-warning-danger" class="action-icon" />
-        <div class="dialog-title" style="color: #9B191B;">
-          {{ deletionDaysLeft ?? '-' }} Dagar kvar
+    <VCard>
+      <VCardText class="d-flex flex-column gap-2">
+        <span class="nav-delete-badge-modal">
+          Ditt konto raderas permanent
+        </span>
+        <div class="d-flex align-end gap-2">
+          <span class="nav-delete-account-number-modal">{{ deletionDaysLeft ?? '-' }}</span>
+          <span class="nav-delete-account-text-modal">Dagar kvar</span>
         </div>
-      </VCardText>
 
-      <VCardText 
-        class="dialog-text h-100 mt-6"
-        style="overflow-y: auto; overflow-x: hidden;">
-
-        <span class="dialog-text">
-          <div class="d-flex flex-column">
-            <span class="nav-delete-account-text text-center">
-              Ditt konto raderas permanent
-            </span>
-            <span class="nav-delete-account-text-simple text-center">
-              Ladda ner din information under tiden som återstår — gå till respektive sektion för att exportera dina uppgifter. 
-              Du kan fortsätta använda Bilflogg som vanligt under uppsägningstiden.
-            </span>
-          </div>
+        <span class="nav-delete-account-date-modal">
+          Raderas den {{ formatDateSimple(supplierData?.deletion_scheduled_at) }}
         </span>
 
+        <VDivider class="my-2" />
+
+        <div class="nav-delete-account-info-modal">
+          Ladda ner din information under tiden som återstår —
+          <strong>gå till respektive sektion för att exportera dina
+          uppgifter.</strong> Du kan fortsätta använda Bilflogg som vanligt
+          under uppsägningstiden.
+        </div>
+
+        <div class="nav-delete-account-remember-modal">
+          Har du ändrat dig? Du kan avbryta raderingen när som
+          helst under uppsägningstiden.
+        </div>
+
         <VBtn
-          class="btn-light px-4 mt-4 w-100"
+          class="btn-light px-4 w-100"
           @click="cancelDeletionRequest"
         >
           Avbryt raderingen
@@ -395,19 +383,17 @@ const deletionDaysLeft = computed(() => {
 
 <style>
 .nav-delete-account {
-  align-items: center;
   padding: 16px 24px;
+  width: calc(100% + 48px);
+  margin-inline: -24px;
   border-left: 3px solid #CC3E3F;
   border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
   border-image-slice: 1;
   background: #FFF1F1;
-}
 
-.nav-delete-account-mobile {
-  border-left: 3px solid #CC3E3F;
-  border-image-source: linear-gradient(0deg, #CC3E3F, #CC3E3F);
-  border-image-slice: 1;
-  background: #FFF1F1;
+  @media (max-width: 1024px) {
+    padding: 12px !important;
+  }
 }
 
 .nav-delete-account-days {
@@ -425,6 +411,13 @@ const deletionDaysLeft = computed(() => {
   line-height: 16px;
   letter-spacing: 0;
   color: #9B191B;
+
+  @media (max-width: 1024px) {
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 10px;
+    letter-spacing: 0;
+  }
 }
 
 .nav-delete-account-text {
@@ -433,6 +426,14 @@ const deletionDaysLeft = computed(() => {
   line-height: 16px;
   letter-spacing: 0;
   color: #9B191B;
+
+  @media (max-width: 1024px) {
+    font-weight: 700;
+    font-size: 11.5px;
+    line-height: 100%;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
 }
 
 .nav-delete-account-text-simple {
@@ -441,5 +442,66 @@ const deletionDaysLeft = computed(() => {
   line-height: 16px;
   letter-spacing: 0;
   color: #9B191B;
+}
+
+.nav-delete-badge-modal {
+  padding: 5px;
+  background: #FDEDEC;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 100%;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #C0392B;
+}
+
+.nav-delete-account-number-modal {
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 36px;
+  letter-spacing: 0;
+  color: #9B191B;
+}
+
+.nav-delete-account-text-modal {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 100%;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #9B191B;
+}
+
+.nav-delete-account-date-modal {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  color: #6B7A75;
+}
+
+.nav-delete-account-info-modal {
+  font-weight: 400;
+  font-size: 13.5px;
+  line-height: 20.93px;
+  letter-spacing: 0%;
+  color: #4A5750;
+  
+  strong {
+    color: #1C2925;
+  }
+}
+
+.nav-delete-account-remember-modal {
+  border-radius: 10px;
+  padding: 10px;
+  background: #F4F6F5;
+
+
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 18.13px;
+  letter-spacing: 0;
+  color: #4A5750;
 }
 </style>

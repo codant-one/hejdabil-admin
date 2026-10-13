@@ -43,6 +43,18 @@ const closeMenu = () => {
   <VBtn icon variant="text" class="btn-custom-notifications" :style="notificationButtonStyle">
     <VIcon icon="custom-bell" size="24" />
     <span>+{{ props.notifications.filter(n => !n.read).length }}</span>
+    <VBadge 
+      location="bottom right" 
+      class="d-none"
+      floating 
+      bordered
+      :color="'#79fca2'" 
+      :text-color="'#416054'"
+      :offset-x="2"
+      :content="'+' + props.notifications.filter(n => !n.read).length">
+      <VIcon icon="custom-bell" size="24" />
+    </VBadge>
+
     <VMenu
       v-model="isMenuOpen"
       activator="parent"

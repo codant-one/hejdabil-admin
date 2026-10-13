@@ -334,7 +334,7 @@ class GenerateSupplierBilling extends Command
 
     private function generatePdf(SupplierInvoice $billing): void
     {
-        $supplier = Supplier::with(['user'])->find($billing->supplier_id);
+        $supplier = Supplier::with(['user.userDetail'])->find($billing->supplier_id);
         $billing = SupplierInvoice::with(['supplier.user', 'user.userDetail'])->find($billing->id);
         $types = Invoice::all();
         $invoices = [];
@@ -402,9 +402,9 @@ class GenerateSupplierBilling extends Command
         }
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-faktura-' . $billing->id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf';
         $billing->update();
     }
 

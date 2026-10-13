@@ -321,7 +321,7 @@ const activeSubscription = async () => {
                                 </VBtn>
 
                                 <VBtn 
-                                    v-if="role !== 'User' && supplierData.cancellation_date !== null"
+                                    v-if="role !== 'User' && supplierData.cancellation_date !== null && supplierData.deletion_requested_at === null"
                                     class="btn-light" 
                                     @click="isConfirmActiveDialogVisible = true"
                                 >

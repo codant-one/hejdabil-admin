@@ -242,9 +242,9 @@ class SupplierInvoice extends Model
         }
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf';
         $billing->update();
 
         return $billing;
@@ -350,9 +350,9 @@ class SupplierInvoice extends Model
         } //create a folder
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf';
         $billing->update();
 
         return $billing;
@@ -481,9 +481,9 @@ class SupplierInvoice extends Model
         }
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-kredit-avisering-' . $billing->invoice_id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->name . ' ' . $supplier->user->last_name) . '-kredit-faktura-' . $billing->invoice_id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-kredit-avisering-' . $billing->invoice_id . '.pdf';
         $billing->update();
 
         return $billing;
