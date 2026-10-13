@@ -215,7 +215,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "invoices", "csv");
+    .exportDataFromJSON(dataArray, "attribut-fakturor", "csv");
 
   isRequestOngoing.value = false
 

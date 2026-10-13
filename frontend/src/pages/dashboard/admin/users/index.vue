@@ -241,7 +241,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "users", "csv")
+    .exportDataFromJSON(dataArray, "användare", "csv")
 
   isRequestOngoing.value = false
 }

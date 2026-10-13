@@ -1,6 +1,6 @@
 export default [
   {
-    title: 'ADMINISTRATION',
+    title: 'Administration',
     icon: { icon:'tabler-home-cog' },
     children:[
       { 
@@ -32,7 +32,7 @@ export default [
         subject: 'countries'
       },
       { 
-        title: 'Pllanera', 
+        title: 'Planer', 
         icon: { icon: 'custom-cash' },
         to: 'dashboard-admin-plans', 
         action: 'view',

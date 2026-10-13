@@ -625,7 +625,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'suppliers.pdf',
+        filename: 'leverantörer.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -671,7 +671,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, "leverantörer", "csv");
 
   isRequestOngoing.value = false
 

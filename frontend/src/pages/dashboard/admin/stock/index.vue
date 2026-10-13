@@ -527,7 +527,7 @@ const downloadCSV = async () => {
       return row
    })
 
-  excelParser().exportDataFromJSON(dataArray, "vehicles", "csv");
+  excelParser().exportDataFromJSON(dataArray, "i-lager", "csv");
 
   } finally {
     isRequestOngoing.value = false
@@ -701,7 +701,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'vehicles.pdf',
+        filename: 'i-lager.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
