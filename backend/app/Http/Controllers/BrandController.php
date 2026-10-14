@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Brand;
+use App\Models\SupplierActivity;
 
 class BrandController extends Controller
 {
@@ -76,6 +77,11 @@ class BrandController extends Controller
         try {
 
             $brand = Brand::createBrand($request);
+            $fields = [
+                'name', 'url'
+            ];
+
+            $new_values = $request->only($fields);
 
             if ($request->hasFile('logo')) {
                 $image = $request->file('logo');
@@ -86,7 +92,23 @@ class BrandController extends Controller
 
                 $brand->logo = $file_data['filePath'];
                 $brand->update();
+
+                $new_values['logo'] = $file_data['filePath'];
             } 
+            
+            SupplierActivity::createActivity([
+                'entity_id' => $brand->id,
+                'entity_type' => 'brands',
+                'action_type' => 'create_brand',
+                'title' => 'Märke #'.$brand->id.' '.$brand->name.' tillagd',
+                'description' => 'Ett nytt märke har lagts till.',
+                'icon' => 'custom-auto-2-ilager',
+                'route' => '/dashboard/admin/brands/'.$brand->id,
+                'metadata' => json_encode([
+                    'brand_id' => $brand->id,
+                    'new_values' => $new_values
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -151,6 +173,15 @@ class BrandController extends Controller
                     'message' => 'Märke hittades inte'
                 ], 404);
 
+            $fields = [
+                'name',
+                'url'
+            ];
+            $new_values = $request->only($fields);
+
+            $fields[] = 'logo';
+            $oldValues = $brand->only($fields);
+
             $brand->updateBrand($request, $brand); 
 
             if ($request->hasFile('logo')) {
@@ -162,7 +193,24 @@ class BrandController extends Controller
 
                 $brand->logo = $file_data['filePath'];
                 $brand->update();
+
+                $new_values['logo'] = $file_data['filePath'];
             } 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $brand->id,
+                'entity_type' => 'brands',
+                'action_type' => 'update_brand',
+                'title' => 'Märke #'.$brand->id.' '.$brand->name.' uppdaterad',
+                'description' => 'Ett märke har uppdaterats.',
+                'icon' => 'custom-auto-2-ilager',
+                'route' => '/dashboard/admin/brands/'.$brand->id,
+                'metadata' => json_encode([
+                    'brand_id' => $brand->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $new_values
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
