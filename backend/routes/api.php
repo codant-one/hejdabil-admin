@@ -7,6 +7,7 @@ use App\Http\Controllers\Testing\TestingController;
 
 use App\Http\Controllers\Auth\{
     AuthController,
+    DeviceTokenController,
     PasswordResetController
 };
 
@@ -71,6 +72,11 @@ Route::group([
     'middleware' => 'cors'
 ], function () {
     Route::post('login', [AuthController::class , 'login'])->name('login');
+    Route::post('device-login', [DeviceTokenController::class, 'login'])
+        ->withoutMiddleware('throttle:api')
+        ->middleware('throttle:device-login');
+    Route::post('device-token', [DeviceTokenController::class, 'store'])->middleware('jwt');
+    Route::delete('device-token', [DeviceTokenController::class, 'destroy'])->middleware('jwt');
     Route::post('register', [AuthController::class, 'register']);
     Route::post('sendInfo', [AuthController::class, 'sendInfo']);
     Route::get('find/{token}', [AuthController::class, 'find'])->name('find');
@@ -334,7 +340,7 @@ Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
 Route::get('agreement', [TestingController::class , 'agreement'])->name('agreement');
-Route::get('invoices', [TestingController::class , 'invoices'])->name('invoices');
+Route::get('invoicesPdf', [TestingController::class , 'invoices'])->name('invoices');
 
 // Public Signature Endpoints
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {

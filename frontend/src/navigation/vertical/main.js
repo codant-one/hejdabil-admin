@@ -29,13 +29,14 @@ export default [
           to: 'dashboard-admin-brands', 
           action: 'view', 
           subject: 'brands',
-          icon: { icon:'custom-point' },
+          icon: { icon:'custom-auto-2-ilager' },
       },
       { 
           title: 'Modell', 
           to: 'dashboard-admin-models', 
           action: 'view', 
           subject: 'models', 
+          icon: { icon:'custom-car-model' },
       },
       { 
           title: 'I Lager', 

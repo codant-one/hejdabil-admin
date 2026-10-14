@@ -617,7 +617,7 @@ const downloadCSV = async () => {
       return row
    })
 
-  excelParser().exportDataFromJSON(dataArray, "notes", "csv");
+  excelParser().exportDataFromJSON(dataArray, "mina_värderingar", "csv");
 
   } finally {
     isRequestOngoing.value = false
@@ -799,7 +799,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'notes.pdf',
+        filename: 'mina_värderingar.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },

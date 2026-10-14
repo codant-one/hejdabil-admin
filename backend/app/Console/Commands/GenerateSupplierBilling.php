@@ -402,9 +402,9 @@ class GenerateSupplierBilling extends Command
         }
 
         PDF::loadView('pdfs.invoices.suppliers', compact('company', 'billing', 'types', 'invoices'))
-            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf');
+            ->save(storage_path('app/public/pdfs') . '/' . Str::slug($supplier->user->userDetail->company) . '-abonnemang-' . $billing->invoice_id . '.pdf');
 
-        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-avisering-' . $billing->invoice_id . '.pdf';
+        $billing->file = 'pdfs/' . Str::slug($supplier->user->userDetail->company) . '-abonnemang-' . $billing->invoice_id . '.pdf';
         $billing->update();
     }
 

@@ -105,6 +105,7 @@ const handleKeyDown = (event, index) => {
         .v-field {
           border: 1px solid #E7E7E7;
           background-color: #f6f6f6;
+          width: 40px;
 
           .v-field__outline {
             color: #454545 !important;

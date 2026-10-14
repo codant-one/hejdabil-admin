@@ -2,7 +2,6 @@
 
 import { usePlansStores } from '@/stores/usePlans'
 import { excelParser } from '@/plugins/csv/excelParser'
-import { themeConfig } from '@themeConfig'
 import AddNewPlanDrawer from './AddNewPlanDrawer.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
@@ -307,7 +306,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "plans", "csv");
+    .exportDataFromJSON(dataArray, "planer", "csv");
 
   isRequestOngoing.value = false
 

@@ -786,21 +786,47 @@ const downloadCSV = async () => {
       
   agreementsStores.getAgreements.forEach(element => {
 
+    var 
+      id = element.agreement_type_id === 4 ?
+          element.offer.offer_id : 
+          ( element.agreement_type_id === 3 ? 
+            element.commission.commission_id : 
+            element.agreement_id
+          ) 
+    var 
+      reg = element.agreement_type_id === 4 ?
+            element.offer.reg_num : 
+            (element.agreement_type_id === 3 ? 
+              element.commission?.vehicle.reg_num   :
+              element.vehicle_client?.vehicle.reg_num 
+            )  
+            
+    var skapad = 
+      new Date(element.created_at).toLocaleString('sv-SE', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false
+      })
+
     let data = {
-      ID: element.id,
-      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      E_POST: element.user.email,
-      FÖRETAG: element.company ?? '',
-      ORGANISATIONSNUMMER: element.organization_number ?? '',
-      REGISTRERADE_KUNDER:  element.client_count,
-      SIGNATUR_STATUS: element.token ? (element.token.signature_status ?? '') : 'pending',
+      ID: id,
+      REG_NR: reg,
+      INBYTESFORDON_REG_NR: element.vehicle_interchange?.reg_num,
+      KREDIT_LEASING: formatNumber(element.installment_amount ?? 0) + ' kr',
+      TYP: element.agreement_type.name,
+      KUND: getAgreementClientName(element) ,
+      SKAPAD: skapad,
+      SIGNERA_STATUS: resolveStatus(element.token?.signature_status)?.name,
     }
 
     dataArray.push(data)
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "agreements", "csv");
+    .exportDataFromJSON(dataArray, "avtal", "csv");
 
   isRequestOngoing.value = false
 
