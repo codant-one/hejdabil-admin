@@ -10,6 +10,7 @@ import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppD
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import InlineBanner from '@/components/common/InlineBanner.vue'
+import BiometricLoginSwitch from '@/components/common/BiometricLoginSwitch.vue'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
@@ -749,6 +750,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </VCardText>
+
+        <BiometricLoginSwitch />
 
         <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">
           <div class="d-flex flex-column gap-4">

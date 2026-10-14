@@ -6,6 +6,8 @@
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Bilflogg</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Använd Face ID för att logga in säkert på Bilflogg.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
