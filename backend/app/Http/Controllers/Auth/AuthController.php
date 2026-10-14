@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 
 use Carbon\Carbon;
 use App\Jobs\SendEmailJob;
+use App\Services\LoginResponseService;
 
 use App\Models\User;
 use App\Models\UserDetails;
@@ -38,7 +39,7 @@ class AuthController extends Controller
      * 
      * @return \Illuminate\Http\JsonResponse
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, LoginResponseService $loginResponse): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required',
@@ -64,7 +65,7 @@ class AuthController extends Controller
                 ->whereNotNull('deleted_at')
                 ->first();
             
-            if ($userDeleted) {
+            if ($userDeleted && $userDeleted->isInactive()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'user_inactive',
@@ -79,54 +80,7 @@ class AuthController extends Controller
             ], 400);
         }
 
-        $user = Auth::user();
-        $user->online = Carbon::now();
-        $user->save();
-
-        if (env('APP_DEBUG') || ($user->is_2fa === 0)) {
-            return response()->json([
-                'success' => true,
-                'message' => 'login_success',
-                'data' => $this->respondWithToken($token)
-            ], 200);
-        }
-
-        if (empty($user->token_2fa)) {
-            $google2fa = app('pragmarx.google2fa');
-            $token2FA = $google2fa->generateSecretKey();
-
-            $user->token_2fa = $token2FA;
-            $user->update();
-
-            $qr = $google2fa->getQRCodeUrl(
-                config('app.name'),
-                $user->email,
-                $token2FA
-            );
-
-            $data = [
-                'qr' => $qr,
-                'token' => $token2FA
-            ];
-
-            return response()->json([
-                'success' => true,
-                'message' => '2fa-generate',
-                'data' => array_merge($data, $this->respondWithToken($token))
-            ], 200);
-
-        } else {
-
-            $data = [
-                'token' => $user->token_2fa
-            ];
-
-            return response()->json([
-                'success' => true,
-                'message' => '2fa',
-                'data' => array_merge($data, $this->respondWithToken($token))
-            ], 200);
-        }
+        return $loginResponse->respond(Auth::user(), $token);
     }
 
     public function validate_double_factor_auth(Request $request)
@@ -342,49 +296,6 @@ class AuthController extends Controller
             ], 500);
         }
     } 
-
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function respondWithToken($token)
-    {
-        $permissions = getPermissionsByRole(Auth::user());
-        $userData = getUserData(Auth::user()->load([
-            'userDetail', 
-            'supplier.plan.features:id,name',
-            'supplier.plan.featurePlans.feature:id,name',
-            'supplier.boss.settings',
-            'supplier.boss.settings.billing',
-            'supplier.boss.settings.agreement',
-            'supplier.boss.plan.features:id,name',
-            'supplier.boss.plan.featurePlans.feature:id,name',
-            'supplier.boss.user.userDetail',
-            'supplier.boss.user.commissions',  
-            'supplier.boss.user.offers',  
-            'supplier.boss.billings', 
-            'supplier.boss.agreements',
-            'supplier.settings', 
-            'supplier.settings.billing',
-            'supplier.settings.agreement',
-            'supplier.agreements', 
-            'supplier.billings',
-            'supplier.user.commissions', 
-            'supplier.user.offers', 
-            'offers', 
-            'commissions'
-        ]));
-
-        return [
-            'accessToken' => $token,
-            'token_type' => 'bearer',
-            'user_data' => $userData,
-            'userAbilities' => $permissions
-        ];
-    }
 
     public function companyDetail()
     {

@@ -24,6 +24,16 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Device tokens in the request body must not be parsed as JWTs by the throttle.
+        RateLimiter::for('device-login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip())->response(function (Request $request, array $headers) {
+                return response()->json([
+                    'message' => 'too_many_attempts',
+                    'data' => null,
+                ], 429, $headers);
+            });
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
