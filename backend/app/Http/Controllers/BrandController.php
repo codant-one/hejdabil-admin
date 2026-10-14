@@ -246,6 +246,31 @@ class BrandController extends Controller
             
             $brand->deleteBrand($id);
 
+            $fields = [
+                'name',
+                'url',
+                'logo'
+            ];
+
+            $oldValues = $brand->only($fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $brand->id,
+                'entity_type' => 'brands',
+                'action_type' => 'delete_brand',
+                'title' => 'Märke #'.$brand->id.' '.$brand->name.' borttagen',
+                'description' => 'Märket har tagits bort.',
+                'icon' => 'custom-auto-2-ilager',
+                'metadata' => json_encode([
+                    'brand_id' => $brand->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $brand->id)
+                ->where('entity_type', 'brands')
+                ->update(['route' => null]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 

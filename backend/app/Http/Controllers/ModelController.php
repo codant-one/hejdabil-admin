@@ -210,6 +210,30 @@ class ModelController extends Controller
             
             $model->deleteModel($id);
 
+            $fields = [
+                'name', 
+                'brand_id'
+            ];
+
+            $oldValues = $model->only($fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $model->id,
+                'entity_type' => 'models',
+                'action_type' => 'delete_model',
+                'title' => 'Modell #'.$model->id.' '.$model->name.' borttagen',
+                'description' => 'Modellen har tagits bort.',
+                'icon' => 'custom-auto-2-ilager',
+                'metadata' => json_encode([
+                    'model_id' => $model->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $model->id)
+                ->where('entity_type', 'models')
+                ->update(['route' => null]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
