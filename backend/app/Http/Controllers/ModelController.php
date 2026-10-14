@@ -87,7 +87,7 @@ class ModelController extends Controller
                 'title' => 'Modell #'.$model->id.' '.$model->name.' tillagd',
                 'description' => 'En ny modell har lagts till.',
                 'icon' => 'custom-car-model',
-                'route' => '/dashboard/admin/models/'.$model->id,
+                'route' => null, //'/dashboard/admin/models/'.$model->id,
                 'metadata' => json_encode([
                     'model_id' => $model->id,
                     'new_values' => $request->only(['name', 'brand_id'])
@@ -168,7 +168,7 @@ class ModelController extends Controller
                 'title' => 'Modell #'.$model->id.' '.$model->name.' uppdaterad',
                 'description' => 'En modell har uppdaterats.',
                 'icon' => 'custom-car-model',
-                'route' => '/dashboard/admin/models/'.$model->id,
+                'route' => null, //'/dashboard/admin/models/'.$model->id,
                 'metadata' => json_encode([
                     'model_id' => $model->id,
                     'old_values' => $oldValues,

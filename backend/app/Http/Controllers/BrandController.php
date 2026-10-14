@@ -103,7 +103,7 @@ class BrandController extends Controller
                 'title' => 'Märke #'.$brand->id.' '.$brand->name.' tillagd',
                 'description' => 'Ett nytt märke har lagts till.',
                 'icon' => 'custom-auto-2-ilager',
-                'route' => '/dashboard/admin/brands/'.$brand->id,
+                'route' => null, //'/dashboard/admin/brands/'.$brand->id,
                 'metadata' => json_encode([
                     'brand_id' => $brand->id,
                     'new_values' => $new_values
@@ -204,7 +204,7 @@ class BrandController extends Controller
                 'title' => 'Märke #'.$brand->id.' '.$brand->name.' uppdaterad',
                 'description' => 'Ett märke har uppdaterats.',
                 'icon' => 'custom-auto-2-ilager',
-                'route' => '/dashboard/admin/brands/'.$brand->id,
+                'route' => null, //'/dashboard/admin/brands/'.$brand->id,
                 'metadata' => json_encode([
                     'brand_id' => $brand->id,
                     'old_values' => $oldValues,
