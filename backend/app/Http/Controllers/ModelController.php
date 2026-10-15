@@ -223,7 +223,7 @@ class ModelController extends Controller
                 'action_type' => 'delete_model',
                 'title' => 'Modell #'.$model->id.' '.$model->name.' borttagen',
                 'description' => 'Modellen har tagits bort.',
-                'icon' => 'custom-auto-2-ilager',
+                'icon' => 'custom-car-model',
                 'metadata' => json_encode([
                     'model_id' => $model->id,
                     'old_values' => $oldValues

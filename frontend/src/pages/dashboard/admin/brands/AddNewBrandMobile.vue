@@ -322,7 +322,7 @@ watch(currentData, () => {
         <!-- 👉 Submit and Cancel -->
         <VBtn
           class="btn-light" 
-          type="reset"
+          type="button"
           @click="closeNavigationDrawer"
         >
           Avbryt

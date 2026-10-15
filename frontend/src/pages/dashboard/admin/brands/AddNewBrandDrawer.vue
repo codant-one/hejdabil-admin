@@ -379,7 +379,7 @@ watch(currentData, () => {
                 class="pb-0"
               >
                 <VBtn
-                  type="reset"
+                  type="button"
                   class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
