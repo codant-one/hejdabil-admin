@@ -66,6 +66,17 @@ const advisor = ref({
   show: false,
 })
 
+const normalizeLogoPath = value => {
+  if (!value || typeof value !== 'string')
+    return null
+
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined')
+    return null
+
+  return trimmed
+}
+
 watchEffect(async() => {
   if (props.isDrawerOpen) {
 
@@ -73,7 +84,8 @@ watchEffect(async() => {
       isEdit.value = true
       id.value = props.brand.id
       name.value = props.brand.name
-      logoCropped.value = themeConfig.settings.urlStorage + props.brand.logo 
+      const normalizedLogo = normalizeLogoPath(props.brand.logo)
+      logoCropped.value = normalizedLogo ? `${themeConfig.settings.urlStorage}${normalizedLogo}` : null
       url.value = props.brand.url
 
       await nextTick()
@@ -212,23 +224,41 @@ const dataURLtoBlob = (dataURL) => {
   return new Blob([u8arr], { type: mime });
 }
 
+const getCroppedLogoBlob = () => {
+  if (!cropper.value || typeof cropper.value.getResult !== 'function')
+    return null
+
+  const result = cropper.value.getResult({
+    mime: 'image/png',
+    quality: 1,
+    fillColor: 'transparent',
+  })
+
+  if (!result?.canvas)
+    return null
+
+  return dataURLtoBlob(result.canvas.toDataURL('image/png'))
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-
-      const result = cropper.value.getResult({
-          mime: 'image/png',
-          quality: 1,
-          fillColor: 'transparent'
-      });
-      const blob = dataURLtoBlob(result.canvas.toDataURL("image/png"));
-
-      logoOld.value = blob 
+      const blob = getCroppedLogoBlob()
+      logoOld.value = blob
+      if (!logoOld.value && !isEdit.value) {
+        advisor.value = {
+          type: 'error',
+          message: 'Logotyp krävs *',
+          show: true,
+        }
+        return
+      }
 
       let formData = new FormData()
 
       formData.append('name', name.value)
-      formData.append('logo', logoOld.value)
+      if (logoOld.value)
+        formData.append('logo', logoOld.value)
       formData.append('url', url.value)
 
       emit('brandData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
