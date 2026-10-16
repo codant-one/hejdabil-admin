@@ -284,7 +284,7 @@ const downloadPDF = async () => {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
 
-  let pdfContainer = null
+  let hideOverlayStyle = null
 
   try {
     const data = {
@@ -317,9 +317,7 @@ const downloadPDF = async () => {
       showCompanyDetailsWhenLogo: true,
     })
 
-    const rowsMarkup = rows.map(item => `
-      ${(() => {
-        return `
+    const buildRowMarkup = item => `
       <tr style="height: 48px;">
         <td style="width: 10%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
         <td style="width: 50%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
@@ -327,55 +325,76 @@ const downloadPDF = async () => {
         <td style="width: 40%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.url)}</td>
       </tr>
     `
-      })()}
-    `).join('')
 
-    pdfContainer = document.createElement('div')
-    pdfContainer.innerHTML = `
-      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
-        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
-          <tbody>
-            <tr>
-              <td>
-                ${headerMarkup}
-
-                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
-                  <thead>
-                    <tr style="height: 48px;">
-                      <td style="text-align: center; width: 10%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
-                      <td style="text-align: center; width: 50%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
-                      <td style="text-align: center; width: 50%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Märke</td>
-                      <td style="text-align: center; width: 40%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Hemsida</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rowsMarkup}
-                  </tbody>
-                </table>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    const tableHeadMarkup = `
+      <thead>
+        <tr style="height: 48px;">
+          <td style="text-align: center; width: 10%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+          <td style="text-align: center; width: 50%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
+          <td style="text-align: center; width: 50%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Märke</td>
+          <td style="text-align: center; width: 40%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Hemsida</td>
+        </tr>
+      </thead>
     `
-    
-    document.body.appendChild(pdfContainer)
 
-    await html2pdf()
-      .set({
-        margin: [12, 10, 12, 10],
-        filename: 'modell.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] },
-      })
-      .from(pdfContainer)
-      .save()
+    // Each page is rendered separately so the canvas stays small and sharp (scale 2)
+    const FIRST_PAGE_ROWS = 14
+    const OTHER_PAGE_ROWS = 19
+    const chunks = [rows.slice(0, FIRST_PAGE_ROWS)]
+
+    for (let i = FIRST_PAGE_ROWS; i < rows.length; i += OTHER_PAGE_ROWS)
+      chunks.push(rows.slice(i, i + OTHER_PAGE_ROWS))
+
+    const buildPageElement = (chunk, isFirst) => {
+      const el = document.createElement('div')
+
+      el.style.width = '718px'
+      el.style.backgroundColor = '#FFFFFF'
+      el.innerHTML = `
+        <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%; font-size: 12px; font-weight: 400;">
+          ${isFirst ? `${headerMarkup}<div style="height: 10px;"></div>` : ''}
+          <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+            ${tableHeadMarkup}
+            <tbody>
+              ${chunk.map(buildRowMarkup).join('')}
+            </tbody>
+          </table>
+        </div>
+      `
+
+      return el
+    }
+
+    // Hide the overlay html2pdf shows while rendering
+    hideOverlayStyle = document.createElement('style')
+    hideOverlayStyle.textContent = '.html2pdf__overlay { opacity: 0 !important; pointer-events: none !important; }'
+    document.head.appendChild(hideOverlayStyle)
+
+    const options = {
+      margin: [12, 10, 12, 10],
+      filename: 'modell.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }
+
+    let worker = html2pdf().set(options).from(buildPageElement(chunks[0], true)).toPdf()
+
+    for (let i = 1; i < chunks.length; i++) {
+      const pageEl = buildPageElement(chunks[i], false)
+
+      worker = worker
+        .get('pdf')
+        .then(pdf => { pdf.addPage() })
+        .from(pageEl)
+        .toContainer()
+        .toCanvas()
+        .toPdf()
+    }
+
+    await worker.save()
   } finally {
-    if (pdfContainer?.parentNode)
-      pdfContainer.parentNode.removeChild(pdfContainer)
-
+    hideOverlayStyle?.remove()
     isRequestOngoing.value = false
   }
 

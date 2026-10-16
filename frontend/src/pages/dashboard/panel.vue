@@ -145,7 +145,7 @@ async function fetchData() {
   name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
 
   role.value = userDataJ.value.roles[0].name
-  plan_id.value = role.value === 'Supplier' ? userDataJ.value.supplier.plan_id : null
+  plan_id.value = userDataJ.value.supplier?.plan_id ?? null
 
   if (role.value === 'Supplier' || role.value === 'User') {
     await loadProfit()
