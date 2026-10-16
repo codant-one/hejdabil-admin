@@ -20,8 +20,6 @@ class DatabaseSeeder extends Seeder
 
             CountrySeeder::class,
 
-            MorePermissionSeeder::class,
-
             TypeSeeder::class,
             InvoiceSeeder::class,
 
@@ -32,7 +30,6 @@ class DatabaseSeeder extends Seeder
             ModelSeeder::class,
             FuelSeeder::class,
             EquipmentSeeder::class,
-            InventoryPermissionSeeder::class,
             DocumentTypeSeeder::class,  
 
             AgreementTypeSeeder::class,
@@ -43,8 +40,6 @@ class DatabaseSeeder extends Seeder
 
             ClientTypeSeeder::class,
             IdentificationSeeder::class,
-
-            CurrencyPermissionSeeder::class,
 
             AdvanceSeeder::class,
 

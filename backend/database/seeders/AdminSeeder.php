@@ -19,7 +19,7 @@ class AdminSeeder extends Seeder
     {
         $admin = User::create([
             'name' => 'Admin',
-            'email' => 'admin@gmail.com',
+            'email' => 'steffani.castro@codant.one',
             'password' => Hash::make('1234'),
             'created_at' => now()->toDateString(),
             'updated_at' => now()->toDateString()
