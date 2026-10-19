@@ -12,6 +12,7 @@ import { themeConfig } from "@themeConfig";
 import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import { getBillingSmsVisibilityCacheKey, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
 import Toaster from "@/components/common/Toaster.vue";
@@ -608,8 +609,8 @@ const isBillingSupplierDeleted = billing => {
   return !!billing?.supplier?.deleted_at || !!billing?.supplier?.user?.deleted_at;
 };
 
-const openLink = function (billingData) {
-  window.open(themeConfig.settings.urlStorage + billingData.file);
+const openLink = async function (billingData) {
+  await openOrDownloadFile(themeConfig.settings.urlStorage + billingData.file);
 };
 
 const printInvoice = async (billing) => {

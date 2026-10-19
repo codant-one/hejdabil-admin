@@ -1,4 +1,4 @@
-export default [
+const settingsNavItems = [
   { 
     title: 'Min profil', 
     icon: { icon: 'custom-profile' },
@@ -63,4 +63,12 @@ export default [
     subject: 'sms'
   }
 ]
+
+export const getSettingsNavItems = role => (
+  role === 'SuperAdmin'
+    ? settingsNavItems.filter(item => item.subject !== 'plan')
+    : settingsNavItems
+)
+
+export default settingsNavItems
   

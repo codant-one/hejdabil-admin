@@ -55,7 +55,8 @@ const modules = [
   { name: 'Avtal', id: 'agreements' },
   { name: 'Dokument', id: 'documents' },
   { name: 'Swish', id: 'payouts' },
-  { name: 'Mina Värderingar', id: 'notes' },
+  { name: 'Märke', id: 'brands' },
+  { name: 'Modell', id: 'models' },
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -125,6 +126,8 @@ const activityModuleLabels = {
   comment_notes: 'Mina Värderingar',
   payouts: 'Swish',
   vehicles: 'Fordonslager',
+  brands: 'Märke',
+  models: 'Modell'
 }
 
 const activityModuleSingularLabels = {
@@ -139,6 +142,8 @@ const activityModuleSingularLabels = {
   comment_notes: 'Kommentar',
   payouts: 'Utbetalning',
   vehicles: 'Fordon',
+  brands: 'Märke',
+  models: 'Modell',
 }
 
 const activityActionLabels = {

@@ -11,6 +11,7 @@ use App\Models\UserDetails;
 use App\Models\Supplier;
 use App\Models\Offer;
 use App\Models\Commission;
+use App\Models\DeviceToken;
 
 /**
  * Trait for models with stores
@@ -32,6 +33,10 @@ trait UserHelper
 
     public function commissions() {
         return $this->hasMany(Commission::class, 'user_id', 'id');
+    }
+
+    public function deviceTokens() {
+        return $this->hasMany(DeviceToken::class, 'user_id', 'id');
     }
 
     /**** Public methods ****/

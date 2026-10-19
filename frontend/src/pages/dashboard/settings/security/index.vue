@@ -10,6 +10,7 @@ import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppD
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import InlineBanner from '@/components/common/InlineBanner.vue'
+import BiometricLoginSwitch from '@/components/common/BiometricLoginSwitch.vue'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
@@ -750,52 +751,56 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">
-          <div class="d-flex flex-column gap-4">
-            <span class="subtitle-settings">Radera konto permanent</span>
-            <span class="text-settings">
-              Om du endast vill avsluta ditt abonnemang behöver du inte radera ditt konto.<br>
-              Du kan istället säga upp abonnemanget separat. Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas. 
-              Om du väljer att radera ditt konto sägs även ditt abonnemang upp automatiskt.<br><br>
+        <BiometricLoginSwitch />
 
-              Enligt avtalet gäller 3 månaders uppsägningstid. Under denna period förblir ditt konto och abonnemang aktiva. 
-              När uppsägningstiden har löpt ut avslutas abonnemanget och ditt konto raderas permanent.<br><br>
+        <div v-if="supplierData">
+          <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">
+            <div class="d-flex flex-column gap-4">
+              <span class="subtitle-settings">Radera konto permanent</span>
+              <span class="text-settings">
+                Om du endast vill avsluta ditt abonnemang behöver du inte radera ditt konto.<br>
+                Du kan istället säga upp abonnemanget separat. Att radera kontot är en permanent åtgärd som innebär att ditt konto och dina uppgifter tas bort och inte kan återställas. 
+                Om du väljer att radera ditt konto sägs även ditt abonnemang upp automatiskt.<br><br>
 
-              Uppgifter som Bilflogg enligt lag är skyldigt att bevara kan komma att sparas under den tid som krävs.
-            </span>
-            
-          </div>
-          <VBtn 
-              type="button" 
-              :block="windowWidth < 1024"
-              class="btn-error-2 mt-4"
-              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
-              @click="openDeleteConfirmation"
-            >
-              Radera konto
-            </VBtn>
-        </VCardText>
+                Enligt avtalet gäller 3 månaders uppsägningstid. Under denna period förblir ditt konto och abonnemang aktiva. 
+                När uppsägningstiden har löpt ut avslutas abonnemanget och ditt konto raderas permanent.<br><br>
 
-        <VCardText class="card-cancel-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at !== null">
-          <div class="d-flex flex-column gap-4">
-            <span class="subtitle-settings">Kontot är planerat för radering</span>
-            <span class="text-settings">  
-              Du har begärt att avsluta och radera ditt Bilflogg-konto.<br>
-              Ditt konto och abonnemang förblir aktiva under uppsägningstiden och kommer att avslutas och raderas den {{ supplierData?.deletion_scheduled_at }}.<br><br>
-              Har du ändrat dig? Du kan avbryta raderingen när som helst innan slutdatumet. Ditt konto och abonnemang fortsätter då som vanligt och ingen information raderas.
-            </span>
-            
-          </div>
-          <VBtn 
-              type="button" 
-              :block="windowWidth < 1024"
-              class="btn-gradient mt-4"
-              :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
-              @click="cancelDeletionRequest"
-            >
-              Avbryt radering
-            </VBtn>
-        </VCardText>
+                Uppgifter som Bilflogg enligt lag är skyldigt att bevara kan komma att sparas under den tid som krävs.
+              </span>
+              
+            </div>
+            <VBtn 
+                type="button" 
+                :block="windowWidth < 1024"
+                class="btn-error-2 mt-4"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                @click="openDeleteConfirmation"
+              >
+                Radera konto
+              </VBtn>
+          </VCardText>
+
+          <VCardText class="card-cancel-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at !== null">
+            <div class="d-flex flex-column gap-4">
+              <span class="subtitle-settings">Kontot är planerat för radering</span>
+              <span class="text-settings">  
+                Du har begärt att avsluta och radera ditt Bilflogg-konto.<br>
+                Ditt konto och abonnemang förblir aktiva under uppsägningstiden och kommer att avslutas och raderas den {{ supplierData?.deletion_scheduled_at }}.<br><br>
+                Har du ändrat dig? Du kan avbryta raderingen när som helst innan slutdatumet. Ditt konto och abonnemang fortsätter då som vanligt och ingen information raderas.
+              </span>
+              
+            </div>
+            <VBtn 
+                type="button" 
+                :block="windowWidth < 1024"
+                class="btn-gradient mt-4"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                @click="cancelDeletionRequest"
+              >
+                Avbryt radering
+              </VBtn>
+          </VCardText>
+        </div>
 
         <VDialog
           v-model="isDeleteConfirmDialogVisible"

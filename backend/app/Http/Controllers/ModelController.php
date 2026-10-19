@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\CarModel;
+use App\Models\SupplierActivity;
 
 class ModelController extends Controller
 {
@@ -79,6 +80,20 @@ class ModelController extends Controller
 
             $model = CarModel::createModel($request);
 
+            SupplierActivity::createActivity([
+                'entity_id' => $model->id,
+                'entity_type' => 'models',
+                'action_type' => 'create_model',
+                'title' => 'Modell #'.$model->id.' '.$model->name.' tillagd',
+                'description' => 'En ny modell har lagts till.',
+                'icon' => 'custom-car-model',
+                'route' => null, //'/dashboard/admin/models/'.$model->id,
+                'metadata' => json_encode([
+                    'model_id' => $model->id,
+                    'new_values' => $request->only(['name', 'brand_id'])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -142,7 +157,24 @@ class ModelController extends Controller
                     'message' => 'Modell hittades inte'
                 ], 404);
 
+            $oldValues = $model->only(['name', 'brand_id']); 
+
             $model->updateModel($request, $model); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $model->id,
+                'entity_type' => 'models',
+                'action_type' => 'update_model',
+                'title' => 'Modell #'.$model->id.' '.$model->name.' uppdaterad',
+                'description' => 'En modell har uppdaterats.',
+                'icon' => 'custom-car-model',
+                'route' => null, //'/dashboard/admin/models/'.$model->id,
+                'metadata' => json_encode([
+                    'model_id' => $model->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $request->only(['name', 'brand_id'])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -177,6 +209,30 @@ class ModelController extends Controller
                 ], 404);
             
             $model->deleteModel($id);
+
+            $fields = [
+                'name', 
+                'brand_id'
+            ];
+
+            $oldValues = $model->only($fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $model->id,
+                'entity_type' => 'models',
+                'action_type' => 'delete_model',
+                'title' => 'Modell #'.$model->id.' '.$model->name.' borttagen',
+                'description' => 'Modellen har tagits bort.',
+                'icon' => 'custom-car-model',
+                'metadata' => json_encode([
+                    'model_id' => $model->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $model->id)
+                ->where('entity_type', 'models')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

@@ -7,6 +7,7 @@ import { useBrandsStores } from '@/stores/useBrands'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
+import { openExternalLink } from '@/composables/useExternalLink'
 import AddNewBrandDrawer from './AddNewBrandDrawer.vue' 
 import AddNewBrandMobile from './AddNewBrandMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -69,6 +70,24 @@ const advisor = ref({
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const normalizeLogoPath = value => {
+  if (!value || typeof value !== 'string')
+    return null
+
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined')
+    return null
+
+  return trimmed
+}
+
+const getBrandLogoUrl = brand => {
+  const normalizedLogo = normalizeLogoPath(brand?.logo)
+  return normalizedLogo ? `${themeConfig.settings.urlStorage}${normalizedLogo}` : null
+}
+
+const hasBrandLogo = brand => Boolean(getBrandLogoUrl(brand))
 
 
 // 👉 Computing pagination data
@@ -262,8 +281,8 @@ const submitUpdate = brandData => {
     }, 3000)
 }
 
-const seeUrl = (brand) => {
-  window.open(brand.url, '_blank');
+const seeUrl = async (brand) => {
+  await openExternalLink(brand.url);
 }
 
 
@@ -607,11 +626,11 @@ onBeforeUnmount(() => {
               <td class="w-100">
                 <div class="d-flex align-center gap-x-4">
                   <VAvatar
-                    v-if="brand.logo"
+                    v-if="hasBrandLogo(brand)"
                     size="38"
                     variant="tonal"
                     rounded
-                    :image="themeConfig.settings.urlStorage + brand.logo"
+                    :image="getBrandLogoUrl(brand)"
                   />
                   <VAvatar
                       v-else
@@ -707,12 +726,12 @@ onBeforeUnmount(() => {
             >
               <div class="d-flex align-center w-100">
                   <VAvatar
-                    v-if="brand.logo"
+                    v-if="hasBrandLogo(brand)"
                     size="38"
                     variant="tonal"
                     class="me-3"
                     rounded
-                    :image="themeConfig.settings.urlStorage + brand.logo"
+                    :image="getBrandLogoUrl(brand)"
                   />
                   <VAvatar
                       v-else

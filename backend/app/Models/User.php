@@ -18,6 +18,23 @@ class User extends Authenticatable implements JWTSubject
     use SoftDeletes;
     use UserHelper;
 
+    protected static function booted(): void
+    {
+        static::updating(function (User $user) {
+            if ($user->isDirty('password')) {
+                // Abort the password change if device-token revocation fails.
+                $user->deviceTokens()->whereNull('revoked_at')->update([
+                    'revoked_at' => now(),
+                ]);
+            }
+        });
+    }
+
+    public function isInactive(): bool
+    {
+        return $this->trashed();
+    }
+
     protected $guard_name = 'api';
     /**
      * The attributes that are mass assignable.

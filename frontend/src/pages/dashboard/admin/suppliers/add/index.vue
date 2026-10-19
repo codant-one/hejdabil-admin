@@ -901,18 +901,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 class="field-solo-flat"
                                                 placeholder="Startdatum"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Priset för ett sms*" />
-                                            <VTextField
-                                                v-bind="numericTextFieldProps"
-                                                v-model="sms_price"
-                                                suffix="KR"
-                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
-                                                @input="sms_price = normalizeNumericTextInput(sms_price)"
-                                                @keydown="handlePhoneKeydown"
-                                            />
-                                        </div>
+                                        </div>                                        
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum" />
                                             <AppDateTimePicker
@@ -923,6 +912,17 @@ onBeforeRouteLeave((to, from, next) => {
                                                 class="field-solo-flat"
                                                 placeholder="Slutdatum"
                                                 disabled
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Priset för ett sms*" />
+                                            <VTextField
+                                                v-bind="numericTextFieldProps"
+                                                v-model="sms_price"
+                                                suffix="KR"
+                                                :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                                                @input="sms_price = normalizeNumericTextInput(sms_price)"
+                                                @keydown="handlePhoneKeydown"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">

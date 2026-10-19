@@ -5,9 +5,9 @@ import { useThemeConfig } from "@core/composable/useThemeConfig";
 import { useSuppliersStores } from "@/stores/useSuppliers";
 import { useAuthStores } from "@/stores/useAuth";
 import { formatDateSimple } from '@/@core/utils/formatters'
+import { getSettingsNavItems } from "@/navigation/settings";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
 import navItems from "@/navigation/vertical";
-import settingsNavItems from "@/navigation/settings";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
@@ -31,6 +31,7 @@ const vm = getCurrentInstance();
 const readUserDataFromStorage = () => JSON.parse(localStorage.getItem('user_data') || 'null')
 const userData = ref(readUserDataFromStorage())
 const role = computed(() => userData.value?.roles?.[0]?.name ?? '')
+const settingsNavItems = computed(() => getSettingsNavItems(role.value))
 const isSupplier = computed(() => role.value === 'Supplier')
 const supplierData = computed(() => isSupplier.value ? userData.value?.supplier ?? null : null)
 const isCancelDeletionRequestOngoing = ref(false)

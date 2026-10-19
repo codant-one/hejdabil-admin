@@ -112,4 +112,6 @@ return [
 
     'password_timeout' => 10800,
 
+    'device_login_bypasses_2fa' => env('DEVICE_LOGIN_BYPASSES_2FA', false),
+
 ];

@@ -632,6 +632,15 @@ export const activityVisibleFieldsByModule = {
     fieldConfig('sale_postal_code', { label: 'Postnummer (köpare)' }),
     
   ],
+  brands: [
+    'name',
+    'url',
+    'logo'
+  ],
+  models: [
+    'name',
+    'brand_id',
+  ]
 }
 
 export function getActivityVisibleFields(entityType) {

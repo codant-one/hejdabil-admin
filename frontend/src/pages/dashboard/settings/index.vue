@@ -1,12 +1,14 @@
 <script setup>
 
-import settingsNavItems from "@/navigation/settings";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import { canWithPlan } from "@layouts/plugins/casl";
+import { getSettingsNavItems } from "@/navigation/settings";
 
 const { width: windowWidth } = useWindowSize()
 const isRequestOngoing = ref(true);
 const shouldRenderContent = ref(false);
+const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+const settingsNavItems = getSettingsNavItems(userData?.roles?.[0]?.name)
 const router = useRouter()
 const sectionEl = ref(null)
 
