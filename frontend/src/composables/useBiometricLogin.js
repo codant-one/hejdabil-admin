@@ -15,6 +15,17 @@ const prompt = {
   negativeButtonText: 'Avbryt',
 }
 
+const getDeviceName = () => {
+  const platform = Capacitor.getPlatform()
+  const ua = navigator.userAgent
+
+  const model = platform === 'android'
+    ? ua.match(/Android [\d.]+; ([^;)]+?)(?: Build|;|\))/)?.[1]
+    : ua.match(/iPhone|iPad/)?.[0]
+
+  return `${platform}${model ? ` - ${model}` : ''}`.slice(0, 100)
+}
+
 export const useBiometricLogin = () => {
   const { completeLogin } = useLoginSession()
 
@@ -68,7 +79,7 @@ export const useBiometricLogin = () => {
     if (!user?.id || !localStorage.getItem('accessToken'))
       throw new Error('Logga in med ditt lösenord innan du aktiverar biometrisk inloggning.')
 
-    const { data } = await axios.post('auth/device-token')
+    const { data } = await axios.post('auth/device-token', { device_name: getDeviceName() })
 
     // Clear the flag first: partial enrollment must never appear enabled.
     await Preferences.remove({ key: preferenceKey })

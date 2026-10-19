@@ -16,15 +16,40 @@ use App\Models\DeviceToken;
 
 class DeviceTokenController extends Controller
 {
-    public function store(): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         if (! $user = Auth::user()) {
             return $this->invalidToken();
         }
 
+        $validator = Validator::make($request->all(), [
+            'device_name' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'validation_error',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        $deviceName = $request->input('device_name');
+
+        // Purge this user's dead tokens and replace the active one of the same device.
+        $user->deviceTokens()
+            ->where(function ($query) {
+                $query->whereNotNull('revoked_at')->orWhere('expires_at', '<=', now());
+            })
+            ->delete();
+
+        if ($deviceName) {
+            $user->deviceTokens()->where('device_name', $deviceName)->delete();
+        }
+
         $token = Str::random(64);
         $deviceToken = $user->deviceTokens()->create([
             'token' => $token,
+            'device_name' => $deviceName,
             'expires_at' => now()->addDays(90),
         ]);
 
