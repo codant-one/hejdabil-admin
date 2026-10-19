@@ -9,6 +9,7 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import BiometricLoginSwitch from "@/components/common/BiometricLoginSwitch.vue"
 
 const { width: windowWidth } = useWindowSize();
 
@@ -283,6 +284,7 @@ const onSubmitKey = async () => {
 <template>
   <section>
     <LoadingOverlay :is-loading="isRequestOngoing" />
+    <BiometricLoginSwitch />
 
     <VCardText class="px-0">
       <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">

@@ -6,6 +6,7 @@ import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
 import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { getAgreementSmsVisibilityCacheKey, getBillingSmsVisibilityCacheKey, loadAgreementSmsActionPreference, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
@@ -231,8 +232,8 @@ const editBilling = (billingData) => {
   });
 };
 
-const openLink = function (billingData) {
-  window.open(themeConfig.settings.urlStorage + billingData.file);
+const openLink = async function (billingData) {
+  await openOrDownloadFile(themeConfig.settings.urlStorage + billingData.file);
 };
 
 const updateState = async () => {

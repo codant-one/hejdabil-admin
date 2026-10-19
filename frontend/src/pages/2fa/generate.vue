@@ -1,7 +1,9 @@
 <script setup>
 
 import { useAuthStores } from '@/stores/useAuth'
+import { useLoginSession } from '@/composables/useLoginSession'
 import { useDisplay } from "vuetify";
+import BiometricLoginDialog from '@/components/dialogs/BiometricLoginDialog.vue'
 import QRCode from 'qrcode-generator';
 
 import logo from "@images/logos/bilflogg-logo.svg";
@@ -10,8 +12,8 @@ const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const authStores = useAuthStores()
-const route = useRoute()
-const router = useRouter()
+const { completeTwoFactorLogin } = useLoginSession()
+const biometricDialog = ref()
 
 const load = ref(false)
 const otp = ref('')
@@ -50,14 +52,8 @@ const onSubmit = () => {
         }
 
         authStores.validate(data)
-            .then(response => {
-            localStorage.removeItem('is_2fa')
-            localStorage.removeItem('two_factor')
-            localStorage.removeItem('token')
-            localStorage.removeItem('qr')
-
-                // Redirect to `to` query if exist or redirect to index route
-                router.replace(route.query.to ? String(route.query.to) : '/info')
+            .then(async () => {
+                await completeTwoFactorLogin(() => biometricDialog.value.offer())
             }).catch(err => {
 
                 load.value = false
@@ -84,6 +80,7 @@ const onSubmit = () => {
 </script>
 
 <template>
+  <BiometricLoginDialog ref="biometricDialog" />
   <VSnackbar
     v-model="advisor.show"
     transition="scroll-y-reverse-transition"

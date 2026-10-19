@@ -5,6 +5,7 @@ import { useSupplierInvoicesStores } from '@/stores/useSupplierInvoices'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { openOrDownloadFile } from '@/composables/useFileDownload'
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
@@ -212,11 +213,11 @@ const updateState = async () => {
   }
 }
 
-const openBillingPdf = billing => {
+const openBillingPdf = async billing => {
   if (!billing?.file)
     return
 
-  window.open(themeConfig.settings.urlStorage + billing.file)
+  await openOrDownloadFile(themeConfig.settings.urlStorage + billing.file)
 }
 
 const printBilling = async billing => {

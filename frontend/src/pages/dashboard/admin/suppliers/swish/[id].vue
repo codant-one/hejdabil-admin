@@ -5,6 +5,7 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useDisplay } from "vuetify";
 import { getRemoteFileSize, openStorageFileUrl, formatDateSimple, getFileNameFromPath, formatFileSize } from '@/@core/utils/formatters'
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { saveAndShareBlob } from '@/composables/useFileDownload'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 defineProps({
@@ -302,14 +303,8 @@ const downloadFile = async url => {
 
     isRequestOngoing.value = false
     const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-
-    link.href = blobUrl
-    link.download = url.split('/').pop()
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+        const fileName = url.split('/').pop()
+        await saveAndShareBlob(blob, fileName)
   } catch (error) {
     console.error('Error:', error)
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')

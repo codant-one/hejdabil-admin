@@ -1,24 +1,33 @@
 /* eslint-disable import/order */
-import '@/@iconify/icons-bundle'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
+import { themeConfig } from '@themeConfig'
+import { StatusBar, Style } from '@capacitor/status-bar'
+import { SplashScreen } from '@capacitor/splash-screen'
+import { Capacitor } from '@capacitor/core'
+import { loadFonts } from '@/plugins/webfontloader'
+import { abilitiesPlugin } from '@casl/vue'
+import { App as CapacitorApp } from '@capacitor/app'
+
 import App from '@/App.vue'
 import ability from '@/plugins/casl/ability'
 import layoutsPlugin from '@/plugins/layouts'
 import vuetify from '@/plugins/vuetify'
-import { loadFonts } from '@/plugins/webfontloader'
 import router from '@/router'
 import axios from '@axios'
-import { abilitiesPlugin } from '@casl/vue'
+import mitt from 'mitt';
+import VueClipboard from 'vue-clipboard2'
+
+import '@/@iconify/icons-bundle'
 import '@core/scss/template/index.scss'
 import '@styles/styles.scss'
-import mitt from 'mitt';
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import VueClipboard from 'vue-clipboard2'
-import { themeConfig } from '@themeConfig'
 
 // Importa las librerías
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+
+// Puente localStorage <-> Capacitor Preferences (no-op fuera de la app nativa)
+import { hydrateLocalStorageFromPreferences, installStorageBridge } from '@/plugins/nativeStorageBridge'
 
 // Asegúrate de que Pusher esté disponible globalmente (a menudo ya lo está, pero es una buena práctica)
 window.Pusher = Pusher;
@@ -43,118 +52,163 @@ if (isUnloadBlockedByPolicy() && Pusher?.Runtime?.addUnloadListener) {
 }
 
 // ----------------------------------------------------------------------
-// Configuración de Laravel Echo
+// Bootstrap de la app
 // ----------------------------------------------------------------------
-
-const getAccessToken = () => localStorage.getItem('accessToken');
-
-const getEchoAuthHeaders = () => {
-  const headers = {
-    Accept: 'application/json',
-  };
-  const token = getAccessToken();
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+// Todo lo que depende de localStorage (Echo, creación/montaje de la app)
+// queda dentro de esta función async, para garantizar que la hidratación
+// desde Preferences (Capacitor) ya haya terminado antes de que se lea
+// accessToken/user_data por primera vez.
+async function bootstrap() {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await StatusBar.setStyle({ style: Style.Dark })
+      await StatusBar.setBackgroundColor({ color: '#1C2925' })
+    } catch (e) {
+      console.warn('[StatusBar] No se pudo configurar', e)
+    }
   }
 
-  return headers;
-};
+  // 1. Si corre dentro de la app nativa, restaura accessToken/user_data/
+  //    userAbilities desde Preferences hacia localStorage (si localStorage
+  //    estuviera vacío). En web normal esto no hace nada.
+  await hydrateLocalStorageFromPreferences()
 
-const syncEchoAuthorization = () => {
-  if (!window.Echo) {
-    return;
-  }
+  // 2. Instala el espejo automático: de aquí en adelante, cualquier
+  //    localStorage.setItem/removeItem de esas 3 llaves (en login.vue,
+  //    axios.js, etc., sin tocarlos) también se refleja en Preferences.
+  installStorageBridge()
 
-  const headers = getEchoAuthHeaders();
-  const token = getAccessToken();
+  // ----------------------------------------------------------------------
+  // Configuración de Laravel Echo
+  // ----------------------------------------------------------------------
 
-  window.Echo.options.auth = {
-    ...(window.Echo.options.auth || {}),
-    headers,
+  const getAccessToken = () => localStorage.getItem('accessToken');
+
+  const getEchoAuthHeaders = () => {
+    const headers = {
+      Accept: 'application/json',
+    };
+    const token = getAccessToken();
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return headers;
   };
-  window.Echo.options.bearerToken = token;
 
-  if (window.Echo.connector?.options) {
-    window.Echo.connector.options.auth = {
-      ...(window.Echo.connector.options.auth || {}),
+  const syncEchoAuthorization = () => {
+    if (!window.Echo) {
+      return;
+    }
+
+    const headers = getEchoAuthHeaders();
+    const token = getAccessToken();
+
+    window.Echo.options.auth = {
+      ...(window.Echo.options.auth || {}),
       headers,
     };
-    window.Echo.connector.options.bearerToken = token;
-  }
+    window.Echo.options.bearerToken = token;
 
-  if (window.Echo.connector?.pusher?.config?.auth) {
-    window.Echo.connector.pusher.config.auth.headers = headers;
-  }
-
-  if (window.Echo.connector?.pusher?.config?.channelAuthorization) {
-    window.Echo.connector.pusher.config.channelAuthorization.headers = headers;
-    window.Echo.connector.pusher.config.channelAuthorization.headersProvider = getEchoAuthHeaders;
-  }
-};
-
-const hasCustomHost = !!import.meta.env.VITE_PUSHER_HOST;
-const useTLS = import.meta.env.VITE_PUSHER_SSL === 'true' || !hasCustomHost;
-const port = Number(import.meta.env.VITE_PUSHER_PORT) || (useTLS ? 443 : 6001);
-const broadcastAuthEndpoint = themeConfig.settings.urlbase + 'broadcasting/auth';
-
-const baseEchoConfig = {
-  broadcaster: 'pusher',
-  key: import.meta.env.VITE_PUSHER_APP_KEY,
-  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-  forceTLS: useTLS,
-  encrypted: useTLS,
-  disableStats: true,
-  bearerToken: getAccessToken(),
-  // Configuración de autenticación para canales privados (NOTIFICACIONES)
-  authEndpoint: broadcastAuthEndpoint,
-  auth: {
-    headers: getEchoAuthHeaders(),
-  },
-  channelAuthorization: {
-    endpoint: broadcastAuthEndpoint,
-    transport: 'ajax',
-    headersProvider: getEchoAuthHeaders,
-  },
-};
-
-const transportConfig = hasCustomHost
-  ? {
-      wsHost: import.meta.env.VITE_PUSHER_HOST,
-      wsPort: useTLS ? undefined : port,
-      wssPort: useTLS ? port : undefined,
-      enabledTransports: useTLS ? ['wss'] : ['ws'],
+    if (window.Echo.connector?.options) {
+      window.Echo.connector.options.auth = {
+        ...(window.Echo.connector.options.auth || {}),
+        headers,
+      };
+      window.Echo.connector.options.bearerToken = token;
     }
-  : {};
 
-window.Echo = new Echo({ ...baseEchoConfig, ...transportConfig });
-window.syncEchoAuthorization = syncEchoAuthorization;
-window.syncEchoAuthorization();
+    if (window.Echo.connector?.pusher?.config?.auth) {
+      window.Echo.connector.pusher.config.auth.headers = headers;
+    }
 
+    if (window.Echo.connector?.pusher?.config?.channelAuthorization) {
+      window.Echo.connector.pusher.config.channelAuthorization.headers = headers;
+      window.Echo.connector.pusher.config.channelAuthorization.headersProvider = getEchoAuthHeaders;
+    }
+  };
 
-// La suscripción al canal se movió a @core/components/Notifications.vue
-// para que el componente gestione su propia escucha y emita eventos al padre.
-// ----------------------------------------------------------------------
+  const hasCustomHost = !!import.meta.env.VITE_PUSHER_HOST;
+  const useTLS = import.meta.env.VITE_PUSHER_SSL === 'true' || !hasCustomHost;
+  const port = Number(import.meta.env.VITE_PUSHER_PORT) || (useTLS ? 443 : 6001);
+  const broadcastAuthEndpoint = themeConfig.settings.urlbase + 'broadcasting/auth';
 
-loadFonts()
+  const baseEchoConfig = {
+    broadcaster: 'pusher',
+    key: import.meta.env.VITE_PUSHER_APP_KEY,
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+    forceTLS: useTLS,
+    encrypted: useTLS,
+    disableStats: true,
+    bearerToken: getAccessToken(),
+    // Configuración de autenticación para canales privados (NOTIFICACIONES)
+    authEndpoint: broadcastAuthEndpoint,
+    auth: {
+      headers: getEchoAuthHeaders(),
+    },
+    channelAuthorization: {
+      endpoint: broadcastAuthEndpoint,
+      transport: 'ajax',
+      headersProvider: getEchoAuthHeaders,
+    },
+  };
 
-window.axios = axios
-// Create vue app
-const app = createApp(App)
-const emitter = mitt();
+  const transportConfig = hasCustomHost
+    ? {
+        wsHost: import.meta.env.VITE_PUSHER_HOST,
+        wsPort: useTLS ? undefined : port,
+        wssPort: useTLS ? port : undefined,
+        enabledTransports: useTLS ? ['wss'] : ['ws'],
+      }
+    : {};
 
-// Use plugins
-app.use(vuetify)
-app.use(createPinia())
-app.use(router)
-app.use(layoutsPlugin)
-app.use(VueClipboard)
+  window.Echo = new Echo({ ...baseEchoConfig, ...transportConfig });
+  window.syncEchoAuthorization = syncEchoAuthorization;
+  window.syncEchoAuthorization();
 
-app.use(abilitiesPlugin, ability, {
-  useGlobalProperties: true,
-})
+  // La suscripción al canal se movió a @core/components/Notifications.vue
+  // para que el componente gestione su propia escucha y emita eventos al padre.
+  // ----------------------------------------------------------------------
 
-app.provide('emitter', emitter);
+  loadFonts()
 
-// Mount vue app
-app.mount('#app')
+  window.axios = axios
+  // Create vue app
+  const app = createApp(App)
+  const emitter = mitt();
+
+  // Use plugins
+  app.use(vuetify)
+  app.use(createPinia())
+  app.use(router)
+  app.use(layoutsPlugin)
+  app.use(VueClipboard)
+
+  app.use(abilitiesPlugin, ability, {
+    useGlobalProperties: true,
+  })
+
+  app.provide('emitter', emitter);
+
+  // Mount vue app
+  app.mount('#app')
+
+  if (Capacitor.isNativePlatform()) {
+    const ROOT_ROUTE_NAMES = ['login', 'dashboard-panel']
+
+    CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      const currentRouteName = router.currentRoute.value.name
+
+      if (ROOT_ROUTE_NAMES.includes(currentRouteName) || !canGoBack) {
+        CapacitorApp.exitApp()
+      } else {
+        router.back()
+      }
+    })
+
+    await SplashScreen.hide()
+  }
+}
+
+bootstrap()

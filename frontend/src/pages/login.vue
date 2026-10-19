@@ -1,11 +1,13 @@
 <script setup>
 
-import { useAppAbility } from "@/plugins/casl/useAppAbility";
+import { useLoginSession } from "@/composables/useLoginSession";
+import { useBiometricLogin } from "@/composables/useBiometricLogin";
 import { useAlertStore } from "@/stores/useAlerts.js";
 import { VForm } from "vuetify/components";
 import { emailValidator, requiredValidator } from "@validators";
 import { useAuthStores } from "@/stores/useAuth";
 import { useDisplay } from "vuetify";
+import BiometricLoginDialog from "@/components/dialogs/BiometricLoginDialog.vue";
 
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import people from "@images/pages/login/login_image.png";
@@ -17,7 +19,14 @@ const authStores = useAuthStores();
 const isPasswordVisible = ref(false);
 const route = useRoute();
 const router = useRouter();
-const ability = useAppAbility();
+const { completeLogin } = useLoginSession();
+const biometric = useBiometricLogin();
+const biometricAvailable = ref(false);
+const biometricEnabled = ref(false);
+const biometricDialog = ref();
+const shouldShowBiometricButton = computed(
+  () => biometricAvailable.value && biometricEnabled.value,
+);
 
 const errors = ref({
   email: undefined,
@@ -31,7 +40,8 @@ const refVForm = ref();
 const email = ref("");
 const password = ref("");
 const remember_me = ref(true);
-const load = ref(false);
+const loginLoading = ref(false);
+const biometricLoading = ref(false);
 const DEFAULT_AUTH_LOGOUT_MESSAGE = 'Din session har avslutats. Logga in igen för att fortsätta.';
 
 const showForceLogoutAlert = () => {
@@ -51,18 +61,26 @@ const showForceLogoutAlert = () => {
   router.replace({ query: newQuery })
 }
 
-onMounted(() => {
+onMounted(async () => {
   showForceLogoutAlert()
-})
-
-watchEffect(fetchData);
-
-async function fetchData() {
   remember_me.value =
     localStorage.getItem("remember_me") === "true" ? true : false;
   email.value = localStorage.getItem("email") ?? "";
-  password.value = localStorage.getItem("password") ?? "";
-}
+
+  try {
+    biometricAvailable.value = await biometric.isAvailable()
+    biometricEnabled.value = await biometric.isEnabled()
+  } catch (error) {
+    alertStore.type = 'error'
+    alertStore.message = 'Det gick inte att kontrollera biometrisk inloggning.'
+    alertStore.show = true
+  }
+
+  if (shouldShowBiometricButton.value)
+    localStorage.removeItem("password");
+  else
+    password.value = localStorage.getItem("password") ?? "";
+})
 
 const inputChange = () => {
   errors.value = {
@@ -72,7 +90,7 @@ const inputChange = () => {
 };
 
 const login = async () => {
-  load.value = true;
+  loginLoading.value = true;
 
   let data = {
     email: email.value,
@@ -81,46 +99,20 @@ const login = async () => {
 
   authStores
     .login(data)
-    .then((response) => {
-      load.value = false;
-
-      const { qr, token, accessToken, user_data, userAbilities } =
-        response.data;
-      const two_factor = {
-        generate_qr: response.message === "2fa-generate" ? true : false,
-      };
-      const is_2fa = { status: user_data.is_2fa === 0 ? false : true };
-
-      ability.update(userAbilities);
-
-      localStorage.setItem("userAbilities", JSON.stringify(userAbilities));
-      localStorage.setItem("user_data", JSON.stringify(user_data));
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("qr", qr);
-      localStorage.setItem("token", token);
-      localStorage.setItem("two_factor", JSON.stringify(two_factor));
-      localStorage.setItem("remember_me", remember_me.value);
-      localStorage.setItem("is_2fa", JSON.stringify(is_2fa));
-
-      if (remember_me.value) {
-        localStorage.setItem("email", email.value);
-        localStorage.setItem("password", password.value);
-      } else {
-        localStorage.setItem("email", "");
-        localStorage.setItem("password", "");
-      }
-
-      // Redirect to `to` query if exist or redirect to index route
-      router.replace(
-        route.query.to
-          ? String(route.query.to)
-          : response.message === "login_success"
-          ? "/info"
-          : "/"
-      );
+    .then(async (response) => {
+      loginLoading.value = false;
+      const enteredPassword = password.value;
+      password.value = "";
+      await completeLogin(response, {
+        rememberMe: remember_me.value,
+        email: email.value,
+        password: enteredPassword,
+        clearPassword: shouldShowBiometricButton.value,
+        beforeNavigate: () => biometricDialog.value.offer(),
+      });
     })
     .catch((err) => {
-      load.value = false;
+      loginLoading.value = false;
 
       if (err.message === "user_inactive") {
         alertStore.type = 'error';
@@ -136,6 +128,25 @@ const login = async () => {
     });
 };
 
+const loginWithBiometrics = async () => {
+  biometricLoading.value = true;
+  try {
+    await biometric.login();
+  } catch (error) {
+    if (error.requiresPassword)
+      biometricEnabled.value = false;
+    alertStore.type = 'error';
+    alertStore.message = error.requiresPassword
+      ? error.message
+      : error?.message === 'user_inactive'
+        ? 'Denna användare har inaktiverats. Kontakta administratören.'
+        : 'Biometrisk inloggning misslyckades. Försök igen eller logga in med ditt lösenord.';
+    alertStore.show = true;
+  } finally {
+    biometricLoading.value = false;
+  }
+};
+
 const onSubmit = () => {
   refVForm.value?.validate().then(({ valid: isValid }) => {
     if (isValid) login();
@@ -144,6 +155,7 @@ const onSubmit = () => {
 </script>
 
 <template>
+  <BiometricLoginDialog ref="biometricDialog" />
   <!--<VideoLoader 
     show-once 
     use-local-storage 
@@ -225,13 +237,28 @@ const onSubmit = () => {
                 </RouterLink>
               </div>
 
-              <VBtn block class="btn-gradient w-100" type="submit">
+              <VBtn
+                block
+                class="btn-gradient w-100"
+                type="submit"
+                :disabled="loginLoading"
+              >
                 Logga in
                 <VProgressCircular
-                  v-if="load"
+                  v-if="loginLoading"
                   indeterminate
                   color="#fff"
                 />
+              </VBtn>
+              <VBtn
+                v-if="shouldShowBiometricButton"
+                block
+                class="btn-light"
+                :loading="biometricLoading"
+                :disabled="biometricLoading"
+                @click="loginWithBiometrics"
+              >
+                Logga in med fingeravtryck/Face ID
               </VBtn>
             </VForm>
           </div>
