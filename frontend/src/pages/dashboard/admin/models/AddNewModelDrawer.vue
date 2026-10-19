@@ -186,7 +186,7 @@ watch(currentData, () => {
       </VBtn>
     </div>
     
-    <VDivider class="mt-4"/>
+    <VDivider />
 
     <PerfectScrollbar 
       :options="{ wheelPropagation: false }" 

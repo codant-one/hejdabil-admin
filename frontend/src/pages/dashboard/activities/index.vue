@@ -164,6 +164,7 @@ const activityActionLabels = {
   update: 'uppdaterad',
   revoke: 'återkallad',
   activate: 'aktiverad',
+  deactivate: 'inaktiverad',
   swish: 'Swish',
   password: 'Lösenord'
 }
@@ -909,9 +910,9 @@ function getActivityModuleSingularLabel(entityType) {
 
 function resolveActivityActionKey(actionType) {
   const normalizedAction = String(actionType ?? '').toLowerCase()
-  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel', 'revoke', 'activate', 'password', 'swish']
+  const orderedKeys = ['credit', 'reminder', 'resend', 'cancelled', 'unpaid', 'paid', 'delete', 'update', 'create', 'signed', 'delivered', 'reviewed', 'send', 'sell', 'cancel', 'revoke', 'activate', 'deactivate', 'password', 'swish']
 
-  return orderedKeys.find(key => normalizedAction.includes(key)) ?? null
+  return normalizedAction != '' ? (orderedKeys.find(key => key.includes(normalizedAction?.split('_')[0])) ?? null) : null
 }
 
 function getActivityEventLabel(activity) {
