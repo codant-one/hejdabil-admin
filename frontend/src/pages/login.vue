@@ -24,6 +24,9 @@ const biometric = useBiometricLogin();
 const biometricAvailable = ref(false);
 const biometricEnabled = ref(false);
 const biometricDialog = ref();
+const shouldShowBiometricButton = computed(
+  () => biometricAvailable.value && biometricEnabled.value,
+);
 
 const errors = ref({
   email: undefined,
@@ -37,7 +40,8 @@ const refVForm = ref();
 const email = ref("");
 const password = ref("");
 const remember_me = ref(true);
-const load = ref(false);
+const loginLoading = ref(false);
+const biometricLoading = ref(false);
 const DEFAULT_AUTH_LOGOUT_MESSAGE = 'Din session har avslutats. Logga in igen för att fortsätta.';
 
 const showForceLogoutAlert = () => {
@@ -59,6 +63,10 @@ const showForceLogoutAlert = () => {
 
 onMounted(async () => {
   showForceLogoutAlert()
+  remember_me.value =
+    localStorage.getItem("remember_me") === "true" ? true : false;
+  email.value = localStorage.getItem("email") ?? "";
+
   try {
     biometricAvailable.value = await biometric.isAvailable()
     biometricEnabled.value = await biometric.isEnabled()
@@ -67,16 +75,12 @@ onMounted(async () => {
     alertStore.message = 'Det gick inte att kontrollera biometrisk inloggning.'
     alertStore.show = true
   }
+
+  if (shouldShowBiometricButton.value)
+    localStorage.removeItem("password");
+  else
+    password.value = localStorage.getItem("password") ?? "";
 })
-
-watchEffect(fetchData);
-
-async function fetchData() {
-  remember_me.value =
-    localStorage.getItem("remember_me") === "true" ? true : false;
-  email.value = localStorage.getItem("email") ?? "";
-  localStorage.removeItem("password");
-}
 
 const inputChange = () => {
   errors.value = {
@@ -86,7 +90,7 @@ const inputChange = () => {
 };
 
 const login = async () => {
-  load.value = true;
+  loginLoading.value = true;
 
   let data = {
     email: email.value,
@@ -96,16 +100,19 @@ const login = async () => {
   authStores
     .login(data)
     .then(async (response) => {
-      load.value = false;
+      loginLoading.value = false;
+      const enteredPassword = password.value;
       password.value = "";
       await completeLogin(response, {
         rememberMe: remember_me.value,
         email: email.value,
+        password: enteredPassword,
+        clearPassword: shouldShowBiometricButton.value,
         beforeNavigate: () => biometricDialog.value.offer(),
       });
     })
     .catch((err) => {
-      load.value = false;
+      loginLoading.value = false;
 
       if (err.message === "user_inactive") {
         alertStore.type = 'error';
@@ -122,7 +129,7 @@ const login = async () => {
 };
 
 const loginWithBiometrics = async () => {
-  load.value = true;
+  biometricLoading.value = true;
   try {
     await biometric.login();
   } catch (error) {
@@ -136,7 +143,7 @@ const loginWithBiometrics = async () => {
         : 'Biometrisk inloggning misslyckades. Försök igen eller logga in med ditt lösenord.';
     alertStore.show = true;
   } finally {
-    load.value = false;
+    biometricLoading.value = false;
   }
 };
 
@@ -234,21 +241,21 @@ const onSubmit = () => {
                 block
                 class="btn-gradient w-100"
                 type="submit"
-                :disabled="load"
+                :disabled="loginLoading"
               >
                 Logga in
                 <VProgressCircular
-                  v-if="load"
+                  v-if="loginLoading"
                   indeterminate
                   color="#fff"
                 />
               </VBtn>
               <VBtn
-                v-if="biometricAvailable && biometricEnabled"
+                v-if="shouldShowBiometricButton"
                 block
                 class="btn-light"
-                :loading="load"
-                :disabled="load"
+                :loading="biometricLoading"
+                :disabled="biometricLoading"
                 @click="loginWithBiometrics"
               >
                 Logga in med fingeravtryck/Face ID

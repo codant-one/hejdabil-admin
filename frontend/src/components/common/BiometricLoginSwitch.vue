@@ -1,4 +1,5 @@
 <script setup>
+
 import { Capacitor } from '@capacitor/core'
 import { onMounted, ref } from 'vue'
 import { useBiometricLogin } from '@/composables/useBiometricLogin'
@@ -18,16 +19,23 @@ onMounted(async () => {
   }
 })
 
-const disable = async value => {
-  if (value || busy.value)
+const toggle = async value => {
+  if (busy.value)
     return
   busy.value = true
   errorMessage.value = ''
   try {
-    await biometric.disable()
-    enabled.value = false
+    if (value) {
+      await biometric.enable()
+      enabled.value = await biometric.isEnabled()
+    } else {
+      await biometric.disable()
+      enabled.value = false
+    }
   } catch (error) {
-    errorMessage.value = 'Det gick inte att avaktivera biometrisk inloggning. Kontrollera anslutningen och försök igen.'
+    errorMessage.value = value
+      ? 'Det gick inte att aktivera biometrisk inloggning. Försök igen.'
+      : 'Det gick inte att avaktivera biometrisk inloggning. Kontrollera anslutningen och försök igen.'
   } finally {
     busy.value = false
   }
@@ -44,7 +52,7 @@ const disable = async value => {
         <div class="d-flex flex-column gap-4">
           <span class="subtitle-settings">Biometrisk inloggning</span>
           <span class="text-settings">
-            Avaktivering återkallar alla dina enhetstoken. Aktivera funktionen igen efter inloggning med lösenord.
+            Avaktivering återkallar alla dina enhetstoken. Du kan aktivera funktionen igen när som helst.
           </span>
         </div>
       </div>
@@ -52,12 +60,10 @@ const disable = async value => {
         <VSwitch
           :model-value="enabled"
           :disabled="busy"
-          :readonly="!enabled"
-          :loading="busy"
           class="biometric-switch"
           hide-details
           inset
-          @update:model-value="disable"
+          @update:model-value="toggle"
         >
           <template #label>
             <span class="biometric-switch__label">Logga in med fingeravtryck/Face ID</span>

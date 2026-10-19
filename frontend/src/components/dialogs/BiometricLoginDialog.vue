@@ -51,9 +51,24 @@ defineExpose({ offer })
     persistent
     class="action-dialog"
   >
-    <VCard>
+
+    <!-- Dialog close btn -->
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="close"
+      >
+        <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard flat>
       <VCardText class="dialog-title-box">
-        <div class="dialog-title">Aktivera biometrisk inloggning?</div>
+        <div class="d-flex justify-center gap-2 align-center">
+          <VIcon size="32" icon="custom-face-id" class="action-icon" />
+          <VIcon size="32" icon="custom-fingerprint" class="action-icon" />
+        </div>
+      
+        <div class="dialog-title text-start">Aktivera biometrisk inloggning?</div>
       </VCardText>
 
       <VCardText class="dialog-text">

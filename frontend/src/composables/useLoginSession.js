@@ -12,7 +12,7 @@ export const useLoginSession = () => {
       : message === 'login_success' ? '/info' : '/',
   )
 
-  const completeLogin = async (response, { rememberMe, email, beforeNavigate } = {}) => {
+  const completeLogin = async (response, { rememberMe, email, password, clearPassword = false, beforeNavigate } = {}) => {
     const { qr, token, accessToken, user_data, userAbilities } = response.data
     const pendingTwoFactor = response.message === '2fa' || response.message === '2fa-generate'
 
@@ -32,7 +32,12 @@ export const useLoginSession = () => {
       localStorage.removeItem('token')
       localStorage.removeItem('qr')
     }
-    localStorage.removeItem('password')
+
+    // The password is not remembered while biometric login is active.
+    if (clearPassword || !rememberMe || !password)
+      localStorage.removeItem('password')
+    else
+      localStorage.setItem('password', password)
     if (rememberMe !== undefined) {
       localStorage.setItem('remember_me', rememberMe)
       localStorage.setItem('email', rememberMe ? email : '')
