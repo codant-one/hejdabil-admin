@@ -57,9 +57,10 @@
       ) !important;
       inset-block-start: 0rem;
       padding: 24px 24px;
+      padding-top: calc(24px + env(safe-area-inset-top, 0px));
 
       @media (max-width: 1000px) {
-        padding-top: 1rem;
+        padding-top: calc(1rem + env(safe-area-inset-top, 0px));
         padding-bottom: 1rem;
       }
     }
