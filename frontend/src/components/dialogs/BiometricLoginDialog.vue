@@ -63,10 +63,7 @@ defineExpose({ offer })
 
     <VCard flat>
       <VCardText class="dialog-title-box">
-        <div class="d-flex justify-center gap-2 align-center">
-          <VIcon size="32" icon="custom-face-id" class="action-icon" />
-          <VIcon size="32" icon="custom-fingerprint" class="action-icon" />
-        </div>
+        <VIcon size="32" icon="custom-face-id" class="action-icon" />
       
         <div class="dialog-title text-start">Aktivera biometrisk inloggning?</div>
       </VCardText>
