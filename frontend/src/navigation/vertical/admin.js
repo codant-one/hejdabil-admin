@@ -5,7 +5,7 @@ export default [
     children:[
       { 
         title: 'Attribut', 
-        icon: { icon: 'mdi-database-cog' },
+        icon: { icon: 'custom-attribut' },
         action: 'view',
         subject: 'invoices',
         children: [
@@ -19,14 +19,14 @@ export default [
       },
       { 
         title: 'Valuta', 
-        icon: { icon: 'mdi-currency-usd' },
+        icon: { icon: 'custom-pris-information' },
         to: 'dashboard-admin-currencies', 
         action: 'view',
         subject: 'invoices'
       },
       { 
         title: 'Land', 
-        icon: { icon: 'mdi-flag' },
+        icon: { icon: 'mdi-flag-outline' },
         to: 'dashboard-admin-countries', 
         action: 'view',
         subject: 'countries'

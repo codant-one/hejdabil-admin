@@ -48,6 +48,5 @@ declare module '@vue/runtime-core' {
     TiptapEditor: typeof import('./src/@core/components/TiptapEditor.vue')['default']
     UserInfoEditDialog: typeof import('./src/@core/components/UserInfoEditDialog.vue')['default']
     UserUpgradePlanDialog: typeof import('./src/@core/components/UserUpgradePlanDialog.vue')['default']
-    VueApexCharts: typeof import('vue3-apexcharts')['default']
   }
 }
