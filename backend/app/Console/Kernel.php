@@ -40,6 +40,10 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->at('00:00');
 
+        $schedule->command('device-tokens:prune --days=30')
+                 ->daily()
+                 ->at('00:00');
+
         $schedule->command('alerts:generate')
                  ->daily()
                  ->at('00:00');

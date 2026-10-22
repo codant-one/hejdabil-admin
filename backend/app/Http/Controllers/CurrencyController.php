@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Currency;
+use App\Models\SupplierActivity;
 
 class CurrencyController extends Controller
 {
@@ -79,6 +80,22 @@ class CurrencyController extends Controller
 
             $currency = Currency::createCurrency($request);
 
+            SupplierActivity::createActivity([
+                'entity_id' => $currency->id,
+                'entity_type' => 'currencies',
+                'action_type' => 'create_currency',
+                'title' => 'Valuta #'.$currency->id.' '.$currency->name.' tillagd',
+                'description' => 'En ny valuta har lagts till.',
+                'icon' => 'custom-pris-information',
+                'route' => null, //'/dashboard/admin/currencies/'.$currency->id,
+                'metadata' => json_encode([
+                    'currency_id' => $currency->id,
+                    'new_values' => $request->only([
+                        'name', 'code', 'flag'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -134,6 +151,8 @@ class CurrencyController extends Controller
     {
         try {
             $currency = Currency::find($id);
+
+            $oldValues = $currency->only(['name', 'code', 'flag']);
         
             if (!$currency)
                 return response()->json([
@@ -143,6 +162,23 @@ class CurrencyController extends Controller
                 ], 404);
 
             $currency->updateCurrency($request, $currency); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $currency->id,
+                'entity_type' => 'currencies',
+                'action_type' => 'update_currency',
+                'title' => 'Valuta #'.$currency->id.' '.$currency->name.' uppdaterad',
+                'description' => 'En valuta har uppdaterats.',
+                'icon' => 'custom-pris-information',
+                'route' => null, //'/dashboard/admin/currencies/'.$currency->id,
+                'metadata' => json_encode([
+                    'currency_id' => $currency->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $request->only([
+                        'name', 'code', 'flag'
+                    ])
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -178,6 +214,25 @@ class CurrencyController extends Controller
             
             $currency->deleteCurrency($id);
 
+            $oldValues = $currency->only(['name', 'code', 'flag']);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $currency->id,
+                'entity_type' => 'currencies',
+                'action_type' => 'delete_currency',
+                'title' => 'Valuta #'.$currency->id.' '.$currency->name.' borttagen',
+                'description' => 'Valutan har tagits bort.',
+                'icon' => 'custom-pris-information',
+                'metadata' => json_encode([
+                    'currency_id' => $currency->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $currency->id)
+                ->where('entity_type', 'currencies')
+                ->update(['route' => null]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -209,6 +264,23 @@ class CurrencyController extends Controller
             
             $currency->state_id = $currency->state_id === 1 ? 2 : 1;
             $currency->update();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $currency->id,
+                'entity_type' => 'currencies',
+                'action_type' => $currency->state_id === 2 ? 'activate_currency' : 'deactivate_currency',
+                'title' => 'Valuta #'.$currency->id.' '.$currency->name.' '.($currency->state_id === 2 ? 'aktiverad' : 'inaktiverad'),
+                'description' => 'Valutan har '.($currency->state_id === 2 ? 'aktiverats' : 'inaktiverats').'.',
+                'icon' => 'custom-pris-information',
+                'route' => null, //'/dashboard/admin/currencies/'.$currency->id,
+                'metadata' => json_encode([
+                    'currency_id' => $currency->id
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $currency->id)
+                ->where('entity_type', 'currencies')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

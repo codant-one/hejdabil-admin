@@ -3,6 +3,7 @@
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import billings from "@/pages/dashboard/settings/plan/billings.vue";
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { formatDateSimple } from '@/@core/utils/formatters'
 
 const suppliersStores = useSuppliersStores()
 
@@ -288,12 +289,12 @@ const activeSubscription = async () => {
                                     </div>
                                 </div>
 
-                                <div class="d-none flex-column card-subtitle">
+                                <div class="d-flex flex-column card-subtitle">
                                     <div class="p-0 card-subtitle">
-                                        Förnyas
+                                        Prenumeration
                                     </div>
                                     <div class="p-0 card-content">
-                                        14 augusti 2026
+                                        {{ formatDateSimple(supplierData.start_date) }} - {{ formatDateSimple(supplierData.end_date) }}
                                     </div>
                                 </div>
                             </VCardText>
