@@ -365,8 +365,64 @@ body .v-dialog .v-dialog-close-btn {
 
 body {
   font-family: "DM Sans", Arial, sans-serif !important;
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
   padding-left: var(--safe-area-left);
   padding-right: var(--safe-area-right);
+}
+
+input,
+select,
+textarea,
+.v-field__input,
+.v-select__selection {
+  font-size: 16px !important;
+}
+
+.v-application > .v-application__wrap,
+.layout-blank .v-application__wrap,
+.layout-wrapper.layout-nav-type-vertical .layout-content-wrapper,
+.layout-wrapper.layout-nav-type-horizontal {
+  min-block-size: calc(var(--vh, 1vh) * 100 - var(--safe-area-top) - var(--safe-area-bottom));
+}
+
+.layout-wrapper.layout-nav-type-horizontal.layout-navbar-sticky.horizontal-nav-sticky
+  .layout-navbar-and-nav-container {
+  padding-top: var(--safe-area-top);
+  margin-top: calc(-1 * var(--safe-area-top));
+}
+
+.layout-vertical-nav {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+.layout-footer-sticky .layout-footer {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.v-app-bar {
+  box-sizing: content-box;
+  padding-top: var(--safe-area-top);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+.v-app-bar.v-app-bar--bottom {
+  padding-top: 0;
+  padding-bottom: var(--safe-area-bottom);
+}
+
+body .navigation-bar {
+  padding-top: calc(24px + var(--safe-area-top));
+  padding-left: calc(24px + var(--safe-area-left));
+  padding-right: calc(24px + var(--safe-area-right));
+
+  @media (max-width: 1023px) {
+    padding-top: calc(16px + var(--safe-area-top));
+  }
 }
 
 .font-blauer {
@@ -1338,7 +1394,7 @@ body {
   right: 0 !important;
   border-radius: 0 !important;
   max-width: 100vw !important;
-  bottom: 88px;
+  bottom: calc(88px + var(--safe-area-bottom));
   top: auto !important;
 }
 
@@ -1362,7 +1418,8 @@ body {
   padding-right: calc(16px + env(safe-area-inset-right, 0px));
   border-radius: 24px 24px 0px 0px !important;
   box-shadow: none !important;
-  min-height: calc(56px + env(safe-area-inset-bottom, 0px));
+  height: calc(88px + var(--safe-area-bottom)) !important;
+  min-height: calc(88px + var(--safe-area-bottom));
 
   .v-bottom-navigation__content {
     gap: 8px;

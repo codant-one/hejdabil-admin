@@ -61,8 +61,10 @@ if (isUnloadBlockedByPolicy() && Pusher?.Runtime?.addUnloadListener) {
 async function bootstrap() {
   if (Capacitor.isNativePlatform()) {
     try {
-      await StatusBar.setStyle({ style: Style.Dark })
-      await StatusBar.setBackgroundColor({ color: '#1C2925' })
+      await StatusBar.setStyle({ style: Style.Light })
+      if (Capacitor.getPlatform() === 'android') {
+        await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
+      }
     } catch (e) {
       console.warn('[StatusBar] No se pudo configurar', e)
     }
