@@ -231,7 +231,10 @@ class GenerateSupplierBilling extends Command
 
                 $this->generatePdf($billing);
                 $this->sendNotification($billing);
-                $this->sendEmail($billing);
+
+                if (env('APP_ENV') === 'production') {
+                    $this->sendEmail($billing);
+                }
             }
 
             return $createdAny;

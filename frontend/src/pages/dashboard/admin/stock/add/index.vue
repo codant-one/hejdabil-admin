@@ -2171,7 +2171,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
                                             <div class="d-flex flex-column">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
-                                                <VRadioGroup v-model="service_book" inline class="radio-form">
+                                                <VRadioGroup v-model="service_book" inline class="radio-form ps-2">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                         :key="index"
@@ -2184,7 +2184,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
                                             <div class="d-flex flex-column">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
-                                                <VRadioGroup v-model="summer_tire" inline class="radio-form">
+                                                <VRadioGroup v-model="summer_tire" inline class="radio-form ps-2">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                         :key="index"
@@ -2197,7 +2197,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
                                             <div class="d-flex flex-column">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
-                                                <VRadioGroup v-model="winter_tire" inline class="radio-form">
+                                                <VRadioGroup v-model="winter_tire" inline class="radio-form ps-2">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                         :key="index"
@@ -2210,7 +2210,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         </div>
                                         <div class="d-flex flex-column">
                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
-                                        <VRadioGroup v-model="dist_belt" inline class="radio-form">
+                                        <VRadioGroup v-model="dist_belt" inline class="radio-form ps-2">
                                             <VRadio
                                                 v-for="(radio, index) in optionsRadio"
                                                 :key="index"
