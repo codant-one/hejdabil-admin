@@ -62,7 +62,7 @@ const editUserPassword = function(){
         if (isValid) {
             let data = {
                 password: password.value,
-                type: 'users'
+                type: 'users_admin'
             }
             //UPDATE USER PASSWORD
             usersStores.updatePasswordUser(data, id.value)
@@ -102,31 +102,51 @@ const editUserPassword = function(){
     <VDialog
       v-model="props.isDrawerOpen"
       max-width="600"
+      class="action-dialog"
       persistent
     >
         <!-- Dialog close btn -->
-        <DialogCloseBtn @click="closeUserPasswordDialog" />
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="closeUserPasswordDialog"
+        >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
 
         <!-- Dialog Content -->
-        <VCard title="Redigera användarens lösenord">
-            <VDivider class="mt-4"/>
+        <VCard>
+            <VCardText class="dialog-title-box">
+                <!-- <VIcon size="32" icon="custom-warning-outlined" class="action-icon" /> -->
+                <div class="dialog-title">
+                Redigera användarens lösenord
+                </div>
+            </VCardText>
+
             <VForm
-                ref="refForm"
-                @submit.prevent="editUserPassword"
-                >
-                <VCardText>
+            ref="refForm"
+            class="card-form user-mobile"
+            @submit.prevent="editUserPassword"
+            >
+                <VCardText class="dialog-text">
                     <VRow>
                         <VCol cols="12">
+                            <VLabel
+                                class="mb-1 text-body-2 text-high-emphasis"
+                                text="E-post"
+                            />
                             <VTextField
                                 v-model="email"
-                                label="E-post"
                                 readonly
                             />
                         </VCol>
                         <VCol cols="12" >
+                            <VLabel
+                                class="mb-1 text-body-2 text-high-emphasis"
+                                text="Nytt lösenord*"
+                            />
                             <VTextField
                                 v-model="password"
-                                label="Nytt lösenord"
                                 :type="isPasswordVisible ? 'text' : 'password'"
                                 :rules="[requiredValidator]"
                                 :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
@@ -134,20 +154,134 @@ const editUserPassword = function(){
                             />
                         </VCol>
                     </VRow>
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
-                        <VBtn
-                            color="secondary"
-                            variant="tonal"
-                            @click="closeUserPasswordDialog"
-                        >
-                            Avbryt
-                        </VBtn>
-                        <VBtn type="submit">
-                            Redigera lösenord
-                        </VBtn>
-                    </VCardText>
+                </VCardText>
+                
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn
+                        class="btn-light"
+                        @click="closeUserPasswordDialog">
+                        Avbryt
+                    </VBtn>
+                    <VBtn class="btn-gradient" type="submit">
+                        Redigera lösenord
+                    </VBtn>
                 </VCardText>
             </VForm>
         </VCard>
     </VDialog>
 </template>
+
+<style scoped>
+  @media (max-width: 1023px) {
+    .card-form.user-mobile {
+      .v-list {
+        padding: 28px 24px 40px !important;
+
+        .v-list-item {
+          margin-bottom: 0px;
+          padding: 4px 0 !important;
+          gap: 0px !important;
+
+          .v-input--density-compact {
+            --v-input-control-height: 48px !important;
+          }
+
+          .v-select .v-field {
+            .v-select__selection {
+              align-items: center;
+            }
+
+            .v-field__input > input {
+              top: 0px;
+              left: 0px;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .selector-country {
+            .v-input__prepend {
+              margin-inline-end: 6px !important;
+            }
+          }
+
+          .v-autocomplete .v-field {
+            .v-autocomplete__selection-text {
+              align-items: center;
+              display: flex;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .v-text-field {
+            .v-input__control {
+              padding-top: 0;
+
+              .v-field {
+                .v-text-field__prefix {
+                  height: 48px;
+                  color: #454545;
+                }
+              }
+
+              input {
+                min-height: 48px !important;
+                height: 48px !important;
+                padding: 12px 16px;
+              }
+            }
+          }
+
+          .v-input.always-show-prefix {
+            .v-input__control {
+              .v-field {
+                .v-field__input {
+                  padding: 8px 0 !important;
+                }
+              }
+            }
+          }
+        }
+      }
+      & .v-input:not(.v-textarea) {
+        & .v-input__control {
+          .v-field {
+            background-color: #f6f6f6;
+            min-height: 48px !important;
+            height: 48px !important;
+            .v-field-label {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .v-dialog .v-overlay__content {
+    max-height: calc(100dvh - 48px) !important;
+  }
+
+  :deep(.vue-simple-handler) {
+      background: #57F287 !important;
+  }
+  :deep(.cropper-preview-circle) {
+      border: dashed 1px #57F287
+  }
+  :deep(.cropper-background),
+  :deep(.vue-advanced-cropper__foreground) {
+      background-color: transparent !important;
+  }
+</style>
+<route lang="yaml">
+  meta:
+    action: edit
+    subject: users
+</route>

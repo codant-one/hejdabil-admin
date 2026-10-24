@@ -46,6 +46,7 @@ const filterDateRange = ref(null)
 const mode = ref('Lista')
 
 const modules = [
+  { name: 'Användare', id: 'users_admin' },
   { name: 'Mitt team', id: 'users' },
   { name: 'Leverantör', id: 'suppliers' },
   { name: 'Admin faktura', id: 'suppliers_invoices' },
@@ -60,6 +61,7 @@ const modules = [
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
+  users_admin: ['users-admin'],
   users: ['my-team'],
   suppliers: ['suppliers'],
   clients: ['clients'],
@@ -116,6 +118,7 @@ const isDeleteAccountActive = computed(() =>
 
 const activityModuleLabels = {
   users: 'Mitt team',
+  users_admin: 'Användare',
   agreements: 'Avtal',
   billings: 'Fakturor',
   clients: 'Kunder',
@@ -131,6 +134,7 @@ const activityModuleLabels = {
 }
 
 const activityModuleSingularLabels = {
+  users_admin: 'Användare',
   users: 'Mitt team',
   agreements: 'Avtal',
   billings: 'Faktura',

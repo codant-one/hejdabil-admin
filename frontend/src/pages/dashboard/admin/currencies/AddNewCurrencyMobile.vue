@@ -157,93 +157,140 @@ watch(currentData, () => {
 </script>
 
 <template>
-    <!-- 👉 Form -->
-    <VForm
-      ref="refForm"
-      v-model="isFormValid"
-      class="card-form model-mobile"
-      validate-on="submit"
-      @submit.prevent="onSubmit"
-    >
-      <VList>
-        <VListItem
-          v-if="advisor.show"
-          class="m-4 p-5"
+  <!-- 👉 Form -->
+  <VForm
+    ref="refForm"
+    v-model="isFormValid"
+    class="card-form currency-mobile"
+    validate-on="submit"
+    @submit.prevent="onSubmit"
+  >
+    <VList>
+      <VListItem
+        v-if="advisor.show"
+        class="m-4 p-5"
+      >
+        <VAlert
+          :color="advisor.type"
+          class="alert-no-shrink custom-alert"
+          style="flex: none; margin: 2px 2px 2px 1px"
         >
-          <VAlert
-            :color="advisor.type"
-            class="alert-no-shrink custom-alert"
-            style="flex: none; margin: 2px 2px 2px 1px"
-          >
-            <VAlertTitle>{{ advisor.message }}</VAlertTitle>
-          </VAlert>
-        </VListItem>
+          <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+        </VAlert>
+      </VListItem>
 
-        <VListItem>
-          <small class="form-text text-muted">
-            Använd en URL från webbplatsen <br>
-            <a href="https://hatscripts.github.io/circle-flags" target="_blank">https://hatscripts.github.io/circle-flags</a>.<br>
-            Flaggan måste motsvara myntets ursprungsland.<br>
-            Exempel: För den amerikanska dollarn (<strong>USD</strong>), använder du:<br>
-            <code class="p-0">https://hatscripts.github.io/circle-flags/flags/us.svg</code>
-          </small>
-          <div class="mt-2">
-            <img src="https://hatscripts.github.io/circle-flags/flags/us.svg" alt="US Flag" width="32" height="32" />
-          </div>
-        </VListItem>
-
-        <VListItem>
-            <VLabel
-              class="mb-1 text-body-2 text-high-emphasis"
-              text="Namnet*"
-            />
-            <VTextField
-                v-model="name"
-                :rules="[requiredValidator]"
-            />
-        </VListItem>
-        <VListItem>
-            <VLabel
-              class="mb-1 text-body-2 text-high-emphasis"
-              text="Kod*"
-            />
-            <VTextField
-                v-model="code"
-                :rules="[requiredValidator]"
-            />
-        </VListItem>
-        <VListItem>
-            <VLabel
-              class="mb-1 text-body-2 text-high-emphasis"
-              text="Flagga*"
-            />  
-            <VTextField
-                v-model="flag"
-                :rules="[requiredValidator]"
-            />
-        </VListItem>
-        <VListItem>
-          <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="32" height="32" />
-        </VListItem>
-
-        <div class="pb-6 px-6 d-flex gap-4 form-actions">
-          <!-- 👉 Submit and Cancel -->
-          <VBtn
-            class="btn-light" 
-            type="reset"
-            @click="closeNavigationDrawer"
-          >
-            Avbryt
-          </VBtn>
-          <VBtn
-            class="btn-gradient"
-            type="submit"
-          >
-            {{ isEdit ? "Uppdatering" : "Lägg till" }}
-          </VBtn>
+      <VListItem>
+        <small class="form-text text-muted">
+          Använd en URL från webbplatsen <br>
+          <a href="https://hatscripts.github.io/circle-flags" target="_blank">https://hatscripts.github.io/circle-flags</a>.<br>
+          Flaggan måste motsvara myntets ursprungsland.<br>
+          Exempel: För den amerikanska dollarn (<strong>USD</strong>), använder du:<br>
+          <code class="p-0">https://hatscripts.github.io/circle-flags/flags/us.svg</code>
+        </small>
+        <div class="mt-2">
+          <img src="https://hatscripts.github.io/circle-flags/flags/us.svg" alt="US Flag" width="32" height="32" />
         </div>
-      </VList>
-    </VForm>
+      </VListItem>
+
+      <VListItem>
+          <VLabel
+            class="mb-1 text-body-2 text-high-emphasis"
+            text="Namnet*"
+          />
+          <VTextField
+              v-model="name"
+              :rules="[requiredValidator]"
+          />
+      </VListItem>
+      <VListItem>
+          <VLabel
+            class="mb-1 text-body-2 text-high-emphasis"
+            text="Kod*"
+          />
+          <VTextField
+              v-model="code"
+              :rules="[requiredValidator]"
+          />
+      </VListItem>
+      <VListItem>
+          <VLabel
+            class="mb-1 text-body-2 text-high-emphasis"
+            text="Flagga*"
+          />  
+          <VTextField
+              v-model="flag"
+              :rules="[requiredValidator]"
+          />
+      </VListItem>
+      <VListItem>
+        <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="32" height="32" />
+      </VListItem>
+    </VList>
+
+    <div class="pb-6 px-6 d-flex gap-4 form-actions">
+      <!-- 👉 Submit and Cancel -->
+      <VBtn
+        class="btn-light" 
+        type="button"
+        @click="closeNavigationDrawer"
+      >
+        Avbryt
+      </VBtn>
+      <VBtn
+        class="btn-gradient"
+        type="submit"
+      >
+        {{ isEdit ? "Uppdatering" : "Lägg till" }}
+      </VBtn>
+    </div>
+  </VForm>
+
+  <!-- Confirm leave without saving -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>

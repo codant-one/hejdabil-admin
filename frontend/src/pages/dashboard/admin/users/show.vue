@@ -61,70 +61,107 @@ const closeUserDetailDialog = function() {
     <VDialog
         :model-value="props.isDrawerOpen"
         max-width="600"
+        class="action-dialog"
         persistent
         >
         <!-- Dialog close btn -->
-        <DialogCloseBtn @click="closeUserDetailDialog" />
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="closeUserDetailDialog"
+        >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
 
         <!-- Dialog Content -->
-        <VCard title="Användaruppgifter">
-            <VDivider class="mt-4"/>
-            <VCardText>
+        <VCard
+            flat 
+            class="card-form user-mobile mb-4"
+        >
+            <VCardText class="dialog-title-box">
+                <!-- <VIcon size="32" icon="custom-filled-waste" class="action-icon" /> -->
+                <div class="dialog-title">
+                Användaruppgifter
+                </div>
+            </VCardText>
+
+            <VCardText class="dialog-text mb-4">
                 <VRow>
                     <VCol md="6" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Namn"
+                        />
                         <VTextField
                             v-model="name"
-                            label="Namn"
                             readonly
                         />
                     </VCol>
                     <VCol md="6" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Efternamn"
+                        />
                         <VTextField
                             v-model="last_name"
-                            label="Efternamn"
                             readonly
                         />
                     </VCol>
                     <VCol md="12" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="E-post"
+                        />
                         <VTextField
                             v-model="email"
-                            label="E-post"
                             disabled
                         />
                     </VCol>
                     <VCol md="6" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Lösenord"
+                        />
                         <VTextField
                             v-model="phone"
                             type="password"
-                            label="Lösenord"
                             disabled
                         />
                     </VCol>                    
                     <VCol md="6" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Telefon"
+                        />
                         <VTextField
                             v-model="phone"
                             type="tel"
-                            label="Telefon"
                             :readonly="!isPhone"
                             :disabled="isPhone"
                         />
                     </VCol>
                     <VCol cols="12" md="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Adress"
+                        />
                         <VTextarea
                             v-model="address"
                             rows="3"
-                            label="Adress"
                             :readonly="!isAddress"
                             :disabled="isAddress"
                             />
                     </VCol>               
                     <VCol md="12" cols="12">
+                        <VLabel
+                            class="mb-1 text-body-2 text-high-emphasis"
+                            text="Roller som tilldelats användaren"
+                        />
                         <VCombobox
                             v-model="assignedRoles"
                             chips
                             multiple
                             :items="rolesList"
-                            label="Roller som tilldelats användaren"
                             readonly
                         />
                     </VCol>
@@ -133,3 +170,118 @@ const closeUserDetailDialog = function() {
         </VCard>
     </VDialog>
 </template>
+
+<style scoped>
+  @media (max-width: 1023px) {
+    .card-form.user-mobile {
+      .v-list {
+        padding: 28px 24px 40px !important;
+
+        .v-list-item {
+          margin-bottom: 0px;
+          padding: 4px 0 !important;
+          gap: 0px !important;
+
+          .v-input--density-compact {
+            --v-input-control-height: 48px !important;
+          }
+
+          .v-select .v-field {
+            .v-select__selection {
+              align-items: center;
+            }
+
+            .v-field__input > input {
+              top: 0px;
+              left: 0px;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .selector-country {
+            .v-input__prepend {
+              margin-inline-end: 6px !important;
+            }
+          }
+
+          .v-autocomplete .v-field {
+            .v-autocomplete__selection-text {
+              align-items: center;
+              display: flex;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+          }
+
+          .v-text-field {
+            .v-input__control {
+              padding-top: 0;
+
+              .v-field {
+                .v-text-field__prefix {
+                  height: 48px;
+                  color: #454545;
+                }
+              }
+
+              input {
+                min-height: 48px !important;
+                height: 48px !important;
+                padding: 12px 16px;
+              }
+            }
+          }
+
+          .v-input.always-show-prefix {
+            .v-input__control {
+              .v-field {
+                .v-field__input {
+                  padding: 8px 0 !important;
+                }
+              }
+            }
+          }
+        }
+      }
+      & .v-input:not(.v-textarea) {
+        & .v-input__control {
+          .v-field {
+            background-color: #f6f6f6;
+            min-height: 48px !important;
+            height: 48px !important;
+            .v-field-label {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .v-dialog .v-overlay__content {
+    max-height: calc(100dvh - 48px) !important;
+  }
+
+  :deep(.vue-simple-handler) {
+      background: #57F287 !important;
+  }
+  :deep(.cropper-preview-circle) {
+      border: dashed 1px #57F287
+  }
+  :deep(.cropper-background),
+  :deep(.vue-advanced-cropper__foreground) {
+      background-color: transparent !important;
+  }
+</style>
+<route lang="yaml">
+  meta:
+    action: edit
+    subject: users
+</route>

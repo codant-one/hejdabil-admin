@@ -187,7 +187,7 @@ watch(currentData, () => {
       <!-- 👉 Submit and Cancel -->
       <VBtn
         class="btn-light" 
-        type="reset"
+        type="button"
         @click="closeNavigationDrawer"
       >
         Avbryt
@@ -201,7 +201,52 @@ watch(currentData, () => {
     </div>
   </VForm>
 
-
+  <!-- Confirm leave without saving -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>

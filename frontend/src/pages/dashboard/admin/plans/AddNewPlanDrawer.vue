@@ -3,6 +3,8 @@
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { handleDecimalTextFieldKeydown, decimalRangeValidator, normalizeDecimalTextInput, numericRangeValidator } from '@/@core/utils/numericTextField'
 import { requiredValidator } from '@/@core/utils/validators'
+import 'vue-advanced-cropper/dist/style.css'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -23,7 +25,8 @@ const emit = defineEmits([
   'update:isDrawerOpen',
   'planData',
   'alert',
-  'loading'
+  'loading',
+  'edited'
 ])
 
 const isFormValid = ref(false)
@@ -39,8 +42,34 @@ const features = ref([])
 const isEdit = ref(false)
 const nonNegativeDecimalRules = [decimalRangeValidator({ min: 0 })];
 
+const initialData = ref(null)
+const isConfirmLeaveVisible = ref(false)
+
+const currentData = computed(() => ({
+  id: id.value,
+  name: name.value,
+  description: description.value,
+  price_month: price_month.value,
+  price_annual: price_annual.value,
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera plan': 'Lägg till plan'
+})
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false,
 })
 
 watchEffect(async() => {
@@ -62,11 +91,17 @@ watchEffect(async() => {
 
     features.value = props.features
     isFormValid.value = true
+
+    // snapshot initial state after fields are populated
+    nextTick(() => {
+      initialData.value = { ...currentData.value }
+      emit('edited', false)
+    })
   }
 })
 
 // 👉 drawer close
-const closeNavigationDrawer = () => {
+const reallyCloseAndReset = () => {
   emit('update:isDrawerOpen', false)
   nextTick(() => {
     refForm.value?.resetValidation()
@@ -81,7 +116,23 @@ const closeNavigationDrawer = () => {
     
     isEdit.value = false 
     id.value = 0
+    initialData.value = null
+    emit('edited', false)
   })
+}
+
+defineExpose({
+  reallyCloseAndReset,
+})
+
+// 👉 drawer close
+const closeNavigationDrawer = () => {
+  if (isDirty.value) {
+    isConfirmLeaveVisible.value = true
+    
+    return
+  }
+  reallyCloseAndReset()
 }
 
 const onSubmit = () => {
@@ -97,16 +148,33 @@ const onSubmit = () => {
 
       emit('planData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
-      setTimeout(() => {
-          closeNavigationDrawer()
-      }, 1000)
+      // setTimeout(() => {
+      //     closeNavigationDrawer()
+      // }, 1000)
     }
   })
 }
 
 const handleDrawerModelValueUpdate = val => {
-  emit('update:isDrawerOpen', val)
+  if (val === false) {
+    if (isDirty.value) {
+      // keep drawer open and show confirm dialog
+      emit("update:isDrawerOpen", true)
+      isConfirmLeaveVisible.value = true
+      
+      return
+    }
+    reallyCloseAndReset()
+    
+    return
+  }
+  emit("update:isDrawerOpen", val)
 }
+
+watch(currentData, () => {
+  if (!initialData.value) return
+  emit('edited', isDirty.value)
+}, { deep: true })
 
 </script>
 
@@ -115,13 +183,13 @@ const handleDrawerModelValueUpdate = val => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content"
+    class="scrollable-content right-drawer rounded-left-4"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
     <!-- 👉 Title -->
     <div class="d-flex align-center pa-6 pb-1">
-      <h6 class="text-h6">
+      <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
 
@@ -129,24 +197,27 @@ const handleDrawerModelValueUpdate = val => {
 
       <!-- 👉 Close btn -->
       <VBtn
-        variant="tonal"
-        color="default"
         icon
-        size="32"
-        class="rounded btn-close-plan"
+        class="btn-white"
         @click="closeNavigationDrawer"
       >
         <VIcon
-          size="18"
-          icon="tabler-x"
+          size="20"
+          icon="custom-close"
         />
-      </VBTn>
+      </VBtn>
     </div>
     
     <VDivider class="mt-4"/>
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }">
-      <VCard flat class="card-plan">
+    <PerfectScrollbar 
+      :options="{ wheelPropagation: false }"
+      class="scrollbar-no-border"
+    >
+      <VCard 
+        flat 
+        class="card-form plan-desktop"
+      >
         <VCardText>
           <!-- 👉 Form -->
           <VForm
@@ -156,67 +227,99 @@ const handleDrawerModelValueUpdate = val => {
             @submit.prevent="onSubmit"
           >
             <VRow>
+              <VCol
+                v-if="advisor.show"
+                cols="12"
+                md="12"
+              >
+                <VAlert
+                  :color="advisor.type"
+                  class="alert-no-shrink custom-alert"
+                  style="flex: none;"
+                >
+                  <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+                </VAlert>
+              </VCol>
+
               <VCol cols="12" md="12">
-                  <VTextField
-                      v-model="name"
-                      label="Namnet"
-                      :rules="[requiredValidator]"
-                  />
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Namnet*"
+                />
+                <VTextField
+                  v-model="name"
+                  :rules="[requiredValidator]"
+                />
               </VCol>
               <VCol cols="12" md="12">
-                  <VTextarea
-                      v-model="description"
-                      rows="3"
-                      label="Beskrivning"
-                      :rules="[requiredValidator]"
-                  />
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Beskrivning*"
+                />
+                <VTextarea
+                  v-model="description"
+                  rows="3"
+                  :rules="[requiredValidator]"
+                />
               </VCol>
               <VCol cols="12" md="6">
-                  <VTextField
-                      v-model="price_month"
-                      label="Månadpris"
-                      type="number"
-                      :rules="[requiredValidator, ...nonNegativeDecimalRules]"
-                      @input="price_month = normalizeDecimalTextInput(price_month)"
-                      @keydown="handleDecimalTextFieldKeydown"
-                  />
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Månadspris*"
+                />
+                <VTextField
+                  v-model="price_month"
+                  type="number"
+                  :rules="[requiredValidator, ...nonNegativeDecimalRules]"
+                  @input="price_month = normalizeDecimalTextInput(price_month)"
+                  @keydown="handleDecimalTextFieldKeydown"
+                />
               </VCol>
               <VCol cols="12" md="6">
-                  <VTextField
-                      v-model="price_annual"
-                      label="Årspris"
-                      type="number"
-                      :rules="[requiredValidator, ...nonNegativeDecimalRules]"
-                      @input="price_annual = normalizeDecimalTextInput(price_annual)"
-                      @keydown="handleDecimalTextFieldKeydown"
-                  />
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Årspris*"
+                />
+                <VTextField
+                  v-model="price_annual"
+                  type="number"
+                  :rules="[requiredValidator, ...nonNegativeDecimalRules]"
+                  @input="price_annual = normalizeDecimalTextInput(price_annual)"
+                  @keydown="handleDecimalTextFieldKeydown"
+                />
               </VCol>
               <VCol cols="12" md="6">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Features" />
-                  <VCheckbox
-                      v-for="feature in features"
-                      v-model="selectedFeatures"
-                      :label="feature.name"
-                      :value="feature.id"
-                      hide-details
-                  />
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Features"
+                />
+                <VCheckbox
+                  v-for="feature in features"
+                  v-model="selectedFeatures"
+                  class="ps-4"
+                  :label="feature.name"
+                  :value="feature.id"
+                  hide-details
+                />
               </VCol>
 
               <!-- 👉 Submit and Cancel -->
-              <VCol cols="12">
+              <VCol
+                cols="12"
+                class="pb-0"
+              >
                 <VBtn
-                  type="submit"
-                  class="me-3"
-                >
-                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
-                </VBtn>
-                <VBtn
-                  type="reset"
-                  variant="tonal"
-                  color="secondary"
+                  type="button"
+                  class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
                   Avbryt
+                </VBtn>
+                <VBtn
+                  type="submit"
+                  class="btn-gradient"
+                >
+                  {{ isEdit ? "Uppdatering" : "Lägg till" }}
                 </VBtn>
               </VCol>
             </VRow>
@@ -225,9 +328,148 @@ const handleDrawerModelValueUpdate = val => {
       </VCard>
     </PerfectScrollbar>
   </VNavigationDrawer>
+
+  <!-- Confirm leave without saving -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>
+
+  @media (min-width: 1024px) {
+    .card-form.plan-desktop {
+      .v-input:not(.v-textarea) {
+        .v-input__control {
+          .v-field {
+            background-color: #f6f6f6 !important;
+            min-height: 40px !important;
+            /*height: 40px !important;*/
+
+            .v-text-field__suffix {
+              padding: 8px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 40px !important;
+              /*height: 40px !important;*/
+              padding: 8px 16px !important;
+
+              input {
+                min-height: 40px !important;
+                height: 40px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+
+            .v-text-field__prefix {
+              height: 40px;
+            }
+          }
+        }
+      }
+
+      .v-input.always-show-prefix {
+        .v-input__control {
+          .v-field {
+            .v-field__input {
+              padding: 8px 0 !important;
+            }
+          }
+        }
+      }
+
+      .v-select .v-field {
+        .v-select__selection {
+            align-items: center;
+            color: #454545;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 18px;
+
+        }
+
+        .v-field__input input::placeholder,
+        input.v-field__input::placeholder,
+        .v-field__input textarea::placeholder,
+        textarea.v-field__input::placeholder {
+            color: #454545 !important;
+            opacity: 1 !important;
+          }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
+        }
+      }
+
+    }
+  }
+
+  :deep(.vue-simple-handler) {
+      background: #57F287 !important;
+  }
+  :deep(.cropper-preview-circle) {
+      border: dashed 1px #57F287
+  }
+  :deep(.cropper-background),
+  :deep(.vue-advanced-cropper__foreground) {
+      background-color: transparent !important;
+  }
+
   .btn-close-plan {
     height: 32px !important;
   }

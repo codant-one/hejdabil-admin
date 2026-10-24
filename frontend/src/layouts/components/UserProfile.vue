@@ -162,7 +162,7 @@ const logout = async () => {
             <template #prepend>
               <VIcon
                 class="me-2"
-                icon="mdi-account-lock-open"
+                icon="custom-profile"
                 size="22"
               />
             </template>
@@ -175,7 +175,7 @@ const logout = async () => {
             <template #prepend>
               <VIcon
                 class="me-2"
-                icon="mdi-account"
+                icon="custom-users"
                 size="22"
               />
             </template>

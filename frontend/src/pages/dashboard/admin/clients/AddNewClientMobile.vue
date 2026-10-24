@@ -852,7 +852,7 @@ const truncateText = (text, length = 30) => {
       <!-- 👉 Submit and Cancel -->
       <VBtn
         class="btn-light" 
-        type="reset"
+        type="button"
         @click="closeNavigationDrawer"
       >
         Avbryt

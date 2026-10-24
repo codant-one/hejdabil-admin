@@ -8,6 +8,7 @@ import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewCountryDrawer from './AddNewCountryDrawer.vue' 
+import AddNewCountryMobile from './AddNewCountryMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -131,16 +132,6 @@ async function fetchData(cleanFilters = false) {
 }
 
 watchEffect(registerEvents)
-
-const updateStateId = (newStateId) => {
-  // Si ya está seleccionado, desmarcarlo (poner null)
-  if (state_id.value === newStateId) {
-    newStateId = null;
-  }
-  
-  state_id.value = newStateId;
-  filtreraMobile.value = false;
-};
 
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
@@ -951,6 +942,7 @@ onBeforeUnmount(() => {
 
     <!-- 👉 Add New Country -->
     <AddNewCountryDrawer
+      ref="addNewCountryDrawerRef"
       v-model:isDrawerOpen="isAddNewCountryDrawerVisible"
       :country="selectedCountry"
       @country-data="submitForm"
@@ -1023,6 +1015,24 @@ onBeforeUnmount(() => {
               Acceptera
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Add New Client Mobile Dialog -->
+    <VDialog
+      v-model="isDialogOpen"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+      @update:model-value="handleMobileDialogUpdate"
+    >
+      <VCard>
+        <AddNewCountryMobile
+          ref="addNewCountryMobileRef"
+          v-model:isDrawerOpen="isDialogOpen"
+          :country="selectedCountry"
+          @country-data="submitForm"
+          @edited="onCountryFormEdited"
+        />
       </VCard>
     </VDialog>
 

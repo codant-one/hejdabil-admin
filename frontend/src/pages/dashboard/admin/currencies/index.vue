@@ -83,7 +83,9 @@ const paginationData = computed(() => {
   const firstIndex = currencies.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = currencies.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCurrencies.value } register`
+  return `${totalCurrencies.value} resultat`;
+
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCurrencies.value } register`
 })
 
 // 👉 watching current page
