@@ -12,6 +12,7 @@ import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import countries from '@/api/countries'
 
 const activitiesStore = useActivitiesStore()
 const emitter = inject('emitter')
@@ -59,7 +60,8 @@ const modules = [
   { name: 'Märke', id: 'brands' },
   { name: 'Modell', id: 'models' },
   { name: 'Attribut fakturor', id: 'invoices' },
-  { name: 'Valuta', id: 'currencies' }
+  { name: 'Valuta', id: 'currencies' },
+  { name: 'Land', id: 'countries' }
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -76,6 +78,7 @@ const MODULE_PERMISSION_SUBJECTS = {
   documents: ['signed-documents'],
   payouts: ['payouts'],
   notes: ['notes'],
+  countries: ['countries']
 }
 
 const hasModuleAccess = moduleId => {
@@ -136,7 +139,8 @@ const activityModuleLabels = {
   vehicles: 'Fordonslager',
   brands: 'Märke',
   models: 'Modell',
-  currencies: 'Valuta'
+  currencies: 'Valuta',
+  countries: 'Land'
 }
 
 const activityModuleSingularLabels = {
@@ -155,7 +159,8 @@ const activityModuleSingularLabels = {
   vehicles: 'Fordon',
   brands: 'Märke',
   models: 'Modell',
-  currencies: 'Valuta'
+  currencies: 'Valuta',
+  countries: 'Land'
 }
 
 const activityActionLabels = {
@@ -286,7 +291,17 @@ const activityFieldLabels = {
   account_number: 'Kontonummer',
   payout_number: 'Utbetalningsnummer',
   position: 'Roll',
-  permissions: 'Behörigheter'
+  permissions: 'Behörigheter',
+  logo: 'Logotyp',
+  url: 'Hemsida',
+  type_id: 'Typ',
+  code: 'Kod',
+  flag: 'Flagga',
+  iso: 'ISO',
+  iso3: 'ISO 3',
+  numcode: 'ISO sifferkod',
+  phonecode: 'Telefonkod',
+  phone_digits: 'Maximalt antal telefonnummer'
 }
 
 // 👉 Computing pagination data

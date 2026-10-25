@@ -2,6 +2,9 @@
 
 import { handleNumericTextFieldKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { requiredValidator, minLengthNonDigitsValidator } from '@/@core/utils/validators'
+import { Cropper } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -32,7 +35,9 @@ const phonecode = ref('')
 const phone_digits = ref('')
 const flag = ref('')
 const flagFile = ref([])
-const flagOld = ref(null)
+const cropper = ref()
+const isFlagLoading = ref(false)
+let flagSelectionId = 0
 const isEdit = ref(false)
 const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
 
@@ -107,7 +112,9 @@ const reallyCloseAndReset = () => {
     phone_digits.value = ''
     flag.value = ''
     flagFile.value = []
-    flagOld.value = null
+    flagSelectionId++
+    isFlagLoading.value = false
+    advisor.value = { type: '', message: '', show: false }
     isFormValid.value = false
     
     isEdit.value = false 
@@ -131,56 +138,13 @@ const closeNavigationDrawer = () => {
   reallyCloseAndReset()
 }
 
-const resizeImage = function(file, maxWidth, maxHeight, quality, mimeType = 'image/png') {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-
-    img.src = URL.createObjectURL(file)
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-
-      let width = img.width
-      let height = img.height
-
-      if (maxWidth && width > maxWidth) {
-        height *= maxWidth / width
-        width = maxWidth
-      }
-
-      if (maxHeight && height > maxHeight) {
-        width *= maxHeight / height
-        height = maxHeight
-      }
-
-      canvas.width = width
-      canvas.height = height
-
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob(blob => {
-        resolve(blob)
-      }, mimeType, quality)
-    }
-    img.onerror = error => {
-      reject(error)
-    }
-  })
-}
-
-const blobToBase64 = blob => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.readAsDataURL(blob)
-    reader.onload = () => {
-      resolve(reader.result.split(',')[1])
-    }
-    reader.onerror = error => {
-      reject(error)
-    }
-  })
+const showFlagError = () => {
+  isFlagLoading.value = false
+  advisor.value = {
+    type: 'error',
+    message: 'Bilden kunde inte laddas eller beskäras. Välj bilden igen.',
+    show: true,
+  }
 }
 
 const onImageSelected = files => {
@@ -188,31 +152,51 @@ const onImageSelected = files => {
     ? files[0]
     : (files?.[0] || files)
 
-  if (!file) {
-    flag.value = ''
-    flagFile.value = []
-    return
+  resetFlag()
+  if (!file) return
+
+  isFlagLoading.value = true
+  const selectionId = flagSelectionId
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (selectionId !== flagSelectionId) return
+    flag.value = reader.result
   }
-  flagOld.value = file
-
-  URL.createObjectURL(file)
-
-  resizeImage(file, 400, 400, 0.9)
-    .then(async blob => {
-      flagOld.value = blob
-      let r = await blobToBase64(blob)
-      flag.value = 'data:image/png;base64,' + r
-    })
+  reader.onerror = () => {
+    if (selectionId === flagSelectionId) showFlagError()
+  }
+  reader.readAsDataURL(file)
 }
 
 const resetFlag = () => {
+  flagSelectionId++
   flag.value = ''
-  flagFile.value = []
+  isFlagLoading.value = false
+  advisor.value = { type: '', message: '', show: false }
 }
 
 const onSubmit = () => {
-  refForm.value?.validate().then(({ valid }) => {
+  refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
+      let flagBlob = null
+      if (flagFile.value?.length) {
+        const canvas = cropper.value?.getResult()?.canvas
+        if (isFlagLoading.value || !canvas) {
+          showFlagError()
+          return
+        }
+        try {
+          flagBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+        } catch (error) {
+          showFlagError()
+          return
+        }
+        if (!flagBlob) {
+          showFlagError()
+          return
+        }
+      }
+
       let formData = new FormData()
 
       formData.append('name', name.value)
@@ -222,9 +206,9 @@ const onSubmit = () => {
       formData.append('phonecode', phonecode.value)
       formData.append('phone_digits', phone_digits.value)
 
-      if (flagOld.value instanceof Blob) {
+      if (flagBlob) {
         const isoFileName = String(iso.value || 'flag').trim().toLowerCase()
-        formData.append('flag', flagOld.value, `${isoFileName}.png`)
+        formData.append('flag', flagBlob, `${isoFileName}.png`)
       }
 
       emit('countryData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
@@ -280,6 +264,35 @@ watch(currentData, () => {
         </VAlert>
       </VListItem>
 
+      <VListItem v-if="flag">
+        <Cropper
+          v-if="flagFile.length"
+          ref="cropper"
+          class="cropper-container"
+          background-class="cropper-background"
+          :src="flag"
+          :canvas="{ maxWidth: 1200, maxHeight: 1200 }"
+          :stencil-props="{ previewClass: 'cropper-preview-circle' }"
+          @ready="isFlagLoading = false"
+          @error="showFlagError"
+        />
+        <VImg v-else :src="flag" height="120" contain />
+      </VListItem>
+      <VListItem>
+        <VLabel
+          class="mb-1 text-body-2 text-high-emphasis"
+          text="Flagga*"
+        />
+        <VFileInput
+          v-model="flagFile"
+          class="mb-2"
+          accept="image/png, image/jpeg, image/bmp, image/webp"
+          prepend-icon="tabler-camera"
+          :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
+          @update:model-value="onImageSelected"
+          @click:clear="resetFlag"
+        />
+      </VListItem>
       <VListItem>
         <VLabel
           class="mb-1 text-body-2 text-high-emphasis"
@@ -353,30 +366,6 @@ watch(currentData, () => {
           @keydown="handleNumericTextFieldKeydown"
         />
       </VListItem>
-      <VListItem>
-        <VAvatar
-          rounded
-          :size="120"
-          class="me-md-6 mb-2"
-          :color="flag ? 'default' : 'primary'"
-          variant="tonal"
-        >
-          <VImg
-            style="border-radius: 6px;"
-            :src="flag"
-          />
-        </VAvatar>
-
-        <VFileInput                          
-          v-model="flagFile"
-          accept="image/png, image/jpeg, image/bmp"
-          placeholder="Avatar"
-          prepend-icon=""
-          :rules="isEdit ? [] : [requiredValidator]"
-          @update:model-value="onImageSelected"
-          @click:clear="resetFlag"
-        />
-      </VListItem>
     </VList>
     <!-- 👉 Submit and Cancel -->
     <div class="pb-6 px-6 d-flex gap-4 form-actions">
@@ -391,6 +380,7 @@ watch(currentData, () => {
       <VBtn
         class="btn-gradient"
         type="submit"
+        :disabled="isFlagLoading"
       >
         {{ isEdit ? "Uppdatering" : "Lägg till" }}
       </VBtn>
@@ -446,6 +436,25 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
+  .cropper-container {
+    width: 100%;
+    height: 250px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  :deep(.vue-simple-handler) {
+    background: #57F287 !important;
+  }
+  :deep(.cropper-preview-circle) {
+    border: dashed 1px #57F287;
+  }
+  :deep(.cropper-background),
+  :deep(.vue-advanced-cropper__foreground) {
+    background-color: transparent !important;
+  }
+
   @media (max-width: 1023px) {
     .card-form.country-mobile {
       .v-list {
@@ -552,8 +561,17 @@ watch(currentData, () => {
   :deep(.cropper-background),
   :deep(.vue-advanced-cropper__foreground) {
       background-color: transparent !important;
+  } 
+  
+  .v-btn {
+    width: 100%;
   }
 
+  .form-actions {
+    .v-btn {
+      flex: 1;
+    }
+  }
 
   .btn-close-country {
     height: 32px !important;

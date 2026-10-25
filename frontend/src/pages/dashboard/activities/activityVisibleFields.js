@@ -652,6 +652,17 @@ export const activityVisibleFieldsByModule = {
     'flag',
     'description',
     'state_id'
+  ],
+  countries: [
+    'name',
+    'iso',
+    'iso3',
+    'numcode',
+    'phonecode',
+    'numcode',
+    'phone_digits',
+    'flag',
+    'state_id'
   ]
 }
 

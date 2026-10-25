@@ -7,9 +7,12 @@ use Illuminate\Support\Collection;
 use App\Models\Offer;
 use App\Models\SupplierActivity;
 use App\Models\Commission;
+use App\Models\Type;
 
 class ActivityMetadataResolver
 {
+    private ?Collection $invoiceTypes = null;
+
     public function enrichCollection(Collection $activities): Collection
     {
         return $activities->map(function (SupplierActivity $activity) {
@@ -99,6 +102,7 @@ class ActivityMetadataResolver
             'commission_id' => $this->resolveCommissionValue($value),
             'payment_type_id' => $this->resolveFromCatalog(CacheService::getPaymentTypes(), $value),
             'payout_state_id' => $this->resolveFromCatalog(CacheService::getPayoutStates(), $value),
+            'type_id' => $this->resolveFromCatalog($this->invoiceTypes ??= Type::all(), $value),
             'user_id' => $this->resolveUserValue($value),
             'state_id', 'state_id_interchange' => $this->resolveFromCatalog(CacheService::getStates(), $value),
             default => $value,

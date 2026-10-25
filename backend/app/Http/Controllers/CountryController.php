@@ -103,13 +103,14 @@ class CountryController extends Controller
                 'route' => null, //'/dashboard/admin/countries/'.$country->id,
                 'metadata' => json_encode([
                     'country_id' => $country->id,
-                    'new_values' => $request->only([
+                    'new_values' => $country->only([
                         'name',
                         'iso',
                         'iso3',
                         'numcode',
                         'phonecode',
-                        'phone_digits'
+                        'phone_digits',
+                        'flag'
                     ])
                 ])
             ]);
@@ -170,16 +171,6 @@ class CountryController extends Controller
     {
         try {
             $country = Country::find($id);
-        
-            if ($request->hasFile('flag')) {
-                $file = $request->file('flag');
-                $path = 'flags/';
-
-                $file_data = uploadFileWithOriginalName($file, $path, $country->flag);
-
-                $country->flag = $file_data['filePath'];
-                $country->update();
-            } 
             
             if (!$country)
                 return response()->json([
@@ -188,7 +179,12 @@ class CountryController extends Controller
                     'message' => 'Land hittades inte'
                 ], 404);
             
-            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits']);
+            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag']);
+
+            if ($request->hasFile('flag')) {
+                $file_data = uploadFile($request->file('flag'), 'flags/', $country->flag);
+                $country->flag = $file_data['filePath'];
+            }
 
             $country->updateCountry($request, $country); 
 
@@ -205,8 +201,8 @@ class CountryController extends Controller
                 'metadata' => json_encode([
                     'country_id' => $country->id,
                     'old_values' => $oldValues,
-                    'new_values' => $request->only([
-                        'name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits'
+                    'new_values' => $country->only([
+                        'name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag'
                     ])
                 ])
             ]);
@@ -243,7 +239,7 @@ class CountryController extends Controller
                     'message' => 'Land hittades inte'
                 ], 404);
             
-            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits']);
+            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag']);
             
             $country->deleteCountry($id);
 
