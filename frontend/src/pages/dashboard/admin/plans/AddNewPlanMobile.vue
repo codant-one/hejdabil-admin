@@ -254,7 +254,7 @@ watch(currentData, () => {
         <VCheckbox
           v-for="feature in features"
           v-model="selectedFeatures"
-          class="ps-4"
+          class="ps-2"
           :label="feature.name"
           :value="feature.id"
           hide-details
@@ -450,5 +450,14 @@ watch(currentData, () => {
   }
   .border-img .v-img__img--contain {
       padding: 10px;
+  }
+  .v-btn {
+    width: 100%;
+  }
+
+  .form-actions {
+    .v-btn {
+      flex: 1;
+    }
   }
 </style>

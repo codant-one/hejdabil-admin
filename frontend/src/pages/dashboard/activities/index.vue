@@ -61,7 +61,8 @@ const modules = [
   { name: 'Modell', id: 'models' },
   { name: 'Attribut fakturor', id: 'invoices' },
   { name: 'Valuta', id: 'currencies' },
-  { name: 'Land', id: 'countries' }
+  { name: 'Land', id: 'countries' },
+  { name: 'Planer', id: 'plans'}
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -78,7 +79,8 @@ const MODULE_PERMISSION_SUBJECTS = {
   documents: ['signed-documents'],
   payouts: ['payouts'],
   notes: ['notes'],
-  countries: ['countries']
+  countries: ['countries'],
+  plans: ['plans']
 }
 
 const hasModuleAccess = moduleId => {
@@ -140,7 +142,8 @@ const activityModuleLabels = {
   brands: 'Märke',
   models: 'Modell',
   currencies: 'Valuta',
-  countries: 'Land'
+  countries: 'Land',
+  plans: 'Planer'
 }
 
 const activityModuleSingularLabels = {
@@ -160,7 +163,8 @@ const activityModuleSingularLabels = {
   brands: 'Märke',
   models: 'Modell',
   currencies: 'Valuta',
-  countries: 'Land'
+  countries: 'Land',
+  plans: 'Planer'
 }
 
 const activityActionLabels = {
@@ -301,7 +305,10 @@ const activityFieldLabels = {
   iso3: 'ISO 3',
   numcode: 'ISO sifferkod',
   phonecode: 'Telefonkod',
-  phone_digits: 'Maximalt antal telefonnummer'
+  phone_digits: 'Maximalt antal telefonnummer',
+  price_month: 'Månadspris',
+  price_annual: 'Årspris'
+
 }
 
 // 👉 Computing pagination data

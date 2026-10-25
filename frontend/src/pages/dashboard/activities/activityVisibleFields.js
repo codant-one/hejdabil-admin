@@ -1,4 +1,5 @@
 import { formatDateTime, formatDateYMD, formatNumber, formatNumberInteger, formatCommentDate } from '@/@core/utils/formatters'
+import plans from '@/api/plans'
 
 const formatterRegistry = {
   formatDateTime,
@@ -662,6 +663,14 @@ export const activityVisibleFieldsByModule = {
     'numcode',
     'phone_digits',
     'flag',
+    'state_id'
+  ],
+  plans: [
+    'name',
+    'description',
+    'price_month',
+    'price_annual',
+    customField('features', value => value.map(feature => feature.name).join(', '), { label: 'Funktioner' }),
     'state_id'
   ]
 }

@@ -68,11 +68,6 @@ const sectionEl = ref(null);
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
-const states = ref ([
-  { id: 2, name: "Aktiv" },
-  { id: 1, name: "Inaktiv" }
-])
-
 const advisor = ref({
   type: '',
   message: '',
@@ -135,6 +130,15 @@ async function fetchData(cleanFilters = false) {
 }
 
 watchEffect(registerEvents)
+
+const updateStateId = (newStateId) => {
+  if (state_id.value === newStateId) {
+    newStateId = null;
+  }
+
+  state_id.value = newStateId;
+  filtreraMobile.value = false;
+};
 
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
@@ -447,7 +451,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'plans.pdf',
+        filename: 'planer.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -664,23 +668,50 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <div class="d-flex align-center empty-select" :style="windowWidth < 1024 ? 'width: 96px' : ''">
-          <VSelect
-            v-model="state_id"
-            placeholder="Status"
-            class="custom-select-hover"
-            :items="states"
-            item-title="name"
-            item-value="id"
-            clearable
-          >
-            <template #selection="{ item }">
-              <div class="activity-mode-option">
-                {{ item.raw.name }}
-              </div>
-            </template>
-          </VSelect>
-        </div>
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStateId(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Inaktiv</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(2)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 2"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Aktiv</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.mdAndDown"
@@ -705,9 +736,9 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col"> #ID </th>
             <th scope="col"> Namnet </th>
-            <th scope="col"> Månadspris </th>
-            <th scope="col"> Årspris</th>
-            <th scope="col"> Status </th>
+            <th scope="col" class="text-center"> Månadspris </th>
+            <th scope="col" class="text-center"> Årspris</th>
+            <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('edit', 'plans') || $can('delete', 'plans')"></th>
           </tr>
         </thead>
@@ -728,9 +759,9 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </td>
-            <td> {{ plan.price_month }} </td>
-            <td> {{ plan.price_annual }} </td>
-            <td class="text-wrap">
+            <td class="text-center"> {{ plan.price_month }} </td>
+            <td class="text-center"> {{ plan.price_annual }} </td>
+            <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(plan.state.id)?.class}`"
@@ -796,7 +827,7 @@ onBeforeUnmount(() => {
           icon="custom-f-payment"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Inga plan skapade än</div>
+          <div class="empty-state-title"> Inga plan skapade än</div>
           <div class="empty-state-text">
             Här kommer alla dina skapade plan att listas.
           </div>
@@ -813,7 +844,7 @@ onBeforeUnmount(() => {
         <VBtn
           class="btn-ghost"
           v-if="$vuetify.display.mdAndDown && $can('create', 'plans')"
-          @click="isAddNewPlanDrawerVisible = true"
+          @click="isDialogOpen = true"
         >
           Skapa ny plan
           <VIcon icon="custom-arrow-right" size="24" />
@@ -1035,6 +1066,41 @@ onBeforeUnmount(() => {
               Acceptera
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStateId(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Inaktiv</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(2)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 2"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Aktiv</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
 

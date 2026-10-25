@@ -296,7 +296,7 @@ watch(currentData, () => {
                 <VCheckbox
                   v-for="feature in features"
                   v-model="selectedFeatures"
-                  class="ps-4"
+                  class="ps-2"
                   :label="feature.name"
                   :value="feature.id"
                   hide-details

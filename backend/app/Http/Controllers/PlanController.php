@@ -117,9 +117,7 @@ class PlanController extends Controller
                 'route' => null, //'/dashboard/admin/plans/'.$plan->id,
                 'metadata' => json_encode([
                     'plan_id' => $plan->id,
-                    'new_values' => $request->only([
-                        'name', 'description', 'price_month', 'price_annual'
-                    ])
+                    'new_values' => $this->activityValues($plan)
                 ])
             ]);
 
@@ -152,7 +150,7 @@ class PlanController extends Controller
                 ], 404);
             }
 
-            $oldValues = $plan->only(['name', 'description', 'price_month', 'price_annual']);
+            $oldValues = $this->activityValues($plan);
 
             $plan = Plan::updatePlan($request, $plan);
 
@@ -167,9 +165,7 @@ class PlanController extends Controller
                 'metadata' => json_encode([
                     'plan_id' => $plan->id,
                     'old_values' => $oldValues,
-                    'new_values' => $request->only([
-                        'name', 'description', 'price_month', 'price_annual'
-                    ])
+                    'new_values' => $this->activityValues($plan)
                 ])
             ]);
 
@@ -186,6 +182,18 @@ class PlanController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function activityValues(Plan $plan): array
+    {
+        return [
+            ...$plan->only(['name', 'description', 'price_month', 'price_annual']),
+            'features' => $plan->features()
+                ->orderBy('features.id')
+                ->get(['features.id', 'features.name'])
+                ->map(fn (Feature $feature) => $feature->only(['id', 'name']))
+                ->all(),
+        ];
     }
 
     public function destroy($id)
