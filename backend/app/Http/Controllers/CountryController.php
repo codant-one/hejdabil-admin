@@ -12,6 +12,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Country;
 use App\Services\CacheService;
+use App\Models\SupplierActivity;
 
 class CountryController extends Controller
 {
@@ -92,6 +93,28 @@ class CountryController extends Controller
 
             CacheService::clearCache('countries.all');
 
+            SupplierActivity::createActivity([
+                'entity_id' => $country->id,
+                'entity_type' => 'countries',
+                'action_type' => 'create_country',
+                'title' => 'Land #'.$country->id.' '.$country->name.' tillagt',
+                'description' => 'Ett nytt land har lagts till.',
+                'icon' => 'custom-flag',
+                'route' => null, //'/dashboard/admin/countries/'.$country->id,
+                'metadata' => json_encode([
+                    'country_id' => $country->id,
+                    'new_values' => $country->only([
+                        'name',
+                        'iso',
+                        'iso3',
+                        'numcode',
+                        'phonecode',
+                        'phone_digits',
+                        'flag'
+                    ])
+                ])
+            ]);
+
 
             return response()->json([
                 'success' => true,
@@ -120,7 +143,7 @@ class CountryController extends Controller
 
             if (!$country)
                 return response()->json([
-                    'sucess' => false,
+                    'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Land hittades inte'
                 ], 404);
@@ -148,16 +171,6 @@ class CountryController extends Controller
     {
         try {
             $country = Country::find($id);
-        
-            if ($request->hasFile('flag')) {
-                $file = $request->file('flag');
-                $path = 'flags/';
-
-                $file_data = uploadFileWithOriginalName($file, $path, $country->flag);
-
-                $country->flag = $file_data['filePath'];
-                $country->update();
-            } 
             
             if (!$country)
                 return response()->json([
@@ -165,10 +178,34 @@ class CountryController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Land hittades inte'
                 ], 404);
+            
+            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag']);
+
+            if ($request->hasFile('flag')) {
+                $file_data = uploadFile($request->file('flag'), 'flags/', $country->flag);
+                $country->flag = $file_data['filePath'];
+            }
 
             $country->updateCountry($request, $country); 
 
             CacheService::clearCache('countries.all');
+
+            SupplierActivity::createActivity([
+                'entity_id' => $country->id,
+                'entity_type' => 'countries',
+                'action_type' => 'update_country',
+                'title' => 'Land #'.$country->id.' '.$country->name.' uppdaterad',
+                'description' => 'Ett land har uppdaterats.',
+                'icon' => 'custom-flag',
+                'route' => null, //'/dashboard/admin/countries/'.$country->id,
+                'metadata' => json_encode([
+                    'country_id' => $country->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $country->only([
+                        'name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag'
+                    ])
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -202,9 +239,25 @@ class CountryController extends Controller
                     'message' => 'Land hittades inte'
                 ], 404);
             
+            $oldValues = $country->only(['name', 'iso', 'iso3', 'numcode', 'phonecode', 'phone_digits', 'flag']);
+            
             $country->deleteCountry($id);
 
             CacheService::clearCache('countries.all');
+
+            SupplierActivity::createActivity([
+                'entity_id' => $country->id,
+                'entity_type' => 'countries',
+                'action_type' => 'delete_country',
+                'title' => 'Land #'.$country->id.' '.$country->name.' borttagen',
+                'description' => 'Landet har tagits bort.',
+                'icon' => 'custom-flag',
+                'route' => null, //'/dashboard/admin/countries/'.$country->id,
+                'metadata' => json_encode([
+                    'country_id' => $country->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -239,6 +292,23 @@ class CountryController extends Controller
             $country->update();
 
             CacheService::clearCache('countries.all');
+
+            SupplierActivity::createActivity([
+                'entity_id' => $country->id,
+                'entity_type' => 'countries',
+                'action_type' => $country->state_id === 2 ? 'activate_country' : 'deactivate_country',
+                'title' => 'Land #'.$country->id.' '.$country->name.' '.($country->state_id === 2 ? 'aktiverad' : 'inaktiverad'),
+                'description' => 'Landet har '.($country->state_id === 2 ? 'aktiverats' : 'inaktiverats').'.',
+                'icon' => 'custom-flag',
+                'route' => null, //'/dashboard/admin/countries/'.$country->id,
+                'metadata' => json_encode([
+                    'country_id' => $country->id
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $country->id)
+                ->where('entity_type', 'countries')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

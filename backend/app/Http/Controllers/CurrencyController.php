@@ -211,10 +211,10 @@ class CurrencyController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Valuta hittades inte'
                 ], 404);
-            
-            $currency->deleteCurrency($id);
 
             $oldValues = $currency->only(['name', 'code', 'flag']);
+            
+            $currency->deleteCurrency($id);
 
             SupplierActivity::createActivity([
                 'entity_id' => $currency->id,

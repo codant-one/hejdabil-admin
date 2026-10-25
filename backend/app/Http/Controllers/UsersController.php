@@ -114,6 +114,22 @@ class UsersController extends Controller
                 $subject
             ); 
 
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => 'users_admin',
+                'action_type' => 'create_user',
+                'title' => 'Användare #'.$user->id.' '.$user->name.' '.$user->last_name.' tillagd',
+                'description' => 'En ny användare har lagts till.',
+                'icon' => 'custom-users',
+                'route' => '/dashboard/admin/users/'.$user->id,
+                'metadata' => json_encode([
+                    'user_id' => $user->id,
+                    'new_values' => $request->only([
+                        'name', 'last_name', 'email', 'password'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -139,6 +155,10 @@ class UsersController extends Controller
         try {
 
             $user = User::with('roles', 'userDetail')->find($id);
+
+            $oldValues = $user->only(['name', 'last_name', 'email']);
+            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
+            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
         
             if (!$user)
                 return response()->json([
@@ -148,6 +168,23 @@ class UsersController extends Controller
                 ], 404);
 
             $user->updateUser($request, $user); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => 'users_admin',
+                'action_type' => 'update_user',
+                'title' => 'Användare #'.$user->id.' '.$user->name.' '.$user->last_name.' uppdaterad',
+                'description' => 'En användare har uppdaterats.',
+                'icon' => 'custom-users',
+                'route' => '/dashboard/admin/users/'.$user->id,
+                'metadata' => json_encode([
+                    'user_id' => $user->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $request->only([
+                        'name', 'last_name', 'email', 'personal_address', 'personal_phone'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -173,6 +210,10 @@ class UsersController extends Controller
         try {
 
             $user = User::with('roles', 'userDetail')->find($id);
+
+            $oldValues = $user->only(['name', 'last_name', 'email']);
+            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
+            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
         
             if (!$user)
                 return response()->json([
@@ -182,6 +223,24 @@ class UsersController extends Controller
                 ], 404);
             
             $user->deleteUser($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => 'users_admin',
+                'action_type' => 'delete_user',
+                'title' => 'Användare #'.$user->id.' '.$user->name.' '.$user->last_name.' borttagen',
+                'description' => 'En användare har tagits bort.',
+                'icon' => 'custom-users',
+                'route' => '/dashboard/admin/users/'.$user->id,
+                'metadata' => json_encode([
+                    'user_id' => $user->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $user->id)
+                ->where('entity_type', 'users_admin')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,
@@ -214,6 +273,19 @@ class UsersController extends Controller
                 ], 404);
             
             $user->activateUser($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => 'users_admin',
+                'action_type' => 'activate_user',
+                'title' => 'Användare #'.$user->id.' '.$user->name.' '.$user->last_name.' aktiverad',
+                'description' => 'En användare har aktiverats.',
+                'icon' => 'custom-users',
+                'route' => '/dashboard/admin/users/'.$user->id,
+                'metadata' => json_encode([
+                    'user_id' => $user->id
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -314,6 +386,20 @@ class UsersController extends Controller
                 $subject
             ); 
 
+            SupplierActivity::createActivity([
+                'entity_id' => $user->id,
+                'entity_type' => 'users_admin',
+                'action_type' => 'update_password',
+                'title' => 'Lösenord för '.$user->name.' '.$user->last_name.' uppdaterat',
+                'description' => 'Användarens lösenord har uppdaterats.',
+                'icon' => 'custom-supplier',
+                'route' => '/dashboard/admin/users/'.$user->id,
+                'metadata' => json_encode([
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ])
+            ]);
+
 
             return response()->json([
                 'success' => true,
@@ -363,9 +449,9 @@ class UsersController extends Controller
             $user->password = Hash::make($request->password);
             $user->save();
 
-            $entity_type = $request->type === 'suppliers' ? 'suppliers' : 'users';
-            $action_type = $request->type === 'suppliers' ? 'password_suppliers' : 'password_users';
-            $route = $request->type === 'suppliers' ? '/dashboard/admin/suppliers' : '/dashboard/admin/users';
+            $entity_type = $request->type === 'suppliers' ? 'suppliers' : ( $request->type === 'users_admin' ? 'users_admin' : 'users');
+            $action_type = $request->type === 'suppliers' ? 'password_suppliers' : ( $request->type === 'users_admin' ? 'password_users_admin' : 'password_users');
+            $route = $request->type === 'suppliers' ? '/dashboard/admin/suppliers' : ($request->type === 'users_admin' ? '/dashboard/admin/users-admin/' : null);
 
             SupplierActivity::createActivity([
                 'entity_id' => $user->id,
@@ -374,7 +460,7 @@ class UsersController extends Controller
                 'title' => 'Lösenord för '.$user->name.' '.$user->last_name.' uppdaterat',
                 'description' => 'Användarens lösenord har uppdaterats.',
                 'icon' => 'custom-supplier',
-                'route' => $route,
+                'route' => $route ? $route . $user->id : null,
                 'metadata' => json_encode([
                     'user_id' => $user->id,
                     'email' => $user->email,

@@ -183,7 +183,7 @@ const redirectToPayoutsAndOpenDialog = () => {
                   v-bind="item.icon || themeConfig.verticalNav.defaultNavItemIconProps"
                   class="nav-item-icon"
                 />
-                <div class="d-flex w-100 justify-between align-center">
+                <div class="d-flex w-100 justify-between align-center pe-2">
                 <span>{{ item.title }}</span>
                 <component
                   :is="themeConfig.app.iconRenderer || 'div'"

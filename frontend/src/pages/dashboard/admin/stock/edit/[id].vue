@@ -4500,7 +4500,7 @@ onBeforeRouteLeave((to, from, next) => {
 <style lang="scss">
 .card-form {
   .v-list {
-    padding: 28px 24px 40px !important;
+    padding: 28px 24px 24px !important;
 
     .v-list-item {
       margin-bottom: 0px;

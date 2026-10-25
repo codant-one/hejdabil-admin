@@ -11,6 +11,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Plan;
 use App\Models\Feature;
+use App\Models\SupplierActivity;
 
 class PlanController extends Controller
 {
@@ -106,6 +107,20 @@ class PlanController extends Controller
         try {
             $plan = Plan::createPlan($request);
 
+            SupplierActivity::createActivity([
+                'entity_id' => $plan->id,
+                'entity_type' => 'plans',
+                'action_type' => 'create_plan',
+                'title' => 'Plan #'.$plan->id.' '.$plan->name.' tillagd',
+                'description' => 'En ny plan har lagts till.',
+                'icon' => 'custom-cash',
+                'route' => null, //'/dashboard/admin/plans/'.$plan->id,
+                'metadata' => json_encode([
+                    'plan_id' => $plan->id,
+                    'new_values' => $this->activityValues($plan)
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -135,7 +150,24 @@ class PlanController extends Controller
                 ], 404);
             }
 
+            $oldValues = $this->activityValues($plan);
+
             $plan = Plan::updatePlan($request, $plan);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $plan->id,
+                'entity_type' => 'plans',
+                'action_type' => 'update_plan',
+                'title' => 'Plan #'.$plan->id.' '.$plan->name.' uppdaterad',
+                'description' => 'En plan har uppdaterats.',
+                'icon' => 'custom-cash',
+                'route' => null, //'/dashboard/admin/plans/'.$plan->id,
+                'metadata' => json_encode([
+                    'plan_id' => $plan->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $this->activityValues($plan)
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -152,6 +184,18 @@ class PlanController extends Controller
         }
     }
 
+    private function activityValues(Plan $plan): array
+    {
+        return [
+            ...$plan->only(['name', 'description', 'price_month', 'price_annual']),
+            'features' => $plan->features()
+                ->orderBy('features.id')
+                ->get(['features.id', 'features.name'])
+                ->map(fn (Feature $feature) => $feature->only(['id', 'name']))
+                ->all(),
+        ];
+    }
+
     public function destroy($id)
     {
         try {
@@ -165,7 +209,23 @@ class PlanController extends Controller
                     'message' => 'Planen hittades inte'
                 ], 404);
 
+            $oldValues = $plan->only(['name', 'description', 'price_month', 'price_annual', 'state_id']);
+
             Plan::deletePlan($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $plan->id,
+                'entity_type' => 'plans',
+                'action_type' => 'delete_plan',
+                'title' => 'Plan #'.$plan->id.' '.$plan->name.' borttagen',
+                'description' => 'Planen har tagits bort.',
+                'icon' => 'custom-cash',
+                'route' => null, //'/dashboard/admin/plans/'.$plan->id,
+                'metadata' => json_encode([
+                    'plan_id' => $plan->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -201,6 +261,23 @@ class PlanController extends Controller
             }
             $plan->state_id = $plan->state_id === 1 ? 2 : 1;
             $plan->update();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $plan->id,
+                'entity_type' => 'plans',
+                'action_type' => $plan->state_id === 2 ? 'activate_plan' : 'deactivate_plan',
+                'title' => 'Plan #'.$plan->id.' '.$plan->name.' '.($plan->state_id === 2 ? 'aktiverad' : 'inaktiverad'),
+                'description' => 'Planen har '.($plan->state_id === 2 ? 'aktiverats' : 'inaktiverats').'.',
+                'icon' => 'custom-cash',
+                'route' => null, //'/dashboard/admin/plans/'.$plan->id,
+                'metadata' => json_encode([
+                    'plan_id' => $plan->id
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $plan->id)
+                ->where('entity_type', 'plans')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

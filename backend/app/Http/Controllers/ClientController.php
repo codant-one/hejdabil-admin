@@ -449,7 +449,7 @@ class ClientController extends Controller
                     'agreement_type:id,name',
                     'offer:id,offer_id',
                     'commission:id,commission_id',
-                    'token:id,agreement_id,signature_status'
+                    'token:tokens.id,tokens.agreement_id,tokens.signature_status'
                 ])
                 ->applyFilters(['client_id' => $id])
                 ->where(function ($query) {

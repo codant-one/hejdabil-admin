@@ -3,6 +3,9 @@
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { handleNumericTextFieldKeydown, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from '@/@core/utils/numericTextField'
 import { requiredValidator, minLengthNonDigitsValidator } from '@/@core/utils/validators'
+import { Cropper } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
 const props = defineProps({
   isDrawerOpen: {
@@ -18,6 +21,7 @@ const props = defineProps({
 const emit = defineEmits([
   'update:isDrawerOpen',
   'countryData',
+  "edited"
 ])
 
 const isFormValid = ref(false)
@@ -32,12 +36,43 @@ const phonecode = ref('')
 const phone_digits = ref('')
 const flag = ref('')
 const flagFile = ref([])
-const flagOld = ref(null)
+const cropper = ref()
+const isFlagLoading = ref(false)
+let flagSelectionId = 0
 const isEdit = ref(false)
 const nonNegativeNumericRules = [numericRangeValidator({ min: 0 })]
 
+const initialData = ref(null)
+const isConfirmLeaveVisible = ref(false)
+
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera land': 'Lägg till land'
+})
+
+const currentData = computed(() => ({
+  id: id.value,
+  name: name.value,
+  iso: iso.value,
+  iso3: iso3.value,
+  numcode: numcode.value,
+  phonecode: phonecode.value,
+  phone_digits: phone_digits.value,
+  flag: flag.value,
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false,
 })
 
 watchEffect(async() => {
@@ -55,11 +90,17 @@ watchEffect(async() => {
       phone_digits.value = props.country.phone_digits
       flag.value = props.country.flag
     }
+
+    // snapshot initial state after fields are populated
+    nextTick(() => {
+      initialData.value = { ...currentData.value }
+      emit('edited', false)
+    })
   }
 })
 
 // 👉 drawer close
-const closeNavigationDrawer = () => {
+const reallyCloseAndReset = () => {
   emit('update:isDrawerOpen', false)
   nextTick(() => {
     refForm.value?.resetValidation()
@@ -72,64 +113,39 @@ const closeNavigationDrawer = () => {
     phone_digits.value = ''
     flag.value = ''
     flagFile.value = []
-    flagOld.value = null
+    flagSelectionId++
+    isFlagLoading.value = false
+    advisor.value = { type: '', message: '', show: false }
     isFormValid.value = false
     
     isEdit.value = false 
     id.value = 0
+    initialData.value = null
+    emit('edited', false)
   })
 }
 
-const resizeImage = function(file, maxWidth, maxHeight, quality, mimeType = 'image/png') {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
+defineExpose({
+  reallyCloseAndReset,
+})
 
-    img.src = URL.createObjectURL(file)
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-
-      let width = img.width
-      let height = img.height
-
-      if (maxWidth && width > maxWidth) {
-        height *= maxWidth / width
-        width = maxWidth
-      }
-
-      if (maxHeight && height > maxHeight) {
-        width *= maxHeight / height
-        height = maxHeight
-      }
-
-      canvas.width = width
-      canvas.height = height
-
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob(blob => {
-        resolve(blob)
-      }, mimeType, quality)
-    }
-    img.onerror = error => {
-      reject(error)
-    }
-  })
+// 👉 drawer close
+const closeNavigationDrawer = () => {
+  if (isDirty.value) {
+    isConfirmLeaveVisible.value = true
+    
+    return
+  }
+  reallyCloseAndReset()
 }
 
-const blobToBase64 = blob => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.readAsDataURL(blob)
-    reader.onload = () => {
-      resolve(reader.result.split(',')[1])
-    }
-    reader.onerror = error => {
-      reject(error)
-    }
-  })
+const showFlagError = () => {
+  isFlagLoading.value = false
+  advisor.value = {
+    type: 'error',
+    message: 'Bilden kunde inte laddas eller beskäras. Välj bilden igen.',
+    show: true,
+  }
 }
 
 const onImageSelected = files => {
@@ -137,31 +153,51 @@ const onImageSelected = files => {
     ? files[0]
     : (files?.[0] || files)
 
-  if (!file) {
-    flag.value = ''
-    flagFile.value = []
-    return
+  resetFlag()
+  if (!file) return
+
+  isFlagLoading.value = true
+  const selectionId = flagSelectionId
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (selectionId !== flagSelectionId) return
+    flag.value = reader.result
   }
-  flagOld.value = file
-
-  URL.createObjectURL(file)
-
-  resizeImage(file, 400, 400, 0.9)
-    .then(async blob => {
-      flagOld.value = blob
-      let r = await blobToBase64(blob)
-      flag.value = 'data:image/png;base64,' + r
-    })
+  reader.onerror = () => {
+    if (selectionId === flagSelectionId) showFlagError()
+  }
+  reader.readAsDataURL(file)
 }
 
 const resetFlag = () => {
+  flagSelectionId++
   flag.value = ''
-  flagFile.value = []
+  isFlagLoading.value = false
+  advisor.value = { type: '', message: '', show: false }
 }
 
 const onSubmit = () => {
-  refForm.value?.validate().then(({ valid }) => {
+  refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
+      let flagBlob = null
+      if (flagFile.value?.length) {
+        const canvas = cropper.value?.getResult()?.canvas
+        if (isFlagLoading.value || !canvas) {
+          showFlagError()
+          return
+        }
+        try {
+          flagBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+        } catch (error) {
+          showFlagError()
+          return
+        }
+        if (!flagBlob) {
+          showFlagError()
+          return
+        }
+      }
+
       let formData = new FormData()
 
       formData.append('name', name.value)
@@ -171,21 +207,38 @@ const onSubmit = () => {
       formData.append('phonecode', phonecode.value)
       formData.append('phone_digits', phone_digits.value)
 
-      if (flagOld.value instanceof Blob) {
+      if (flagBlob) {
         const isoFileName = String(iso.value || 'flag').trim().toLowerCase()
-        formData.append('flag', flagOld.value, `${isoFileName}.png`)
+        formData.append('flag', flagBlob, `${isoFileName}.png`)
       }
 
       emit('countryData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
-      closeNavigationDrawer()
+      // closeNavigationDrawer()
     }
   })
 }
 
-const handleDrawerModelValueUpdate = val => {
-  emit('update:isDrawerOpen', val)
+const handleDrawerCountryValueUpdate = val => {
+  if (val === false) {
+    if (isDirty.value) {
+      // keep drawer open and show confirm dialog
+      emit("update:isDrawerOpen", true)
+      isConfirmLeaveVisible.value = true
+      
+      return
+    }
+    reallyCloseAndReset()
+    
+    return
+  }
+  emit("update:isDrawerOpen", val)
 }
+
+watch(currentData, () => {
+  if (!initialData.value) return
+  emit('edited', isDirty.value)
+}, { deep: true })
 
 </script>
 
@@ -194,13 +247,13 @@ const handleDrawerModelValueUpdate = val => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content"
+    class="scrollable-content right-drawer rounded-left-4"
     :model-value="props.isDrawerOpen"
-    @update:model-value="handleDrawerModelValueUpdate"
+    @update:model-value="handleDrawerCountryValueUpdate"
   >
     <!-- 👉 Title -->
     <div class="d-flex align-center pa-6 pb-1">
-      <h6 class="text-h6">
+      <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
 
@@ -208,24 +261,27 @@ const handleDrawerModelValueUpdate = val => {
 
       <!-- 👉 Close btn -->
       <VBtn
-        variant="tonal"
-        color="default"
         icon
-        size="32"
-        class="rounded btn-close-country"
+        class="btn-white"
         @click="closeNavigationDrawer"
       >
         <VIcon
-          size="18"
-          icon="tabler-x"
+          size="20"
+          icon="custom-close"
         />
-      </VBTn>
+      </VBtn>
     </div>
     
     <VDivider class="mt-4"/>
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }">
-      <VCard flat class="card-country">
+    <PerfectScrollbar 
+      :options="{ wheelPropagation: false }"
+      class="scrollbar-no-border"
+    >
+      <VCard 
+        flat 
+        class="card-form country-desktop"
+      >
         <VCardText>
           <!-- 👉 Form -->
           <VForm
@@ -234,101 +290,142 @@ const handleDrawerModelValueUpdate = val => {
             validate-on="submit"
             @submit.prevent="onSubmit"
           >
-          <VRow>
-            <VCol cols="12" md="12">
-                <VTextField
-                    v-model="name"
-                    label="Namnet"
-                    :rules="[requiredValidator]"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-                <VTextField
-                    v-model="iso"
-                    label="ISO"
-                    maxlength="2"
-                    :rules="[requiredValidator, minLengthNonDigitsValidator(2)]"
-                    @input="iso = iso.toUpperCase()"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-                <VTextField
-                    v-model="iso3"
-                    label="ISO 3"
-                    maxlength="3"
-                    :rules="[requiredValidator, minLengthNonDigitsValidator(3)]"
-                    @input="iso3 = iso3.toUpperCase()"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-                <VTextField
-                    v-model="phonecode"
-                v-bind="numericTextFieldProps"
-                    label="Código de teléfono"
-                :rules="[requiredValidator, ...nonNegativeNumericRules]"
-                @input="phonecode = normalizeNumericTextInput(phonecode)"
-                @keydown="handleNumericTextFieldKeydown"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-                <VTextField
-                    v-model="phone_digits"
-                v-bind="numericTextFieldProps"
-                    label="Número máximo de dígitos de teléfono"
-                :rules="[requiredValidator, ...nonNegativeNumericRules]"
-                @input="phone_digits = normalizeNumericTextInput(phone_digits)"
-                @keydown="handleNumericTextFieldKeydown"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-                <VTextField
-                    v-model="numcode"
-                v-bind="numericTextFieldProps"
-                    label="C&oacute;digo ISO N&uacute;merico"
-                :rules="[requiredValidator, ...nonNegativeNumericRules]"
-                @input="numcode = normalizeNumericTextInput(numcode)"
-                @keydown="handleNumericTextFieldKeydown"
-                />
-            </VCol>
-            <VCol cols="12" md="6">
-              <VAvatar
-                rounded
-                :size="120"
-                class="me-md-6 mb-2"
-                :color="flag ? 'default' : 'primary'"
-                variant="tonal"
-              >
-                <VImg
-                  style="border-radius: 6px;"
-                  :src="flag"
-                />
-              </VAvatar>
-
-              <VFileInput                          
-                v-model="flagFile"
-                accept="image/png, image/jpeg, image/bmp"
-                placeholder="Avatar"
-                prepend-icon=""
-                :rules="isEdit ? [] : [requiredValidator]"
-                @update:model-value="onImageSelected"
-                @click:clear="resetFlag"
-              />
-            </VCol>
-              <!-- 👉 Submit and Cancel -->
-              <VCol cols="12">
-                <VBtn
-                  type="submit"
-                  class="me-3"
+            <VRow>
+              <VCol
+                  v-if="advisor.show"
+                  cols="12"
+                  md="12"
                 >
-                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
-                </VBtn>
+                  <VAlert
+                    :color="advisor.type"
+                    class="alert-no-shrink custom-alert"
+                    style="flex: none;"
+                  >
+                    <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+                  </VAlert>
+              </VCol>
+
+              <VCol v-if="flag" cols="12" md="12">
+                <Cropper
+                  v-if="flagFile.length"
+                  ref="cropper"
+                  class="cropper-container"
+                  background-class="cropper-background"
+                  :src="flag"
+                  :canvas="{ maxWidth: 1200, maxHeight: 1200 }"
+                  :stencil-props="{ previewClass: 'cropper-preview-circle' }"
+                  @ready="isFlagLoading = false"
+                  @error="showFlagError"
+                />
+                <VImg v-else :src="flag" height="120" contain />
+              </VCol>
+              <VCol cols="12" md="12">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Flagga*"
+                />
+                <VFileInput
+                  v-model="flagFile"
+                  class="mb-2"
+                  accept="image/png, image/jpeg, image/bmp, image/webp"
+                  prepend-icon="tabler-camera"
+                  :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
+                  @update:model-value="onImageSelected"
+                  @click:clear="resetFlag"
+                />
+              </VCol>
+
+              <VCol cols="12" md="12">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Namnet*"
+                />
+                <VTextField
+                  v-model="name"
+                  :rules="[requiredValidator]"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="ISO*"
+                />
+                <VTextField
+                  v-model="iso"
+                  maxlength="2"
+                  :rules="[requiredValidator, minLengthNonDigitsValidator(2)]"
+                  @input="iso = iso.toUpperCase()"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="ISO 3*"
+                />
+                <VTextField
+                  v-model="iso3"
+                  maxlength="3"
+                  :rules="[requiredValidator, minLengthNonDigitsValidator(3)]"
+                  @input="iso3 = iso3.toUpperCase()"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Telefonkod*"
+                />
+                <VTextField
+                  v-model="phonecode"
+                  v-bind="numericTextFieldProps"
+                  :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                  @input="phonecode = normalizeNumericTextInput(phonecode)"
+                  @keydown="handleNumericTextFieldKeydown"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="Maximalt antal telefonnummer*"
+                />
+                <VTextField
+                  v-model="phone_digits"
+                  v-bind="numericTextFieldProps"
+                  :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                  @input="phone_digits = normalizeNumericTextInput(phone_digits)"
+                  @keydown="handleNumericTextFieldKeydown"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VLabel
+                  class="mb-1 text-body-2 text-high-emphasis"
+                  text="ISO sifferkod*"
+                />
+                <VTextField
+                  v-model="numcode"
+                  v-bind="numericTextFieldProps"
+                  :rules="[requiredValidator, ...nonNegativeNumericRules]"
+                  @input="numcode = normalizeNumericTextInput(numcode)"
+                  @keydown="handleNumericTextFieldKeydown"
+                />
+              </VCol>
+              <!-- 👉 Submit and Cancel -->
+              <VCol
+                cols="12"
+                class="pb-0"
+              >
                 <VBtn
-                  type="reset"
-                  variant="tonal"
-                  color="secondary"
+                  type="button"
+                  class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
                   Avbryt
+                </VBtn>
+                <VBtn
+                  type="submit"
+                  class="btn-gradient"
+                  :disabled="isFlagLoading"
+                >
+                  {{ isEdit ? "Uppdatering" : "Lägg till" }}
                 </VBtn>
               </VCol>
             </VRow>
@@ -337,9 +434,156 @@ const handleDrawerModelValueUpdate = val => {
       </VCard>
     </PerfectScrollbar>
   </VNavigationDrawer>
+
+  <!-- Confirm leave without saving -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img
+          :src="modalWarningIcon"
+          alt="Warning"
+          class="action-icon"
+        >
+        <div class="dialog-title">
+          Avsluta utan att spara?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmLeaveVisible = false"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          class="btn-gradient"
+          @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }"
+        >
+          Ja, fortsätt
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>
+  .cropper-container {
+    width: 100%;
+    height: 250px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .card-form.country-desktop {
+      .v-input:not(.v-textarea) {
+        .v-input__control {
+          .v-field {
+            background-color: #f6f6f6 !important;
+            min-height: 40px !important;
+            /*height: 40px !important;*/
+
+            .v-text-field__suffix {
+              padding: 8px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 40px !important;
+              /*height: 40px !important;*/
+              padding: 8px 16px !important;
+
+              input {
+                min-height: 40px !important;
+                height: 40px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
+            }
+
+            .v-text-field__prefix {
+              height: 40px;
+            }
+          }
+        }
+      }
+
+      .v-input.always-show-prefix {
+        .v-input__control {
+          .v-field {
+            .v-field__input {
+              padding: 8px 0 !important;
+            }
+          }
+        }
+      }
+
+      .v-select .v-field {
+        .v-select__selection {
+            align-items: center;
+            color: #454545;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 18px;
+
+        }
+
+        .v-field__input input::placeholder,
+        input.v-field__input::placeholder,
+        .v-field__input textarea::placeholder,
+        textarea.v-field__input::placeholder {
+            color: #454545 !important;
+            opacity: 1 !important;
+          }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
+        }
+      }
+
+    }
+  }
+
+  :deep(.vue-simple-handler) {
+      background: #57F287 !important;
+  }
+  :deep(.cropper-preview-circle) {
+      border: dashed 1px #57F287
+  }
+  :deep(.cropper-background),
+  :deep(.vue-advanced-cropper__foreground) {
+      background-color: transparent !important;
+  }
+
+
   .btn-close-country {
     height: 32px !important;
   }

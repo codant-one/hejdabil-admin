@@ -12,6 +12,7 @@ import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import countries from '@/api/countries'
 
 const activitiesStore = useActivitiesStore()
 const emitter = inject('emitter')
@@ -46,6 +47,7 @@ const filterDateRange = ref(null)
 const mode = ref('Lista')
 
 const modules = [
+  { name: 'Användare', id: 'users_admin' },
   { name: 'Mitt team', id: 'users' },
   { name: 'Leverantör', id: 'suppliers' },
   { name: 'Admin faktura', id: 'suppliers_invoices' },
@@ -57,19 +59,28 @@ const modules = [
   { name: 'Swish', id: 'payouts' },
   { name: 'Märke', id: 'brands' },
   { name: 'Modell', id: 'models' },
+  { name: 'Attribut fakturor', id: 'invoices' },
+  { name: 'Valuta', id: 'currencies' },
+  { name: 'Land', id: 'countries' },
+  { name: 'Planer', id: 'plans'}
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
+  users_admin: ['users-admin'],
   users: ['my-team'],
   suppliers: ['suppliers'],
   clients: ['clients'],
   billings: ['billings'],
+  currencies: ['currencies'],
+  invoices: ['invoices'],
   suppliers_invoices: ['suppliers-invoices'],
   vehicles: ['stock', 'sold'],
   agreements: ['agreements'],
   documents: ['signed-documents'],
   payouts: ['payouts'],
   notes: ['notes'],
+  countries: ['countries'],
+  plans: ['plans']
 }
 
 const hasModuleAccess = moduleId => {
@@ -116,8 +127,10 @@ const isDeleteAccountActive = computed(() =>
 
 const activityModuleLabels = {
   users: 'Mitt team',
+  users_admin: 'Användare',
   agreements: 'Avtal',
   billings: 'Fakturor',
+  invoices: 'Attribut fakturor',
   clients: 'Kunder',
   suppliers: 'Leverantör',
   suppliers_invoices: 'Admin faktura',
@@ -127,13 +140,18 @@ const activityModuleLabels = {
   payouts: 'Swish',
   vehicles: 'Fordonslager',
   brands: 'Märke',
-  models: 'Modell'
+  models: 'Modell',
+  currencies: 'Valuta',
+  countries: 'Land',
+  plans: 'Planer'
 }
 
 const activityModuleSingularLabels = {
+  users_admin: 'Användare',
   users: 'Mitt team',
   agreements: 'Avtal',
   billings: 'Faktura',
+  invoices: 'Attribut faktura',
   clients: 'Kund',
   suppliers: 'Leverantör',
   suppliers_invoices: 'Faktura',
@@ -144,6 +162,9 @@ const activityModuleSingularLabels = {
   vehicles: 'Fordon',
   brands: 'Märke',
   models: 'Modell',
+  currencies: 'Valuta',
+  countries: 'Land',
+  plans: 'Planer'
 }
 
 const activityActionLabels = {
@@ -274,7 +295,20 @@ const activityFieldLabels = {
   account_number: 'Kontonummer',
   payout_number: 'Utbetalningsnummer',
   position: 'Roll',
-  permissions: 'Behörigheter'
+  permissions: 'Behörigheter',
+  logo: 'Logotyp',
+  url: 'Hemsida',
+  type_id: 'Typ',
+  code: 'Kod',
+  flag: 'Flagga',
+  iso: 'ISO',
+  iso3: 'ISO 3',
+  numcode: 'ISO sifferkod',
+  phonecode: 'Telefonkod',
+  phone_digits: 'Maximalt antal telefonnummer',
+  price_month: 'Månadspris',
+  price_annual: 'Årspris'
+
 }
 
 // 👉 Computing pagination data
@@ -2078,7 +2112,7 @@ onBeforeUnmount(() => {
 
     .card-form {
       .v-list {
-        padding: 28px 24px 40px !important;
+        padding: 28px 24px 24px !important;
 
         .v-list-item {
           margin-bottom: 0px;

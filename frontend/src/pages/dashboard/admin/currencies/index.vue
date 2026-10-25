@@ -83,7 +83,9 @@ const paginationData = computed(() => {
   const firstIndex = currencies.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = currencies.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCurrencies.value } register`
+  return `${totalCurrencies.value} resultat`;
+
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCurrencies.value } register`
 })
 
 // 👉 watching current page
@@ -688,8 +690,7 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col"> #ID </th>
             <th scope="col"> Namnet </th>
-            <th scope="col"> Kod </th>
-            <th scope="col"> Status </th>
+            <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')"></th>
           </tr>
         </thead>
@@ -785,12 +786,12 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-currency"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga valutor än</div>
+          <div class="empty-state-title">Inga valuta skapade än</div>
           <div class="empty-state-text">
-            Lägg till dina valutor här.
+            Här kommer alla dina skapade valutas att listas.
           </div>
         </div>
         <VBtn
@@ -798,16 +799,16 @@ onBeforeUnmount(() => {
           v-if="$can('create', 'currencies') && !$vuetify.display.mdAndDown"
           @click="isAddNewCurrencyDrawerVisible = true"
         >
-          Lägg till valutor
+          Skapa ny valuta
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
 
         <VBtn
           class="btn-ghost"
           v-if="$vuetify.display.mdAndDown && $can('create', 'currencies')"
-          @click="isAddNewCurrencyDrawerVisible = true"
+          @click="isDialogOpen = true"
         >
-          Lägg till valutor
+          Skapa ny valuta
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>

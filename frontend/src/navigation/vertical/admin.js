@@ -1,7 +1,7 @@
 export default [
   {
     title: 'Administration',
-    icon: { icon:'tabler-home-cog' },
+    icon: { icon:'custom-cog' },
     children:[
       { 
         title: 'Attribut', 
@@ -26,7 +26,7 @@ export default [
       },
       { 
         title: 'Land', 
-        icon: { icon: 'mdi-flag-outline' },
+        icon: { icon: 'custom-flag' },
         to: 'dashboard-admin-countries', 
         action: 'view',
         subject: 'countries'
