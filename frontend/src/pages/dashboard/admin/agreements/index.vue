@@ -94,7 +94,7 @@ const visibleColumns = ref([])
 const didInitVisibleColumns = ref(false)
 
 const columnOptions = [
-  { id: 'agreement_id', label: '# ID' },
+  { id: 'agreement_id', label: '#ID' },
   { id: 'reg_num', label: 'Reg. nr' },
   { id: 'interchange_reg_num', label: 'Inbytesfordon Reg. nr' },
   { id: 'type', label: 'Typ' },
@@ -1781,7 +1781,7 @@ onBeforeUnmount(() => {
                 hide-details
               />
             </th>
-            <th scope="col" v-if="isColVisible('agreement_id')"># ID</th>
+            <th scope="col" v-if="isColVisible('agreement_id')">#ID</th>
             <th scope="col" class="text-center" v-if="isColVisible('reg_num')"> Reg. nr </th>
             <th scope="col" class="text-center" v-if="isColVisible('interchange_reg_num')"> Inbytesfordon Reg. nr </th>
             <th scope="col" class="text-center" v-if="isColVisible('installment')"> Kredit / Leasing </th>

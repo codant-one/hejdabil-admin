@@ -836,7 +836,7 @@ onUnmounted (() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> # ID </th>
+            <th scope="col"> #ID </th>
             <th scope="col"> Företag </th>
             <th scope="col"> Kontakt </th>
             <th scope="col" class="text-center"> Status </th>

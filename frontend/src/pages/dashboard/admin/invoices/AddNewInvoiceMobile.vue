@@ -1,6 +1,6 @@
 <script setup>
 
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 import { requiredValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
@@ -282,125 +282,110 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
-  @media (max-width: 1023px) {
-    .card-form.invoice-mobile {
-      .v-list {
-        padding: 28px 24px 40px !important;
+.border-img {
+  border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 6px;
+}
+.border-img .v-img__img--contain {
+  padding: 10px;
+}
 
-        .v-list-item {
-          margin-bottom: 0px;
-          padding: 4px 0 !important;
-          gap: 0px !important;
+.v-btn {
+  width: 100%;
+}
 
-          .v-input--density-compact {
-            --v-input-control-height: 48px !important;
+.form-actions {
+  .v-btn {
+    flex: 1;
+  }
+}
+
+</style>
+<style lang="scss">
+@media (max-width: 1023px) {
+  .card-form.invoice-mobile {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 4px 0 !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field {
+          .v-select__selection {
+            align-items: center;
           }
 
-          .v-select .v-field {
-            .v-select__selection {
-              align-items: center;
-            }
-
-            .v-field__input > input {
-              top: 0px;
-              left: 0px;
-            }
-
-            .v-field__append-inner {
-              align-items: center;
-              padding-top: 0px;
-            }
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
           }
 
-          .selector-country {
-            .v-input__prepend {
-              margin-inline-end: 6px !important;
-            }
-          }
-
-          .v-autocomplete .v-field {
-            .v-autocomplete__selection-text {
-              align-items: center;
-              display: flex;
-            }
-
-            .v-field__append-inner {
-              align-items: center;
-              padding-top: 0px;
-            }
-          }
-
-          .v-text-field {
-            .v-input__control {
-              padding-top: 0;
-
-              .v-field {
-                .v-text-field__prefix {
-                  height: 48px;
-                  color: #454545;
-                }
-              }
-
-              input {
-                min-height: 48px !important;
-                height: 48px !important;
-                padding: 12px 16px;
-              }
-            }
-          }
-
-          .v-input.always-show-prefix {
-            .v-input__control {
-              .v-field {
-                .v-field__input {
-                  padding: 8px 0 !important;
-                }
-              }
-            }
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
           }
         }
-      }
-      & .v-input:not(.v-textarea) {
-        & .v-input__control {
-          .v-field {
-            background-color: #f6f6f6;
-            min-height: 48px !important;
-            height: 48px !important;
-            .v-field-label {
-              top: 12px !important;
+
+        .selector-country {
+          .v-input__prepend {
+            margin-inline-end: 6px !important;
+          }
+        }
+
+        .v-autocomplete .v-field {
+          .v-autocomplete__selection-text {
+            align-items: center;
+            display: flex;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 0;
+
+            .v-field {
+              .v-text-field__prefix {
+                height: 48px;
+                color: #454545;
+              }
+            }
+
+            input {
+              min-height: 48px !important;
+              height: 48px !important;
+              padding: 12px 16px;
             }
           }
         }
       }
     }
+    & .v-input:not(.v-textarea) {
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+          height: 48px !important;
+          .v-field-label {
+            top: 12px !important;
+          }
+        }
+      }
+    }
   }
+}
 
-  .v-dialog .v-overlay__content {
-    max-height: calc(100dvh - 48px) !important;
-  }
-
-  :deep(.vue-simple-handler) {
-      background: #57F287 !important;
-  }
-  :deep(.cropper-preview-circle) {
-      border: dashed 1px #57F287
-  }
-  :deep(.cropper-background),
-  :deep(.vue-advanced-cropper__foreground) {
-      background-color: transparent !important;
-  }
-
-  .btn-close-invoice {
-    height: 32px !important;
-  }
-  .card-invoice {
-    border-radius: 0 !important;
-  }
-  .border-img {
-      border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
-      border-radius: 6px;
-  }
-  .border-img .v-img__img--contain {
-      padding: 10px;
-  }
+.v-dialog .v-overlay__content {
+  max-height: calc(100dvh - 48px) !important;
+}
 </style>

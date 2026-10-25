@@ -301,7 +301,7 @@ const downloadPDF = async () => {
 
     const { headerMarkup } = await buildPdfTopHeader({
       company: company.value,
-      title: 'Invoices',
+      title: 'Attribut Fakturor',
       themeConfig,
       escapeHtml,
       showCompanyDetailsWhenLogo: true,
@@ -354,7 +354,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'invoices.pdf',
+        filename: 'attribut-fakturor.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -585,8 +585,6 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
 
-      
-
       <VTable
         v-if="!$vuetify.display.mdAndDown"
         v-show="invoices.length"
@@ -673,7 +671,7 @@ onBeforeUnmount(() => {
         <VBtn
           class="btn-ghost"
           v-if="$vuetify.display.mdAndDown && $can('create', 'invoices')"
-          @click="isAddNewInvoiceDrawerVisible = true"
+          @click="isDialogOpen = true"
         >
           Skapa ny faktura
           <VIcon icon="custom-arrow-right" size="24" />

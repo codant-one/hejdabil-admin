@@ -58,6 +58,7 @@ const modules = [
   { name: 'Swish', id: 'payouts' },
   { name: 'Märke', id: 'brands' },
   { name: 'Modell', id: 'models' },
+  { name: 'Attribut fakturor', id: 'invoices' }
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -66,6 +67,7 @@ const MODULE_PERMISSION_SUBJECTS = {
   suppliers: ['suppliers'],
   clients: ['clients'],
   billings: ['billings'],
+  invoices: ['invoices'],
   suppliers_invoices: ['suppliers-invoices'],
   vehicles: ['stock', 'sold'],
   agreements: ['agreements'],
@@ -121,6 +123,7 @@ const activityModuleLabels = {
   users_admin: 'Användare',
   agreements: 'Avtal',
   billings: 'Fakturor',
+  invoices: 'Attribut fakturor',
   clients: 'Kunder',
   suppliers: 'Leverantör',
   suppliers_invoices: 'Admin faktura',
@@ -138,6 +141,7 @@ const activityModuleSingularLabels = {
   users: 'Mitt team',
   agreements: 'Avtal',
   billings: 'Faktura',
+  invoices: 'Attribut faktura',
   clients: 'Kund',
   suppliers: 'Leverantör',
   suppliers_invoices: 'Faktura',

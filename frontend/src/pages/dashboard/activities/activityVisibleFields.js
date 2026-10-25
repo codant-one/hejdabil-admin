@@ -640,6 +640,11 @@ export const activityVisibleFieldsByModule = {
   models: [
     'name',
     'brand_id',
+  ],
+  invoices: [
+    'name',
+    'description',
+    'type_id',
   ]
 }
 

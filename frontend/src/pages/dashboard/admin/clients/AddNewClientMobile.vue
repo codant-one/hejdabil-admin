@@ -948,13 +948,14 @@ const truncateText = (text, length = 30) => {
 :deep(.card-form .org-number-duplicate.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline__end) {
   border-color: #FF4D4F !important;
 }
-</style>
-  .deleted-supplier-option .deleted-supplier-text,
-  .deleted-supplier-text {
-    text-decoration: line-through;
-    opacity: 0.75;
-  }
 
+.deleted-supplier-option .deleted-supplier-text,
+.deleted-supplier-text {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+</style>
 
 <style lang="scss">
 @media (max-width: 1023px) {
