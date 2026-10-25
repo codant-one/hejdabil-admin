@@ -253,18 +253,20 @@ watch(currentData, () => {
                       :rules="[requiredValidator]"
                   />
               </VCol>
-              <VCol :cols="isValidFlagUrl ? 10 : 12" :md="isValidFlagUrl ? 11 : 12">
+              <VCol cols="12" md="12">
                   <VLabel
                     class="mb-1 text-body-2 text-high-emphasis"
                     text="Flagga*"
                   />  
-                  <VTextField
-                      v-model="flag"
-                      :rules="[requiredValidator]"
-                  />
-              </VCol>
-              <VCol cols="2" md="1" class="d-flex align-end">
-                <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="38" height="38" />
+
+                  <div class="d-flex gap-2">
+                    <VTextField
+                        v-model="flag"
+                        :rules="[requiredValidator]"
+                    />
+              
+                  <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="38" height="38" />
+                  </div>
               </VCol>
 
               <!-- 👉 Submit and Cancel -->

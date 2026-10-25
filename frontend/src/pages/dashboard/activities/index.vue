@@ -58,7 +58,8 @@ const modules = [
   { name: 'Swish', id: 'payouts' },
   { name: 'Märke', id: 'brands' },
   { name: 'Modell', id: 'models' },
-  { name: 'Attribut fakturor', id: 'invoices' }
+  { name: 'Attribut fakturor', id: 'invoices' },
+  { name: 'Valuta', id: 'currencies' }
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -67,6 +68,7 @@ const MODULE_PERMISSION_SUBJECTS = {
   suppliers: ['suppliers'],
   clients: ['clients'],
   billings: ['billings'],
+  currencies: ['currencies'],
   invoices: ['invoices'],
   suppliers_invoices: ['suppliers-invoices'],
   vehicles: ['stock', 'sold'],
@@ -133,7 +135,8 @@ const activityModuleLabels = {
   payouts: 'Swish',
   vehicles: 'Fordonslager',
   brands: 'Märke',
-  models: 'Modell'
+  models: 'Modell',
+  currencies: 'Valuta'
 }
 
 const activityModuleSingularLabels = {
@@ -152,6 +155,7 @@ const activityModuleSingularLabels = {
   vehicles: 'Fordon',
   brands: 'Märke',
   models: 'Modell',
+  currencies: 'Valuta'
 }
 
 const activityActionLabels = {
@@ -2086,7 +2090,7 @@ onBeforeUnmount(() => {
 
     .card-form {
       .v-list {
-        padding: 28px 24px 40px !important;
+        padding: 28px 24px 24px !important;
 
         .v-list-item {
           margin-bottom: 0px;

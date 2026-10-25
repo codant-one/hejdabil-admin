@@ -645,6 +645,13 @@ export const activityVisibleFieldsByModule = {
     'name',
     'description',
     'type_id',
+  ],
+  currencies: [
+    'name',
+    'code',
+    'flag',
+    'description',
+    'state_id'
   ]
 }
 

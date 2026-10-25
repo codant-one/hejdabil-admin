@@ -99,7 +99,7 @@ class CountryController extends Controller
                 'action_type' => 'create_country',
                 'title' => 'Land #'.$country->id.' '.$country->name.' tillagt',
                 'description' => 'Ett nytt land har lagts till.',
-                'icon' => 'mdi-flag-outline',
+                'icon' => 'custom-flag',
                 'route' => null, //'/dashboard/admin/countries/'.$country->id,
                 'metadata' => json_encode([
                     'country_id' => $country->id,
@@ -200,7 +200,7 @@ class CountryController extends Controller
                 'action_type' => 'update_country',
                 'title' => 'Land #'.$country->id.' '.$country->name.' uppdaterad',
                 'description' => 'Ett land har uppdaterats.',
-                'icon' => 'mdi-flag-outline',
+                'icon' => 'custom-flag',
                 'route' => null, //'/dashboard/admin/countries/'.$country->id,
                 'metadata' => json_encode([
                     'country_id' => $country->id,
@@ -255,7 +255,7 @@ class CountryController extends Controller
                 'action_type' => 'delete_country',
                 'title' => 'Land #'.$country->id.' '.$country->name.' borttagen',
                 'description' => 'Landet har tagits bort.',
-                'icon' => 'mdi-flag-outline',
+                'icon' => 'custom-flag',
                 'route' => null, //'/dashboard/admin/countries/'.$country->id,
                 'metadata' => json_encode([
                     'country_id' => $country->id,
@@ -303,7 +303,7 @@ class CountryController extends Controller
                 'action_type' => $country->state_id === 2 ? 'activate_country' : 'deactivate_country',
                 'title' => 'Land #'.$country->id.' '.$country->name.' '.($country->state_id === 2 ? 'aktiverad' : 'inaktiverad'),
                 'description' => 'Landet har '.($country->state_id === 2 ? 'aktiverats' : 'inaktiverats').'.',
-                'icon' => 'mdi-flag-outline',
+                'icon' => 'custom-flag',
                 'route' => null, //'/dashboard/admin/countries/'.$country->id,
                 'metadata' => json_encode([
                     'country_id' => $country->id

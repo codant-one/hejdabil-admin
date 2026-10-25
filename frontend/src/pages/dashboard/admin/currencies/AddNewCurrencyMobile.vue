@@ -217,13 +217,15 @@ watch(currentData, () => {
             class="mb-1 text-body-2 text-high-emphasis"
             text="Flagga*"
           />  
-          <VTextField
-              v-model="flag"
-              :rules="[requiredValidator]"
-          />
-      </VListItem>
-      <VListItem>
-        <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="32" height="32" />
+
+          <div class="d-flex gap-2 justify-center align-center">
+            <VTextField
+                v-model="flag"
+                :rules="[requiredValidator]"
+            />
+
+            <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="32" height="32" />
+          </div>
       </VListItem>
     </VList>
 
@@ -297,7 +299,7 @@ watch(currentData, () => {
   @media (max-width: 1023px) {
     .card-form.currency-mobile {
       .v-list {
-        padding: 28px 24px 40px !important;
+        padding: 28px 24px 24px !important;
 
         .v-list-item {
           margin-bottom: 0px;

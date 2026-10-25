@@ -961,7 +961,7 @@ const truncateText = (text, length = 30) => {
 @media (max-width: 1023px) {
   .card-form.client-mobile {
     .v-list {
-      padding: 28px 24px 40px !important;
+      padding: 28px 24px 24px !important;
 
       .v-list-item {
         margin-bottom: 0px;
