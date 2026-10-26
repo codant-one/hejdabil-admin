@@ -16,7 +16,10 @@ import { useRoute } from 'vue-router'
 import { openOrDownloadFile } from '@/composables/useFileDownload'
 import logo from "@images/logos/bilflogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
-import VuePdfEmbed from 'vue-pdf-embed'
+import VuePdfEmbed from '@/plugins/vuePdfEmbed'
+import PdfLoadState from '@/components/common/PdfLoadState.vue'
+import PdfPageNav from '@/components/common/PdfPageNav.vue'
+import { capPdfScale, usePdfPagination, usePdfSource } from '@/composables/usePdfSource'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import AlertsList from '@/components/common/AlertsList.vue'
@@ -92,6 +95,20 @@ const signaturePhoneRules = [minLengthDigitsValidator(signaturePhoneDigits), pho
 const isPlacementModalVisible = ref(false)
 const placementPdfSource = ref(null)
 const isLoadingPlacementPdf = ref(false)
+
+const {
+  pdfSource: placementPdfData,
+  isLoading: isPlacementPdfDataLoading,
+  error: placementPdfError,
+  reload: reloadPlacementPdf,
+  handleError: handlePlacementPdfError,
+} = usePdfSource(placementPdfSource)
+
+// Release the placement overlay so the error message and retry buttons are visible.
+watch(placementPdfError, error => {
+  if (error)
+    isLoadingPlacementPdf.value = false
+})
 const signaturePlacement = ref({ x: 0, y: 0, page: 1, visible: false, pageWidth: 0, pageHeight: 0 })
 const pdfPlacementContainer = ref(null)
 const pdfViewerRef = ref(null)
@@ -158,7 +175,7 @@ const pdfRenderScale = computed(() => {
   const pageW = Number(pdfPageSize.value?.width || 0)
   if (!pageW) return 1
   const visualScale = pdfVisualWidth.value / pageW
-  return visualScale * pdfQuality.value
+  return capPdfScale(visualScale * pdfQuality.value)
 })
 
 let pdfResizeObserver
@@ -728,6 +745,22 @@ const trackerDocument = ref(null)
 const isTrackerPreviewVisible = ref(false)
 const trackerPreviewPdfSource = ref(null)
 const trackerPreviewError = ref('')
+
+const {
+  pdfSource: trackerPreviewPdfData,
+  isLoading: isTrackerPreviewPdfLoading,
+  error: trackerPreviewPdfError,
+  reload: reloadTrackerPreviewPdf,
+  handleError: handleTrackerPreviewPdfError,
+} = usePdfSource(trackerPreviewPdfSource)
+
+const {
+  page: trackerPreviewPdfPage,
+  currentPage: trackerPreviewPdfCurrentPage,
+  numPages: trackerPreviewPdfNumPages,
+  isPaged: isTrackerPreviewPdfPaged,
+  onLoaded: handleTrackerPreviewPdfLoaded,
+} = usePdfPagination(trackerPreviewPdfData)
 
 const trackerEvents = computed(() => {
   if (!trackerDocument.value) return []
@@ -2354,9 +2387,9 @@ onBeforeUnmount(() => {
                 <VBtn class="btn-light w-100" @click="resetZoom">Justera</VBtn>
               </div>
 
-              <!-- Pages thumbnails (like browser left panel) -->
+              <!-- Pages thumbnails (like browser left panel). Not mounted below 1024px, where they are hidden anyway. -->
               <div
-                v-if="placementPdfSource && placementPdfNumPages >= 1"
+                v-if="placementPdfData && !placementPdfError && placementPdfNumPages >= 1 && windowWidth >= 1024"
                 class="my-4 flex-grow-1 overflow-auto placement-thumbnails-scroll"
                 :class="windowWidth < 1024 ? 'd-none' : ''"
               >
@@ -2370,7 +2403,7 @@ onBeforeUnmount(() => {
                   >
                     <div class="thumbnail-number">{{ page }}</div>
                     <VuePdfEmbed
-                      :source="placementPdfSource"
+                      :source="placementPdfData"
                       :page="page"
                       :width="146"
                     />
@@ -2403,13 +2436,22 @@ onBeforeUnmount(() => {
                 ref="pdfPlacementContainer"
                 class="pdf-container-admin"
               >
-                <div v-if="placementPdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
+                <PdfLoadState
+                  v-if="placementPdfSource"
+                  :loading="isPlacementPdfDataLoading"
+                  :error="placementPdfError"
+                  :url="placementPdfSource"
+                  @retry="reloadPlacementPdf"
+                />
+                <div v-if="placementPdfData && !placementPdfError" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                   <VuePdfEmbed
                     :key="`pdf-${placementPdfSource}`"
                     ref="pdfViewerRef"
-                    :source="placementPdfSource"
+                    :source="placementPdfData"
                     :scale="pdfRenderScale"
                     @loaded="handlePlacementPdfLoaded"
+                    @loading-failed="handlePlacementPdfError"
+                    @rendering-failed="handlePlacementPdfError"
                     @click="handleAdminPdfClick"
                   />
                 </div>
@@ -2547,11 +2589,32 @@ onBeforeUnmount(() => {
             type="error" class="mb-4">
             {{ trackerPreviewError }}
           </VAlert>
-          <VuePdfEmbed 
-            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
-            :source="trackerPreviewPdfSource" 
-            :width="windowWidth < 1024 ? 300 : 450"
-            />  
+          <template v-else-if="trackerPreviewPdfSource">
+            <PdfLoadState
+              :loading="isTrackerPreviewPdfLoading"
+              :error="trackerPreviewPdfError"
+              :url="trackerPreviewPdfSource"
+              @retry="reloadTrackerPreviewPdf"
+            />
+            <div
+              v-if="trackerPreviewPdfData && !trackerPreviewPdfError"
+              class="d-flex flex-column align-center"
+            >
+              <VuePdfEmbed 
+                :source="trackerPreviewPdfData" 
+                :page="trackerPreviewPdfPage"
+                :width="windowWidth < 1024 ? 300 : 450"
+                @loaded="handleTrackerPreviewPdfLoaded"
+                @loading-failed="handleTrackerPreviewPdfError"
+                @rendering-failed="handleTrackerPreviewPdfError"
+                />
+              <PdfPageNav
+                v-if="isTrackerPreviewPdfPaged"
+                v-model:page="trackerPreviewPdfCurrentPage"
+                :total="trackerPreviewPdfNumPages"
+              />
+            </div>
+          </template>
         </VCardText>
       </VCard>
     </VDialog>

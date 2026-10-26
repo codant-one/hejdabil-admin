@@ -5,11 +5,14 @@ import { themeConfig } from "@themeConfig";
 import { useSupplierInvoicesStores } from "@/stores/useSupplierInvoices";
 import { loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { emailValidator } from '@/@core/utils/validators'
-import VuePdfEmbed from "vue-pdf-embed";
+import VuePdfEmbed from "@/plugins/vuePdfEmbed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
+import PdfLoadState from "@/components/common/PdfLoadState.vue";
+import PdfPageNav from "@/components/common/PdfPageNav.vue";
+import { capPdfScale, pdfTextLayerEnabled, usePdfPagination, usePdfSource } from "@/composables/usePdfSource";
+import "vue-pdf-embed/dist/styles/textLayer.css";
 
 const supplierInvoicesStores = useSupplierInvoicesStores();
 const route = useRoute();
@@ -45,7 +48,7 @@ const canShowBillingSmsAction = ref(false)
 
 const pdfScale = computed(() => {
   const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
-  return Math.min(2.25, Math.max(1.75, dpr * 1.05));
+  return capPdfScale(Math.min(2.25, Math.max(1.75, dpr * 1.05)));
 });
 const pdfViewportEl = ref(null);
 const pdfViewportWidth = ref(0);
@@ -74,12 +77,28 @@ const backToSupplierBillingRoute = computed(() => {
   }
 })
 
-const pdfSource = computed(() => {
+const pdfUrl = computed(() => {
   if (!invoice.value?.file)
     return ''
 
   return `${themeConfig.settings.urlbase}proxy-image?url=${themeConfig.settings.urlStorage}${invoice.value.file}&v=${pdfCacheBuster.value}`
 })
+
+const {
+  pdfSource,
+  isLoading: isPdfLoading,
+  error: pdfError,
+  reload: reloadPdf,
+  handleError: handlePdfError,
+} = usePdfSource(pdfUrl)
+
+const {
+  page: pdfPage,
+  currentPage: pdfCurrentPage,
+  numPages: pdfNumPages,
+  isPaged: isPdfPaged,
+  onLoaded: handlePdfLoaded,
+} = usePdfPagination(pdfSource)
 
 const updatePdfViewportWidth = () => {
   const el = pdfViewportEl.value;
@@ -455,16 +474,32 @@ onBeforeUnmount(() => {
 
           <div ref="pdfViewportEl" class="invoice-panel">
             <div class="pdf-host" :style="{ width: `${pdfWidth}px` }">
+              <PdfLoadState
+                :loading="isPdfLoading"
+                :error="pdfError"
+                :url="pdfUrl"
+                @retry="reloadPdf"
+              />
               <VuePdfEmbed
-                :key="pdfSource"
-                text-layer
+                v-if="pdfSource && !pdfError"
+                :key="pdfUrl"
+                :text-layer="pdfTextLayerEnabled"
                 :width="pdfWidth"
                 :scale="pdfScale"
+                :page="pdfPage"
                 :source="pdfSource"
                 class="w-100 m-auto"
+                @loaded="handlePdfLoaded"
+                @loading-failed="handlePdfError"
+                @rendering-failed="handlePdfError"
               />
             </div>
           </div>
+          <PdfPageNav
+            v-if="isPdfPaged && !pdfError"
+            v-model:page="pdfCurrentPage"
+            :total="pdfNumPages"
+          />
         </VCard>
       </VCol>
       <VCol
