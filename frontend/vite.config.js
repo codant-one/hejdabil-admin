@@ -89,6 +89,13 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 5000,
     rollupOptions: {
+      output: {
+        // Emit .mjs assets (pdf.js worker imported with ?url) as .js: Capacitor iOS < 17 and
+        // some web servers serve .mjs as application/octet-stream, which breaks module workers.
+        assetFileNames: ({ name = '' }) => name.endsWith('.mjs')
+          ? 'assets/[name].[hash].js'
+          : 'assets/[name].[hash][extname]',
+      },
       onwarn(warning, warn) {
         // Suppress baseline-browser-mapping warning
         if (warning.message && warning.message.includes('baseline-browser-mapping')) {
@@ -110,7 +117,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['vuetify'],
-    include: ['vue-clipboard2'],
+    include: ['vue-clipboard2', 'vue-pdf-embed/dist/index.essential.mjs'],
     entries: [
       './src/**/*.vue',
     ],

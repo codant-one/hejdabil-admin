@@ -8,7 +8,10 @@ import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils
 import { getAgreementSmsVisibilityCacheKey, getBillingSmsVisibilityCacheKey, loadAgreementSmsActionPreference, loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
 import { openOrDownloadFile } from '@/composables/useFileDownload'
 import router from "@/router";
-import VuePdfEmbed from 'vue-pdf-embed'
+import VuePdfEmbed from '@/plugins/vuePdfEmbed'
+import PdfLoadState from '@/components/common/PdfLoadState.vue'
+import PdfPageNav from '@/components/common/PdfPageNav.vue'
+import { usePdfPagination, usePdfSource } from '@/composables/usePdfSource'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const props = defineProps({
@@ -832,6 +835,22 @@ const trackerAgreement = ref(null)
 const isTrackerPreviewVisible = ref(false)
 const trackerPreviewPdfSource = ref(null)
 const trackerPreviewError = ref('')
+
+const {
+  pdfSource: trackerPreviewPdfData,
+  isLoading: isTrackerPreviewPdfLoading,
+  error: trackerPreviewPdfError,
+  reload: reloadTrackerPreviewPdf,
+  handleError: handleTrackerPreviewPdfError,
+} = usePdfSource(trackerPreviewPdfSource)
+
+const {
+  page: trackerPreviewPdfPage,
+  currentPage: trackerPreviewPdfCurrentPage,
+  numPages: trackerPreviewPdfNumPages,
+  isPaged: isTrackerPreviewPdfPaged,
+  onLoaded: handleTrackerPreviewPdfLoaded,
+} = usePdfPagination(trackerPreviewPdfData)
 
 const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')
@@ -2917,11 +2936,33 @@ onBeforeUnmount(() => {
             type="error" class="mb-4">
             {{ trackerPreviewError }}
           </VAlert>
-          <VuePdfEmbed 
-            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
-            :source="trackerPreviewPdfSource" 
-            :width="windowWidth < 1024 ? 300 : 450"
+          <template v-else-if="trackerPreviewPdfSource">
+            <PdfLoadState
+              :loading="isTrackerPreviewPdfLoading"
+              :error="trackerPreviewPdfError"
+              :url="trackerPreviewPdfSource"
+              file-name="avtal.pdf"
+              @retry="reloadTrackerPreviewPdf"
             />
+            <div
+              v-if="trackerPreviewPdfData && !trackerPreviewPdfError"
+              class="d-flex flex-column align-center"
+            >
+              <VuePdfEmbed 
+                :source="trackerPreviewPdfData" 
+                :page="trackerPreviewPdfPage"
+                :width="windowWidth < 1024 ? 300 : 450"
+                @loaded="handleTrackerPreviewPdfLoaded"
+                @loading-failed="handleTrackerPreviewPdfError"
+                @rendering-failed="handleTrackerPreviewPdfError"
+                />
+              <PdfPageNav
+                v-if="isTrackerPreviewPdfPaged"
+                v-model:page="trackerPreviewPdfCurrentPage"
+                :total="trackerPreviewPdfNumPages"
+              />
+            </div>
+          </template>
         </VCardText>
       </VCard>
     </VDialog>

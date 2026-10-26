@@ -7,7 +7,9 @@ import { useNotificationsStore } from '@/stores/useNotifications'
 import { useSignaturesStore } from '@/stores/useSignatures'
 import Settings from '@/api/settings'
 import Configs from '@/api/configs'
-import VuePdfEmbed from 'vue-pdf-embed'
+import VuePdfEmbed from '@/plugins/vuePdfEmbed'
+import PdfLoadState from '@/components/common/PdfLoadState.vue'
+import { capPdfScale, usePdfSource } from '@/composables/usePdfSource'
 import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import logo from "@images/logos/bilflogg-logo.svg";
@@ -132,6 +134,15 @@ const zoomStep = 0.25
 const isHighQualityPass = ref(false)
 const isOverlayVisible = computed(() => isSubmitting.value || (isRequestOngoing.value && !pdfSource.value))
 const pdfRenderKey = computed(() => `${pdfSource.value || 'empty'}-${isHighQualityPass.value ? 'hq' : 'lq'}`)
+
+// pdfSource is the blob: URL (also used for download); pdf.js receives the bytes.
+const {
+  pdfSource: pdfData,
+  isLoading: isPdfDataLoading,
+  error: pdfError,
+  reload: reloadPdfData,
+  handleError: handlePdfError,
+} = usePdfSource(pdfSource)
 
 // --- Lógica del Tema (para el lienzo de firma) ---
 const { global } = useTheme()
@@ -258,7 +269,7 @@ const pdfRenderScale = computed(() => {
   if (canvasLargestSide > MAX_CANVAS_DIM.value) {
     scale = MAX_CANVAS_DIM.value / (maxDim * visualScale * dpr)
   }
-  return Math.max(0.5, scale)
+  return Math.max(0.5, capPdfScale(scale))
 })
 
 // --- PDF Zoom Functions ---
@@ -1019,13 +1030,23 @@ onMounted(loadSignatureData);
               ref="pdfContainer"
               class="pdf-container-admin"
             >
-              <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
+              <PdfLoadState
+                v-if="pdfSource"
+                :loading="isPdfDataLoading"
+                :error="pdfError"
+                :url="pdfSource"
+                file-name="dokument-signerat.pdf"
+                @retry="reloadPdfData"
+              />
+              <div v-if="pdfData && !pdfError" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed 
                   :key="`signed-${pdfRenderKey}`"
-                  :source="pdfSource"
+                  :source="pdfData"
                   :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
+                  @loading-failed="handlePdfError"
+                  @rendering-failed="handlePdfError"
                 />
               </div>
             </div>
@@ -1110,7 +1131,7 @@ onMounted(loadSignatureData);
 
             <!-- Miniaturas de páginas (solo desktop - v-if evita crear canvases en mobile) -->
             <div
-              v-if="pdfSource && pdfNumPages >= 1 && !isMobile"
+              v-if="pdfData && !pdfError && pdfNumPages >= 1 && !isMobile"
               class="my-4 flex-grow-1 overflow-auto placement-thumbnails-scroll"
             >
               <div class="d-flex flex-column justify-center align-center gap-2">
@@ -1123,7 +1144,7 @@ onMounted(loadSignatureData);
                 >
                   <div class="thumbnail-number">{{ page }}</div>
                   <VuePdfEmbed
-                    :source="pdfSource"
+                    :source="pdfData"
                     :page="page"
                     :width="146"
                   />
@@ -1141,14 +1162,23 @@ onMounted(loadSignatureData);
               ref="pdfContainer"
               class="pdf-container-admin"
             >
-              <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
+              <PdfLoadState
+                v-if="pdfSource"
+                :loading="isPdfDataLoading"
+                :error="pdfError"
+                :url="pdfSource"
+                @retry="reloadPdfData"
+              />
+              <div v-if="pdfData && !pdfError" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed
                   :key="`unsigned-${pdfRenderKey}`"
                   ref="pdfViewerRef"
-                  :source="pdfSource"
+                  :source="pdfData"
                   :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
+                  @loading-failed="handlePdfError"
+                  @rendering-failed="handlePdfError"
                 />
               </div>
               
