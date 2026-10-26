@@ -5,11 +5,14 @@ import { themeConfig } from "@themeConfig";
 import { useBillingsStores } from "@/stores/useBillings";
 import { emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { loadBillingSmsActionPreference } from '@/@core/utils/smsVisibility'
-import VuePdfEmbed from "vue-pdf-embed";
+import VuePdfEmbed from "@/plugins/vuePdfEmbed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
+import PdfLoadState from "@/components/common/PdfLoadState.vue";
+import PdfPageNav from "@/components/common/PdfPageNav.vue";
+import { capPdfScale, pdfTextLayerEnabled, usePdfPagination, usePdfSource } from "@/composables/usePdfSource";
+import "vue-pdf-embed/dist/styles/textLayer.css";
 
 const billingsStores = useBillingsStores();
 const route = useRoute();
@@ -47,8 +50,35 @@ const canShowBillingSmsAction = ref(false)
 
 const pdfScale = computed(() => {
   const dpr = typeof window !== "undefined" ? (window.devicePixelRatio || 1) : 1;
-  return Math.min(2.25, Math.max(1.75, dpr * 1.05));
+  return capPdfScale(Math.min(2.25, Math.max(1.75, dpr * 1.05)));
 });
+
+const pdfUrl = computed(() => {
+  if (!invoice.value?.file)
+    return null;
+
+  return themeConfig.settings.urlbase +
+    'proxy-image?url=' +
+    themeConfig.settings.urlStorage +
+    invoice.value.file;
+});
+
+const {
+  pdfSource,
+  isLoading: isPdfLoading,
+  error: pdfError,
+  reload: reloadPdf,
+  handleError: handlePdfError,
+} = usePdfSource(pdfUrl);
+
+const {
+  page: pdfPage,
+  currentPage: pdfCurrentPage,
+  numPages: pdfNumPages,
+  isPaged: isPdfPaged,
+  onLoaded: handlePdfLoaded,
+} = usePdfPagination(pdfSource);
+
 const pdfViewportEl = ref(null);
 const pdfViewportWidth = ref(0);
 let pdfResizeObserver;
@@ -531,20 +561,31 @@ onBeforeUnmount(() => {
 
           <div ref="pdfViewportEl" class="invoice-panel">
             <div class="pdf-host" :style="{ width: `${pdfWidth}px` }">
+              <PdfLoadState
+                :loading="isPdfLoading"
+                :error="pdfError"
+                :url="pdfUrl"
+                @retry="reloadPdf"
+              />
               <VuePdfEmbed
-                text-layer
+                v-if="pdfSource && !pdfError"
+                :text-layer="pdfTextLayerEnabled"
                 :width="pdfWidth"
                 :scale="pdfScale"
-                :source="
-                  themeConfig.settings.urlbase +
-                  'proxy-image?url=' +
-                  themeConfig.settings.urlStorage +
-                  invoice.file
-                "
+                :page="pdfPage"
+                :source="pdfSource"
                 class="w-100 m-auto"
+                @loaded="handlePdfLoaded"
+                @loading-failed="handlePdfError"
+                @rendering-failed="handlePdfError"
               />
             </div>
           </div>
+          <PdfPageNav
+            v-if="isPdfPaged && !pdfError"
+            v-model:page="pdfCurrentPage"
+            :total="pdfNumPages"
+          />
         </VCard>
       </VCol>
       <VCol

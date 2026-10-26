@@ -852,7 +852,7 @@ const truncateText = (text, length = 30) => {
       <!-- 👉 Submit and Cancel -->
       <VBtn
         class="btn-light" 
-        type="reset"
+        type="button"
         @click="closeNavigationDrawer"
       >
         Avbryt
@@ -948,19 +948,20 @@ const truncateText = (text, length = 30) => {
 :deep(.card-form .org-number-duplicate.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline__end) {
   border-color: #FF4D4F !important;
 }
-</style>
-  .deleted-supplier-option .deleted-supplier-text,
-  .deleted-supplier-text {
-    text-decoration: line-through;
-    opacity: 0.75;
-  }
 
+.deleted-supplier-option .deleted-supplier-text,
+.deleted-supplier-text {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+</style>
 
 <style lang="scss">
 @media (max-width: 1023px) {
   .card-form.client-mobile {
     .v-list {
-      padding: 28px 24px 40px !important;
+      padding: 28px 24px 24px !important;
 
       .v-list-item {
         margin-bottom: 0px;

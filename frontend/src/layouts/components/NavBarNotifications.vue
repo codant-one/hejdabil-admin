@@ -16,25 +16,14 @@ const emitDashboardRemindersScroll = () => {
 }
 
 onMounted(async () => {
-  // Obtener el usuario actual y su ID
-  let userId = null
-  
-  // Intentar obtener el userId del localStorage si está almacenado
-  const userData = localStorage.getItem('user_data')
-
-  if (userData) {
-    try {
-      const user = JSON.parse(userData)
-      userId = user?.id ?? user?.user?.id ?? null
-    } catch (e) {
-      console.error('❌ Error parsing user data:', e)
-    }
-  } else {
-    console.warn('⚠️ No user_data found in localStorage')
-  }
-
-  await notificationsStore.init(userId)
+  // init() resuelve el usuario desde user_data y resincroniza canal, listado y sonido
+  // si el usuario cambió (logout/login en esta u otra pestaña).
+  await notificationsStore.init()
 })
+
+const onMenuOpen = () => {
+  notificationsStore.fetchRecent()
+}
 
 const onReadAll = async () => {
   router.push({ name : 'dashboard-notifications' })
@@ -65,6 +54,8 @@ const onNotificationClick = async (notification) => {
 <template>
   <Notifications 
     :notifications="notificationsStore.recentNotifications" 
+    :loading="notificationsStore.recentLoading"
+    @open="onMenuOpen"
     @click:readAllNotifications="onReadAll" 
     @click:notification="onNotificationClick"
   />  

@@ -8,6 +8,7 @@ import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewCountryDrawer from './AddNewCountryDrawer.vue' 
+import AddNewCountryMobile from './AddNewCountryMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -65,11 +66,6 @@ const sectionEl = ref(null);
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
-
-const states = ref ([
-  { id: 2, name: "Aktiv" },
-  { id: 1, name: "Inaktiv" }
-])
 
 const advisor = ref({
   type: '',
@@ -133,11 +129,10 @@ async function fetchData(cleanFilters = false) {
 watchEffect(registerEvents)
 
 const updateStateId = (newStateId) => {
-  // Si ya está seleccionado, desmarcarlo (poner null)
   if (state_id.value === newStateId) {
     newStateId = null;
   }
-  
+
   state_id.value = newStateId;
   filtreraMobile.value = false;
 };
@@ -415,7 +410,7 @@ const downloadPDF = async () => {
 
     const { headerMarkup } = await buildPdfTopHeader({
       company: company.value,
-      title: 'Länder',
+      title: 'Land',
       themeConfig,
       escapeHtml,
       showCompanyDetailsWhenLogo: true,
@@ -470,7 +465,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'countries.pdf',
+        filename: 'land.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -687,23 +682,50 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <div class="d-flex align-center empty-select" :style="windowWidth < 1024 ? 'width: 96px' : ''">
-          <VSelect
-            v-model="state_id"
-            placeholder="Status"
-            class="custom-select-hover"
-            :items="states"
-            item-title="name"
-            item-value="id"
-            clearable
-          >
-            <template #selection="{ item }">
-              <div class="activity-mode-option">
-                {{ item.raw.name }}
-              </div>
-            </template>
-          </VSelect>
-        </div>
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStateId(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Inaktiv</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(2)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 2"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Aktiv</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.mdAndDown"
@@ -730,7 +752,7 @@ onBeforeUnmount(() => {
             <th scope="col"> Namnet </th>
             <th scope="col"> ISO </th>
             <th scope="col"> ISO 3</th>
-            <th scope="col"> Status </th>
+            <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('edit', 'countries') || $can('delete', 'countries')"></th>
           </tr>
         </thead>
@@ -765,8 +787,8 @@ onBeforeUnmount(() => {
               </div>
             </td>
             <td> {{ country.iso }} </td>
-            <td> {{ country.iso3 }} </td>
-            <td class="text-wrap">
+            <td> {{ country.iso3 ?? '---' }} </td>
+            <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(country.state.id)?.class}`"
@@ -829,12 +851,12 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-checkmark"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga länder än</div>
+          <div class="empty-state-title"> Inga land skapade än</div>
           <div class="empty-state-text">
-            Lägg till dina länder här.
+            Här kommer alla dina skapade land att listas.
           </div>
         </div>
         <VBtn
@@ -842,16 +864,16 @@ onBeforeUnmount(() => {
           v-if="$can('create', 'countries') && !$vuetify.display.mdAndDown"
           @click="isAddNewCountryDrawerVisible = true"
         >
-          Lägg till länder
+          Skapa ny land
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
 
         <VBtn
           class="btn-ghost"
           v-if="$vuetify.display.mdAndDown && $can('create', 'countries')"
-          @click="isAddNewCountryDrawerVisible = true"
+          @click="isDialogOpen = true"
         >
-          Lägg till länder
+          Skapa ny land
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -881,7 +903,7 @@ onBeforeUnmount(() => {
                     {{ country.name }}
                   </span>
                   <span class="text-sm text-disabled">
-                    {{ getFlagCountry(country.id) }}
+                    {{ country.iso3 ?? '---' }}
                   </span>
                 </div>
               </div>
@@ -908,7 +930,7 @@ onBeforeUnmount(() => {
               <div class="mb-6">
                 <div class="expansion-panel-item-label">ISO 3</div>
                 <div class="expansion-panel-item-value">
-                    {{ country.iso3 }}
+                    {{ country.iso3 ?? '---' }}
                 </div>
               </div>
               
@@ -951,6 +973,7 @@ onBeforeUnmount(() => {
 
     <!-- 👉 Add New Country -->
     <AddNewCountryDrawer
+      ref="addNewCountryDrawerRef"
       v-model:isDrawerOpen="isAddNewCountryDrawerVisible"
       :country="selectedCountry"
       @country-data="submitForm"
@@ -1026,6 +1049,24 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Add New Client Mobile Dialog -->
+    <VDialog
+      v-model="isDialogOpen"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+      @update:model-value="handleMobileDialogUpdate"
+    >
+      <VCard>
+        <AddNewCountryMobile
+          ref="addNewCountryMobileRef"
+          v-model:isDrawerOpen="isDialogOpen"
+          :country="selectedCountry"
+          @country-data="submitForm"
+          @edited="onCountryFormEdited"
+        />
+      </VCard>
+    </VDialog>
+
     <!-- 👉 Confirm Active/Inactive -->
     <VDialog
       v-model="isConfirmActiveDialogVisible"
@@ -1064,6 +1105,41 @@ onBeforeUnmount(() => {
               Acceptera
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStateId(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Inaktiv</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(2)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 2"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Aktiv</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
 

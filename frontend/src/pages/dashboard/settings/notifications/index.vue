@@ -4,6 +4,7 @@ import { canWithPlan } from "@layouts/plugins/casl";
 import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
 import { useConfigsStores } from '@/stores/useConfigs'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const DEFAULT_NOTIFY_VIA_SOUND = true
@@ -18,6 +19,7 @@ const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end
 const sectionEl = ref(null)
 const settingsStore = useSettingsStore()
 const configsStores = useConfigsStores()
+const notificationsStore = useNotificationsStore()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
@@ -131,6 +133,7 @@ const onSubmit = async () => {
       })
 
       configsStores.configs['notifications'] = payload
+      notificationsStore.setNotificationSoundEnabled(payload.notify_via_sound)
 
       advisor.value = { type: 'success', message: 'Uppdaterad konfiguration!', show: true }
     } else {
@@ -163,6 +166,9 @@ const onSubmit = async () => {
       }
 
       syncNotificationSettingsLocalState(response?.data?.data?.settings, persistedNotification)
+
+      if (response?.data?.success)
+        notificationsStore.setNotificationSoundEnabled(payload.notify_via_sound)
     }
 
     setTimeout(() => { advisor.value = { type: '', message: '', show: false } }, 3000)

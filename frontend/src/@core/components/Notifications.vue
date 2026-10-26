@@ -1,11 +1,15 @@
 <script setup>
 
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
   notifications: {
     type: Array,
     required: true,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
   badgeProps: {
     type: null,
@@ -19,9 +23,16 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["click:readAllNotifications", "click:notification"]);
+const emit = defineEmits(["click:readAllNotifications", "click:notification", "open"]);
 
 const isMenuOpen = ref(false);
+const unreadCount = computed(() => props.notifications.filter(n => !n.read).length);
+
+// Al abrir el menú el padre resincroniza el listado con el servidor.
+watch(isMenuOpen, isOpen => {
+  if (isOpen)
+    emit('open');
+});
 const route = useRoute();
 const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'));
 const notificationButtonStyle = computed(() => (
@@ -31,6 +42,7 @@ const notificationButtonStyle = computed(() => (
 ));
 
 const handleNotificationClick = (notification) => {
+  closeMenu();
   emit('click:notification', notification);
 };
 
@@ -42,7 +54,7 @@ const closeMenu = () => {
 <template>
   <VBtn icon variant="text" class="btn-custom-notifications" :style="notificationButtonStyle">
     <VIcon icon="custom-bell" size="24" />
-    <span>+{{ props.notifications.filter(n => !n.read).length }}</span>
+    <span>+{{ unreadCount }}</span>
     <VBadge 
       location="bottom right" 
       class="d-none"
@@ -51,7 +63,7 @@ const closeMenu = () => {
       :color="'#79fca2'" 
       :text-color="'#416054'"
       :offset-x="2"
-      :content="'+' + props.notifications.filter(n => !n.read).length">
+      :content="'+' + unreadCount">
       <VIcon icon="custom-bell" size="24" />
     </VBadge>
 
@@ -72,13 +84,13 @@ const closeMenu = () => {
           <template #append>
             <div class="d-flex align-center gap-2">
               <VChip
-                v-if="props.notifications.filter(n => !n.read).length"
+                v-if="unreadCount"
                 color="#D8FFE4"
                 size="small"
                 variant="elevated"
               >
                 <span class="nytt-class">
-                  {{ props.notifications.filter(n => !n.read).length }} Nytt
+                  {{ unreadCount }} Nytt
                 </span>
               </VChip>
               <VBtn
@@ -97,10 +109,10 @@ const closeMenu = () => {
 
         <!-- 👉 Notifications list -->
         <div style="max-height: 400px; overflow-y: auto;">
+          <template v-if="props.notifications.length > 0">
           <template
-            v-for="notification in props.notifications"
-            v-if="props.notifications.length > 0"
-            :key="notification.id || notification.title"
+            v-for="(notification, index) in props.notifications"
+            :key="notification.id ?? `${notification.title}-${index}`"
           >
             <VListItem
               link
@@ -169,6 +181,18 @@ const closeMenu = () => {
             </VListItem>
             <VDivider />
           </template>
+          </template>
+
+          <div
+            v-else-if="props.loading"
+            class="d-flex justify-center pa-6"
+          >
+            <VProgressCircular
+              indeterminate
+              size="28"
+              color="primary"
+            />
+          </div>
 
           <template v-else>
             <div class="empty-state pa-6 mb-0">

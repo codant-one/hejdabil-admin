@@ -10,9 +10,21 @@ const SESSION_ENDED_MESSAGE = 'Din session har avslutats. Logga in igen för att
 let globalNotificationCallback = null
 let notificationAudio = null
 const NOTIFICATION_SOUND_PATH = '/sounds/notification-2.wav'
+
+// Mismo valor por defecto que el switch "notifyViaSound" de Inställningar > Meddelanden
 const DEFAULT_NOTIFY_VIA_SOUND = true
+const RECENT_NOTIFICATIONS_LIMIT = 4
 const SOUND_DEDUP_WINDOW_MS = 1200
+const SOUND_CROSS_TAB_KEY = 'notification_sound_last_played'
+const VISIBILITY_REFRESH_THROTTLE_MS = 15000
+
 const playedNotificationSoundAt = new Map()
+
+let windowListenersRegistered = false
+let publicChannelSubscribed = false
+let recentRequestSeq = 0
+let soundPreferenceRequestSeq = 0
+let lastVisibilityRefreshAt = 0
 
 const resolveBooleanFlag = (value, fallback = false) => {
   if (value === undefined || value === null)
@@ -37,6 +49,32 @@ const resolveBooleanFlag = (value, fallback = false) => {
   return fallback
 }
 
+const normalizeUserId = userId => (
+  userId === undefined || userId === null || userId === '' ? null : String(userId)
+)
+
+const readStoredUserData = () => {
+  const userData = localStorage.getItem('user_data')
+
+  if (!userData)
+    return null
+
+  try {
+    return JSON.parse(userData)
+  } catch (error) {
+    return null
+  }
+}
+
+const isTwoFactorPending = () => {
+  try {
+    return JSON.parse(localStorage.getItem('is_2fa') || 'null')?.status === true
+  } catch (error) {
+    return false
+  }
+}
+
+// Evita que el mismo evento suene dos veces (en esta pestaña o en otra pestaña del mismo usuario).
 const canPlayNotificationSoundForId = notificationId => {
   if (notificationId === undefined || notificationId === null)
     return true
@@ -46,6 +84,16 @@ const canPlayNotificationSoundForId = notificationId => {
 
   if (now - lastPlayedAt < SOUND_DEDUP_WINDOW_MS)
     return false
+
+  try {
+    const [lastId, lastTime] = String(localStorage.getItem(SOUND_CROSS_TAB_KEY) || '').split(':')
+
+    if (lastId === String(notificationId) && now - Number(lastTime) < SOUND_DEDUP_WINDOW_MS * 5)
+      return false
+
+    localStorage.setItem(SOUND_CROSS_TAB_KEY, `${notificationId}:${now}`)
+  } catch (error) {
+  }
 
   playedNotificationSoundAt.set(notificationId, now)
 
@@ -71,17 +119,52 @@ const playNotificationSound = () => {
     const playPromise = notificationAudio.play()
 
     if (playPromise && typeof playPromise.catch === 'function') {
+      // El navegador puede bloquear el audio sin interacción previa del usuario.
       playPromise.catch(() => {})
     }
   } catch (error) {
   }
 }
 
+// Echo.disconnect() (logout forzado / 401) deja pusher desconectado; al volver a
+// iniciar sesión hay que reconectarlo para que las suscripciones lleguen al servidor.
+const ensureEchoConnected = () => {
+  const pusher = window?.Echo?.connector?.pusher
+
+  if (!pusher?.connection)
+    return
+
+  if (['disconnected', 'failed', 'unavailable'].includes(pusher.connection.state)) {
+    try {
+      pusher.connect()
+    } catch (error) {
+      console.error('❌ Error reconnecting Echo:', error)
+    }
+  }
+}
+
+const mapNotification = (notification, formatTime) => ({
+  id: notification?.id,
+  title: notification?.title ?? 'Ny avisering',
+  subtitle: notification?.subtitle ?? '',
+  time: notification?.created_at ? formatTime(notification.created_at) : 'Nyss',
+  img: notification?.img,
+  text: notification?.text,
+  route: notification?.route ?? '/dashboard',
+  read: resolveBooleanFlag(notification?.read, false),
+  color: notification?.color ?? 'primary',
+  icon: notification?.icon ?? 'tabler-bell',
+})
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
     recentNotifications: [],
-    notificationSoundEnabled: DEFAULT_NOTIFY_VIA_SOUND,
+    // Usuario cuyo listado/canal/preferencia están cargados en el store.
+    currentUserId: null,
+    // false hasta conocer la preferencia del usuario actual: nunca suena "por defecto".
+    notificationSoundEnabled: false,
+    recentLoading: false,
     initialized: false,
     privateChannelSubscribed: false,
     privateChannelSubscribing: false,
@@ -93,6 +176,9 @@ export const useNotificationsStore = defineStore('notifications', {
   getters:{
     getNotifications(){
         return this.notifications
+    },
+    unreadRecentCount() {
+      return this.recentNotifications.filter(notification => !notification.read).length
     },
   },
   actions: {
@@ -120,7 +206,11 @@ export const useNotificationsStore = defineStore('notifications', {
       return Notifications.delete(id)
           .then((response) => {
               let index = this.notifications.findIndex((item) => item.id === id)
-              this.notifications.splice(index, 1)
+              if (index !== -1)
+                this.notifications.splice(index, 1)
+
+              this.recentNotifications = this.recentNotifications.filter(item => item.id !== id)
+
               return Promise.resolve(response)
           })
           .catch(error => Promise.reject(error))
@@ -151,31 +241,13 @@ export const useNotificationsStore = defineStore('notifications', {
         })
     },
     getStoredUserId() {
-      const userData = localStorage.getItem('user_data')
+      const user = readStoredUserData()
 
-      if (!userData)
-        return null
-
-      try {
-        const user = JSON.parse(userData)
-
-        return user?.id ?? user?.user?.id ?? null
-      } catch (error) {
-        return null
-      }
+      return user?.id ?? user?.user?.id ?? null
     },
 
     getStoredUserData() {
-      const userData = localStorage.getItem('user_data')
-
-      if (!userData)
-        return null
-
-      try {
-        return JSON.parse(userData)
-      } catch (error) {
-        return null
-      }
+      return readStoredUserData()
     },
 
     resolveSettingsUserId() {
@@ -188,121 +260,223 @@ export const useNotificationsStore = defineStore('notifications', {
       return user?.id ?? user?.user?.id ?? null
     },
 
+    // Llamado desde Inställningar > Meddelanden al guardar, para aplicar el cambio sin recargar.
+    setNotificationSoundEnabled(value) {
+      soundPreferenceRequestSeq++
+      this.notificationSoundEnabled = resolveBooleanFlag(value, DEFAULT_NOTIFY_VIA_SOUND)
+    },
+
+    // Lee notify_via_sound de la misma fuente que usa la página de ajustes:
+    // admins -> config global 'notifications'; resto -> settings del proveedor (o de su jefe).
     async loadNotificationSoundPreference() {
-      this.notificationSoundEnabled = DEFAULT_NOTIFY_VIA_SOUND
+      const requestSeq = ++soundPreferenceRequestSeq
+      const userId = this.currentUserId
+
+      if (!userId) {
+        this.notificationSoundEnabled = false
+        return
+      }
+
+      let enabled = DEFAULT_NOTIFY_VIA_SOUND
 
       try {
         const user = this.getStoredUserData()
         const role = user?.roles?.[0]?.name ?? ''
         const isAdminRole = role === 'SuperAdmin' || role === 'Administrator'
-
-        const settingsUserId = this.resolveSettingsUserId()
-
-        if (settingsUserId) {
-          const settingsResponse = await Settings.get(settingsUserId)
-          const settings = settingsResponse?.data?.data?.settings
-          const notification = settings?.notification ?? settings?.setting_notification ?? null
-
-          if (notification?.notify_via_sound !== undefined && notification?.notify_via_sound !== null) {
-            this.notificationSoundEnabled = resolveBooleanFlag(notification.notify_via_sound, DEFAULT_NOTIFY_VIA_SOUND)
-            return
-          }
-        }
+        let rawValue
 
         if (isAdminRole) {
           const response = await Configs.get('notifications')
-          const rawValue = response?.data?.config?.value
+          const configValue = response?.data?.config?.value
           let config = null
 
-          if (typeof rawValue === 'string') {
+          if (typeof configValue === 'string') {
             try {
-              config = JSON.parse(rawValue)
+              config = JSON.parse(configValue)
             } catch (error) {
               config = null
             }
-          } else if (rawValue && typeof rawValue === 'object') {
-            config = rawValue
+          } else if (configValue && typeof configValue === 'object') {
+            config = configValue
           }
 
-          if (config?.notify_via_sound !== undefined && config?.notify_via_sound !== null) {
-            this.notificationSoundEnabled = resolveBooleanFlag(config.notify_via_sound, DEFAULT_NOTIFY_VIA_SOUND)
-          }
+          rawValue = config?.notify_via_sound
+        } else {
+          const settingsUserId = this.resolveSettingsUserId()
 
-          return
+          if (settingsUserId) {
+            const settingsResponse = await Settings.get(settingsUserId)
+            const settings = settingsResponse?.data?.data?.settings
+            const notification = settings?.notification ?? settings?.setting_notification ?? null
+
+            rawValue = notification?.notify_via_sound
+          }
         }
+
+        enabled = resolveBooleanFlag(rawValue, DEFAULT_NOTIFY_VIA_SOUND)
       } catch (error) {
-        this.notificationSoundEnabled = DEFAULT_NOTIFY_VIA_SOUND
+        // Sin poder confirmar la preferencia, no se reproduce sonido.
+        enabled = false
       }
+
+      if (requestSeq === soundPreferenceRequestSeq && this.currentUserId === userId)
+        this.notificationSoundEnabled = enabled
     },
 
-    async init(userId = null) {
-      const resolvedUserId = userId ?? this.getStoredUserId()
+    // Últimas notificaciones no leídas del usuario autenticado (desde la BD).
+    async fetchRecent() {
+      const userId = this.currentUserId
 
-      if (this.initialized) {
-        await this.loadNotificationSoundPreference()
-
-        if (
-          resolvedUserId
-          && (
-            (!this.privateChannelSubscribed && !this.privateChannelSubscribing)
-            || this.privateChannelUserId !== resolvedUserId
-          )
-        )
-          this.subscribeToPrivateChannel(resolvedUserId)
-
+      if (!userId)
         return
-      }
-      this.initialized = true
 
-      // Suscribirse a eventos en tiempo real
-      try {
-        
-        if (window && window.Echo) {
-          
-          // Canal público (notificaciones generales)
-          window.Echo.channel('notifications-channel')
-            .listen('.notifications-channel', data => {
-              this.addFromBackend(data.message)
-            })
-            .error(error => {
-              console.error('❌ Error in notification channel:', error)
-            })
-          
-          // Canal privado (notificaciones específicas del usuario)
-          if (resolvedUserId) {
-            this.subscribeToPrivateChannel(resolvedUserId)
-          } else {
-            //console.warn('⚠️ No userId provided, skipping private channel subscription')
-          }
-          
-        } else {
-          console.warn('❌ Echo not available. Please check initialization in notifications.js')
-        }
-      } catch (err) {
-        console.error('❌ Error subscribing to notifications:', err)
-      }
+      const requestSeq = ++recentRequestSeq
 
-      await this.loadNotificationSoundPreference()
+      this.recentLoading = true
 
-      // Cargar notificaciones guardadas desde la base de datos
       try {
         const { data } = await Notifications.listRecent()
-        if (data.success && Array.isArray(data.data)) {
-          this.recentNotifications = data.data.map(notification => ({
-            id: notification.id,
-            title: notification.title,
-            subtitle: notification.subtitle,
-            time: this.formatTime(notification.created_at),
-            text: notification.text,
-            route: notification.route,
-            read: false,
-            color: notification.color ?? 'primary',
-            icon: notification.icon ?? 'tabler-bell',
-          }))
+
+        // Ignorar respuestas viejas o de otro usuario (cambio de sesión durante la petición).
+        if (requestSeq !== recentRequestSeq || this.currentUserId !== userId)
+          return
+
+        if (data?.success && Array.isArray(data.data)) {
+          this.recentNotifications = data.data
+            .map(notification => mapNotification(notification, this.formatTime))
+            .slice(0, RECENT_NOTIFICATIONS_LIMIT)
         }
       } catch (err) {
         console.error('Error loading notifications from database:', err)
+      } finally {
+        if (requestSeq === recentRequestSeq)
+          this.recentLoading = false
       }
+    },
+
+    registerWindowListeners() {
+      if (windowListenersRegistered || typeof window === 'undefined')
+        return
+
+      windowListenersRegistered = true
+
+      // Se difiere para que login/logout terminen de escribir user_data y accessToken.
+      const scheduleSync = () => setTimeout(() => this.syncWithStoredUser({ refreshList: false }), 0)
+
+      // Misma pestaña (App.vue emite 'user-data-updated' al cambiar user_data).
+      window.addEventListener('user-data-updated', scheduleSync)
+
+      // Otras pestañas del mismo navegador (login/logout con otro usuario).
+      window.addEventListener('storage', event => {
+        if (event.key === null || event.key === 'user_data' || event.key === 'accessToken')
+          scheduleSync()
+      })
+
+      // Al volver a la pestaña se resincroniza por si se perdieron eventos del websocket.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible')
+          return
+
+        const now = Date.now()
+
+        if (now - lastVisibilityRefreshAt < VISIBILITY_REFRESH_THROTTLE_MS)
+          return
+
+        lastVisibilityRefreshAt = now
+        this.syncWithStoredUser({ refreshList: true, refreshSound: true })
+      })
+    },
+
+    subscribeToPublicChannel() {
+      if (publicChannelSubscribed || !window?.Echo)
+        return
+
+      try {
+        window.Echo.channel('notifications-channel')
+          .listen('.notifications-channel', data => {
+            this.addFromBackend(data.message)
+          })
+          .error(error => {
+            console.error('❌ Error in notification channel:', error)
+          })
+
+        publicChannelSubscribed = true
+      } catch (err) {
+        console.error('❌ Error subscribing to notifications:', err)
+      }
+    },
+
+    leavePrivateChannel() {
+      if (window?.Echo && this.privateChannelUserId) {
+        try {
+          window.Echo.leave(`notifications.${this.privateChannelUserId}`)
+        } catch (error) {
+        }
+      }
+
+      this.privateChannelSubscribed = false
+      this.privateChannelSubscribing = false
+      this.privateChannelUserId = null
+    },
+
+    // Limpia todo lo que pertenece al usuario anterior.
+    resetUserState(userId = null) {
+      recentRequestSeq++
+      soundPreferenceRequestSeq++
+
+      this.leavePrivateChannel()
+      this.currentUserId = normalizeUserId(userId)
+      this.recentNotifications = []
+      this.recentLoading = false
+      this.notificationSoundEnabled = false
+    },
+
+    /**
+     * Alinea el store con el usuario guardado en localStorage (canal privado, listado y sonido).
+     */
+    async syncWithStoredUser({ userId = null, refreshList = true, refreshSound = false } = {}) {
+      const resolvedUserId = normalizeUserId(userId ?? this.getStoredUserId())
+      const hasToken = !!localStorage.getItem('accessToken')
+
+      if (!resolvedUserId || !hasToken || isTwoFactorPending()) {
+        if (this.currentUserId || this.privateChannelUserId || this.recentNotifications.length)
+          this.resetUserState(null)
+
+        return
+      }
+
+      ensureEchoConnected()
+      this.subscribeToPublicChannel()
+
+      if (this.currentUserId !== resolvedUserId) {
+        this.resetUserState(resolvedUserId)
+        this.subscribeToPrivateChannel(resolvedUserId)
+
+        await Promise.all([
+          this.loadNotificationSoundPreference(),
+          this.fetchRecent(),
+        ])
+
+        return
+      }
+
+      this.subscribeToPrivateChannel(resolvedUserId)
+
+      await Promise.all([
+        refreshSound ? this.loadNotificationSoundPreference() : null,
+        refreshList ? this.fetchRecent() : null,
+      ])
+    },
+
+    async init(userId = null) {
+      this.initialized = true
+
+      if (!window?.Echo)
+        console.warn('❌ Echo not available. Please check initialization in main.js')
+
+      this.registerWindowListeners()
+
+      await this.syncWithStoredUser({ userId, refreshList: true })
     },
 
     formatTime(dateString) {
@@ -320,27 +494,25 @@ export const useNotificationsStore = defineStore('notifications', {
 
     /**
      * Suscribirse al canal privado de notificaciones del usuario
-     * @param {number} userId - ID del usuario
+     * @param {number|string} userId - ID del usuario
      */
     subscribeToPrivateChannel(userId) {
-      if (!userId || !window.Echo) {
+      const channelUserId = normalizeUserId(userId)
+
+      if (!channelUserId || !window.Echo) {
         return
       }
 
       if (
-        this.privateChannelUserId === userId
+        this.privateChannelUserId === channelUserId
         && (this.privateChannelSubscribed || this.privateChannelSubscribing)
       ) {
         return
       }
 
       try {
-        if (this.privateChannelUserId && this.privateChannelUserId !== userId) {
-          window.Echo.leave(`notifications.${this.privateChannelUserId}`)
-          this.privateChannelSubscribed = false
-          this.privateChannelSubscribing = false
-          this.privateChannelUserId = null
-        }
+        if (this.privateChannelUserId && this.privateChannelUserId !== channelUserId)
+          this.leavePrivateChannel()
 
         const token = localStorage.getItem('accessToken')
 
@@ -351,22 +523,32 @@ export const useNotificationsStore = defineStore('notifications', {
         // Mark the channel as "in-flight" before attaching listeners to avoid duplicate binds.
         this.privateChannelSubscribed = false
         this.privateChannelSubscribing = true
-        this.privateChannelUserId = userId
+        this.privateChannelUserId = channelUserId
 
         window.syncEchoAuthorization?.()
+        ensureEchoConnected()
 
-        window.Echo.private(`notifications.${userId}`)
+        window.Echo.private(`notifications.${channelUserId}`)
           .listen('.user-notification', data => {
+            // Descarta eventos que lleguen tras un cambio de usuario.
+            if (this.currentUserId !== channelUserId)
+              return
+
             this.addFromBackend(data.message)
           })
           .listen('.force-logout', data => {
+            if (this.currentUserId !== channelUserId)
+              return
+
             this.forceLogout(data?.message)
           })
           .error(error => {
+            if (this.privateChannelUserId !== channelUserId)
+              return
+
             this.privateChannelSubscribed = false
             this.privateChannelSubscribing = false
-            if (this.privateChannelUserId === userId)
-              this.privateChannelUserId = null
+            this.privateChannelUserId = null
 
             const errorMessage = String(
               error?.error?.data?.message
@@ -387,14 +569,16 @@ export const useNotificationsStore = defineStore('notifications', {
             console.error('❌ Error in private notification channel:', error)
           })
           .subscribed(() => {
+            if (this.privateChannelUserId !== channelUserId)
+              return
+
             this.privateChannelSubscribed = true
             this.privateChannelSubscribing = false
-            this.privateChannelUserId = userId
           })
       } catch (err) {
         this.privateChannelSubscribed = false
         this.privateChannelSubscribing = false
-        if (this.privateChannelUserId === userId)
+        if (this.privateChannelUserId === channelUserId)
           this.privateChannelUserId = null
 
         console.error('❌ Error subscribing to private notifications:', err)
@@ -402,12 +586,7 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     forceLogout(message = 'Ditt konto har inaktiverats.') {
-      if (window?.Echo && this.privateChannelUserId) {
-        try {
-          window.Echo.leave(`notifications.${this.privateChannelUserId}`)
-        } catch (error) {
-        }
-      }
+      this.resetUserState(null)
 
       localStorage.removeItem('user_data')
       localStorage.removeItem('userAbilities')
@@ -420,11 +599,6 @@ export const useNotificationsStore = defineStore('notifications', {
         }
       }
 
-      this.privateChannelSubscribed = false
-      this.privateChannelSubscribing = false
-      this.privateChannelUserId = null
-      this.initialized = false
-
       if (router.currentRoute.value?.name === 'login')
         return
 
@@ -435,43 +609,32 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     addFromBackend(data) {
-  
+      // Sin sesión activa no se muestra ni suena nada.
+      if (!this.currentUserId)
+        return
+
       const mapped = {
-        id: data?.id,
-        title: data?.title ?? 'Ny avisering',
-        subtitle: data?.subtitle ?? '',
-        time: data?.time ?? 'Nyss',
-        img: data?.img,
-        color: data?.color,
-        icon: data?.icon,
-        text: data?.text,
+        ...mapNotification(data, this.formatTime),
+        time: 'Nyss',
         route: data?.route ?? '/dashboard',
-        read: data?.read ?? false,
       }
 
-      if (this.notificationSoundEnabled && canPlayNotificationSoundForId(mapped.id))
-        playNotificationSound()
-
-      if (
-        mapped.id !== undefined
+      const isDuplicate = mapped.id !== undefined
         && mapped.id !== null
         && this.recentNotifications.some(notification => notification.id === mapped.id)
-      ) {
-        return
-      }
-      
-      this.recentNotifications.unshift(mapped)
 
-      // Mantener solo las últimas 4 no leídas
-      if (this.recentNotifications.length > 4) {
-        this.recentNotifications = this.recentNotifications.slice(0, 4)
-      }
+      if (isDuplicate)
+        return
+
+      // Solo si "notifyViaSound" está activado en la configuración.
+      if (this.notificationSoundEnabled === true && canPlayNotificationSoundForId(mapped.id))
+        playNotificationSound()
+
+      this.recentNotifications = [mapped, ...this.recentNotifications].slice(0, RECENT_NOTIFICATIONS_LIMIT)
       
       // Llamar al callback global si existe
       if (globalNotificationCallback) {
         globalNotificationCallback(mapped)
-      } else {
-        //console.warn('⚠️ No global callback registered')
       }
     },
 
@@ -489,8 +652,9 @@ export const useNotificationsStore = defineStore('notifications', {
       try {
         await Notifications.markAsRead(notificationId)
         
-        // Eliminar del dropdown
+        // Eliminar del dropdown y completar con la siguiente más reciente
         this.recentNotifications = this.recentNotifications.filter(n => n.id !== notificationId)
+        this.fetchRecent()
       } catch (error) {
         console.error('Error marking notification as read:', error)
         throw error
@@ -512,6 +676,7 @@ export const useNotificationsStore = defineStore('notifications', {
         await Notifications.markAllAsRead()
         
         // Limpiar el dropdown
+        recentRequestSeq++
         this.recentNotifications = []
       } catch (error) {
         console.error('Error marking all notifications as read:', error)
@@ -519,5 +684,3 @@ export const useNotificationsStore = defineStore('notifications', {
     },
   },
 })
-
-

@@ -5,7 +5,10 @@ import { formatNumber } from "@/@core/utils/formatters";
 import { decimalRangeValidator, decimalTextFieldProps, handleDecimalTextFieldKeydown, handleNumericTextFieldKeydown, normalizeDecimalTextInput, normalizeNumericTextInput, numericRangeValidator, numericTextFieldProps } from "@/@core/utils/numericTextField";
 import { requiredValidator } from "@validators";
 import sampleFaktura from "@images/sample-faktura.jpg";
-import VuePdfEmbed from "vue-pdf-embed";
+import VuePdfEmbed from "@/plugins/vuePdfEmbed";
+import PdfLoadState from "@/components/common/PdfLoadState.vue";
+import PdfPageNav from "@/components/common/PdfPageNav.vue";
+import { usePdfPagination, usePdfSource } from "@/composables/usePdfSource";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import draggable from "vuedraggable";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
@@ -327,7 +330,7 @@ const onPeriodFilterApply = applied => {
     isPeriodMenuVisible.value = false;
 };
 
-const pdfSource = computed(() => {
+const pdfUrl = computed(() => {
   if (!props.billing?.file) return null;
   return themeConfig.settings.urlbase +
     'proxy-image?url=' +
@@ -335,6 +338,25 @@ const pdfSource = computed(() => {
     props.billing.file +
     '&t=' + pdfCacheKey.value;
 });
+
+// The embedded preview only exists in the mobile "Förhandsgranska" tab; don't download it otherwise.
+const {
+  pdfSource,
+  isLoading: isPdfLoading,
+  error: pdfError,
+  reload: reloadPdf,
+  handleError: handlePdfError,
+} = usePdfSource(() =>
+  controlledTab.value === 'forhandsgranska' && windowWidth.value < 1024 ? pdfUrl.value : null,
+);
+
+const {
+  page: pdfPage,
+  currentPage: pdfCurrentPage,
+  numPages: pdfNumPages,
+  isPaged: isPdfPaged,
+  onLoaded: handlePdfLoaded,
+} = usePdfPagination(pdfSource);
 
 const handleTabChange = (newTab) => {
   if (newTab === 'forhandsgranska' && (!props.billing?.file || props.hasUnsavedChanges)) {
@@ -2228,18 +2250,34 @@ const handleFocus = (element, fieldId) => {
               </div>
               <VDivider v-if="windowWidth < 1024" />
               <div v-if="windowWidth < 1024" class="invoice-panel">
-                
-                <VuePdfEmbed
-                  v-if="billing?.file"
-                  :source="pdfSource"
-                  class="w-auto m-auto"
-                />
+                <template v-if="billing?.file">
+                  <PdfLoadState
+                    :loading="isPdfLoading"
+                    :error="pdfError"
+                    :url="pdfUrl"
+                    @retry="reloadPdf"
+                  />
+                  <VuePdfEmbed
+                    v-if="pdfSource && !pdfError"
+                    :source="pdfSource"
+                    :page="pdfPage"
+                    class="w-auto m-auto"
+                    @loaded="handlePdfLoaded"
+                    @loading-failed="handlePdfError"
+                    @rendering-failed="handlePdfError"
+                  />
+                </template>
                 <img
                   v-else
                   :src="sampleFaktura"
                   class="w-100"
                 />
               </div>
+              <PdfPageNav
+                v-if="windowWidth < 1024 && billing?.file && isPdfPaged && !pdfError"
+                v-model:page="pdfCurrentPage"
+                :total="pdfNumPages"
+              />
             </div>
           </VWindowItem>
         </VWindow>

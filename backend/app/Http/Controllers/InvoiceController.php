@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Invoice;
+use App\Models\SupplierActivity;
 
 class InvoiceController extends Controller
 {
@@ -78,6 +79,22 @@ class InvoiceController extends Controller
 
             $invoice = Invoice::createInvoice($request);
 
+            SupplierActivity::createActivity([
+                'entity_id' => $invoice->id,
+                'entity_type' => 'invoices',
+                'action_type' => 'create_invoice',
+                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' tillagd',
+                'description' => 'En ny faktura har lagts till.',
+                'icon' => 'custom-attribut',
+                'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
+                'metadata' => json_encode([
+                    'invoice_id' => $invoice->id,
+                    'new_values' => $request->only([
+                        'name', 'description', 'type_id'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -133,6 +150,8 @@ class InvoiceController extends Controller
     {
         try {
             $invoice = Invoice::with(['type'])->find($id);
+
+            $oldValues = $invoice->only(['name', 'description', 'type_id']);
         
             if (!$invoice)
                 return response()->json([
@@ -142,6 +161,23 @@ class InvoiceController extends Controller
                 ], 404);
 
             $invoice->updateInvoice($request, $invoice); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $invoice->id,
+                'entity_type' => 'invoices',
+                'action_type' => 'update_invoice',
+                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' uppdaterad',
+                'description' => 'En faktura har uppdaterats.',
+                'icon' => 'custom-attribut',
+                'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
+                'metadata' => json_encode([
+                    'invoice_id' => $invoice->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $request->only([
+                        'name', 'description', 'type_id'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -175,7 +211,23 @@ class InvoiceController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
             
+            $oldValues = $invoice->only(['name', 'description', 'type_id']);
+
             $invoice->deleteInvoice($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $invoice->id,
+                'entity_type' => 'invoices',
+                'action_type' => 'delete_invoice',
+                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' borttagen',
+                'description' => 'Fakturan har tagits bort.',
+                'icon' => 'custom-attribut',
+                'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
+                'metadata' => json_encode([
+                    'invoice_id' => $invoice->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
