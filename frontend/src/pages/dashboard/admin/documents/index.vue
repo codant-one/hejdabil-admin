@@ -2286,7 +2286,7 @@ onBeforeUnmount(() => {
           <VCardText 
             class="dialog-title-box"
             :style="windowWidth < 1024 ? 'gap: 8px !important;' : ''"
-            :class="windowWidth < 1024 ? 'pb-0 d-flex flex-column flex-0' : ''">
+            :class="windowWidth < 1024 ? 'pb-2 d-flex flex-column flex-0' : ''">
             <VIcon size="32" icon="custom-sent" class="action-icon" />
             <div class="dialog-title">
               Skicka signeringsförfrågan
@@ -2515,11 +2515,13 @@ onBeforeUnmount(() => {
       </VBtn>
 
       <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
-        <VCardText class="dialog-title-box">
+        <VCardText class="dialog-title-box" :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''">
           <div class="dialog-title">
             Signaturprocess
           </div>
         </VCardText>
+
+        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
         
         <VCardText class="tracker-body">
           <div class="snake-timeline">

@@ -824,6 +824,7 @@ onBeforeUnmount(() => {
           <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
             <VCardText 
                 class="dialog-title-box flex-row"
+                :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''"
                 :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
             >
               <div class="dialog-title">
@@ -831,8 +832,11 @@ onBeforeUnmount(() => {
               </div>
             </VCardText>
 
+            <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
+
             <VCardText 
-              class="dialog-text d-flex flex-column gap-4 card-form"
+              class="d-flex flex-column gap-4 card-form"
+              :class="windowWidth < 1024 ? '' : 'dialog-text'"
               :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
             >
 

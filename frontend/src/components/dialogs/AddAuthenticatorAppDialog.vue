@@ -77,13 +77,15 @@ const handleOtp = (value) => {
       flat
       :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
     >
-      <VCardText class="dialog-title-box">
+      <VCardText class="dialog-title-box" :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''">
           <VIcon size="32" icon="custom-auth" class="action-icon" />
           <div class="dialog-title">Lägg till autentiseringsapp</div>
       </VCardText>
 
+      <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
+
       <VCardText
-        class="dialog-text"
+        :class="windowWidth < 1024 ? '' : 'dialog-text'"
         :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
       >
         <h6 class="text-lg font-weight-medium mb-2 text-start">

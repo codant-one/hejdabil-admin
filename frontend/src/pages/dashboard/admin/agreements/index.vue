@@ -2947,11 +2947,13 @@ onBeforeUnmount(() => {
       </VBtn>
 
       <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
-        <VCardText class="dialog-title-box">
+        <VCardText class="dialog-title-box" :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''">
           <div class="dialog-title">
             Signaturprocess
           </div>
         </VCardText>
+
+        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
         
         <VCardText class="tracker-body">
           <div class="snake-timeline">

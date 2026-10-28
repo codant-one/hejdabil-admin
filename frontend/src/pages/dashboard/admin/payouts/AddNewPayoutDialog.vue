@@ -223,9 +223,11 @@ const onSubmit = async () => {
              {{ getTitle }}
           </div>
         </VCardText>
-        <VCardText class="dialog-text pe-0">
+        <VCardText class="dialog-text pe-0" :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''">
           Överför pengar till dina kunder via Swish
         </VCardText>
+
+        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
 
         <VCardText 
           class="dialog-text" 
