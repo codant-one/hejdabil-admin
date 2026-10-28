@@ -2600,7 +2600,7 @@ onBeforeUnmount(() => {
           </VToolbarItems>
         </VToolbar>
         
-        <VCardText class="pa-0 d-flex justify-center align-center" style="background-color: #525659; height: calc(100vh - 64px);">
+        <VCardText class="pa-0 d-flex justify-center align-center" style="background-color: #525659;">
           <VProgressCircular
             v-if="isLoadingPlacementPdf"
             indeterminate

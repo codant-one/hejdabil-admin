@@ -929,6 +929,24 @@ const doCaptureAndSaveReceipt = async (payout, { force = false, refreshList = tr
       backgroundColor: '#ffffff',
       ignoreElements: (element) => {
         return element.hasAttribute('data-html2canvas-ignore');
+      },
+      onclone: (_document, clonedReceipt) => {
+        // Expand only the capture clone, including content below the scroll viewport.
+        const scrollContent = clonedReceipt.querySelector('.dialog-scroll-content');
+        for (const element of [clonedReceipt, scrollContent]) {
+          if (!element)
+            continue;
+
+          element.style.setProperty('height', 'auto', 'important');
+          element.style.setProperty('min-height', '0', 'important');
+          element.style.setProperty('max-height', 'none', 'important');
+          element.style.setProperty('overflow', 'visible', 'important');
+          element.style.setProperty('flex', 'none', 'important');
+          element.scrollTop = 0;
+        }
+
+        const overlayContent = clonedReceipt.closest('.v-overlay__content');
+        overlayContent?.style.setProperty('overflow', 'visible', 'important');
       }
     });
 
@@ -2097,10 +2115,9 @@ const onDatePickerUpdate = value => {
         :scrim="false"
         transition="dialog-bottom-transition"
       :class="['action-dialog dialog-fullscreen', { 'receipt-capture-hidden': isAutoGeneratingReceipt }]">
-       <VCard ref="payoutReceiptMobileRef" class="payout-receipt-card">
-        <VCardText 
-          class="dialog-title-box px-4 pb-0 flex-row" 
-          :style="selectedPayout.payout_state_id !== 5 ? 'height: 30px !important;' : 'height: 50px !important;'"
+       <VCard ref="payoutReceiptMobileRef" class="payout-receipt-card payout-receipt-mobile">
+        <VCardText
+          class="dialog-title-box payout-receipt-mobile-header px-4 pt-3 pb-0 flex-row align-center"
           data-html2canvas-ignore="true">
           <div class="dialog-title d-flex justify-between w-100">
             <VBtn
@@ -2123,65 +2140,68 @@ const onDatePickerUpdate = value => {
           </div>
         </VCardText>
 
-        <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
-          <div class="bg-alert">
-            <div
-              class="status-chip"
-              :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
-            >
-              {{ selectedPayout.state.name }}
-            </div>
-            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3 py-0">
-              <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
-              <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
-              <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
-              <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
-              <div class="d-flex gap-2 title-organization justify-center align-center">
-                  <span class="text-date-swish">
-                    {{ formatDateYMD(selectedPayout.created_at) }}
-                  </span>
-                  <VIcon size="16" icon="custom-clock" />
-                  <span class="text-date-swish">
-                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
-                  </span>
+        <div class="dialog-scroll-content">
+          <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
+            <div class="bg-alert">
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
+              >
+                {{ selectedPayout.state.name }}
               </div>
-              <span class="text-reference">{{ selectedPayout.reference }}</span>
-            </VCardText>
-          </div>      
-        </VCardText>
+              <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3 py-0">
+                <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
+                <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
+                <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
+                <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
+                <div class="d-flex gap-2 title-organization justify-center align-center">
+                    <span class="text-date-swish">
+                      {{ formatDateYMD(selectedPayout.created_at) }}
+                    </span>
+                    <VIcon size="16" icon="custom-clock" />
+                    <span class="text-date-swish">
+                      {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                    </span>
+                </div>
+                <span class="text-reference">{{ selectedPayout.reference }}</span>
+              </VCardText>
+            </div>
+          </VCardText>
 
-        <VCardText class="dialog-text">
-          <span class="mb-2 d-flex justify-between text-neutral-3">
-            Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
-          </span>
-          <VDivider />
-          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
-            Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
-          </span>
-          <VDivider />
-          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
-            Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
-          </span>
-          <VDivider v-if="selectedPayout.message" class="mb-2"/>
-          <span v-if="selectedPayout.message">
-            Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
-          </span>
-          <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-          <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
-            Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
-          </span>
-        </VCardText>
+          <VCardText class="dialog-text">
+            <span class="mb-2 d-flex justify-between text-neutral-3">
+              Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
+            </span>
+            <VDivider />
+            <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+              Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
+            </span>
+            <VDivider />
+            <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+              Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
+            </span>
+            <VDivider v-if="selectedPayout.message" class="mb-2"/>
+            <span v-if="selectedPayout.message">
+              Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
+            </span>
+            <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
+            <span v-if="selectedPayout.error_message && selectedPayout.payout_state_id !== 4">
+              Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
+            </span>
+          </VCardText>
 
-        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="min-height: 32px;">
-          <img 
-            :src="bilflogg" 
+        </div>
+
+        <VCardText class="dialog-text payout-receipt-footer pa-4 d-flex justify-center align-center gap-4" style="min-height: 32px;">
+          <img
+            :src="bilflogg"
             alt="Bilflogg image"
             width="110"
             height="32"
             style="display: block; width: 110px; height: 32px; object-fit: contain; object-position: center; flex-shrink: 0;"
           />
           <VDivider vertical style="height: 32px; align-self: center; " />
-          <img 
+          <img
             :src="swish"
             alt="Swish image"
           />
@@ -2606,6 +2626,23 @@ const onDatePickerUpdate = value => {
   .dialog-scroll-content {
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  .payout-receipt-card > .payout-receipt-mobile-header {
+    flex: 0 0 auto;
+  }
+
+  .payout-receipt-mobile {
+    overflow: hidden !important;
+  }
+
+  .payout-receipt-mobile > .dialog-scroll-content {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .payout-receipt-mobile > .payout-receipt-footer {
+    flex: 0 0 auto !important;
   }
 
   .text-amount {

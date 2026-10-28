@@ -1580,8 +1580,15 @@ body .navigation-bar {
   border-radius: 16px !important;
 }
 
+body:has(.v-overlay-container .v-dialog--fullscreen.v-overlay--active:not(.dialog-bottom-full-width):not(.receipt-capture-hidden) > .v-overlay__content:not(.dialog-bottom-full-width)) .mobile-bottom-bar {
+  z-index: 1000;
+}
+
 .v-overlay-container .v-dialog--fullscreen:not(.dialog-bottom-full-width) > .v-overlay__content:not(.dialog-bottom-full-width) {
+  $scrollable-card-text: '.v-card-text:not(.dialog-title-box):not(.app-fullscreen-header):not(.dialog-actions):not(.flex-0)';
+
   box-sizing: border-box;
+  height: 100%;
   padding-top: var(--sat);
   padding-bottom: var(--sab);
   padding-left: var(--sal);
@@ -1591,9 +1598,6 @@ body .navigation-bar {
   > .v-card {
     height: 100%;
   }
-}
-
-.v-overlay-container .v-dialog--fullscreen.action-dialog:not(.dialog-bottom-full-width) > .v-overlay__content:not(.dialog-bottom-full-width) {
   .close-btn {
     top: 8px !important;
     right: 8px !important;
@@ -1604,50 +1608,67 @@ body .navigation-bar {
     top: calc(var(--sat) + 8px) !important;
     right: calc(var(--sar) + 8px) !important;
   }
-}
-
-html.native-app .v-overlay-container .v-dialog--fullscreen.action-dialog:not(.dialog-bottom-full-width) > .v-overlay__content:not(.dialog-bottom-full-width) {
-  overflow: hidden;
-  overscroll-behavior: none;
-
-  > .v-form {
-    height: 100%;
-  }
-
-  > .v-form,
-  > .v-card,
-  > .v-form > .v-card {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: 100%;
+  html.native-app & {
     overflow: hidden;
-  }
+    overscroll-behavior: none;
 
-  > .v-card,
-  > .v-form > .v-card {
-    > .dialog-title-box,
-    > .dialog-actions,
-    > .v-card-actions,
-    > .v-divider {
-      flex: 0 0 auto;
+    > .v-form {
+      height: 100%;
     }
 
-    > .v-card-text:not(.dialog-title-box):not(.dialog-actions):not(.flex-0) {
+    > .v-form,
+    > .v-card,
+    > .v-form > .v-card {
+      display: flex;
+      flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
-      max-height: none;
-      overflow-y: auto;
-      overscroll-behavior: none;
-      -webkit-overflow-scrolling: touch;
+      max-height: 100%;
+      overflow: hidden;
     }
-  }
 
-  // Keep the sibling close button anchored to the non-scrolling overlay.
-  > .close-btn {
-    position: absolute;
-    z-index: 10;
+    > .v-card,
+    > .v-form > .v-card {
+      > .dialog-title-box,
+      > .app-fullscreen-header,
+      > .v-toolbar,
+      > .dialog-actions,
+      > .v-card-actions,
+      > .v-divider {
+        flex: 0 0 auto;
+      }
+
+      > #{$scrollable-card-text} {
+        flex: 0 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      &:not(:has(> #{$scrollable-card-text} ~ #{$scrollable-card-text})) > #{$scrollable-card-text},
+      > .dialog-scroll-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    .close-btn {
+      position: absolute;
+      z-index: 10;
+    }
+
+    &:has(> .close-btn) {
+      > .v-card > .dialog-title-box,
+      > .v-form > .v-card > .dialog-title-box {
+        padding-right: 64px !important;
+      }
+    }
   }
 }
 

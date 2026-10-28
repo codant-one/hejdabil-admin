@@ -2968,7 +2968,7 @@ onBeforeUnmount(() => {
   .placement-modal-card {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
     background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
   }
@@ -2981,6 +2981,7 @@ onBeforeUnmount(() => {
 
   .placement-content {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -2989,6 +2990,7 @@ onBeforeUnmount(() => {
 
   .placement-body {
     flex: 1;
+    min-height: 0;
     display: flex;
     overflow: hidden;
     padding: 24px;
@@ -2996,10 +2998,13 @@ onBeforeUnmount(() => {
 
   .placement-viewer {
     flex: 1;
+    min-height: 0;
     min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
 
     /* Custom scrollbar */
     &::-webkit-scrollbar {

@@ -191,15 +191,15 @@ const onSubmit = async () => {
     persistent
     :scrim="windowWidth < 1024 ? false : true"
     :scrollable="windowWidth >= 1024"
-    :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+    :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen payout-dialog-mobile'"
     :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-    :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     @update:model-value="val => emit('update:isDialogOpen', val)"
   >
 
     <VBtn
       icon
-      class="btn-ghost close-btn me-5"
+      class="btn-ghost close-btn"
+      :class="windowWidth >= 1024 ? 'me-5' : ''"
       @click="closeDialog"
     >
       <VIcon size="16" icon="custom-close" />
@@ -209,9 +209,8 @@ const onSubmit = async () => {
       ref="refForm"
       v-model="isFormValid"
       @submit.prevent="onSubmit"
-      :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
     >
-      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+      <VCard>
         <VCardText 
           class="dialog-title-box flex-row"
           :class="[
@@ -231,8 +230,7 @@ const onSubmit = async () => {
 
         <VCardText 
           class="dialog-text" 
-          :class="windowWidth < 1024 ? '' : 'mt-2'"
-          :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''">        
+          :class="windowWidth < 1024 ? '' : 'mt-2'">
           <!-- Stepper Header -->
           <VTabs 
             v-model="currentStep" 
@@ -384,6 +382,13 @@ const onSubmit = async () => {
 
 <style lang="scss">
 
+  .payout-dialog-mobile .dialog-title-box {
+    height: auto;
+    min-height: 0;
+    margin-bottom: 0;
+    align-items: center;
+  }
+
   .gap-modal {
     gap: 4px !important;
   }
@@ -523,5 +528,4 @@ const onSubmit = async () => {
     }
   }
 </style>
-
 

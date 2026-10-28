@@ -114,7 +114,7 @@ const resolveCategories = val => {
       class="position-relative"
     >
       <VCardText
-        class="pt-1"
+        class="pt-1 app-fullscreen-header"
         style="max-height: 65px;"
       >
         <!-- 👉 Search Input -->
@@ -178,7 +178,7 @@ const resolveCategories = val => {
       <!-- 👉 Perfect Scrollbar -->
       <PerfectScrollbar
         :options="{ wheelPropagation: false, suppressScrollX: true }"
-        class="h-100"
+        class="h-100 dialog-scroll-content"
       >
         <!-- 👉 Search List -->
         <VList
