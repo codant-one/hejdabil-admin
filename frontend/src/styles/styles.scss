@@ -1601,8 +1601,53 @@ body .navigation-bar {
 
   // Sibling buttons are positioned from the overlay padding edge, not the card.
   > .close-btn {
-    top: calc(8px + var(--sat)) !important;
-    right: calc(8px + var(--sar)) !important;
+    top: calc(var(--sat) + 8px) !important;
+    right: calc(var(--sar) + 8px) !important;
+  }
+}
+
+html.native-app .v-overlay-container .v-dialog--fullscreen.action-dialog:not(.dialog-bottom-full-width) > .v-overlay__content:not(.dialog-bottom-full-width) {
+  overflow: hidden;
+  overscroll-behavior: none;
+
+  > .v-form {
+    height: 100%;
+  }
+
+  > .v-form,
+  > .v-card,
+  > .v-form > .v-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  > .v-card,
+  > .v-form > .v-card {
+    > .dialog-title-box,
+    > .dialog-actions,
+    > .v-card-actions,
+    > .v-divider {
+      flex: 0 0 auto;
+    }
+
+    > .v-card-text:not(.dialog-title-box):not(.dialog-actions):not(.flex-0) {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
+      overflow-y: auto;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  // Keep the sibling close button anchored to the non-scrolling overlay.
+  > .close-btn {
+    position: absolute;
+    z-index: 10;
   }
 }
 

@@ -59,6 +59,9 @@ if (isUnloadBlockedByPolicy() && Pusher?.Runtime?.addUnloadListener) {
 // desde Preferences (Capacitor) ya haya terminado antes de que se lea
 // accessToken/user_data por primera vez.
 async function bootstrap() {
+  document.documentElement.classList.toggle('native-app', Capacitor.isNativePlatform())
+  document.documentElement.classList.toggle('native-android', Capacitor.getPlatform() === 'android')
+
   if (Capacitor.isNativePlatform()) {
     try {
       await StatusBar.setStyle({ style: Style.Light })
