@@ -2503,7 +2503,6 @@ onBeforeUnmount(() => {
       :scrollable="windowWidth >= 1024"
       :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
       :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     >
       <!-- Dialog close btn -->
       <VBtn
