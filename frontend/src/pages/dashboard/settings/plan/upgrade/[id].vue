@@ -334,13 +334,12 @@ onBeforeUnmount(() => {
                     Jämför planer
                 </div>                
             </VCardText>
-            <VDivider :class="windowWidth < 1024 ? '' : 'd-none'" />
 
             <VCardText class="dialog-text pe-0 flex-0">
                 Se vad som ingår i varje plan innan du bekräftar bytet.
             </VCardText>
 
-            <VDivider class="mt-4" :class="windowWidth < 1024 ? 'd-none' : ''" />
+            <VDivider class="mt-4" />
             
             <VCardText 
                 class="mt-4 pb-6 plans-details-dialog-content"
