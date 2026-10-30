@@ -314,8 +314,7 @@ onBeforeUnmount(() => {
         :scrollable="false"
         :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
         :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-        :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
-        :width="windowWidth < 1024 ? '' : '800px'"
+        :width="windowWidth < 1024 ? undefined : '800px'"
     >
         <!-- Dialog close btn -->
         <VBtn
@@ -327,19 +326,27 @@ onBeforeUnmount(() => {
         </VBtn>
 
         <VCard class="plans-details-dialog-card" :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
-            <VCardText class="dialog-title-box pb-0">
+            <VCardText
+                class="dialog-title-box"
+                :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : 'pb-0'"
+            >
                 <div class="dialog-title">
                     Jämför planer
                 </div>                
             </VCardText>
-            <VCardText class="dialog-text pe-0">
+            <VDivider :class="windowWidth < 1024 ? '' : 'd-none'" />
+
+            <VCardText class="dialog-text pe-0 flex-0">
                 Se vad som ingår i varje plan innan du bekräftar bytet.
             </VCardText>
 
-            <VDivider class="mt-4" />
+            <VDivider class="mt-4" :class="windowWidth < 1024 ? 'd-none' : ''" />
             
             <VCardText 
-                class="dialog-text mt-4 pb-6 plans-details-dialog-content">        
+                class="mt-4 pb-6 plans-details-dialog-content"
+                :class="windowWidth < 1024 ? '' : 'dialog-text'"
+                :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : undefined"
+            >
                 <div class="d-flex flex-row" style="width: 100%;">
                     <div class="text-start" style="width: 50%;">
                         
@@ -581,7 +588,8 @@ onBeforeUnmount(() => {
                         <span class="plan-details-content">Prioriterad</span>
                     </div>
                 </div>
-                <VCardText 
+                <VCardText
+                    v-if="role !== 'User' && supplierData.cancellation_date === null"
                     class="d-flex justify-end gap-3 flex-wrap dialog-actions p-0 mt-6"
                     :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'"
                     :class="windowWidth < 1024 ? 'flex-column px-0' : 'flex-row pe-0'"
@@ -590,15 +598,13 @@ onBeforeUnmount(() => {
                         Din nuvarande plan är Swish
                     </span>
 
-                    <VBtn 
-                        v-if="role !== 'User' && supplierData.cancellation_date === null"
-                        class="btn-gradient" 
+                    <VBtn
+                        class="btn-gradient"
                         :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 180px;'"
-                        @click="showConfirmUpgradePlanDialog(supplierData)"
-                    >                       
+                        @click="showConfirmUpgradePlanDialog(Number(supplierData.plan_id) === 1 ? availablePlans[1]?.id : selectedPlan)"
+                    >
                         {{ supplierData.plan_id === 1 ? 'Uppgradera till Pro' : 'Uppgradera plan' }}
                     </VBtn>
-                    
                 </VCardText>
             </VCardText>
         </VCard>

@@ -210,11 +210,11 @@ const onSubmit = async () => {
       v-model="isFormValid"
       @submit.prevent="onSubmit"
     >
-      <VCard>
+      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
         <VCardText 
           class="dialog-title-box flex-row"
           :class="[
-            windowWidth < 1024 ? 'pb-0' : '',
+            windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : '',
             windowWidth < 1024 && (props.payoutData && Object.keys(props.payoutData).length > 0) ? 'gap-modal' : ''
           ]">
           <VIcon size="32" icon="custom-surface" class="action-icon" />
@@ -222,15 +222,16 @@ const onSubmit = async () => {
              {{ getTitle }}
           </div>
         </VCardText>
+        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
+
         <VCardText class="dialog-text pe-0" :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''">
           Överför pengar till dina kunder via Swish
         </VCardText>
 
-        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'"/>
-
         <VCardText 
-          class="dialog-text" 
-          :class="windowWidth < 1024 ? '' : 'mt-2'">
+          :class="windowWidth < 1024 ? '' : 'dialog-text mt-2'"
+          :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : undefined"
+        >
           <!-- Stepper Header -->
           <VTabs 
             v-model="currentStep" 
@@ -528,4 +529,3 @@ const onSubmit = async () => {
     }
   }
 </style>
-
