@@ -1800,7 +1800,6 @@ onBeforeUnmount(() => {
       :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
       :max-width="windowWidth >= 1024 ? 402 : undefined"
       :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     >
       <VBtn
         icon
@@ -1810,15 +1809,24 @@ onBeforeUnmount(() => {
         <VIcon size="24" icon="custom-close" />
       </VBtn>
 
-      <VCard>
-        <VCardText class="dialog-title-box d-flex flex-column align-start gap-4">
+      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+        <VCardText
+          class="dialog-title-box d-flex flex-column align-start gap-4"
+          :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''"
+        >
           <div class="dialog-title-colors">Färger</div>
           <div class="dialog-subtitle-colors">
             Välj en primär färg. En matchande färg skapas automatiskt.
           </div>
         </VCardText>
 
-        <VCardText class="dialog-text py-0 brand-color-picker-wrapper">
+        <VDivider :class="windowWidth < 1024 ? '' : 'd-none'" />
+
+        <VCardText
+          class="brand-color-picker-wrapper"
+          :class="windowWidth < 1024 ? '' : 'dialog-text py-0'"
+          :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : undefined"
+        >
           <div class="brand-picker-layout">
             <VColorPicker
               v-model="customBrandColor"
@@ -1856,12 +1864,12 @@ onBeforeUnmount(() => {
             <span class="hex-color-picker">HEX</span>
             <span class="box-color-picker" :style="secondaryColorPreviewStyle">{{ secondaryColorHex }}</span>
           </div>
-        </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light w-100" :disabled="!isManualHexValid" @click="applyCustomBrandColor">
-            Spara
-          </VBtn>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0">
+            <VBtn class="btn-light w-100" :disabled="!isManualHexValid" @click="applyCustomBrandColor">
+              Spara
+            </VBtn>
+          </VCardText>
         </VCardText>
       </VCard>
     </VDialog>
@@ -2080,6 +2088,7 @@ onBeforeUnmount(() => {
 
 :deep(.brand-picker-layout .v-color-picker-canvas) {
   grid-column: 1;
+  touch-action: none;
   border-radius: 0 !important;
   width: 100% !important;
   height: 260px !important;

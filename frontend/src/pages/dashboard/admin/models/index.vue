@@ -709,12 +709,12 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-steering-wheel"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga modell än</div>
+          <div class="empty-state-title">Inga fordonsmodeller har lagts till ännu</div>
           <div class="empty-state-text">
-            Lägg till dina modell här.
+            Lägg till fordonsmodeller för att enkelt kunna organisera och hantera ditt fordonslager.
           </div>
         </div>
         <VBtn
@@ -729,7 +729,7 @@ onBeforeUnmount(() => {
         <VBtn
           class="btn-ghost"
           v-if="$vuetify.display.mdAndDown && $can('create', 'models')"
-          @click="isAddNewModelDrawerVisible = true"
+          @click="isDialogOpen = true"
         >
           Lägg till modell
           <VIcon icon="custom-arrow-right" size="24" />

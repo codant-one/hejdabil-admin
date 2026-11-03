@@ -275,12 +275,19 @@ const activeSubscription = async () => {
                             <VCardText class="card-title p-0 mb-4">
                                 {{ supplierData.plan.name }} 
                             </VCardText>
+
                             <VCardText 
-                                class="d-flex gap-2 align-start p-0"
+                                class="d-flex gap-2 align-start bg-gradient-plan mb-4"
                                 :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                            >
+                                :style="windowWidth < 1024 ? 'width: 100%;' : 'width: max-content;'"
+                                >
                                 <div class="d-flex flex-column card-subtitle me-4">
-                                    <div class="p-0 card-subtitle">
+                                    <div class="p-0 card-subtitle d-flex align-center">
+                                        <VIcon
+                                            class="me-1"
+                                            icon="custom-pris-information-outlined"
+                                            size="16"
+                                        />
                                         Pris
                                     </div>
                                     <div class="p-0 card-content">
@@ -290,7 +297,12 @@ const activeSubscription = async () => {
                                 </div>
 
                                 <div class="d-flex flex-column card-subtitle">
-                                    <div class="p-0 card-subtitle">
+                                    <div class="p-0 card-subtitle d-flex align-center">
+                                        <VIcon
+                                            class="me-1"
+                                            icon="custom-calendar-2"
+                                            size="16"
+                                        />
                                         Prenumeration
                                     </div>
                                     <div class="p-0 card-content">
@@ -298,8 +310,6 @@ const activeSubscription = async () => {
                                     </div>
                                 </div>
                             </VCardText>
-
-                            <VDivider class="my-4" />
 
                             <VCardText 
                                 class="d-flex justify-start gap-3 flex-wrap dialog-actions p-0"
@@ -335,6 +345,41 @@ const activeSubscription = async () => {
                     </VWindowItem>
 
                     <VWindowItem :value="1">
+                        <VCardText 
+                            class="d-flex gap-2 align-start bg-gradient-plan"
+                            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: max-content;'"
+                            >
+                            <div class="d-flex flex-column card-subtitle me-4">
+                                <div class="p-0 card-subtitle d-flex align-center">
+                                    <VIcon
+                                        class="me-1"
+                                        icon="custom-pris-information-outlined"
+                                        size="16"
+                                    />
+                                    Pris
+                                </div>
+                                <div class="p-0 card-content">
+                                    {{ supplierData.is_yearly ? supplierData.plan.price_annual : supplierData.plan.price_month }} kr / 
+                                    {{ supplierData.is_yearly ? 'år' : 'mån' }}
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column card-subtitle">
+                                <div class="p-0 card-subtitle d-flex align-center">
+                                    <VIcon
+                                        class="me-1"
+                                        icon="custom-calendar-2"
+                                        size="16"
+                                    />
+                                    Prenumeration
+                                </div>
+                                <div class="p-0 card-content">
+                                    {{ formatDateSimple(supplierData.start_date) }} - {{ formatDateSimple(supplierData.end_date) }}
+                                </div>
+                            </div>
+                        </VCardText>
+
                         <billings
                             :customer-data="supplierData"
                             :is-supplier="true"
@@ -493,6 +538,12 @@ const activeSubscription = async () => {
 
 <style lang="scss">
 
+    .bg-gradient-plan {
+        background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+        padding: 8px 16px;
+        border-radius: 16px;
+    }
+
     .scrollable-dialog-content {
         max-height: 90vh !important;
         overflow-y: auto !important;
@@ -581,14 +632,16 @@ const activeSubscription = async () => {
     }
 
     .card-subtitle {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 400;
         color: #878787;
     }
 
     .card-content {
-        font-size: 14px;
-        font-weight: 400;
+        font-weight: 700;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
         color: #454545;
     }
 

@@ -688,12 +688,12 @@ onBeforeUnmount(() => {
         >
           <VIcon
             :size="$vuetify.display.mdAndDown ? 80 : 120"
-            icon="custom-f-user"
+            icon="custom-f-car-2"
           />
           <div class="empty-state-content">
-            <div class="empty-state-title">Du har inga varumärken än</div>
+            <div class="empty-state-title">Inga fordonsmärken har lagts till ännu</div>
             <div class="empty-state-text">
-              Lägg till dina varumärken här.
+              Lägg till dina fordonsmärken för att enkelt kunna organisera och hantera ditt fordonslager.
             </div>
           </div>
           <VBtn
@@ -708,7 +708,7 @@ onBeforeUnmount(() => {
           <VBtn
             class="btn-ghost"
             v-if="$vuetify.display.mdAndDown && $can('create', 'brands')"
-            @click="isAddNewBrandDrawerVisible = true"
+            @click="isDialogOpen = true"
           >
             Lägg till märke
             <VIcon icon="custom-arrow-right" size="24" />

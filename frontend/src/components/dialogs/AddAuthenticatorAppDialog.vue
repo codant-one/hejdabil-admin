@@ -61,7 +61,6 @@ const handleOtp = (value) => {
     :scrollable="windowWidth >= 1024"
     :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
     :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-    :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     @update:model-value="(val) => $emit('update:isDialogVisible', val)"    
   >
     <!-- Dialog close btn -->
@@ -86,7 +85,7 @@ const handleOtp = (value) => {
 
       <VCardText
         :class="windowWidth < 1024 ? '' : 'dialog-text'"
-        :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+        :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
       >
         <h6 class="text-lg font-weight-medium mb-2 text-start">
           Appar för autentisering

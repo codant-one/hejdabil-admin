@@ -810,7 +810,6 @@ onBeforeUnmount(() => {
           :scrollable="windowWidth >= 1024"
           :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
           :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-          :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
           width="560"
         >
           <VBtn
@@ -905,7 +904,6 @@ onBeforeUnmount(() => {
           :scrollable="windowWidth >= 1024"
           :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
           :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
-          :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
         >
           <VBtn icon class="btn-white close-btn" @click="closeDeleteVerification">
             <VIcon size="16" icon="custom-close" />
