@@ -46,7 +46,8 @@ use App\Http\Controllers\{
     ActivitiesController,
     PlanController,
     SupplierInvoiceController,
-    AlertController
+    AlertController,
+    HelpController
 };
 
 use App\Http\Controllers\Services\{
@@ -126,6 +127,9 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     Route::apiResource('plans', PlanController::class);
     Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
     Route::apiResource('alerts', AlertController::class);
+    Route::apiResource('plans', PlanController::class);
+    Route::get('help-center', [HelpController::class, 'center'])->name('help.center');
+    Route::apiResource('help', HelpController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -282,6 +286,11 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     //Plans
     Route::group(['prefix' => 'plans'], function () {
         Route::get('/updateState/{id}', [PlanController::class, 'updateState']);
+    });
+
+    //Help
+    Route::group(['prefix' => 'help'], function () {
+        Route::get('/updateState/{id}', [HelpController::class, 'updateState']);
     });
 
     //Agreement

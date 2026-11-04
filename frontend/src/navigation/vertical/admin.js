@@ -37,6 +37,13 @@ export default [
         to: 'dashboard-admin-plans', 
         action: 'view',
         subject: 'plans'
+      },
+      { 
+        title: 'Hjälpcenter', 
+        icon: { icon: 'custom-help' },
+        to: 'dashboard-admin-help-center', 
+        action: 'view',
+        subject: 'help'
       }
     ]
   },

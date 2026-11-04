@@ -669,6 +669,31 @@ const closeRoleDetailDialog = function(){
                                         value="delete plans"
                                     />
                                 </div>
+                                 <VLabel style="font-weight: bold;">
+                                    Hjälpcenter
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view help"
+                                        value="view help"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create help"
+                                        value="create help"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit help"
+                                        value="edit help"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete help"
+                                        value="delete help"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>

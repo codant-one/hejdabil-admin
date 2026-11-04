@@ -132,6 +132,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'view company'],
             ['name' => 'view sms'],
             ['name' => 'view plan'],
+
+            //help
+            ['name' => 'view help'],
+            ['name' => 'create help'],
+            ['name' => 'edit help'],
+            ['name' => 'delete help'],
         ]; 
 
         // Create or update permissions
@@ -198,6 +204,7 @@ class PermissionSeeder extends Seeder
             'view currencies', 'create currencies', 'edit currencies', 'delete currencies', //currencies
             'view countries', 'create countries', 'edit countries', 'delete countries', //countries
             'view plans', 'create plans', 'edit plans', 'delete plans', //plans
+            'view help', 'create help', 'edit help', 'delete help', //help
         ];
 
         // Assign specific permissions to the Administrator

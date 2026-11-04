@@ -18,6 +18,36 @@
 - Eloquent password updates revoke device tokens before the password is persisted, including password resets and administrative updates.
 - The existing `suppliers:delete-account` command deletes device tokens as part of its transactional purge of tables with a `user_id` column. Scheduled deletion alone does not deny device login; definitive deletion removes the user and its tokens.
 
+## Help center
+
+- The authenticated Vue page is `/dashboard/help-center`; video administration is at `/dashboard/admin/help-center`.
+- Video administration only exposes global search and status filters, with newest-first ordering and ten videos per page. Videos can be previewed from the list and live in the create/edit form when a valid provider URL is entered.
+- Help video status selectors and validation only allow Inaktiv (`1`) and Aktiv (`2`); other application states are unchanged.
+- `GET /api/help-center` only returns videos with `state_id = 2` (Aktiv), matching plans. Filters are `module` (module ID), `search`, `sort` (`newest`, `oldest`, `title_asc`, `title_desc`), `page` and `limit`. Pagination links preserve the query string.
+- `/api/help` is an API resource using `view/create/edit/delete help` permissions, or `administrator`. `GET /api/help/updateState/{id}` requires `edit help`. Normal authenticated users can read the help center without administrative permissions.
+- Modules are maintained exclusively through `HelpModuleSeeder`, with no CRUD controller, routes or administration screen. The existing seeder uses `name` for the Swedish name and `label` for the internal identifier (for example, `Översikt` / `summary`). `HelpVideoSeeder` looks up modules by `label`. Videos do not use soft deletes because their existing table has no `deleted_at`.
+- Video URLs accept HTTP(S) YouTube watch, short and embed links, Vimeo normal and embed links (including unlisted hashes), or direct MP4 URLs. Provider/URL mismatches are rejected. The API includes the normalized `embed_url`.
+- Help UI strings are written directly in Swedish, following plans, without i18n translation calls.
+- Example seeders are repeatable: the existing module seeder creates fifteen modules, and the video seeder creates three example videos for each of `summary`, `clients`, `billings`, `vehicles`, `agreements` and `documents`. Run `HelpModuleSeeder` before `HelpVideoSeeder`. Their video URLs are placeholders, not actual product tutorials. Existing migrations are unchanged.
+
+Run from the backend directory, with the existing states already seeded:
+
+```shell
+php artisan migrate
+php artisan db:seed --class=PermissionSeeder
+php artisan db:seed --class=HelpModuleSeeder
+php artisan db:seed --class=HelpVideoSeeder
+php artisan test tests/Feature/HelpCenterTest.php tests/Feature/PlanActivityTest.php
+```
+
+`PermissionSeeder` also synchronizes the existing predefined roles, as it does for plans. Sign in again after changing permissions to refresh the frontend abilities.
+
+The feature tests use SQLite in memory and leave the configured application database untouched. If PDO SQLite is installed but disabled in the CLI configuration, run:
+
+```shell
+php -d extension=pdo_sqlite vendor/bin/phpunit tests/Feature/HelpCenterTest.php tests/Feature/PlanActivityTest.php
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
