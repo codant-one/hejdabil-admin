@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\Offer;
 use App\Models\Commission;
 use App\Models\DeviceToken;
+use App\Models\PushToken;
 
 /**
  * Trait for models with stores
@@ -37,6 +38,10 @@ trait UserHelper
 
     public function deviceTokens() {
         return $this->hasMany(DeviceToken::class, 'user_id', 'id');
+    }
+
+    public function pushTokens() {
+        return $this->hasMany(PushToken::class, 'user_id', 'id');
     }
 
     /**** Public methods ****/

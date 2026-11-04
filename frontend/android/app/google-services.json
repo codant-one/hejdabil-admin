@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "25963478092",
+    "project_id": "bilflogg-8858e",
+    "storage_bucket": "bilflogg-8858e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25963478092:android:2d75e9030a33ee097848e9",
+        "android_client_info": {
+          "package_name": "com.bilflogg.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjGi62F0SElYFzsBRnJdRwnFtKf4dbB00"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 
 use App\Observers\CatalogObserver;
+use App\Observers\NotificationObserver;
 use App\Observers\SupplierObserver;
 
 // Models to observe
@@ -29,7 +30,8 @@ use App\Models\{
     DocumentType,
     Supplier,
     Invoice,
-    Client
+    Client,
+    Notification
 };
 
 use Spatie\Permission\Models\{Permission, Role};
@@ -73,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
         Supplier::observe(SupplierObserver::class);
         Invoice::observe(CatalogObserver::class);
         Client::observe(CatalogObserver::class);
+        Notification::observe(NotificationObserver::class);
         Permission::observe(CatalogObserver::class);
         Role::observe(CatalogObserver::class);
     }

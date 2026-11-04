@@ -13,6 +13,7 @@
         "doctrine/dbal": "^3.7",
         "fabpot/goutte": "^4.0",
         "guzzlehttp/guzzle": "^7.2",
+        "kreait/laravel-firebase": "^5.0",
         "laravel/framework": "^10.10",
         "laravel/horizon": "*",
         "laravel/sanctum": "^3.2",

@@ -8,6 +8,7 @@ use App\Http\Controllers\Testing\TestingController;
 use App\Http\Controllers\Auth\{
     AuthController,
     DeviceTokenController,
+    PushTokenController,
     PasswordResetController
 };
 
@@ -92,6 +93,13 @@ Route::group([
         Route::get('generateQR', [AuthController::class , 'generateQR'])->name('generateQR');
         Route::get('company', [AuthController::class , 'companyDetail'])->name('companyDetail');
     });
+});
+
+Route::middleware(['cors', 'jwt', 'throttle:api'])->group(function () {
+    Route::post('push-tokens', [PushTokenController::class, 'store']);
+    Route::delete('push-tokens', [PushTokenController::class, 'destroy']);
+    Route::patch('push-tokens/session', [PushTokenController::class, 'deactivateSession']);
+    Route::patch('push-tokens/preferences', [PushTokenController::class, 'updatePreferences']);
 });
 
 //Private Endpoints

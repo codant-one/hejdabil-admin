@@ -44,9 +44,16 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->at('00:00');
 
+        $schedule->command('push-tokens:prune --days=60')
+                 ->daily()
+                 ->at('00:00');
+
         $schedule->command('alerts:generate')
                  ->daily()
                  ->at('00:00');
+
+        $schedule->command('horizon:snapshot')
+                 ->everyFiveMinutes();
 
     }
 
