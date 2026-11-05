@@ -92,7 +92,7 @@ const deleteUser = function() {
       <VCardText class="dialog-title-box">
         <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
         <div class="dialog-title">
-          Delete user
+          Ta bort användare 
         </div>
       </VCardText>
 

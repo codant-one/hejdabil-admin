@@ -20,6 +20,8 @@ const emit = defineEmits([
   'close'
 ])
 
+const { width: windowWidth } = useWindowSize()
+
 const email = ref('')
 const name = ref('')
 const password = ref('')
@@ -60,10 +62,15 @@ const closeUserDetailDialog = function() {
     <!-- DIALOG-->
     <VDialog
         :model-value="props.isDrawerOpen"
-        max-width="600"
-        class="action-dialog"
+        :fullscreen="windowWidth < 1024"
         persistent
-        >
+        :scrim="windowWidth < 1024 ? false : true"
+        :scrollable="windowWidth >= 1024"
+        :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+        :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+        :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+        width="560"
+    >
         <!-- Dialog close btn -->
         <VBtn
             icon
@@ -75,17 +82,28 @@ const closeUserDetailDialog = function() {
 
         <!-- Dialog Content -->
         <VCard
-            flat 
-            class="card-form user-mobile mb-4"
+            flat
+            class="card-form user-mobile"
+            :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
         >
-            <VCardText class="dialog-title-box">
-                <!-- <VIcon size="32" icon="custom-filled-waste" class="action-icon" /> -->
+            <VCardText
+                class="dialog-title-box flex-row"
+                :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''"
+                :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
+            >
+                <VIcon size="32" icon="custom-users" class="action-icon" />
                 <div class="dialog-title">
                 Användaruppgifter
                 </div>
             </VCardText>
 
-            <VCardText class="dialog-text mb-4">
+            <VDivider :class="windowWidth < 1024 ? '' : 'd-none'" />
+
+            <VCardText
+                class="dialog-text mb-4"
+                :class="windowWidth < 1024 ? '' : 'dialog-scroll-content'"
+                :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''"
+            >
                 <VRow>
                     <VCol md="6" cols="12">
                         <VLabel
@@ -159,6 +177,7 @@ const closeUserDetailDialog = function() {
                         />
                         <VCombobox
                             v-model="assignedRoles"
+                            class="user-roles-combobox"
                             chips
                             multiple
                             :items="rolesList"
@@ -166,6 +185,16 @@ const closeUserDetailDialog = function() {
                         />
                     </VCol>
                 </VRow>
+                <VCardText
+                  class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-0"
+                >
+                  <VBtn
+                    class="btn-light"
+                    @click="closeUserDetailDialog"
+                  >
+                    Avbryt
+                  </VBtn>
+                </VCardText>
             </VCardText>
         </VCard>
     </VDialog>
@@ -263,6 +292,68 @@ const closeUserDetailDialog = function() {
         }
       }
     }
+  }
+
+  :deep(.card-form.user-mobile .v-input:not(.v-textarea) .v-input__control .v-field) {
+    background-color: #f6f6f6 !important;
+    height: 40px !important;
+    min-height: 40px !important;
+
+    .v-field__input {
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 8px 16px !important;
+
+      input {
+        height: 40px !important;
+        min-height: 40px !important;
+      }
+    }
+
+    .v-field-label {
+      top: 12px !important;
+    }
+
+    .v-field__append-inner {
+      align-items: center;
+      padding-top: 0;
+    }
+
+    .v-text-field__prefix {
+      height: 40px;
+    }
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__input) {
+    align-items: center;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__field) {
+    align-items: center;
+    top: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__input > input) {
+    align-self: center;
+    height: 24px !important;
+    min-height: 24px !important;
+    padding: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox__selection) {
+    display: inline-flex;
+    align-items: center;
+    height: 24px !important;
+    margin: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-chip) {
+    top: -9px;
+    height: 24px !important;
+    min-height: 24px !important;
   }
 
   .v-dialog .v-overlay__content {

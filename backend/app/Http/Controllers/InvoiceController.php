@@ -83,8 +83,8 @@ class InvoiceController extends Controller
                 'entity_id' => $invoice->id,
                 'entity_type' => 'invoices',
                 'action_type' => 'create_invoice',
-                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' tillagd',
-                'description' => 'En ny faktura har lagts till.',
+                'title' => 'Attribut #'.$invoice->id.' '.$invoice->name.' tillagd',
+                'description' => 'En ny attribut har lagts till.',
                 'icon' => 'custom-attribut',
                 'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
                 'metadata' => json_encode([
@@ -166,8 +166,8 @@ class InvoiceController extends Controller
                 'entity_id' => $invoice->id,
                 'entity_type' => 'invoices',
                 'action_type' => 'update_invoice',
-                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' uppdaterad',
-                'description' => 'En faktura har uppdaterats.',
+                'title' => 'Attribut #'.$invoice->id.' '.$invoice->name.' uppdaterad',
+                'description' => 'En attribut har uppdaterats.',
                 'icon' => 'custom-attribut',
                 'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
                 'metadata' => json_encode([
@@ -219,8 +219,8 @@ class InvoiceController extends Controller
                 'entity_id' => $invoice->id,
                 'entity_type' => 'invoices',
                 'action_type' => 'delete_invoice',
-                'title' => 'Faktura #'.$invoice->id.' '.$invoice->name.' borttagen',
-                'description' => 'Fakturan har tagits bort.',
+                'title' => 'Attribut #'.$invoice->id.' '.$invoice->name.' borttagen',
+                'description' => 'Attribut har tagits bort.',
                 'icon' => 'custom-attribut',
                 'route' => null, //'/dashboard/admin/invoices/'.$invoice->id,
                 'metadata' => json_encode([

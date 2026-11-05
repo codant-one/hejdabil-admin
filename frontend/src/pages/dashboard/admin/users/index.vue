@@ -6,25 +6,21 @@ import password from './password.vue'
 import edit from './edit.vue'
 import destroy from './destroy.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 import { avatarText } from '@/@core/utils/formatters'
-
 import { useUsersStores } from '@/stores/useUsers'
 import { useRolesStores } from '@/stores/useRoles'
-
-import { ref, toRaw } from "vue";
+import { ref } from "vue";
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
+import html2pdf from 'html2pdf.js';
 
 const { width: windowWidth } = useWindowSize();
 
 const usersStores = useUsersStores()
 const rolesStores = useRolesStores()
-const emitter = inject("emitter")
 
 const users = ref([])
 const searchQuery = ref('')
@@ -33,7 +29,6 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalUsers = ref(0)
 
-const selectedRows = ref([])
 const role_name = ref(null)
 
 const isUserDeleteDialog = ref(false)
@@ -42,10 +37,7 @@ const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isMobileActionDialogVisible = ref(false);
-const isConfirmLeaveVisible = ref(false);
-const leaveContext = ref(null); // 'mobile' | 'route' | null
 const hasLoaded = ref(false);
-const state_id = ref(null)
 
 const selectedUser = ref({})
 const rolesList = ref([])
@@ -74,12 +66,6 @@ const readCachedCompany = () => {
 };
 
 const company = ref(readCachedCompany())
-
-const setCompany = (value) => {
-  const normalized = value && typeof value === 'object' ? { ...value } : {};
-  company.value = normalized;
-  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
-};
 
 const sectionEl = ref(null);
 
@@ -382,7 +368,7 @@ const downloadPDF = async () => {
     await html2pdf()
       .set({
         margin: [12, 10, 12, 10],
-        filename: 'users.pdf',
+        filename: 'användare.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -575,10 +561,10 @@ const downloadCSV = async () => {
           <tr>
             <th scope="col"> #ID </th>
             <th scope="col"> Namn </th>
-            <th scope="col"> E-Post </th>
-            <th scope="col"> Roll </th>
-            <th scope="col"> Status </th>
+            <th scope="col"> E-post </th>
+            <th scope="col"> Roll </th>            
             <th scope="col"> Telefon </th>
+            <th scope="col"> Status </th>
             <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
           </tr>
         </thead>
@@ -638,6 +624,11 @@ const downloadCSV = async () => {
               </ul>
             </td>
 
+            <!-- 👉 phone -->
+            <td>
+              {{ user.user_detail?.personal_phone ?? '----' }}
+            </td>
+
             <td> 
               <div
                 class="status-chip"
@@ -647,10 +638,6 @@ const downloadCSV = async () => {
               </div>
             </td>
 
-            <!-- 👉 phone -->
-              <td>
-              {{ user.user_detail?.personal_phone ?? '----' }}
-            </td>
             <!-- 👉 Actions -->
             <td style="width: 3rem;">
               <VMenu>
@@ -714,12 +701,12 @@ const downloadCSV = async () => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-check-user"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title"> Inga användare har skapats ännu</div>
+          <div class="empty-state-title"> Inga administratörer har lagts till ännu</div>
           <div class="empty-state-text">
-            Här visas alla användare som du har skapat.
+            Här kan du lägga till och hantera administratörer som ska ha tillgång till Bilfloggs administrationspanel.
           </div>
         </div>
 
@@ -800,7 +787,7 @@ const downloadCSV = async () => {
               <div class="mb-6">
                 <div class="expansion-panel-item-label">Telefon</div>
                 <div class="expansion-panel-item-value">
-                    {{ user.phone }}
+                    {{ user.user_detail?.personal_phone ?? '----' }}
                 </div>
               </div>
               
