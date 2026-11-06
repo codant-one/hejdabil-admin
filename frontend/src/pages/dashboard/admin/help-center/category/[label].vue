@@ -135,8 +135,8 @@ onBeforeUnmount(() => {
       <VDivider :class="mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
       
       <VCardText
-        class="d-flex align-center justify-space-between gap-1"
-        :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
+        class="d-flex align-center gap-1"
+        :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
         <div class="search">
@@ -150,10 +150,13 @@ onBeforeUnmount(() => {
           <template #activator="{ props }">
             <VBtn
               class="btn-white-2 h-40 w-auto"
+              :class="mdAndDown ? 'px-3' : ''"
               v-bind="props"
             >
-              Sortera
+              <VIcon icon="custom-filter" size="24" />
+              <span :class="mdAndDown ? 'd-none' : ''">Sortera</span>
               <VIcon
+               :class="mdAndDown ? 'd-none' : ''"
                 icon="custom-arrow-down"
                 size="16"
               />
@@ -179,8 +182,9 @@ onBeforeUnmount(() => {
             class="help-category-link"
           >
             <VIcon
-              icon="tabler-layout-grid"
-              size="20"
+              icon="custom-table"
+              class="help-category-font-icon"
+              size="24"
             />
             Alla
           </RouterLink>
@@ -192,18 +196,17 @@ onBeforeUnmount(() => {
             :class="{ 'help-category-link-active': helpCategoryItem.label === route.params.label }"
             :aria-current="helpCategoryItem.label === route.params.label ? 'page' : undefined"
           >
-            <VImg
+            <span
               v-if="getHelpCategoryIconUrl(helpCategoryItem)"
-              :src="getHelpCategoryIconUrl(helpCategoryItem)"
+              :style="{ maskImage: `url('${getHelpCategoryIconUrl(helpCategoryItem)}')`, WebkitMaskImage: `url('${getHelpCategoryIconUrl(helpCategoryItem)}')` }"
               class="help-category-icon"
-              width="20"
-              height="20"
-              alt=""
+              aria-hidden="true"
             />
             <VIcon
               v-else
               icon="tabler-help"
-              size="20"
+              class="help-category-font-icon"
+              size="24"
             />
             {{ helpCategoryItem.name }}
           </RouterLink>
@@ -305,25 +308,53 @@ onBeforeUnmount(() => {
   flex: none;
   align-items: center;
   gap: 8px;
+  height: 48px;
   padding: 10px 16px;
-  border: 1px solid #a9c5bb;
-  border-radius: 24px;
-  color: #608a7a;
+  border: 1px solid #6E9383;
+  border-radius: 64px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #6E9383;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.help-category-link-active {
-  background: #1c2925;
+.help-category-link-active,
+.help-category-link:hover,
+.help-category-link:focus-visible {
+  background: #1C2925;
   color: #fff;
 }
 
 .help-category-icon {
   flex: none;
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
 }
 
-.help-category-link-active .help-category-icon {
-  filter: brightness(0) invert(1);
+.help-category-link-active .help-category-icon,
+.help-category-link:hover .help-category-icon,
+.help-category-link:focus-visible .help-category-icon {
+  background-color: #57F287;
+}
+
+.help-category-font-icon {
+  color: #6E9383;
+}
+
+.help-category-link-active .help-category-font-icon,
+.help-category-link:hover .help-category-font-icon,
+.help-category-link:focus-visible .help-category-font-icon {
+  color: #57F287;
 }
 
 .help-video-grid {
@@ -334,9 +365,9 @@ onBeforeUnmount(() => {
 
 .help-video-card {
   overflow: hidden;
-  border: 1px solid #e7e7e7;
+  border: 1px solid #E7E7E7;
   border-radius: 16px;
-  background: #f5f8f6;
+  background: #F5F8F6;
 }
 
 .help-video-thumbnail {
@@ -362,20 +393,35 @@ onBeforeUnmount(() => {
 
 .help-video-category {
   margin-bottom: 4px;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 100%;
+  letter-spacing: 0.44px;
   color: #878787;
-  font-size: 12px;
 }
 
 .help-video-title {
-  color: #20332f;
+  color: #1C2925;
+  font-weight: 700;
   font-size: 14px;
-  font-weight: 600;
+  line-height: 19.6px;
+  letter-spacing: 0%;
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 959px) {
+@media (max-width: 1023px) {
+  .help-category-links {
+    scrollbar-width: none;
+  }
+
+  .help-category-links::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
   .help-video-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
 }

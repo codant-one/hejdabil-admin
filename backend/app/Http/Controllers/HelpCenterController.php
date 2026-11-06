@@ -13,8 +13,6 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Models\HelpVideo;
 use App\Models\HelpCategory;
 
-use App\Services\CacheService;
-
 class HelpCenterController extends Controller
 {
     public function __construct()
@@ -82,7 +80,7 @@ class HelpCenterController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'categories' => CacheService::getHelpCategories(),
+                    'categories' => $this->getHelpCategories(),
                 ]
             ]);
 
@@ -130,7 +128,7 @@ class HelpCenterController extends Controller
                     'helpCategory' => $helpCategory,
                     'helpVideos' => $helpVideos,
                     'helpVideosTotalCount' => $helpVideos->count(),
-                    'categories' => CacheService::getHelpCategories(),
+                    'categories' => $this->getHelpCategories(),
                 ],
             ]);
         } catch (\Illuminate\Database\QueryException $ex) {
@@ -140,5 +138,19 @@ class HelpCenterController extends Controller
                 'exception' => $ex->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Get active help categories with active videos, including their counts
+     */
+    public static function getHelpCategories()
+    {
+        $activeVideos = fn ($query) => $query->where('state_id', 2);
+
+        return HelpCategory::where('state_id', 2)
+            ->whereHas('videos', $activeVideos)
+            ->withCount(['videos' => $activeVideos])
+            ->get();
+       
     }
 }
