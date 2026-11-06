@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class HelpVideo extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'help_category_id', 'state_id', 'title', 'description',
+        'help_category_id', 'state_id', 'title', 'description', 'slug',
         'video_url', 'provider', 'thumbnail_url',
     ];
 
@@ -131,6 +132,7 @@ class HelpVideo extends Model
             'help_category_id' => $request->help_category_id,
             'state_id' => $request->state_id,
             'title' => $request->title,
+            'slug' => Str::slug($request->title),
             'description' => $request->description,
             'video_url' => $request->video_url,
             'provider' => $request->provider,

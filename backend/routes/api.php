@@ -49,7 +49,7 @@ use App\Http\Controllers\{
     AlertController,
     HelpCategoryController,
     HelpVideoController,
-    HelpController
+    HelpCenterController
 };
 
 use App\Http\Controllers\Services\{
@@ -132,6 +132,7 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     Route::apiResource('plans', PlanController::class);
     Route::apiResource('help-categories', HelpCategoryController::class);
     Route::apiResource('help-videos', HelpVideoController::class);
+    Route::apiResource('help-center', HelpCenterController::class)->only(['index']);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -298,6 +299,12 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     //Help Videos
     Route::group(['prefix' => 'help-videos'], function () {
         Route::get('/updateState/{id}', [HelpVideoController::class, 'updateState']);
+    });
+
+    //Help Center
+    Route::group(['prefix' => 'help-center'], function () {
+        Route::get('/categories', [HelpCenterController::class, 'categories']);
+        Route::get('/category/{label}', [HelpCenterController::class, 'category']);
     });
 
     //Agreement

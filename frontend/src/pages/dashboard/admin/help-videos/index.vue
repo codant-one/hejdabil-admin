@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Videor</h2>
+          <h2>Videor <span v-if="hasLoaded">({{ total }})</span></h2>
         </div>
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" />
         <div class="d-flex gap-4">

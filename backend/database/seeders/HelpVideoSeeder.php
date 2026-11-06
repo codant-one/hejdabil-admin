@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\HelpCategory;
 use App\Models\HelpVideo;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class HelpVideoSeeder extends Seeder
 {
@@ -27,6 +28,7 @@ class HelpVideoSeeder extends Seeder
                     ['help_category_id' => $category->id, 'title' => $title],
                     [
                         'description' => 'En steg-för-steg-guide: '.$title.'.',
+                        'slug' => Str::slug($title),
                         'video_url' => 'https://www.youtube.com/embed/aqz-KE-bpKQ',
                         'provider' => 'youtube',
                         'thumbnail_url' => 'https://img.youtube.com/vi/aqz-KE-bpKQ/hqdefault.jpg',

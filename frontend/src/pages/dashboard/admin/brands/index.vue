@@ -518,7 +518,7 @@ onBeforeUnmount(() => {
           ]"
         >
           <div class="align-center font-blauer">
-            <h2>Märke</h2>
+            <h2>Märke <span v-if="hasLoaded">({{ totalBrands }})</span></h2>
           </div>
 
           <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

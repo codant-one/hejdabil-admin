@@ -64,7 +64,8 @@ export default [
     title: 'Hjälp',
     icon: { icon:'custom-help' },
     class: 'help-button',
+    to: 'dashboard-admin-help-center',
     action: 'view' , 
-    subject: 'dashboard'
+    subject: 'help-center'
   }
 ]

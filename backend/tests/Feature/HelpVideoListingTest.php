@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\HelpVideoController;
 use App\Http\Requests\HelpVideoRequest;
+use App\Services\CacheService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class HelpVideoListingTest extends TestCase
             $table->unsignedBigInteger('state_id');
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('slug')->nullable();
             $table->string('video_url');
             $table->string('provider');
             $table->string('thumbnail_url')->nullable();
@@ -65,6 +67,78 @@ class HelpVideoListingTest extends TestCase
         }
     }
 
+    public function test_help_video_seeder_generates_slugs_and_updates_existing_seeded_videos(): void
+    {
+        foreach (['clients', 'billings', 'vehicles', 'agreements', 'documents'] as $label) {
+            DB::table('help_categories')->insert(['name' => $label, 'label' => $label]);
+        }
+
+        $this->seed(\Database\Seeders\HelpVideoSeeder::class);
+
+        $seededVideos = \App\Models\HelpVideo::where('video_url', 'https://www.youtube.com/embed/aqz-KE-bpKQ')->get();
+        $this->assertCount(18, $seededVideos);
+
+        foreach ($seededVideos as $helpVideo) {
+            $this->assertSame(\Illuminate\Support\Str::slug($helpVideo->title), $helpVideo->slug);
+        }
+
+        DB::table('help_videos')->whereIn('id', $seededVideos->modelKeys())->update(['slug' => null]);
+        $this->seed(\Database\Seeders\HelpVideoSeeder::class);
+
+        $this->assertSame(18, \App\Models\HelpVideo::where('video_url', 'https://www.youtube.com/embed/aqz-KE-bpKQ')->count());
+        $this->assertSame(0, \App\Models\HelpVideo::whereIn('id', $seededVideos->modelKeys())->whereNull('slug')->count());
+    }
+
+    public function test_help_center_category_returns_only_its_active_videos(): void
+    {
+        DB::table('help_categories')->insert([
+            'id' => 2, 'name' => 'Customers', 'label' => 'clients', 'state_id' => 2,
+        ]);
+        DB::table('help_videos')->where('id', 3)->update(['help_category_id' => 2]);
+
+        $this->withoutMiddleware()
+            ->getJson('/api/help-center/category/summary')
+            ->assertOk()
+            ->assertJsonPath('data.helpCategory.id', 1)
+            ->assertJsonPath('data.helpCategory.label', 'summary')
+            ->assertJsonPath('data.helpVideosTotalCount', 1)
+            ->assertJsonCount(1, 'data.helpVideos')
+            ->assertJsonPath('data.helpVideos.0.id', 2)
+            ->assertJsonPath('data.helpVideos.0.state_id', 2);
+    }
+
+    public function test_help_center_category_returns_all_results_with_search_and_sort(): void
+    {
+        $this->withoutMiddleware()
+            ->getJson('/api/help-center/category/summary?sort=oldest')
+            ->assertOk()
+            ->assertJsonPath('data.helpVideosTotalCount', 2)
+            ->assertJsonCount(2, 'data.helpVideos')
+            ->assertJsonPath('data.helpVideos.0.id', 2)
+            ->assertJsonPath('data.helpVideos.1.id', 3)
+            ->assertJsonMissingPath('data.helpVideos.last_page');
+
+        $this->getJson('/api/help-center/category/summary?search=Tutorial%202&sort=title')
+            ->assertOk()
+            ->assertJsonPath('data.helpVideosTotalCount', 1)
+            ->assertJsonPath('data.helpVideos.0.id', 2);
+
+        $this->getJson('/api/help-center/category/summary?search=missing')
+            ->assertOk()
+            ->assertJsonCount(0, 'data.helpVideos');
+
+        $this->getJson('/api/help-center/category/summary?sort=invalid')->assertUnprocessable();
+    }
+
+    public function test_help_center_category_rejects_missing_and_inactive_categories(): void
+    {
+        $this->withoutMiddleware()->getJson('/api/help-center/category/missing')->assertNotFound();
+
+        DB::table('help_categories')->where('id', 1)->update(['state_id' => 1]);
+
+        $this->getJson('/api/help-center/category/summary')->assertNotFound();
+    }
+
     public function test_listing_returns_video_relations_selectors_and_pagination(): void
     {
         $request = Request::create('/api/help-videos', 'GET', [
@@ -85,6 +159,36 @@ class HelpVideoListingTest extends TestCase
         $this->assertSame([1, 2], array_column($payload['data']['states'], 'id'));
         $this->assertSame('summary', $payload['data']['categories'][0]['label']);
         $this->assertSame(2, $payload['data']['categories'][0]['state_id']);
+    }
+
+    public function test_cached_help_categories_only_include_and_count_active_videos(): void
+    {
+        DB::table('help_categories')->insert([
+            ['id' => 2, 'name' => 'Empty category', 'label' => 'empty', 'state_id' => 2],
+            ['id' => 3, 'name' => 'Inactive category', 'label' => 'inactive', 'state_id' => 1],
+            ['id' => 4, 'name' => 'Inactive videos only', 'label' => 'inactive-videos', 'state_id' => 2],
+        ]);
+        DB::table('help_videos')->where('id', 3)->update(['help_category_id' => 3]);
+        DB::table('help_videos')->insert([
+            'help_category_id' => 4,
+            'state_id' => 1,
+            'title' => 'Inactive tutorial',
+            'provider' => 'youtube',
+            'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
+        ]);
+        CacheService::clearCache('help-categories.active-with-active-videos');
+
+        foreach (range(1, 2) as $attempt) {
+            $categories = CacheService::getHelpCategories()->keyBy('id');
+
+            $this->assertCount(1, $categories);
+            $this->assertFalse($categories->has(2));
+            $this->assertFalse($categories->has(3));
+            $this->assertFalse($categories->has(4));
+            $this->assertSame('Overview', $categories[1]->name);
+            $this->assertSame(1, $categories[1]->toArray()['videos_count']);
+            $this->assertFalse($categories[1]->relationLoaded('videos'));
+        }
     }
 
     public function test_category_filter_includes_active_and_inactive_videos(): void
@@ -149,6 +253,8 @@ class HelpVideoListingTest extends TestCase
         $created = $controller->store($request)->getData(true)['data']['helpVideo'];
 
         $this->assertSame('Overview', $created['category']['name']);
+        $this->assertSame('new-tutorial', $created['slug']);
+        $this->assertDatabaseHas('help_videos', ['id' => $created['id'], 'slug' => 'new-tutorial']);
         $this->assertSame('Inaktiv', $created['state']['name']);
 
         $attributes['title'] = 'Updated tutorial';

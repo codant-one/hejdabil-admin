@@ -548,7 +548,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Valuta</h2>
+          <h2>Valuta <span v-if="hasLoaded">({{ totalCurrencies }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
