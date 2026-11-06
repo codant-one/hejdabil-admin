@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,78 +11,65 @@ class HelpVideo extends Model
     use HasFactory;
 
     protected $fillable = [
-        'help_module_id', 'state_id', 'title', 'description',
+        'help_category_id', 'state_id', 'title', 'description',
         'video_url', 'provider', 'thumbnail_url',
     ];
 
-    protected $casts = ['help_module_id' => 'integer', 'state_id' => 'integer'];
+    protected $casts = ['help_category_id' => 'integer', 'state_id' => 'integer'];
 
     protected $appends = ['embed_url'];
 
-    /** @return BelongsTo<HelpModule, HelpVideo> */
-    public function module(): BelongsTo
-    {
-        return $this->belongsTo(HelpModule::class, 'help_module_id');
+    /**** Relationship ****/
+    public function category() {
+        return $this->belongsTo(HelpCategory::class, 'help_category_id', 'id');
     }
 
-    /** @return BelongsTo<State, HelpVideo> */
-    public function state(): BelongsTo
-    {
-        return $this->belongsTo(State::class);
+    public function state() {
+        return $this->belongsTo(State::class, 'state_id', 'id');
     }
 
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('state_id', 2);
-    }
-
-    public function scopeSearch(Builder $query, ?string $term): Builder
-    {
-        $term = trim($term ?? '');
-        if ($term === '') {
-            return $query;
-        }
-
-        return $query->where(function (Builder $query) use ($term): void {
-            $query->where('title', 'like', '%'.$term.'%')
-                ->orWhere('description', 'like', '%'.$term.'%');
+    /**** Scopes ****/
+    public function scopeWhereSearch($query, $search) {
+        $query->where(function ($query) use ($search) {
+            $query->where('title', 'LIKE', '%' . $search . '%')
+                  ->orWhere('description', 'LIKE', '%' . $search . '%')
+                  ->orWhere('video_url', 'LIKE', '%' . $search . '%')
+                  ->orWhere('provider', 'LIKE', '%' . $search . '%');
         });
     }
 
-    public function scopeForModule(Builder $query, ?int $moduleId): Builder
-    {
-        return $moduleId === null ? $query : $query->where('help_module_id', $moduleId);
+    public function scopeWhereOrder($query, $orderByField, $orderBy) {
+        $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
     }
 
-    public function scopeOrdered(Builder $query, string $sort = 'newest'): Builder
-    {
-        [$column, $direction] = match ($sort) {
-            'oldest' => ['created_at', 'asc'],
-            'title_asc' => ['title', 'asc'],
-            'title_desc' => ['title', 'desc'],
-            default => ['created_at', 'desc'],
-        };
+    public function scopeApplyFilters($query, array $filters) {
+        $filters = collect($filters);
 
-        return $query->orderBy($column, $direction)->orderBy('id', $direction);
+        if ($filters->get('search')) {
+            $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('state_id') !== null) {
+            $query->where('state_id', $filters->get('state_id'));
+        }
+
+        if ($filters->get('help_category_id') !== null) {
+            $query->where('help_category_id', $filters->get('help_category_id'));
+        }
+
+        if ($filters->get('orderByField') || $filters->get('orderBy')) {
+            $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';
+            $orderBy = $filters->get('orderBy') ? $filters->get('orderBy') : 'asc';
+            $query->whereOrder($field, $orderBy);
+        }
     }
 
-    public function scopeApplyFilters(Builder $query, array $filters): Builder
-    {
-        $query->search($filters['search'] ?? null)
-            ->forModule(isset($filters['module']) ? (int) $filters['module'] : null);
-
-        if (isset($filters['state_id'])) {
-            $query->where('state_id', $filters['state_id']);
+    public function scopePaginateData($query, $limit) {
+        if ($limit == 'all') {
+            return collect(['data' => $query->get()]);
         }
 
-        if (isset($filters['sort'])) {
-            return $query->ordered($filters['sort']);
-        }
-
-        $column = $filters['orderByField'] ?? 'created_at';
-        $direction = $filters['orderBy'] ?? 'desc';
-
-        return $query->orderBy($column, $direction)->orderBy('id', $direction);
+        return $query->paginate($limit);
     }
 
     public function getEmbedUrlAttribute(): ?string
@@ -138,20 +124,54 @@ class HelpVideo extends Model
         return null;
     }
 
-    public static function createVideo(array $data): self
-    {
-        return self::create($data);
+    /**** Public methods ****/
+    public static function createHelpVideo($request) {
+
+        $helpVideo = self::create([
+            'help_category_id' => $request->help_category_id,
+            'state_id' => $request->state_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'video_url' => $request->video_url,
+            'provider' => $request->provider,
+            'thumbnail_url' => $request->input('thumbnail_url', '')
+        ]);
+        
+        return $helpVideo;
     }
 
-    public static function updateVideo(array $data, self $video): self
-    {
-        $video->update($data);
+    public static function updateHelpVideo($request, $helpVideo) {
 
-        return $video;
+        $data = [
+            'help_category_id' => $request->help_category_id,
+            'state_id' => $request->state_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'video_url' => $request->video_url,
+            'provider' => $request->provider,
+        ];
+
+        if ($request->filled('thumbnail_url')) {
+            $data['thumbnail_url'] = $request->thumbnail_url;
+        }
+
+        $helpVideo->update($data);
+
+        return $helpVideo;
     }
 
-    public static function deleteVideo(self $video): void
-    {
-        $video->delete();
+    public static function deleteHelpVideo($id) {
+        self::deleteHelpVideos(array($id));
     }
+
+    public static function deleteHelpVideos($ids) {
+        foreach ($ids as $id) {
+            $helpVideo = self::find($id);
+            $helpVideo->delete();
+
+            if($helpVideo->thumbnail_url)
+                deleteFile($helpVideo->thumbnail_url);
+        }
+    }
+
 }

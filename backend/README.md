@@ -20,22 +20,25 @@
 
 ## Help center
 
-- The authenticated Vue page is `/dashboard/help-center`; video administration is at `/dashboard/admin/help-center`.
-- Video administration only exposes global search and status filters, with newest-first ordering and ten videos per page. Videos can be previewed from the list and live in the create/edit form when a valid provider URL is entered.
+- The authenticated Vue page is `/dashboard/help-center`; video administration is at `/dashboard/admin/help-videos`.
+- Video administration follows the category administration layout: global search, status filters, newest-first ordering, selectable page size (10, 20, 30 or 50), a desktop table and mobile expansion panels. Videos can be previewed from the list and live in the create/edit form when a valid provider URL is entered.
+- `GET /api/help-videos` returns `data.helpVideos` (paginator), `data.helpVideosTotalCount`, `data.categories` and `data.states`. Each listed video includes its `category`, `state` and normalized `embed_url`. Administration uses `view/create/edit/delete help-videos` permissions; status changes use `GET /api/help-videos/updateState/{id}` with `edit help-videos`.
+- The video list category selector shows categories with `state_id = 2` by name and sends `help_category_id`. Clearing it removes the category filter; video status remains an independent filter. Category metadata includes `state_id`, while the editor retains the full category list.
+- Create, show, update and status-change responses include `category` and `state` in `data.helpVideo`, so replacing a row in the frontend store preserves the fields required by the table.
 - Help video status selectors and validation only allow Inaktiv (`1`) and Aktiv (`2`); other application states are unchanged.
 - `GET /api/help-center` only returns videos with `state_id = 2` (Aktiv), matching plans. Filters are `module` (module ID), `search`, `sort` (`newest`, `oldest`, `title_asc`, `title_desc`), `page` and `limit`. Pagination links preserve the query string.
 - `/api/help` is an API resource using `view/create/edit/delete help` permissions, or `administrator`. `GET /api/help/updateState/{id}` requires `edit help`. Normal authenticated users can read the help center without administrative permissions.
-- Modules are maintained exclusively through `HelpModuleSeeder`, with no CRUD controller, routes or administration screen. The existing seeder uses `name` for the Swedish name and `label` for the internal identifier (for example, `Översikt` / `summary`). `HelpVideoSeeder` looks up modules by `label`. Videos do not use soft deletes because their existing table has no `deleted_at`.
+- Modules are maintained exclusively through `HelpCategorySeeder`, with no CRUD controller, routes or administration screen. The existing seeder uses `name` for the Swedish name and `label` for the internal identifier (for example, `Översikt` / `summary`). `HelpVideoSeeder` looks up modules by `label`. Videos do not use soft deletes because their existing table has no `deleted_at`.
 - Video URLs accept HTTP(S) YouTube watch, short and embed links, Vimeo normal and embed links (including unlisted hashes), or direct MP4 URLs. Provider/URL mismatches are rejected. The API includes the normalized `embed_url`.
 - Help UI strings are written directly in Swedish, following plans, without i18n translation calls.
-- Example seeders are repeatable: the existing module seeder creates fifteen modules, and the video seeder creates three example videos for each of `summary`, `clients`, `billings`, `vehicles`, `agreements` and `documents`. Run `HelpModuleSeeder` before `HelpVideoSeeder`. Their video URLs are placeholders, not actual product tutorials. Existing migrations are unchanged.
+- Example seeders are repeatable: the existing module seeder creates fifteen modules, and the video seeder creates three example videos for each of `summary`, `clients`, `billings`, `vehicles`, `agreements` and `documents`. Run `HelpCategorySeeder` before `HelpVideoSeeder`. Their video URLs are placeholders, not actual product tutorials. Existing migrations are unchanged.
 
 Run from the backend directory, with the existing states already seeded:
 
 ```shell
 php artisan migrate
 php artisan db:seed --class=PermissionSeeder
-php artisan db:seed --class=HelpModuleSeeder
+php artisan db:seed --class=HelpCategorySeeder
 php artisan db:seed --class=HelpVideoSeeder
 php artisan test tests/Feature/HelpCenterTest.php tests/Feature/PlanActivityTest.php
 ```

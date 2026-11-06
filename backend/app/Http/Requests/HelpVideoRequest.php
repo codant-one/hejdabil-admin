@@ -17,7 +17,7 @@ class HelpVideoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'help_module_id' => 'required|integer|exists:help_modules,id',
+            'help_category_id' => 'required|integer|exists:help_categories,id',
             'state_id' => 'required|integer|in:1,2|exists:states,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -54,7 +54,7 @@ class HelpVideoRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'help_module_id' => 'modul', 'state_id' => 'status', 'title' => 'titel',
+            'help_category_id' => 'modul', 'state_id' => 'status', 'title' => 'titel',
             'description' => 'beskrivning', 'video_url' => 'videolänk',
             'provider' => 'leverantör', 'thumbnail_url' => 'miniatyrbild',
         ];

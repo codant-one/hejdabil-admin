@@ -9,7 +9,6 @@ const props = defineProps({
   isDrawerOpen: { type: Boolean, required: true },
   video: { type: Object, default: () => ({}) },
   modules: { type: Array, default: () => [] },
-  states: { type: Array, default: () => [] },
   busy: { type: Boolean, default: false },
 })
 
@@ -27,7 +26,7 @@ watch(() => props.isDrawerOpen, open => {
   if (!open) return
   form.value = {
     id: props.video.id ?? null,
-    help_module_id: props.video.help_module_id ?? null,
+    help_category_id: props.video.help_category_id ?? null,
     state_id: props.video.state_id ?? 2,
     title: props.video.title ?? '',
     description: props.video.description ?? '',
@@ -118,21 +117,11 @@ const submit = async () => {
             <VRow>
               <VCol cols="12">
                 <VSelect
-                  v-model="form.help_module_id"
+                  v-model="form.help_category_id"
                   :items="modules"
                   item-title="name"
                   item-value="id"
-                  label="Modul"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VSelect
-                  v-model="form.state_id"
-                  :items="states"
-                  item-title="name"
-                  item-value="id"
-                  label="Status"
+                  label="Kategorier"
                   :rules="[requiredValidator]"
                 />
               </VCol>

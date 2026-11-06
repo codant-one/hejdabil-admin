@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\HelpFilterRequest;
 use App\Http\Requests\HelpVideoRequest;
-use App\Models\HelpModule;
+use App\Models\HelpCategory;
 use App\Models\HelpVideo;
 use App\Models\State;
 use App\Models\SupplierActivity;
@@ -41,7 +41,7 @@ class HelpController extends Controller
             if ($activeOnly) {
                 unset($filters['state_id']);
             }
-            $query = HelpVideo::with(['module:id,name,label,icon', 'state:id,name'])
+            $query = HelpVideo::with(['category:id,name,label,icon', 'state:id,name'])
                 ->applyFilters($filters);
             if ($activeOnly) {
                 $query->active();
@@ -61,7 +61,7 @@ class HelpController extends Controller
                 'success' => true,
                 'data' => [
                     'videos' => $videos,
-                    'modules' => HelpModule::orderBy('id')->get(),
+                    'categories' => HelpCategory::orderBy('id')->get(),
                     'states' => $activeOnly ? [] : State::whereIn('id', [1, 2])->orderBy('id')->get(['id', 'name']),
                     'videosTotalCount' => $videos->total(),
                 ],
@@ -73,7 +73,7 @@ class HelpController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $video = HelpVideo::with(['module', 'state'])->find($id);
+        $video = HelpVideo::with(['category', 'state'])->find($id);
 
         return $video
             ? response()->json(['success' => true, 'data' => ['video' => $video]])
@@ -90,7 +90,7 @@ class HelpController extends Controller
                 return $video;
             });
 
-            return response()->json(['success' => true, 'data' => ['video' => $video->load(['module', 'state'])]]);
+            return response()->json(['success' => true, 'data' => ['video' => $video->load(['category', 'state'])]]);
         } catch (QueryException $exception) {
             return $this->databaseError($exception);
         }
@@ -110,7 +110,7 @@ class HelpController extends Controller
                 $this->activity($video, 'update', $old);
             });
 
-            return response()->json(['success' => true, 'data' => ['video' => $video->load(['module', 'state'])]]);
+            return response()->json(['success' => true, 'data' => ['video' => $video->load(['category', 'state'])]]);
         } catch (QueryException $exception) {
             return $this->databaseError($exception);
         }
@@ -149,7 +149,7 @@ class HelpController extends Controller
                 $this->activity($video, 'update', $old);
             });
 
-            return response()->json(['success' => true, 'data' => ['video' => $video->load(['module', 'state'])]]);
+            return response()->json(['success' => true, 'data' => ['video' => $video->load(['category', 'state'])]]);
         } catch (QueryException $exception) {
             return $this->databaseError($exception);
         }

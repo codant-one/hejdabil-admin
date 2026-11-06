@@ -1,16 +1,16 @@
 <script setup>
 
-import { ref, toRaw } from "vue";
+import { ref } from "vue";
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { useCurrenciesStores } from '@/stores/useCurrencies'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewCurrencyDrawer from './AddNewCurrencyDrawer.vue' 
 import AddNewCurrencyMobile from './AddNewCurrencyMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import html2pdf from 'html2pdf.js';
 
 const { width: windowWidth } = useWindowSize();
 

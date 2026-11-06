@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
 
             //help
-            HelpModuleSeeder::class,
+            HelpCategorySeeder::class,
         ]);
 
     }

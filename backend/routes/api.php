@@ -47,6 +47,8 @@ use App\Http\Controllers\{
     PlanController,
     SupplierInvoiceController,
     AlertController,
+    HelpCategoryController,
+    HelpVideoController,
     HelpController
 };
 
@@ -128,8 +130,8 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     Route::apiResource('supplier-invoices', SupplierInvoiceController::class);
     Route::apiResource('alerts', AlertController::class);
     Route::apiResource('plans', PlanController::class);
-    Route::get('help-center', [HelpController::class, 'center'])->name('help.center');
-    Route::apiResource('help', HelpController::class);
+    Route::apiResource('help-categories', HelpCategoryController::class);
+    Route::apiResource('help-videos', HelpVideoController::class);
 
     /* DASHBOARD */
     Route::group(['prefix' => 'dashboard'], function () {
@@ -288,9 +290,14 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
         Route::get('/updateState/{id}', [PlanController::class, 'updateState']);
     });
 
-    //Help
-    Route::group(['prefix' => 'help'], function () {
-        Route::get('/updateState/{id}', [HelpController::class, 'updateState']);
+    //Help categories
+    Route::group(['prefix' => 'help-categories'], function () {
+        Route::get('/updateState/{id}', [HelpCategoryController::class, 'updateState']);
+    });
+
+    //Help Videos
+    Route::group(['prefix' => 'help-videos'], function () {
+        Route::get('/updateState/{id}', [HelpVideoController::class, 'updateState']);
     });
 
     //Agreement

@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\HelpModule;
+use App\Models\HelpCategory;
 use App\Models\HelpVideo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +16,7 @@ class HelpVideoFactory extends Factory
     public function definition(): array
     {
         return [
-            'help_module_id' => HelpModule::factory(),
+            'help_category_id' => HelpCategory::factory(),
             'title' => $this->faker->randomElement([
                 'Getting started with the dashboard',
                 'How to create a customer',

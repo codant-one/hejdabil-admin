@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\HelpModule;
+use App\Models\HelpCategory;
 use App\Models\HelpVideo;
 use Illuminate\Database\Seeder;
 
@@ -20,11 +20,11 @@ class HelpVideoSeeder extends Seeder
         ];
 
         foreach ($tutorials as $label => $titles) {
-            $module = HelpModule::where('label', $label)->firstOrFail();
+            $category = HelpCategory::where('label', $label)->firstOrFail();
 
             foreach ($titles as $title) {
                 HelpVideo::updateOrCreate(
-                    ['help_module_id' => $module->id, 'title' => $title],
+                    ['help_category_id' => $category->id, 'title' => $title],
                     [
                         'description' => 'En steg-för-steg-guide: '.$title.'.',
                         'video_url' => 'https://www.youtube.com/embed/aqz-KE-bpKQ',
