@@ -3,7 +3,7 @@
 import { computed, getCurrentInstance, ref } from "vue";
 import { themeConfig } from "@themeConfig";
 import { useWindowSize } from "@vueuse/core";
-import { getComputedNavLinkToProp, isNavLinkActive } from "@layouts/utils";
+import { getComputedNavLinkToProp, isNavGroupActive, isNavLinkActive } from "@layouts/utils";
 import { can, canWithPlan, canViewNavMenuGroup } from "@layouts/plugins/casl";
 import router from "@/router";
 
@@ -35,11 +35,20 @@ const canShowSwishaButton = computed(() => {
   return true;
 });
 
-// Track open/closed state per top-level item index
 const openGroups = ref({})
+const openChildGroups = ref({})
 
-const toggleGroup = (idx) => {
+const toggleGroup = idx => {
   openGroups.value[idx] = !openGroups.value[idx]
+  if (!openGroups.value[idx])
+    delete openChildGroups.value[idx]
+}
+
+const toggleChildGroup = (parentIdx, childIdx) => {
+  if (!openChildGroups.value[parentIdx])
+    openChildGroups.value[parentIdx] = {}
+
+  openChildGroups.value[parentIdx][childIdx] = !openChildGroups.value[parentIdx][childIdx]
 }
 
 const props = defineProps({
@@ -48,6 +57,24 @@ const props = defineProps({
     required: true,
   },
 });
+
+watch([() => route.path, () => props.navItems], () => {
+  openGroups.value = {}
+  openChildGroups.value = {}
+  props.navItems.forEach((item, index) => {
+    if (!Array.isArray(item.children) || !isNavGroupActive(item.children, router))
+      return
+
+    openGroups.value[index] = true
+    item.children.forEach((child, childIndex) => {
+      if (Array.isArray(child.children) && isNavGroupActive(child.children, router)) {
+        if (!openChildGroups.value[index])
+          openChildGroups.value[index] = {}
+        openChildGroups.value[index][childIndex] = true
+      }
+    })
+  })
+}, { immediate: true })
 
 const redirectTo = (path) => {
   router.push({
@@ -177,7 +204,17 @@ const redirectToPayoutsAndOpenDialog = () => {
                   </component>
                 </template>
               </div>
-              <div :class="['nav-group-label', item.class]" v-else @click.stop.prevent="toggleGroup(index)">
+              <div
+                v-else
+                class="nav-group-label"
+                :class="item.class"
+                role="button"
+                tabindex="0"
+                :aria-expanded="!!openGroups[index]"
+                @click.stop.prevent="toggleGroup(index)"
+                @keydown.enter.prevent="toggleGroup(index)"
+                @keydown.space.prevent="toggleGroup(index)"
+              >
                 <component
                   :is="themeConfig.app.iconRenderer || 'div'"
                   v-bind="item.icon || themeConfig.verticalNav.defaultNavItemIconProps"
@@ -195,7 +232,71 @@ const redirectToPayoutsAndOpenDialog = () => {
 
               <div class="nav-group-children ps-7 py-2" v-show="openGroups[index] === true">
                 <div v-for="(child, cIdx) in item.children" :key="cIdx" class="w-100">
-                  <div class="nav-link child" v-if="can(child.action, child.subject)">
+                  <div
+                    v-if="Array.isArray(child.children) && child.children.length && canViewNavMenuGroup(child)"
+                    class="nav-group"
+                    :class="{ open: openChildGroups[index]?.[cIdx] }"
+                  >
+                    <div
+                      class="nav-group-label"
+                      :class="child.class"
+                      role="button"
+                      tabindex="0"
+                      :aria-expanded="!!openChildGroups[index]?.[cIdx]"
+                      @click.stop.prevent="toggleChildGroup(index, cIdx)"
+                      @keydown.enter.prevent="toggleChildGroup(index, cIdx)"
+                      @keydown.space.prevent="toggleChildGroup(index, cIdx)"
+                    >
+                      <component
+                        :is="themeConfig.app.iconRenderer || 'div'"
+                        v-bind="child.icon || themeConfig.verticalNav.defaultNavItemIconProps"
+                        class="nav-item-icon"
+                      />
+                      <div class="d-flex w-100 justify-between align-center pe-2">
+                        <span>{{ child.title }}</span>
+                        <component
+                          :is="themeConfig.app.iconRenderer || 'div'"
+                          v-bind="themeConfig.icons.chevronRight"
+                          class="nav-group-arrow"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      v-show="openChildGroups[index]?.[cIdx]"
+                      class="nav-subchildren ps-7 py-1"
+                    >
+                      <div
+                        v-for="(gchild, gIdx) in child.children"
+                        :key="gIdx"
+                      >
+                        <div
+                          v-if="can(gchild.action, gchild.subject)"
+                          class="nav-link grandchild"
+                        >
+                          <component
+                            :is="gchild.to ? 'RouterLink' : 'a'"
+                            v-bind="getComputedNavLinkToProp(gchild)"
+                            :class="[
+                              isNavLinkActive(gchild, $router) && 'router-link-active router-link-exact-active',
+                              gchild.class,
+                            ]"
+                            @click="showMenu = false"
+                          >
+                            <component
+                              :is="themeConfig.app.iconRenderer || 'div'"
+                              v-bind="gchild.icon || themeConfig.verticalNav.defaultNavItemIconProps"
+                              class="nav-item-icon"
+                            />
+                            <span>{{ gchild.title }}</span>
+                          </component>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else-if="(!Array.isArray(child.children) || child.children.length === 0) && can(child.action, child.subject)"
+                    class="nav-link child"
+                  >
                     <component
                       :is="child.to ? 'RouterLink' : 'a'"
                       v-bind="getComputedNavLinkToProp(child)"
@@ -213,30 +314,6 @@ const redirectToPayoutsAndOpenDialog = () => {
                       <span>{{ child.title }}</span>
                     </component>
                   </div>
-
-                  <!-- Grandchildren (2nd level) -->
-              <div v-if="child.children && child.children.length" class="nav-subchildren ps-7 py-1">
-                <div v-for="(gchild, gIdx) in child.children" :key="gIdx">
-                  <div class="nav-link grandchild" v-if="can(gchild.action, gchild.subject)">
-                    <component
-                      :is="gchild.to ? 'RouterLink' : 'a'"
-                      v-bind="getComputedNavLinkToProp(gchild)"
-                      :class="[
-                        isNavLinkActive(gchild, $router) && 'router-link-active router-link-exact-active',
-                        gchild.class,
-                      ]"
-                      @click="showMenu = false"
-                    >
-                      <component
-                        :is="themeConfig.app.iconRenderer || 'div'"
-                        v-bind="gchild.icon || themeConfig.verticalNav.defaultNavItemIconProps"
-                        class="nav-item-icon"
-                      />
-                      <span>{{ gchild.title }}</span>
-                    </component>
-                  </div>
-                </div>
-              </div>
                 </div>
               </div>
             </div>
@@ -275,13 +352,16 @@ const redirectToPayoutsAndOpenDialog = () => {
   margin-bottom: 18px;
 }
 
-/* Make subitem icons match top-level size and reset nested margins */
-:deep(.mobile-nav-sheet .nav-group .nav-link .nav-item-icon),
-:deep(.mobile-nav-sheet .nav-group .nav-group .nav-item-icon),
-:deep(.mobile-nav-sheet .nav-group-children .nav-link .nav-item-icon),
-:deep(.mobile-nav-sheet .nav-subchildren .nav-item-icon) {
+.mobile-nav-sheet :deep(.nav-group-label > .nav-item-icon),
+.mobile-nav-sheet :deep(.nav-group .nav-link .nav-item-icon),
+.mobile-nav-sheet :deep(.nav-group-children .nav-link .nav-item-icon),
+.mobile-nav-sheet :deep(.nav-subchildren .nav-item-icon) {
   font-size: 1.375rem !important;
   margin-inline-start: 0 !important;
   margin-inline-end: 0.5rem !important;
+}
+
+.mobile-nav-sheet :deep(.nav-group-label > .nav-item-icon) {
+  color: #6e9383;
 }
 </style>

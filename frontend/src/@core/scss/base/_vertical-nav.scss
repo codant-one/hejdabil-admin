@@ -399,16 +399,6 @@
       }
     }
 
-    // Hide icons after 2nd level
-    & .nav-group {
-      .nav-link,
-      .nav-group {
-        .nav-item-icon {
-          @extend %vertical-nav-items-icon-after-2nd-level;
-        }
-      }
-    }
-
     .nav-group-arrow {
       flex-shrink: 0;
       transform-origin: center;
