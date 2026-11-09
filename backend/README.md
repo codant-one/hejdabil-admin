@@ -20,7 +20,10 @@
 
 ## Help center
 
-- The authenticated Vue page is `/dashboard/help-center`; video administration is at `/dashboard/admin/help-videos`.
+- The authenticated Vue pages are `/dashboard/admin/help-center`, `/dashboard/admin/help-center/category/:label` and `/dashboard/admin/help-center/video/:slug`; video administration is at `/dashboard/admin/help-videos`.
+- `GET /api/help-center/categories` returns active categories with at least one active video and their active `videos_count`. `GET /api/help-center/category/{label}` returns the active category and all its active videos without pagination. Category cards link by `label`; video cards link by their stored `slug` and only load thumbnail images.
+- `GET /api/help-center/video/{slug}` returns `data.helpVideo` with its category and `data.relatedHelpVideos`: all other active videos in that category, without pagination. Missing/inactive videos and videos in inactive categories return HTTP 404. These help-center actions require `view help-center` or `administrator`.
+- The video detail reuses the YouTube/Vimeo/MP4 player, displays the title and plain-text description, and includes breadcrumb/back links and related-video thumbnail links. Desktop uses a main player and side column; mobile uses one column. Video creation and `HelpVideoSeeder` generate stored slugs from titles.
 - Video administration follows the category administration layout: global search, status filters, newest-first ordering, selectable page size (10, 20, 30 or 50), a desktop table and mobile expansion panels. Videos can be previewed from the list and live in the create/edit form when a valid provider URL is entered.
 - `GET /api/help-videos` returns `data.helpVideos` (paginator), `data.helpVideosTotalCount`, `data.categories` and `data.states`. Each listed video includes its `category`, `state` and normalized `embed_url`. Administration uses `view/create/edit/delete help-videos` permissions; status changes use `GET /api/help-videos/updateState/{id}` with `edit help-videos`.
 - The video list category selector shows categories with `state_id = 2` by name and sends `help_category_id`. Clearing it removes the category filter; video status remains an independent filter. Category metadata includes `state_id`, while the editor retains the full category list.

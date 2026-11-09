@@ -2,6 +2,7 @@
 import { useDisplay } from 'vuetify'
 import { themeConfig } from '@themeConfig'
 import { useHelpCenterStores } from '@/stores/useHelpCenter'
+import { getHelpVideoThumbnailUrl } from '@/@core/utils/helpVideo'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
 const helpCenterStores = useHelpCenterStores()
@@ -36,16 +37,6 @@ const getHelpCategoryIconUrl = helpCategory => {
   return icon && icon !== 'null' && icon !== 'undefined'
     ? `${themeConfig.settings.urlStorage}${icon}`
     : null
-}
-
-const getHelpVideoThumbnailUrl = helpVideo => {
-  if (helpVideo.thumbnail_url) return helpVideo.thumbnail_url
-
-  const youtubeId = helpVideo.provider === 'youtube'
-    ? helpVideo.embed_url?.match(/^https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]{11})$/)?.[1]
-    : null
-
-  return youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : null
 }
 
 const fetchData = async () => {
@@ -146,31 +137,6 @@ onBeforeUnmount(() => {
             clearable
           />
         </div>
-        <VMenu>
-          <template #activator="{ props }">
-            <VBtn
-              class="btn-white-2 h-40 w-auto"
-              :class="mdAndDown ? 'px-3' : ''"
-              v-bind="props"
-            >
-              <VIcon icon="custom-filter" size="24" />
-              <span :class="mdAndDown ? 'd-none' : ''">Sortera</span>
-              <VIcon
-               :class="mdAndDown ? 'd-none' : ''"
-                icon="custom-arrow-down"
-                size="16"
-              />
-            </VBtn>
-          </template>
-          <VList>
-            <VListItem
-              v-for="sortOption in sortOptions"
-              :key="sortOption.value"
-            >
-              <VListItemTitle>{{ sortOption.title }}</VListItemTitle>
-            </VListItem>
-          </VList>
-        </VMenu>
       </VCardText>
       <VCardText :class="mdAndDown ? 'pa-6' : 'pa-4'">
         <nav
@@ -215,9 +181,10 @@ onBeforeUnmount(() => {
           v-if="hasLoaded && helpVideos.length"
           class="help-video-grid"
         >
-          <article
+          <RouterLink
             v-for="helpVideo in helpVideos"
             :key="helpVideo.id"
+            :to="{ name: 'dashboard-admin-help-center-video-slug', params: { slug: helpVideo.slug } }"
             class="help-video-card"
           >
             <VImg
@@ -256,7 +223,7 @@ onBeforeUnmount(() => {
                 {{ helpVideo.title }}
               </h3>
             </div>
-          </article>
+          </RouterLink>
         </div>
         <div
           v-else-if="!isRequestOngoing && hasLoaded"
@@ -364,11 +331,18 @@ onBeforeUnmount(() => {
 }
 
 .help-video-card {
+  display: block;
+  text-decoration: none;
   overflow: hidden;
   border: 1px solid #E7E7E7;
   border-radius: 16px;
   background: #F5F8F6;
 }
+
+/*.help-video-card:hover,
+.help-video-card:focus-visible {
+  border-color: #6E9383;
+}*/
 
 .help-video-thumbnail {
   width: 100%;

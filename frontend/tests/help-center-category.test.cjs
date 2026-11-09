@@ -10,6 +10,8 @@ const { parse, compileScript, compileStyle } = require('@vue/compiler-sfc')
 const filename = path.join(__dirname, '../src/pages/dashboard/admin/help-center/category/[label].vue')
 const { descriptor, errors } = parse(readFileSync(filename, 'utf8'), { filename })
 const script = descriptor.scriptSetup.content.replace(/^import .+$/gm, '')
+const thumbnailSource = readFileSync(path.join(__dirname, '../src/@core/utils/helpVideo.js'), 'utf8')
+const getHelpVideoThumbnailUrl = vm.runInNewContext(`${thumbnailSource.replace('export const ', 'const ')}\n;getHelpVideoThumbnailUrl`)
 
 function createHarness(fetchCategory) {
   const route = Vue.reactive({ params: { label: 'summary' } })
@@ -26,6 +28,7 @@ function createHarness(fetchCategory) {
     useDisplay: () => ({ mdAndDown: Vue.ref(false) }),
     useHelpCenterStores: () => ({ fetchCategory }),
     themeConfig: { settings: { urlStorage: 'https://example.test/storage/' } },
+    getHelpVideoThumbnailUrl,
     onMounted: () => {},
     onBeforeUnmount: () => {},
   })
@@ -38,9 +41,9 @@ function payload() {
     helpCategory: { id: 1, name: 'Overview', label: 'summary' },
     categories: [{ id: 1, name: 'Overview', label: 'summary' }],
     helpVideos: [
-        { id: 1, title: 'First tutorial', thumbnail_url: 'https://example.test/thumbnail.jpg' },
-        { id: 2, title: 'YouTube tutorial', provider: 'youtube', embed_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-        { id: 3, title: 'No thumbnail', provider: 'mp4' },
+        { id: 1, slug: 'first-tutorial', title: 'First tutorial', thumbnail_url: 'https://example.test/thumbnail.jpg' },
+        { id: 2, slug: 'youtube-tutorial', title: 'YouTube tutorial', provider: 'youtube', embed_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+        { id: 3, slug: 'no-thumbnail', title: 'No thumbnail', provider: 'mp4' },
     ],
     helpVideosTotalCount: 3,
   }
@@ -55,9 +58,19 @@ async function render(state) {
 
   for (const component of [
     'VCard', 'VCardTitle', 'VCardText', 'VDivider', 'VIcon', 'VImg',
-    'VSnackbar', 'LoadingOverlay', 'VTextField', 'VMenu', 'VBtn', 'VList', 'VListItem', 'VListItemTitle', 'RouterLink',
+    'VSnackbar', 'LoadingOverlay', 'VTextField', 'VMenu', 'VBtn', 'VList', 'VListItem', 'VListItemTitle',
   ]) app.component(component, passthrough)
 
+  app.component('RouterLink', {
+    props: ['to'],
+    render() {
+      const target = this.to.params?.slug
+        ? `/dashboard/admin/help-center/video/${this.to.params.slug}`
+        : '/dashboard/admin/help-center'
+
+      return Vue.h('a', { href: target }, this.$slots.default?.())
+    },
+  })
   app.config.globalProperties.$vuetify = { display: { mdAndDown: false } }
 
   return renderToString(app)
@@ -86,7 +99,8 @@ test('category view requests its label and renders only image previews', async (
   const html = await render(state)
 
   assert.equal(requestedLabel, 'summary')
-  assert.equal((html.match(/<article/g) || []).length, 3)
+  assert.equal((html.match(/href="\/dashboard\/admin\/help-center\/video\//g) || []).length, 3)
+  assert.match(html, /href="\/dashboard\/admin\/help-center\/video\/first-tutorial"/)
   assert.match(html, /First tutorial/)
   assert.match(html, /https:\/\/example.test\/thumbnail.jpg/)
   assert.match(html, /https:\/\/i.ytimg.com\/vi\/dQw4w9WgXcQ\/hqdefault.jpg/)

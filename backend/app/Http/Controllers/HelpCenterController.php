@@ -17,7 +17,7 @@ class HelpCenterController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(PermissionMiddleware::class . ':view help-center|administrator')->only(['index', 'categories', 'category']);
+        $this->middleware(PermissionMiddleware::class . ':view help-center|administrator')->only(['index', 'categories', 'category', 'video']);
     }
 
     /**
@@ -129,6 +129,44 @@ class HelpCenterController extends Controller
                     'helpVideos' => $helpVideos,
                     'helpVideosTotalCount' => $helpVideos->count(),
                     'categories' => $this->getHelpCategories(),
+                ],
+            ]);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function video(string $slug): JsonResponse
+    {
+        try {
+            $helpVideo = HelpVideo::with('category:id,name,label')
+                ->where('slug', $slug)
+                ->where('state_id', 2)
+                ->whereHas('category', fn ($query) => $query->where('state_id', 2))
+                ->first();
+
+            if (! $helpVideo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Videon hittades inte.',
+                ], 404);
+            }
+
+            $relatedHelpVideos = HelpVideo::where('help_category_id', $helpVideo->help_category_id)
+                ->where('state_id', 2)
+                ->where('id', '!=', $helpVideo->id)
+                ->orderByDesc('id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'helpVideo' => $helpVideo,
+                    'relatedHelpVideos' => $relatedHelpVideos,
                 ],
             ]);
         } catch (\Illuminate\Database\QueryException $ex) {

@@ -60,6 +60,7 @@ class HelpVideoListingTest extends TestCase
                 'help_category_id' => 1,
                 'state_id' => $id === 1 ? 1 : 2,
                 'title' => 'Tutorial '.$id,
+                'slug' => 'tutorial-'.$id,
                 'description' => 'Getting started',
                 'provider' => 'youtube',
                 'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
@@ -137,6 +138,57 @@ class HelpVideoListingTest extends TestCase
         DB::table('help_categories')->where('id', 1)->update(['state_id' => 1]);
 
         $this->getJson('/api/help-center/category/summary')->assertNotFound();
+    }
+
+    public function test_help_center_video_returns_details_and_only_active_related_videos(): void
+    {
+        DB::table('help_categories')->insert([
+            'id' => 2, 'name' => 'Customers', 'label' => 'clients', 'state_id' => 2,
+        ]);
+        DB::table('help_videos')->insert([
+            'help_category_id' => 2, 'state_id' => 2, 'title' => 'Other tutorial',
+            'slug' => 'other-tutorial', 'provider' => 'mp4', 'video_url' => 'https://example.com/video.mp4',
+        ]);
+
+        $this->withoutMiddleware()
+            ->getJson('/api/help-center/video/tutorial-2')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.helpVideo.id', 2)
+            ->assertJsonPath('data.helpVideo.slug', 'tutorial-2')
+            ->assertJsonPath('data.helpVideo.description', 'Getting started')
+            ->assertJsonPath('data.helpVideo.category.label', 'summary')
+            ->assertJsonPath('data.helpVideo.embed_url', 'https://www.youtube.com/embed/dQw4w9WgXcQ')
+            ->assertJsonCount(1, 'data.relatedHelpVideos')
+            ->assertJsonPath('data.relatedHelpVideos.0.id', 3);
+    }
+
+    public function test_help_center_video_rejects_missing_inactive_and_inactive_category_videos(): void
+    {
+        $this->withoutMiddleware()->getJson('/api/help-center/video/missing')->assertNotFound();
+        $this->getJson('/api/help-center/video/tutorial-1')->assertNotFound();
+
+        DB::table('help_categories')->where('id', 1)->update(['state_id' => 1]);
+
+        $this->getJson('/api/help-center/video/tutorial-2')->assertNotFound();
+    }
+
+    public function test_help_center_video_can_have_no_related_videos(): void
+    {
+        DB::table('help_videos')->where('id', 3)->update(['state_id' => 1]);
+
+        $this->withoutMiddleware()->getJson('/api/help-center/video/tutorial-2')
+            ->assertOk()
+            ->assertJsonCount(0, 'data.relatedHelpVideos');
+    }
+
+    public function test_help_center_categories_endpoint_returns_active_video_counts(): void
+    {
+        $this->withoutMiddleware()->getJson('/api/help-center/categories')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.categories.0.name', 'Overview')
+            ->assertJsonPath('data.categories.0.videos_count', 2);
     }
 
     public function test_listing_returns_video_relations_selectors_and_pagination(): void

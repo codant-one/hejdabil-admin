@@ -305,6 +305,7 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
     Route::group(['prefix' => 'help-center'], function () {
         Route::get('/categories', [HelpCenterController::class, 'categories']);
         Route::get('/category/{label}', [HelpCenterController::class, 'category']);
+        Route::get('/video/{slug}', [HelpCenterController::class, 'video']);
     });
 
     //Agreement

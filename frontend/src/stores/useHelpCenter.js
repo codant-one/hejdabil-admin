@@ -4,6 +4,8 @@ import HelpCenter from '@/api/helpCenter'
 export const useHelpCenterStores = defineStore('help-center', {
   state: () => ({
     helpCenter: [],
+    helpVideo: null,
+    relatedHelpVideos: [],
     categories: {},
     loading: false,
     last_page: 1,
@@ -18,6 +20,20 @@ export const useHelpCenterStores = defineStore('help-center', {
     },
   },
   actions: {
+    fetchVideo(slug) {
+      this.setLoading(true)
+
+      return HelpCenter.video(slug)
+        .then(response => {
+          this.helpVideo = response.data.data.helpVideo
+          this.relatedHelpVideos = response.data.data.relatedHelpVideos
+
+          return response.data.data
+        })
+        .finally(() => {
+          this.setLoading(false)
+        })
+    },
     fetchCategory(label, params) {
       this.setLoading(true)
 

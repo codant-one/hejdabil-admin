@@ -14,6 +14,10 @@ class HelpCenter {
     return axios.get(`/help-center/category/${encodeURIComponent(label)}`, { params })
   }
 
+  video(slug) {
+    return axios.get(`/help-center/video/${encodeURIComponent(slug)}`)
+  }
+
 }
 
 const helpCenter = new HelpCenter()
