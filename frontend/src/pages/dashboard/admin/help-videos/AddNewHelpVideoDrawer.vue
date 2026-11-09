@@ -89,25 +89,33 @@ const submit = async () => {
     :content-class="mdAndDown ? 'dialog-bottom-full-width' : undefined"
     @update:model-value="!$event && close()"
   >
-    <VCard
-      flat
-      class="card-form"
-    >
-      <VCardTitle class="d-flex align-center pa-6 font-blauer">
+    <div class="d-flex align-center pa-6">
+      <h6 class="title-modal font-blauer">
         {{ title }}
-        <VSpacer />
-        <VBtn
-          icon
-          class="btn-white"
-          :disabled="busy"
-          aria-label="Stäng"
-          @click="close"
-        >
-          <VIcon icon="custom-close" />
-        </VBtn>
-      </VCardTitle>
-      <VDivider />
-      <PerfectScrollbar :options="{ wheelPropagation: false }">
+      </h6>
+      <VSpacer />
+      <VBtn
+        icon
+        class="btn-white"
+        :disabled="busy"
+        aria-label="Stäng"
+        @click="close"
+      >
+        <VIcon
+          size="20"
+          icon="custom-close"
+        />
+      </VBtn>
+    </div>
+    <VDivider />
+    <PerfectScrollbar
+      class="scrollbar-no-border"
+      :options="{ wheelPropagation: false }"
+    >
+      <VCard
+        flat
+        class="card-form"
+      >
         <VCardText>
           <VForm
             ref="refForm"
@@ -198,8 +206,8 @@ const submit = async () => {
             </VRow>
           </VForm>
         </VCardText>
-      </PerfectScrollbar>
-    </VCard>
+      </VCard>
+    </PerfectScrollbar>
   </component>
   <VDialog
     v-model="confirmLeave"
