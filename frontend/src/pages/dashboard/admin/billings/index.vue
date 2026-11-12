@@ -981,7 +981,7 @@ const downloadSelectedZip = async () => {
     const link = document.createElement('a')
 
     link.href = zipUrl
-    link.download = 'billings.zip'
+    link.download = 'fakturor.zip'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

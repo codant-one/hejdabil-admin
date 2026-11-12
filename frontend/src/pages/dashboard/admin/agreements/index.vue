@@ -764,7 +764,7 @@ const downloadSelectedZip = async () => {
     const link = document.createElement('a')
 
     link.href = zipUrl
-    link.download = 'agreements.zip'
+    link.download = 'avtal.zip'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
