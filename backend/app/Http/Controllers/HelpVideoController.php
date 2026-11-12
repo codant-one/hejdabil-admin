@@ -6,6 +6,7 @@ use App\Http\Requests\HelpVideoRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -80,8 +81,18 @@ class HelpVideoController extends Controller
     public function store(HelpVideoRequest $request)
     {
         try {
-
-            $helpVideo = HelpVideo::createHelpVideo($request);
+            $path = $this->storeThumbnail($request);
+            try {
+                if ($path !== null) {
+                    $request->merge(['thumbnail_url' => $path]);
+                }
+                $helpVideo = HelpVideo::createHelpVideo($request);
+            } catch (\Throwable $ex) {
+                if ($path !== null) {
+                    Storage::disk('public')->delete($path);
+                }
+                throw $ex;
+            }
 
             return response()->json([
                 'success' => true,
@@ -146,7 +157,25 @@ class HelpVideoController extends Controller
                     'message' => 'Videon hittades inte'
                 ], 404);
 
-            $helpVideo->updateHelpVideo($request, $helpVideo); 
+            $oldThumbnail = $helpVideo->thumbnail_url;
+            $path = $this->storeThumbnail($request);
+            try {
+                if ($path !== null) {
+                    $request->merge(['thumbnail_url' => $path]);
+                }
+                $helpVideo->updateHelpVideo($request, $helpVideo);
+            } catch (\Throwable $ex) {
+                if ($path !== null) {
+                    Storage::disk('public')->delete($path);
+                }
+                throw $ex;
+            }
+
+            if ($path !== null && $oldThumbnail && str_starts_with($oldThumbnail, 'help-videos/')) {
+                if (!Storage::disk('public')->delete($oldThumbnail)) {
+                    throw new \RuntimeException('Kunde inte ta bort den gamla miniatyrbilden.');
+                }
+            }
             
             return response()->json([
                 'success' => true,
@@ -228,5 +257,20 @@ class HelpVideoController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+
+    }
+
+    private function storeThumbnail(HelpVideoRequest $request): ?string
+    {
+        if (!$request->hasFile('thumbnail')) {
+            return null;
+        }
+
+        $path = $request->file('thumbnail')->store('help-videos', 'public');
+        if ($path === false) {
+            throw new \RuntimeException('Kunde inte spara miniatyrbilden.');
+        }
+
+        return $path;
     }
 }

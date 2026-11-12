@@ -7,8 +7,12 @@ use App\Http\Requests\HelpVideoRequest;
 use App\Services\CacheService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class HelpVideoListingTest extends TestCase
@@ -321,5 +325,73 @@ class HelpVideoListingTest extends TestCase
         $toggled = $controller->updateState($created['id'])->getData(true)['data']['helpVideo'];
         $this->assertSame('Overview', $toggled['category']['name']);
         $this->assertSame('Inaktiv', $toggled['state']['name']);
+    }
+
+    public function test_thumbnail_upload_is_saved_preserved_and_replaced(): void
+    {
+        $disk = 'help-video-test-'.Str::random(20);
+        Storage::fake($disk);
+        Storage::set('public', Storage::disk($disk));
+
+        try {
+            $attributes = [
+                'help_category_id' => 1,
+                'state_id' => 2,
+                'title' => 'New tutorial',
+                'provider' => 'youtube',
+                'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
+            ];
+            $image = fn () => UploadedFile::fake()->createWithContent(
+                'thumbnail.png',
+                base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
+            );
+            $this->withoutMiddleware();
+            $created = $this->post('/api/help-videos', $attributes + ['thumbnail' => $image()], ['Accept' => 'application/json'])
+                ->assertOk()->json('data.helpVideo');
+            $original = $created['thumbnail_url'];
+            $this->assertStringStartsWith('help-videos/', $original);
+            Storage::disk('public')->assertExists($original);
+
+            $this->putJson('/api/help-videos/'.$created['id'], $attributes)
+                ->assertOk()->assertJsonPath('data.helpVideo.thumbnail_url', $original);
+
+            $replacement = $this->post('/api/help-videos/'.$created['id'], $attributes + [
+                '_method' => 'PUT', 'thumbnail' => $image(),
+            ], ['Accept' => 'application/json'])->assertOk()->json('data.helpVideo.thumbnail_url');
+            $this->assertNotSame($original, $replacement);
+            Storage::disk('public')->assertMissing($original);
+            Storage::disk('public')->assertExists($replacement);
+
+            $this->deleteJson('/api/help-videos/'.$created['id'])->assertOk();
+            Storage::disk('public')->assertMissing($replacement);
+        } finally {
+            File::deleteDirectory(storage_path('framework/testing/disks/'.$disk));
+        }
+    }
+
+    public function test_thumbnail_upload_rejects_non_images(): void
+    {
+        $this->withoutMiddleware()->post('/api/help-videos', [
+            'help_category_id' => 1,
+            'state_id' => 2,
+            'title' => 'New tutorial',
+            'provider' => 'youtube',
+            'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
+            'thumbnail' => UploadedFile::fake()->createWithContent('thumbnail.txt', 'not an image'),
+        ], ['Accept' => 'application/json'])->assertStatus(400)->assertJsonValidationErrors('thumbnail');
+    }
+
+    public function test_existing_external_thumbnail_is_preserved_when_editing(): void
+    {
+        $url = 'https://example.com/thumbnail.png';
+        DB::table('help_videos')->where('id', 2)->update(['thumbnail_url' => $url]);
+
+        $this->withoutMiddleware()->putJson('/api/help-videos/2', [
+            'help_category_id' => 1,
+            'state_id' => 2,
+            'title' => 'Updated tutorial',
+            'provider' => 'youtube',
+            'video_url' => 'https://youtu.be/dQw4w9WgXcQ',
+        ])->assertOk()->assertJsonPath('data.helpVideo.thumbnail_url', $url);
     }
 }

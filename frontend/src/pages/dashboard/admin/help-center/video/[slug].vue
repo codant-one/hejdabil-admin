@@ -88,21 +88,21 @@ onBeforeUnmount(() => {
 
     <VCard class="card-fill">
       <VCardText :class="mdAndDown ? 'pa-6' : 'pa-4'">
-         <div class="d-flex w-auto pb-6">
-        <VBtn
-            :to="{ name: 'dashboard-admin-help-center-category-label', params: { label: helpVideo.category.label } }"
-            class="btn-light w-auto align-self-start"
-            :class="mdAndDown ? 'd-flex' : 'd-none'"
-          >
-            <VIcon
-              icon="custom-return"
-              size="24"
-            />
-            Tillbaka
-          </VBtn>
-        </div>
-
         <template v-if="hasLoaded && helpVideo">
+          <div class="d-flex w-auto pb-6">
+            <VBtn
+              :to="{ name: 'dashboard-admin-help-center-category-label', params: { label: helpVideo.category.label } }"
+              class="btn-light w-auto align-self-start"
+              :class="mdAndDown ? 'd-flex' : 'd-none'"
+            >
+              <VIcon
+                icon="custom-return"
+                size="24"
+              />
+              Tillbaka
+            </VBtn>
+          </div>
+
           <nav
             class="help-video-breadcrumbs"
             aria-label="Brödsmulor"

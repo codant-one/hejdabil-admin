@@ -5,6 +5,7 @@ import { useHelpVideosStores } from '@/stores/useHelpVideos'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import AddNewHelpVideoDrawer from './AddNewHelpVideoDrawer.vue'
 import HelpVideoPreview from '@/components/common/HelpVideoPreview.vue'
+import { getHelpVideoThumbnailUrl } from '@/@core/utils/helpVideo'
 
 const store = useHelpVideosStores()
 const { mdAndDown } = useDisplay()
@@ -37,15 +38,7 @@ let requestId = 0
 
 const notify = (type, message) => { advisor.value = { show: true, type, message } }
 
-const thumbnailFor = video => {
-  if (video.thumbnail_url) return video.thumbnail_url
-
-  const youtubeId = video.provider === 'youtube'
-    ? video.embed_url?.match(/^https:\/\/www\.youtube\.com\/embed\/([a-zA-Z0-9_-]{11})$/)?.[1]
-    : null
-
-  return youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : undefined
-}
+const thumbnailFor = getHelpVideoThumbnailUrl
 
 const fetchData = async (cleanFilters = false) => {
   if (cleanFilters === true) {
@@ -465,7 +458,7 @@ onBeforeUnmount(() => {
             :provider="previewVideo.provider"
             :url="previewVideo.video_url"
             :title="previewVideo.title"
-            :thumbnail="previewVideo.thumbnail_url || ''"
+            :thumbnail="thumbnailFor(previewVideo) || ''"
           />
         </VCardText>
       </VCard>
