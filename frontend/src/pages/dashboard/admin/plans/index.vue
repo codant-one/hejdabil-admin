@@ -594,7 +594,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Planer</h2>
+          <h2>Planer <span v-if="hasLoaded">({{ totalPlans }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

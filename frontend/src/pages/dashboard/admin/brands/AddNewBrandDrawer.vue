@@ -3,7 +3,7 @@
 import { themeConfig } from '@themeConfig'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { requiredValidator, urlValidator } from '@/@core/utils/validators'
-import { Cropper, CircleStencil } from 'vue-advanced-cropper'
+import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 

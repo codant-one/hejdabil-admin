@@ -18,6 +18,42 @@
 - Eloquent password updates revoke device tokens before the password is persisted, including password resets and administrative updates.
 - The existing `suppliers:delete-account` command deletes device tokens as part of its transactional purge of tables with a `user_id` column. Scheduled deletion alone does not deny device login; definitive deletion removes the user and its tokens.
 
+## Help center
+
+- The authenticated Vue pages are `/dashboard/admin/help-center`, `/dashboard/admin/help-center/category/:label` and `/dashboard/admin/help-center/video/:slug`; video administration is at `/dashboard/admin/help-videos`.
+- `GET /api/help-center/categories` returns active categories with at least one active video and their active `videos_count`. `GET /api/help-center/category/{label}` returns the active category and all its active videos without pagination. Category cards link by `label`; video cards link by their stored `slug` and only load thumbnail images.
+- `GET /api/help-center/video/{slug}` returns `data.helpVideo` with its category and `data.relatedHelpVideos`: all other active videos in that category, without pagination. Missing/inactive videos and videos in inactive categories return HTTP 404. These help-center actions require `view help-center` or `administrator`.
+- The video detail reuses the YouTube/Vimeo/MP4 player, displays the title and plain-text description, and includes breadcrumb/back links and related-video thumbnail links. Desktop uses a main player and side column; mobile uses one column. Video creation and `HelpVideoSeeder` generate stored slugs from titles.
+- Video administration follows the category administration layout: global search, status filters, newest-first ordering, selectable page size (10, 20, 30 or 50), a desktop table and mobile expansion panels. Videos can be previewed from the list and live in the create/edit form when a valid provider URL is entered.
+- `GET /api/help-videos` returns `data.helpVideos` (paginator), `data.helpVideosTotalCount`, `data.categories` and `data.states`. Each listed video includes its `category`, `state` and normalized `embed_url`. Administration uses `view/create/edit/delete help-videos` permissions; status changes use `GET /api/help-videos/updateState/{id}` with `edit help-videos`.
+- The video list category selector shows categories with `state_id = 2` by name and sends `help_category_id`. Clearing it removes the category filter; video status remains an independent filter. Category metadata includes `state_id`, while the editor retains the full category list.
+- Create, show, update and status-change responses include `category` and `state` in `data.helpVideo`, so replacing a row in the frontend store preserves the fields required by the table.
+- Help video status selectors and validation only allow Inaktiv (`1`) and Aktiv (`2`); other application states are unchanged.
+- `GET /api/help-center` only returns videos with `state_id = 2` (Aktiv), matching plans. Filters are `module` (module ID), `search`, `sort` (`newest`, `oldest`, `title_asc`, `title_desc`), `page` and `limit`. Pagination links preserve the query string.
+- `/api/help` is an API resource using `view/create/edit/delete help` permissions, or `administrator`. `GET /api/help/updateState/{id}` requires `edit help`. Normal authenticated users can read the help center without administrative permissions.
+- Modules are maintained exclusively through `HelpCategorySeeder`, with no CRUD controller, routes or administration screen. The existing seeder uses `name` for the Swedish name and `label` for the internal identifier (for example, `Översikt` / `summary`). `HelpVideoSeeder` looks up modules by `label`. Videos do not use soft deletes because their existing table has no `deleted_at`.
+- Video URLs accept HTTP(S) YouTube watch, short and embed links, Vimeo normal and embed links (including unlisted hashes), or direct MP4 URLs. Provider/URL mismatches are rejected. The API includes the normalized `embed_url`.
+- Help UI strings are written directly in Swedish, following plans, without i18n translation calls.
+- Example seeders are repeatable: the existing module seeder creates fifteen modules, and the video seeder creates three example videos for each of `summary`, `clients`, `billings`, `vehicles`, `agreements` and `documents`. Run `HelpCategorySeeder` before `HelpVideoSeeder`. Their video URLs are placeholders, not actual product tutorials. Existing migrations are unchanged.
+
+Run from the backend directory, with the existing states already seeded:
+
+```shell
+php artisan migrate
+php artisan db:seed --class=PermissionSeeder
+php artisan db:seed --class=HelpCategorySeeder
+php artisan db:seed --class=HelpVideoSeeder
+php artisan test tests/Feature/HelpCenterTest.php tests/Feature/PlanActivityTest.php
+```
+
+`PermissionSeeder` also synchronizes the existing predefined roles, as it does for plans. Sign in again after changing permissions to refresh the frontend abilities.
+
+The feature tests use SQLite in memory and leave the configured application database untouched. If PDO SQLite is installed but disabled in the CLI configuration, run:
+
+```shell
+php -d extension=pdo_sqlite vendor/bin/phpunit tests/Feature/HelpCenterTest.php tests/Feature/PlanActivityTest.php
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

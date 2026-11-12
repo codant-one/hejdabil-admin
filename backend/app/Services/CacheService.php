@@ -27,7 +27,8 @@ use App\Models\{
     Country,
     PayoutState,
     User,
-    Plan
+    Plan,
+    HelpCategory
 };
 use Spatie\Permission\Models\{Permission, Role};
 
@@ -364,6 +365,21 @@ class CacheService
     {
         return Cache::remember('plans.all', self::CACHE_DURATION, function () {
             return Plan::all();
+        });
+    }
+
+    /**
+     * Get active help categories with active videos, including their counts
+     */
+    public static function getHelpCategories()
+    {
+        return Cache::remember('help-categories.active-with-active-videos', self::CACHE_DURATION, function () {
+            $activeVideos = fn ($query) => $query->where('state_id', 2);
+
+            return HelpCategory::where('state_id', 2)
+                ->whereHas('videos', $activeVideos)
+                ->withCount(['videos' => $activeVideos])
+                ->get();
         });
     }
 

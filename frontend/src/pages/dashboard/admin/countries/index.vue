@@ -608,7 +608,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Land</h2>
+          <h2>Land <span v-if="hasLoaded">({{ totalCountries }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

@@ -2,7 +2,7 @@
 
 import { themeConfig } from '@themeConfig'
 import { requiredValidator, urlValidator } from '@/@core/utils/validators'
-import { Cropper, CircleStencil } from 'vue-advanced-cropper'
+import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg"
 
@@ -38,10 +38,6 @@ const isEdit = ref(false)
 
 const initialData = ref(null)
 const isConfirmLeaveVisible = ref(false)
-
-const getTitle = computed(() => {
-  return isEdit.value ? 'Uppdatera märke': 'Lägg till märke'
-})
 
 const currentData = computed(() => ({
   id: id.value,

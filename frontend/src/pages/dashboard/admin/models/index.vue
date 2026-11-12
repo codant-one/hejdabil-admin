@@ -1,17 +1,17 @@
 <script setup>
 
-import { ref, toRaw } from "vue";
+import { ref } from "vue";
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { useModelsStores } from '@/stores/useModels'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
 import { openExternalLink } from '@/composables/useExternalLink'
 import AddNewModelDrawer from './AddNewModelDrawer.vue' 
 import AddNewModelMobile from './AddNewModelMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import html2pdf from 'html2pdf.js';
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const { width: windowWidth } = useWindowSize();
@@ -58,12 +58,6 @@ const readCachedCompany = () => {
 
 const company = ref(readCachedCompany())
 
-const setCompany = (value) => {
-  const normalized = value && typeof value === 'object' ? { ...value } : {};
-  company.value = normalized;
-  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
-};
-
 const sectionEl = ref(null);
 
 const advisor = ref({
@@ -80,7 +74,8 @@ const paginationData = computed(() => {
   const firstIndex = models.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = models.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalModels.value } modell`
+  return `${totalModels.value} resultat`;
+  //return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalModels.value } modell`
 })
 
 // 👉 watching current page
@@ -525,7 +520,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Modell</h2>
+          <h2>Modell <span v-if="hasLoaded">({{ totalModels }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

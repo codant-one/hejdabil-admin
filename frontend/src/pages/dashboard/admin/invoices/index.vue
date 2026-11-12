@@ -498,7 +498,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Fakturor</h2>
+          <h2>Fakturor <span v-if="hasLoaded">({{ totalInvoices }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

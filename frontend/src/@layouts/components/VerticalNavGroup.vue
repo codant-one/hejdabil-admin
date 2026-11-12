@@ -55,12 +55,14 @@ const collapseChildren = children => {
 
 watch(() => route.path, () => {
   const isActive = isNavGroupActive(props.item.children, router)
+  const groupIndex = openGroups.value.indexOf(props.item.title)
 
-  // Don't open group if vertical nav is collapsed and window size is more than overlay nav breakpoint
-  if(autoHideMenu.value)
-    isGroupOpen.value = false
-  else
-    isGroupOpen.value = openGroups.value.includes(props.item.title)
+  if (isActive && groupIndex === -1)
+    openGroups.value.push(props.item.title)
+  else if (!isActive && groupIndex !== -1)
+    openGroups.value.splice(groupIndex, 1)
+
+  isGroupOpen.value = !autoHideMenu.value && isActive
   isGroupActive.value = isActive
 }, { immediate: true })
 watch(isGroupOpen, val => {

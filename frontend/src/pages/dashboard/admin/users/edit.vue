@@ -28,6 +28,7 @@ const emit = defineEmits([
 const usersStores = useUsersStores()
 
 const refFormEdit = ref()
+const { width: windowWidth } = useWindowSize()
 
 const id = ref('')
 const email = ref('')
@@ -105,7 +106,7 @@ const onSubmitEdit = () =>{
                 }, 5000)
 
             }).catch(error => {
-                closeUserCreateDialog()
+                closeUserEditDialog()
                 window.scrollTo(0, 0)
 
                 advisor.value.show = true
@@ -140,10 +141,15 @@ const onSubmitEdit = () =>{
     <!-- DIALOG-->
     <VDialog
         :model-value="props.isDrawerOpen"
-        max-width="600"
-        class="action-dialog"
+        :fullscreen="windowWidth < 1024"
         persistent
-        >
+        :scrim="windowWidth < 1024 ? false : true"
+        :scrollable="windowWidth >= 1024"
+        :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+        :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+        :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+        width="560"
+    >
         <!-- Dialog close btn -->
         <VBtn
           icon
@@ -154,20 +160,31 @@ const onSubmitEdit = () =>{
         </VBtn>
 
         <!-- Dialog Content -->
-        <VCard>
-          <VCardText class="dialog-title-box">
-            <!-- <VIcon size="32" icon="custom-warning-outlined" class="action-icon" /> -->
-            <div class="dialog-title">
-              Redigera användare
-            </div>
-          </VCardText>
-          
-          <VForm
-            ref="refFormEdit"
-            class="card-form user-mobile"
-            @submit.prevent="onSubmitEdit"
-          >
-            <VCardText class="dialog-text">
+        <VForm
+          ref="refFormEdit"
+          class="card-form user-mobile"
+          :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
+          @submit.prevent="onSubmitEdit"
+        >
+          <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
+            <VCardText
+              class="dialog-title-box flex-row"
+              :class="windowWidth < 1024 ? 'mb-2 pb-2 flex-0' : ''"
+              :style="windowWidth < 1024 ? '' : 'overflow-y: hidden;'"
+            >
+              <VIcon size="32" icon="custom-users" class="action-icon" />
+              <div class="dialog-title">
+                Redigera användare
+              </div>
+            </VCardText>
+
+            <VDivider :class="windowWidth < 1024 ? '' : 'd-none'" />
+
+            <VCardText
+              class="d-flex flex-column gap-4 card-form"
+              :class="windowWidth < 1024 ? '' : 'dialog-text'"
+              :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : 'overflow-y: auto;'"
+            >
               <VRow>
                 <VCol
                   md="6"
@@ -265,20 +282,26 @@ const onSubmitEdit = () =>{
                   />
                 </VCol>
               </VRow>
-            </VCardText>
-
-            <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-              <VBtn
-                class="btn-light"
-                @click="closeUserEditDialog">
+              <VCardText
+                class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0"
+                :class="windowWidth < 1024 ? 'pb-0 pt-2' : 'pt-0'"
+              >
+                <VBtn
+                  class="btn-light"
+                  @click="closeUserEditDialog"
+                >
                   Avbryt
-              </VBtn>
-              <VBtn class="btn-gradient" type="submit">
+                </VBtn>
+                <VBtn
+                  class="btn-gradient"
+                  type="submit"
+                >
                   Redigera
-              </VBtn>
+                </VBtn>
+              </VCardText>
             </VCardText>
-          </VForm>
-        </VCard>
+          </VCard>
+        </VForm>
     </VDialog>
 </template>
 <style scoped>
@@ -373,6 +396,68 @@ const onSubmitEdit = () =>{
         }
       }
     }
+  }
+
+  :deep(.card-form.user-mobile .v-input:not(.v-textarea) .v-input__control .v-field) {
+    background-color: #f6f6f6 !important;
+    height: 40px !important;
+    min-height: 40px !important;
+
+    .v-field__input {
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 8px 16px !important;
+
+      input {
+        height: 40px !important;
+        min-height: 40px !important;
+      }
+    }
+
+    .v-field-label {
+      top: 12px !important;
+    }
+
+    .v-field__append-inner {
+      align-items: center;
+      padding-top: 0;
+    }
+
+    .v-text-field__prefix {
+      height: 40px;
+    }
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__input) {
+    align-items: center;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__field) {
+    align-items: center;
+    top: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-field__input > input) {
+    align-self: center;
+    height: 24px !important;
+    min-height: 24px !important;
+    padding: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox__selection) {
+    display: inline-flex;
+    align-items: center;
+    height: 24px !important;
+    margin: 0 !important;
+  }
+
+  :deep(.card-form.user-mobile .v-combobox .v-chip) {
+    top: -9px;
+    height: 24px !important;
+    min-height: 24px !important;
   }
 
   .v-dialog .v-overlay__content {

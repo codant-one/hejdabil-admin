@@ -101,7 +101,6 @@ const editUserPassword = function(){
     <!-- DIALOG -->
     <VDialog
       v-model="props.isDrawerOpen"
-      max-width="600"
       class="action-dialog"
       persistent
     >
@@ -117,7 +116,7 @@ const editUserPassword = function(){
         <!-- Dialog Content -->
         <VCard>
             <VCardText class="dialog-title-box">
-                <!-- <VIcon size="32" icon="custom-warning-outlined" class="action-icon" /> -->
+                <VIcon size="32" icon="custom-password" class="action-icon" />
                 <div class="dialog-title">
                 Redigera användarens lösenord
                 </div>

@@ -18,6 +18,26 @@ export default [
         ]
       },
       { 
+        title: 'Hjälpcenter', 
+        icon: { icon: 'custom-help' },
+        action: 'view',
+        subject: 'help-categories',
+        children: [
+          { 
+            title: 'Kategorier', 
+            to: 'dashboard-admin-help-categories', 
+            action: 'view', 
+            subject: 'help-categories', 
+          },
+          { 
+            title: 'Videor', 
+            to: 'dashboard-admin-help-videos', 
+            action: 'view', 
+            subject: 'help-videos', 
+          }
+        ]
+      },
+      { 
         title: 'Valuta', 
         icon: { icon: 'custom-pris-information' },
         to: 'dashboard-admin-currencies', 
@@ -44,7 +64,8 @@ export default [
     title: 'Hjälp',
     icon: { icon:'custom-help' },
     class: 'help-button',
+    to: 'dashboard-admin-help-center',
     action: 'view' , 
-    subject: 'dashboard'
+    subject: 'help-center'
   }
 ]

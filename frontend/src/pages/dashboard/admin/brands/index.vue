@@ -1,16 +1,16 @@
 <script setup>
 
-import { ref, toRaw } from "vue";
+import { ref } from "vue";
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import html2pdf from 'html2pdf.js';
 import { excelParser } from '@/plugins/csv/excelParser'
 import { openExternalLink } from '@/composables/useExternalLink'
 import AddNewBrandDrawer from './AddNewBrandDrawer.vue' 
 import AddNewBrandMobile from './AddNewBrandMobile.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import html2pdf from 'html2pdf.js';
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const { width: windowWidth } = useWindowSize();
@@ -518,7 +518,7 @@ onBeforeUnmount(() => {
           ]"
         >
           <div class="align-center font-blauer">
-            <h2>Märke</h2>
+            <h2>Märke <span v-if="hasLoaded">({{ totalBrands }})</span></h2>
           </div>
 
           <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

@@ -132,6 +132,17 @@ class PermissionSeeder extends Seeder
             ['name' => 'view company'],
             ['name' => 'view sms'],
             ['name' => 'view plan'],
+
+            //help
+            ['name' => 'view help-categories'],
+            ['name' => 'create help-categories'],
+            ['name' => 'edit help-categories'],
+            ['name' => 'delete help-categories'],
+            ['name' => 'view help-videos'],
+            ['name' => 'create help-videos'],
+            ['name' => 'edit help-videos'],
+            ['name' => 'delete help-videos'],
+            ['name' => 'view help-center'],
         ]; 
 
         // Create or update permissions
@@ -198,6 +209,9 @@ class PermissionSeeder extends Seeder
             'view currencies', 'create currencies', 'edit currencies', 'delete currencies', //currencies
             'view countries', 'create countries', 'edit countries', 'delete countries', //countries
             'view plans', 'create plans', 'edit plans', 'delete plans', //plans
+            'view help-categories', 'create help-categories', 'edit help-categories', 'delete help-categories', //help-categories
+            'view help-videos', 'create help-videos', 'edit help-videos', 'delete help-videos', //help-videos
+            'view help-center', //help-center
         ];
 
         // Assign specific permissions to the Administrator
@@ -219,6 +233,7 @@ class PermissionSeeder extends Seeder
             'view signed-documents', 'create signed-documents', 'edit signed-documents', 'delete signed-documents', //signed-documents
             'view payouts', 'create payouts', 'edit payouts', 'delete payouts', //payouts
             'view notes', 'create notes', 'edit notes', 'delete notes', //notes
+            'view help-center', //help-center
         ];
 
         // Assign specific permissions to the Supplier
