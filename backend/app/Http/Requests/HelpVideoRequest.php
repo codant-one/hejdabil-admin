@@ -24,6 +24,7 @@ class HelpVideoRequest extends FormRequest
             'video_url' => 'required|url:http,https|max:255',
             'provider' => 'required|in:youtube,vimeo,mp4',
             'thumbnail_url' => 'nullable|url:http,https|max:500',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,bmp,webp|max:10240',
         ];
     }
 
@@ -57,6 +58,7 @@ class HelpVideoRequest extends FormRequest
             'help_category_id' => 'modul', 'state_id' => 'status', 'title' => 'titel',
             'description' => 'beskrivning', 'video_url' => 'videolänk',
             'provider' => 'leverantör', 'thumbnail_url' => 'miniatyrbild',
+            'thumbnail' => 'miniatyrbild',
         ];
     }
 

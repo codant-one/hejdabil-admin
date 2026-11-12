@@ -2,7 +2,10 @@
 import { useDisplay } from 'vuetify'
 import { VDialog, VNavigationDrawer } from 'vuetify/components'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { Cropper } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
 import { requiredValidator } from '@/@core/utils/validators'
+import { resolveHelpVideoThumbnailUrl } from '@/@core/utils/helpVideo'
 import HelpVideoPreview from '@/components/common/HelpVideoPreview.vue'
 
 const props = defineProps({
@@ -18,11 +21,33 @@ const refForm = ref()
 const form = ref({})
 const initialData = ref('')
 const confirmLeave = ref(false)
+const thumbnailFile = ref([])
+const thumbnailPreview = ref(null)
+const cropper = ref()
+const imageError = ref('')
 let resolveLeave = null
-const dirty = computed(() => JSON.stringify(form.value) !== initialData.value)
+const dirty = computed(() => JSON.stringify(form.value) !== initialData.value || !!thumbnailPreview.value)
 const title = computed(() => form.value.id ? 'Uppdatera video' : 'Lägg till video')
+const previewThumbnail = computed(() => thumbnailPreview.value || resolveHelpVideoThumbnailUrl(form.value.thumbnail_url))
+
+const clearThumbnailSelection = () => {
+  if (thumbnailPreview.value) URL.revokeObjectURL(thumbnailPreview.value)
+  thumbnailPreview.value = null
+  imageError.value = ''
+}
+
+const onThumbnailSelected = event => {
+  clearThumbnailSelection()
+
+  const file = event.target.files?.[0]
+
+  if (file && ['image/jpeg', 'image/png', 'image/bmp', 'image/webp'].includes(file.type) && file.size <= 10 * 1024 * 1024)
+    thumbnailPreview.value = URL.createObjectURL(file)
+}
 
 watch(() => props.isDrawerOpen, open => {
+  clearThumbnailSelection()
+  thumbnailFile.value = []
   if (!open) return
   form.value = {
     id: props.video.id ?? null,
@@ -37,6 +62,8 @@ watch(() => props.isDrawerOpen, open => {
   initialData.value = JSON.stringify(form.value)
   nextTick(() => refForm.value?.resetValidation())
 })
+
+onBeforeUnmount(clearThumbnailSelection)
 
 const close = () => {
   if (props.busy) return
@@ -71,8 +98,22 @@ const submit = async () => {
   const data = new FormData()
 
   Object.entries(form.value).forEach(([key, value]) => {
-    if (key !== 'id') data.append(key, value ?? '')
+    if (key !== 'id' && key !== 'thumbnail_url') data.append(key, value ?? '')
   })
+
+  if (thumbnailPreview.value) {
+    try {
+      const canvas = cropper.value?.getResult()?.canvas
+      if (!canvas) throw new Error('Bilden är inte redo för uppladdning.')
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+      if (!blob) throw new Error('Kunde inte bearbeta miniatyrbilden.')
+      data.append('thumbnail', blob, 'thumbnail.png')
+    } catch (error) {
+      imageError.value = error.message || 'Kunde inte bearbeta miniatyrbilden.'
+
+      return
+    }
+  }
   emit('videoData', { id: form.value.id, data }, form.value.id ? 'update' : 'create')
 }
 </script>
@@ -164,10 +205,49 @@ const submit = async () => {
                 />
               </VCol>
               <VCol cols="12">
-                <VTextField
-                  v-model="form.thumbnail_url"
-                  label="Miniatyrbildens URL"
-                  maxlength="500"
+                <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                  Miniatyrbild
+                </VLabel>
+                <VFileInput
+                  v-model="thumbnailFile"
+                  accept="image/png,image/jpeg,image/bmp,image/webp"
+                  prepend-icon="tabler-camera"
+                  :disabled="busy"
+                  :rules="[
+                    files => !files?.length || ['image/jpeg', 'image/png', 'image/bmp', 'image/webp'].includes(files[0].type) || 'Välj en bild i PNG, JPEG, BMP eller WebP.',
+                    files => !files?.length || files[0].size <= 10 * 1024 * 1024 || 'Bilden får vara högst 10 MB.',
+                  ]"
+                  @change="onThumbnailSelected"
+                  @click:clear="clearThumbnailSelection"
+                />
+                <VAlert
+                  v-if="imageError"
+                  type="error"
+                  variant="tonal"
+                  class="mt-2"
+                >
+                  {{ imageError }}
+                </VAlert>
+              </VCol>
+              <VCol
+                v-if="thumbnailPreview"
+                cols="12"
+              >
+                <Cropper
+                  ref="cropper"
+                  class="thumbnail-cropper"
+                  :src="thumbnailPreview"
+                />
+              </VCol>
+              <VCol
+                v-else-if="previewThumbnail"
+                cols="12"
+              >
+                <VImg
+                  :src="previewThumbnail"
+                  alt="Miniatyrbild"
+                  max-height="250"
+                  contain
                 />
               </VCol>
               <VCol
@@ -181,7 +261,7 @@ const submit = async () => {
                   :provider="form.provider"
                   :url="form.video_url"
                   :title="form.title || 'Förhandsvisning'"
-                  :thumbnail="form.thumbnail_url"
+                  :thumbnail="previewThumbnail || ''"
                 />
               </VCol>
               <VCol
@@ -234,3 +314,9 @@ const submit = async () => {
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.thumbnail-cropper {
+  max-height: 300px;
+}
+</style>

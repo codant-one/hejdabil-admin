@@ -171,7 +171,7 @@ class HelpVideo extends Model
             $helpVideo = self::find($id);
             $helpVideo->delete();
 
-            if($helpVideo->thumbnail_url)
+            if($helpVideo->thumbnail_url && str_starts_with($helpVideo->thumbnail_url, 'help-videos/'))
                 deleteFile($helpVideo->thumbnail_url);
         }
     }
