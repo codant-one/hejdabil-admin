@@ -14,6 +14,7 @@ const emitter = inject('emitter')
 const sectionEl = ref(null)
 const helpCategory = ref(null)
 const helpCategories = ref([])
+const failedIconUrls = ref(new Set())
 const helpVideos = ref([])
 const searchQuery = ref('')
 const isRequestOngoing = ref(false)
@@ -37,6 +38,13 @@ const getHelpCategoryIconUrl = helpCategory => {
   return icon && icon !== 'null' && icon !== 'undefined'
     ? `${themeConfig.settings.urlStorage}${icon}`
     : null
+}
+
+const onHelpCategoryIconError = helpCategory => {
+  const url = getHelpCategoryIconUrl(helpCategory)
+
+  console.warn('Failed to load help category icon:', url)
+  failedIconUrls.value.add(url)
 }
 
 const fetchData = async () => {
@@ -97,6 +105,28 @@ onBeforeUnmount(() => {
     ref="sectionEl"
     class="page-section"
   >
+    <svg
+      width="0"
+      height="0"
+      aria-hidden="true"
+      focusable="false"
+      style="position: absolute"
+    >
+      <filter
+        id="help-category-active-icon-color"
+        color-interpolation-filters="sRGB"
+      >
+        <feFlood
+          flood-color="#57F287"
+          result="color"
+        />
+        <feComposite
+          in="color"
+          in2="SourceAlpha"
+          operator="in"
+        />
+      </filter>
+    </svg>
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
@@ -162,12 +192,14 @@ onBeforeUnmount(() => {
             :class="{ 'help-category-link-active': helpCategoryItem.label === route.params.label }"
             :aria-current="helpCategoryItem.label === route.params.label ? 'page' : undefined"
           >
-            <span
-              v-if="getHelpCategoryIconUrl(helpCategoryItem)"
-              :style="{ maskImage: `url('${getHelpCategoryIconUrl(helpCategoryItem)}')`, WebkitMaskImage: `url('${getHelpCategoryIconUrl(helpCategoryItem)}')` }"
+            <img
+              v-if="getHelpCategoryIconUrl(helpCategoryItem) && !failedIconUrls.has(getHelpCategoryIconUrl(helpCategoryItem))"
+              :src="getHelpCategoryIconUrl(helpCategoryItem)"
               class="help-category-icon"
+              alt=""
               aria-hidden="true"
-            />
+              @error="onHelpCategoryIconError(helpCategoryItem)"
+            >
             <VIcon
               v-else
               icon="tabler-help"
@@ -299,19 +331,15 @@ onBeforeUnmount(() => {
   flex: none;
   width: 24px;
   height: 24px;
-  background-color: currentColor;
-  mask-size: contain;
-  mask-position: center;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  -webkit-mask-position: center;
-  -webkit-mask-repeat: no-repeat;
+  object-fit: contain;
+  /* Image filters avoid the cross-origin restriction on CSS masks. */
+  filter: brightness(0) invert(61.72%) sepia(90.66%) saturate(8.18) hue-rotate(101.98deg) brightness(2.25) contrast(0.0355);
 }
 
 .help-category-link-active .help-category-icon,
 .help-category-link:hover .help-category-icon,
 .help-category-link:focus-visible .help-category-icon {
-  background-color: #57F287;
+  filter: url(#help-category-active-icon-color);
 }
 
 .help-category-font-icon {

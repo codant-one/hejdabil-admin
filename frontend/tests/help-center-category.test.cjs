@@ -11,7 +11,10 @@ const filename = path.join(__dirname, '../src/pages/dashboard/admin/help-center/
 const { descriptor, errors } = parse(readFileSync(filename, 'utf8'), { filename })
 const script = descriptor.scriptSetup.content.replace(/^import .+$/gm, '')
 const thumbnailSource = readFileSync(path.join(__dirname, '../src/@core/utils/helpVideo.js'), 'utf8')
-const getHelpVideoThumbnailUrl = vm.runInNewContext(`${thumbnailSource.replace('export const ', 'const ')}\n;getHelpVideoThumbnailUrl`)
+const getHelpVideoThumbnailUrl = vm.runInNewContext(
+  `${thumbnailSource.replace(/^import .+$/gm, '').replace(/export const /g, 'const ')}\n;getHelpVideoThumbnailUrl`,
+  { themeConfig: { settings: { urlStorage: 'https://example.test/storage/' } } },
+)
 
 function createHarness(fetchCategory) {
   const route = Vue.reactive({ params: { label: 'summary' } })
@@ -19,7 +22,7 @@ function createHarness(fetchCategory) {
     ;({ route, helpCategory, helpCategories, helpVideos, searchQuery,
         isRequestOngoing, hasLoaded,
         advisor, snackbarLocation, mdAndDown, sectionEl, sortOptions,
-        fetchData, getHelpVideoThumbnailUrl, getHelpCategoryIconUrl })`, {
+        fetchData, getHelpVideoThumbnailUrl, getHelpCategoryIconUrl, failedIconUrls, onHelpCategoryIconError })`, {
     ref: Vue.ref,
     computed: Vue.computed,
     watch: Vue.watch,
@@ -28,6 +31,7 @@ function createHarness(fetchCategory) {
     useDisplay: () => ({ mdAndDown: Vue.ref(false) }),
     useHelpCenterStores: () => ({ fetchCategory }),
     themeConfig: { settings: { urlStorage: 'https://example.test/storage/' } },
+    console: { warn: () => {} },
     getHelpVideoThumbnailUrl,
     onMounted: () => {},
     onBeforeUnmount: () => {},
@@ -106,6 +110,29 @@ test('category view requests its label and renders only image previews', async (
   assert.match(html, /https:\/\/i.ytimg.com\/vi\/dQw4w9WgXcQ\/hqdefault.jpg/)
   assert.match(html, /Ingen miniatyrbild/)
   assert.doesNotMatch(html, /<(?:video|iframe)\b/i)
+})
+
+test('category icons use image requests and fall back when an image fails', async () => {
+  const data = payload()
+  data.categories = [
+    { id: 1, name: 'Overview', label: 'summary', icon: 'help-categories/summary.svg' },
+    { id: 2, name: 'No icon', label: 'empty', icon: null },
+  ]
+  const state = createHarness(async () => data)
+  await state.fetchData()
+  const html = await render(state)
+
+  assert.match(html, /<img[^>]*src="https:\/\/example\.test\/storage\/help-categories\/summary\.svg"/)
+  assert.doesNotMatch(html, /mask-image/)
+  assert.equal((html.match(/icon="tabler-help"/g) || []).length, 1)
+
+  state.onHelpCategoryIconError(data.categories[0])
+  const failedHtml = await render(state)
+  assert.doesNotMatch(failedHtml, /<img[^>]*help-categories\/summary\.svg/)
+  assert.equal((failedHtml.match(/icon="tabler-help"/g) || []).length, 2)
+
+  data.categories[0].icon = 'help-categories/replacement.svg'
+  assert.match(await render(state), /<img[^>]*help-categories\/replacement\.svg/)
 })
 
 test('category navigation requests the new label without pagination', async () => {
