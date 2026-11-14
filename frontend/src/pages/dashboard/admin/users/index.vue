@@ -808,7 +808,7 @@ const downloadCSV = async () => {
       <!-- !SECTION -->
 
       <!-- SECTION Pagination -->
-       <VCardText
+      <VCardText
         v-if="users.length"
         :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
         class="align-center flex-wrap gap-4 pt-0 px-6"

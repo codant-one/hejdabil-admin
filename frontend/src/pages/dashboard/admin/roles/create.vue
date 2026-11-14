@@ -8,6 +8,13 @@ import { useRolesStores } from '@/stores/useRoles'
 const isRolCreateDialog = ref(false)
 const isRolSelectedDialog = ref(false)
 
+const props = defineProps({
+  type: {
+    type: String,
+    required: true
+  }
+})
+
 const emit = defineEmits([
   'alert',
   'data'
@@ -16,6 +23,7 @@ const emit = defineEmits([
 const rolesStores = useRolesStores()
 
 const refFormCreate = ref()
+const { width: windowWidth } = useWindowSize()
 
 const name = ref('')
 const assignedPermissions = ref([])
@@ -119,13 +127,32 @@ const onSubmitCreate = () =>{
         >
         <!-- Dialog Activator -->
         <template #activator="{ props }">
-            <VBtn
+            <!-- <VBtn
               v-if="$can('create','roles')"
               v-bind="props"
               prepend-icon="tabler-plus"
               class="w-100 w-md-auto"
             >
             Skapa roll
+            </VBtn> -->
+
+            <VBtn
+                v-if="$can('create', 'roles') && type === 'button'"
+                v-bind="props"
+                class="btn-gradient"
+                block
+            >
+                <VIcon icon="custom-plus" size="24" />
+                Skapa roll
+            </VBtn>
+
+            <VBtn
+                class="btn-ghost"
+                v-bind="props"
+                v-if="$can('create', 'roles') && type === 'link'"
+            >
+                Skapa roll
+                <VIcon icon="custom-arrow-right" size="24" />
             </VBtn>
         </template>
 

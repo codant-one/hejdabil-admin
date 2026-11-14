@@ -74,34 +74,44 @@ const deleteRole = function() {
 </script>
 
 <template>
-    <!-- DIALOG -->
-    <VDialog
-        :model-value="props.isDrawerOpen"
-        persistent
-        class="v-dialog-sm"
-        >
-        <!-- Dialog close btn -->
-        <DialogCloseBtn @click="closeRoleDeleteDialog" />
+  <!-- DIALOG -->
+  <VDialog
+  :model-value="props.isDrawerOpen"
+  persistent
+  class="action-dialog"
+  >
+      <!-- Dialog close btn -->
+       <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeRoleDeleteDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
-        <!-- Dialog Content -->
-        <VCard title="Ta bort roll">
-          <VDivider class="mt-4"/>
-            <VCardText>
-              Är du säker att du vill ta bort rollen <strong>{{ role.name }}</strong>?
-            </VCardText>
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Ta bort roll 
+          </div>
+        </VCardText>
+        
+        <VCardText class="dialog-text">
+          Är du säker att du vill ta bort rollen <strong>{{ role.name }}</strong>?
+        </VCardText>
 
-            <VCardText class="d-flex justify-end gap-3 flex-wrap">
-                <VBtn @click="closeRoleDeleteDialog">
-                  Avbryt
-                </VBtn>
-            <VBtn
-                color="secondary"
-                variant="tonal"
-                @click="deleteRole"
-            >
-              Radera
-            </VBtn>
-            </VCardText>
-        </VCard>
-    </VDialog>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            @click="closeRoleDeleteDialog">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="deleteRole">
+            Radera
+          </VBtn>
+        </VCardText>
+      </VCard>
+  </VDialog>
 </template>

@@ -17,12 +17,22 @@ const closeTreeDialog  = function(){
         >
         <!-- Dialog Activator -->
         <template #activator="{ props }">
-            <VBtn
+            <!-- <VBtn
                 v-if="$can('Skapa ','roles')"
                 v-bind="props"
                 prepend-icon="tabler-sitemap"
                 class="w-100 w-md-auto"
                 >
+                Karta över tillstånd
+            </VBtn> -->
+
+            <VBtn
+                v-if="$can('Skapa', 'roles')"
+                v-bind="props"
+                class="btn-gradient"
+                block
+            >
+                <!-- <VIcon icon="custom-plus" size="24" /> -->
                 Karta över tillstånd
             </VBtn>
         </template>
