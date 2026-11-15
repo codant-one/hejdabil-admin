@@ -3,7 +3,9 @@ import Roles from '@/api/roles'
 
 export const useRolesStores = defineStore('roles', {
     state: () => ({
-        roles: {},
+        roles: [],
+        creationAlert: null,
+        updateAlert: null,
         loading: false,
         last_page: 1,
         rolesTotalCount: 6
@@ -46,13 +48,23 @@ export const useRolesStores = defineStore('roles', {
                 })
             
         },
+        showRole(id) {
+            this.setLoading(true)
+
+            return Roles.show(id)
+                .then(response => response.data.data.role)
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
         updateRole(data, id) {
             this.setLoading(true)
             
             return Roles.update(data, id)
                 .then((response) => {
                     let pos = this.roles.findIndex((item) => item.id === response.data.data.role.id)
-                    this.roles[pos] = response.data.data.role
+                    if (pos !== -1)
+                        this.roles[pos] = response.data.data.role
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

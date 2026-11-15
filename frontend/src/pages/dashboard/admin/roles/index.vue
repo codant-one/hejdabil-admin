@@ -1,22 +1,17 @@
 <script setup>
 
-import tree from './tree.vue'
-import create from './create.vue'
-import show from './show.vue'
-import edit from './edit.vue'
-import destroy from './destroy.vue'
-
-import { avatarText } from '@/@core/utils/formatters'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import { ref } from "vue";
 import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
-import html2pdf from 'html2pdf.js';
 import { useRolesStores } from '@/stores/useRoles'
 import { excelParser } from '@/plugins/csv/excelParser'
+import html2pdf from 'html2pdf.js';
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null);
 
 const rolesStores = useRolesStores()
 
@@ -26,22 +21,18 @@ const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalRoles = ref(0)
-const selectedRows = ref([])
 
-const isRoleDetailDialog = ref(false)
-const isRoleEditDialog = ref(false)
-const isRoleDeleteDialog = ref(false)
-const isConfirmActiveDialogVisible = ref(false)
+const isConfirmDeleteDialogVisible = ref(false)
+const isDeleting = ref(false)
 const isMobileActionDialogVisible = ref(false);
 const hasLoaded = ref(false);
 
 const selectedRol = ref({})
-const permissionsRol = ref([]) 
-const readonly = ref(false)
 
 const isRequestOngoing = ref(true)
 
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+const exporteraMobile = ref(false);
 
 const readCachedCompany = () => {
   try {
@@ -105,43 +96,76 @@ async function fetchData() {
 
   isRequestOngoing.value = false
   hasLoaded.value = true
+
+  const roleAlert = rolesStores.creationAlert ?? rolesStores.updateAlert
+
+  if (roleAlert) {
+    advisor.value = { ...roleAlert, show: true }
+    rolesStores.creationAlert = null
+    rolesStores.updateAlert = null
+  }
 }
 
+const createRole = () => {
+  router.push({ name : 'dashboard-admin-roles-create' })
+}
 
-// show dialogs
-const showRoleDetailDialog = function(rol){
-  isRoleDetailDialog.value = true
-  selectedRol.value = { ...rol }
-
-  rol.permissions.forEach(function(pe) {
-    permissionsRol.value.push(pe.name)
+const showRole = function(rol){
+  router.push({
+    name: 'dashboard-admin-roles-id',
+    params: { id: rol.id }
   })
-
-  selectedRol.value.assignedPermissions = permissionsRol
-  readonly.value= true
 }
 
-const showRoleEditDialog = function(rol){
-  isRoleEditDialog.value = true
-  selectedRol.value = { ...rol }
-
-  rol.permissions.forEach(function(pe) {
-    permissionsRol.value.push(pe.name)
+const editRole = function(rol){
+  router.push({
+    name: 'dashboard-admin-roles-edit-id',
+    params: { id: rol.id }
   })
-
-  selectedRol.value.assignedPermissions = permissionsRol
-  readonly.value= false
 }
 
-const showRoledDeleteDialog = function($rol){
-  isRoleDeleteDialog.value = true
-  selectedRol.value = { ...$rol }
+const showDeleteDialog = roleData => {
+  selectedRol.value = { ...roleData }
+  isMobileActionDialogVisible.value = false
+  isConfirmDeleteDialogVisible.value = true
 }
 
-const showAlert = function(alert) {
-  advisor.value.show = alert.value.show
-  advisor.value.type = alert.value.type
-  advisor.value.message = alert.value.message
+const removeRole = async () => {
+  if (isDeleting.value)
+    return
+
+  isDeleting.value = true
+  isRequestOngoing.value = true
+  isConfirmDeleteDialogVisible.value = false
+  advisor.value.show = false
+
+  try {
+    await rolesStores.deleteRole(selectedRol.value.id)
+    selectedRol.value = {}
+    await fetchData()
+    window.scrollTo(0, 0)
+
+    advisor.value = {
+      type: 'success',
+      message: 'Roll raderad!',
+      show: true,
+    }
+  } catch (error) {
+    const isForbidden = error?.response?.status === 403
+      || error?.status === 403
+      || (typeof error?.message === 'string' && error.message.startsWith('User does not have the right permissions.'))
+
+    advisor.value = {
+      type: 'error',
+      message: isForbidden
+        ? 'Du har inte tillräckligt med behörigheter'
+        : error?.feedback === 'not_found' ? error.message : 'Ett serverfel uppstod. Försök igen.',
+      show: true,
+    }
+  } finally {
+    isDeleting.value = false
+    isRequestOngoing.value = false
+  }
 }
 
 const downloadPDF = async () => {
@@ -165,7 +189,7 @@ const downloadPDF = async () => {
       orderBy: "desc"
     }
 
-    await rolesStores.fetchUsers(data)
+    await rolesStores.fetchRoles(data)
 
     if (document.fonts?.load) {
       await Promise.all([
@@ -174,14 +198,14 @@ const downloadPDF = async () => {
       ])
     }
     
-    const rows = rolesStores.getUsers.map(element => ({
+    const rows = rolesStores.getRoles.map(element => ({
       id: element.id,
       name: element.name,
     }))
 
     const { headerMarkup } = await buildPdfTopHeader({
       company: company.value,
-      title: 'Användare',
+      title: 'Roller',
       themeConfig,
       escapeHtml,
       showCompanyDetailsWhenLogo: true,
@@ -192,7 +216,7 @@ const downloadPDF = async () => {
         return `
       <tr style="height: 48px;">
         <td style="width: 10%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
-        <td style="width: 50%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
+        <td style="width: 90%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
       </tr>
     `
       })()}
@@ -211,7 +235,7 @@ const downloadPDF = async () => {
                   <thead>
                     <tr style="height: 48px;">
                       <td style="text-align: center; width: 10%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
-                      <td style="text-align: center; width: 40%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
+                      <td style="text-align: center; width: 90%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
                     </tr>
                   </thead>
                   <tbody>
@@ -271,6 +295,23 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
@@ -336,13 +377,15 @@ const downloadCSV = async () => {
             Exportera
           </VBtn>
 
-          <create 
-            @data="fetchData" 
-            :type="'button'"
-            @alert="showAlert"
-          />
-
-          <!-- <tree /> -->
+          <VBtn
+            v-if="$can('create', 'roles')"
+            class="btn-gradient"
+            block
+            @click="createRole"
+          >
+              <VIcon icon="custom-plus" size="24" />
+              Skapa roll
+          </VBtn>
 
         </div>
       </VCardTitle>
@@ -378,7 +421,7 @@ const downloadCSV = async () => {
         class="px-4 pb-6 text-no-wrap"
       >
         <!-- 👉 Table head -->
-        <thead class="text-uppercase">
+        <thead>
           <tr>
 
             <th scope="col">
@@ -413,7 +456,7 @@ const downloadCSV = async () => {
                 <VList>
                   <VListItem
                       v-if="$can('view', 'roles')"
-                      @click="showRoleDetailDialog(rol)">
+                      @click="showRole(rol)">
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" />
                     </template>
@@ -421,7 +464,7 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem
                       v-if="$can('edit', 'roles')"
-                      @click="showRoleEditDialog(rol)">
+                      @click="editRole(rol)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
                     </template>
@@ -429,7 +472,7 @@ const downloadCSV = async () => {
                   </VListItem>
                   <VListItem 
                     v-if="$can('delete','roles')"
-                    @click="showRoledDeleteDialog(rol)">
+                    @click="showDeleteDialog(rol)">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
                     </template>
@@ -458,11 +501,15 @@ const downloadCSV = async () => {
           </div>
         </div>
 
-        <create 
-          @data="fetchData" 
-          :type="'link'"
-          @alert="showAlert"
-        />
+        <VBtn
+          v-if="$can('create', 'roles') "
+          class="btn-ghost"
+          block
+          @click="createRole"
+        >
+            Skapa roll
+            <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
       </div>
       <!-- !SECTION -->
 
@@ -487,7 +534,7 @@ const downloadCSV = async () => {
 
               <div class="d-flex justify-end flex-wrap gap-4">
                 <VBtn 
-                  v-if="$can('edit', 'roles')"
+                  v-if="$can('view', 'roles') || $can('edit', 'roles') || $can('delete', 'roles')"
                   class="btn-light" 
                   icon 
                   @click="selectedRol = rol; isMobileActionDialogVisible = true"
@@ -522,27 +569,53 @@ const downloadCSV = async () => {
         />
       </VCardText>
 
-      <show 
-        v-model:isDrawerOpen="isRoleDetailDialog"
-        :role="selectedRol"
-        :readonly="readonly"
-        @close="permissionsRol = []"
-        @readonly="readonly = false"/>
-      
-      <edit 
-        v-model:isDrawerOpen="isRoleEditDialog"
-        :role="selectedRol"
-        @data="fetchData"
-        @close="permissionsRol = []"
-        @alert="showAlert"
-        @readonly="readonly = true"/>
-
-      <destroy 
-        v-model:isDrawerOpen="isRoleDeleteDialog"
-        :role="selectedRol"
-        @data="fetchData"
-        @alert="showAlert"/>
     </VCard>
+
+    <VDialog
+      v-model="isConfirmDeleteDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        :disabled="isDeleting"
+        @click="isConfirmDeleteDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Ta bort roll
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          Är du säker att du vill ta bort rollen <strong>{{ selectedRol.name }}</strong>?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            :disabled="isDeleting"
+            @click="isConfirmDeleteDialogVisible = false"
+          >
+            Avbryt
+          </VBtn>
+          <VBtn
+            class="btn-gradient"
+            :loading="isDeleting"
+            :disabled="isDeleting"
+            @click="removeRole"
+          >
+            Radera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
 
     <!-- 👉 Mobile Action Dialog -->
     <VDialog
@@ -554,7 +627,7 @@ const downloadCSV = async () => {
         <VList>
           <VListItem
               v-if="$can('view', 'roles')"
-              @click="showRoleDetailDialog(selectedRol); isMobileActionDialogVisible = false;">
+              @click="showRole(selectedRol); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-eye" size="24" />
             </template>
@@ -562,7 +635,7 @@ const downloadCSV = async () => {
           </VListItem>
           <VListItem
               v-if="$can('edit', 'roles')"
-              @click="showRoleEditDialog(selectedRol); isMobileActionDialogVisible = false;">
+              @click="editRole(selectedRol); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
             </template>
@@ -570,7 +643,7 @@ const downloadCSV = async () => {
           </VListItem>
           <VListItem 
             v-if="$can('delete','roles')"
-            @click="showRoledDeleteDialog(selectedRol); isMobileActionDialogVisible = false;">
+            @click="showDeleteDialog(selectedRol)">
             <template #prepend>
               <VIcon icon="custom-waste" size="24" />
             </template>

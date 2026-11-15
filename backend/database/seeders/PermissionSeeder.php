@@ -19,133 +19,133 @@ class PermissionSeeder extends Seeder
     {
         $permissions = [
             //suppliers
-            ['name' => 'view dashboard'],
+            ['name' => 'view dashboard', 'label' => 'Visa'],
 
             //users
-            ['name' => 'view users'],
-            ['name' => 'create users'],
-            ['name' => 'edit users'],
-            ['name' => 'delete users'],
+            ['name' => 'view users', 'label' => 'Visa'],
+            ['name' => 'create users', 'label' => 'Skapa'],
+            ['name' => 'edit users', 'label' => 'Redigera'],
+            ['name' => 'delete users', 'label' => 'Ta bort'],
 
             //roles
-            ['name' => 'view roles'],
-            ['name' => 'create roles'],
-            ['name' => 'edit roles'],
-            ['name' => 'delete roles'],
+            ['name' => 'view roles', 'label' => 'Visa'],
+            ['name' => 'create roles', 'label' => 'Skapa'],
+            ['name' => 'edit roles', 'label' => 'Redigera'],
+            ['name' => 'delete roles', 'label' => 'Ta bort'],
 
             //suppliers
-            ['name' => 'view suppliers'],
-            ['name' => 'create suppliers'],
-            ['name' => 'edit suppliers'],
-            ['name' => 'delete suppliers'],
+            ['name' => 'view suppliers', 'label' => 'Visa'],
+            ['name' => 'create suppliers', 'label' => 'Skapa'],
+            ['name' => 'edit suppliers', 'label' => 'Redigera'],
+            ['name' => 'delete suppliers', 'label' => 'Ta bort'],
 
             //brands
-            ['name' => 'view brands'],
-            ['name' => 'create brands'],
-            ['name' => 'edit brands'],
-            ['name' => 'delete brands'],
+            ['name' => 'view brands', 'label' => 'Visa'],
+            ['name' => 'create brands', 'label' => 'Skapa'],
+            ['name' => 'edit brands', 'label' => 'Redigera'],
+            ['name' => 'delete brands', 'label' => 'Ta bort'],
 
             //models
-            ['name' => 'view models'],
-            ['name' => 'create models'],
-            ['name' => 'edit models'],
-            ['name' => 'delete models'],
+            ['name' => 'view models', 'label' => 'Visa'],
+            ['name' => 'create models', 'label' => 'Skapa'],
+            ['name' => 'edit models', 'label' => 'Redigera'],
+            ['name' => 'delete models', 'label' => 'Ta bort'],
             
             //invoices
-            ['name' => 'view invoices'],
-            ['name' => 'create invoices'],
-            ['name' => 'edit invoices'],
-            ['name' => 'delete invoices'],    
+            ['name' => 'view invoices', 'label' => 'Visa'],
+            ['name' => 'create invoices', 'label' => 'Skapa'],
+            ['name' => 'edit invoices', 'label' => 'Redigera'],
+            ['name' => 'delete invoices', 'label' => 'Ta bort'],    
 
             //currencies
-            ['name' => 'view currencies'],
-            ['name' => 'create currencies'],
-            ['name' => 'edit currencies'],
-            ['name' => 'delete currencies'],
+            ['name' => 'view currencies', 'label' => 'Visa'],
+            ['name' => 'create currencies', 'label' => 'Skapa'],
+            ['name' => 'edit currencies', 'label' => 'Redigera'],
+            ['name' => 'delete currencies', 'label' => 'Ta bort'],
 
             //countries
-            ['name' => 'view countries'],
-            ['name' => 'create countries'],
-            ['name' => 'edit countries'],
-            ['name' => 'delete countries'],
+            ['name' => 'view countries', 'label' => 'Visa'],
+            ['name' => 'create countries', 'label' => 'Skapa'],
+            ['name' => 'edit countries', 'label' => 'Redigera'],
+            ['name' => 'delete countries', 'label' => 'Ta bort'],
 
             //plans
-            ['name' => 'view plans'],
-            ['name' => 'create plans'],
-            ['name' => 'edit plans'],
-            ['name' => 'delete plans'],
+            ['name' => 'view plans', 'label' => 'Visa'],
+            ['name' => 'create plans', 'label' => 'Skapa'],
+            ['name' => 'edit plans', 'label' => 'Redigera'],
+            ['name' => 'delete plans', 'label' => 'Ta bort'],
             
             //clients
-            ['name' => 'view clients'],
-            ['name' => 'create clients'],
-            ['name' => 'edit clients'],
-            ['name' => 'delete clients'],
+            ['name' => 'view clients', 'label' => 'Visa'],
+            ['name' => 'create clients', 'label' => 'Skapa'],
+            ['name' => 'edit clients', 'label' => 'Redigera'],
+            ['name' => 'delete clients', 'label' => 'Ta bort'],
             
             //billings
-            ['name' => 'view billings'],
-            ['name' => 'create billings'],
-            ['name' => 'edit billings'],
-            ['name' => 'delete billings'],
+            ['name' => 'view billings', 'label' => 'Visa'],
+            ['name' => 'create billings', 'label' => 'Skapa'],
+            ['name' => 'edit billings', 'label' => 'Redigera'],
+            ['name' => 'delete billings', 'label' => 'Ta bort'],
 
             //stock
-            ['name' => 'view stock'],
-            ['name' => 'create stock'],
-            ['name' => 'edit stock'],
-            ['name' => 'delete stock'],
+            ['name' => 'view stock', 'label' => 'Visa'],
+            ['name' => 'create stock', 'label' => 'Skapa'],
+            ['name' => 'edit stock', 'label' => 'Redigera'],
+            ['name' => 'delete stock', 'label' => 'Ta bort'],
 
             //sold
-            ['name' => 'view sold'],
-            ['name' => 'delete sold'],
+            ['name' => 'view sold', 'label' => 'Visa'],
+            ['name' => 'delete sold', 'label' => 'Ta bort'],
 
             //agreements
-            ['name' => 'view agreements'],
-            ['name' => 'create agreements'],
-            ['name' => 'edit agreements'],
-            ['name' => 'delete agreements'],
+            ['name' => 'view agreements', 'label' => 'Visa'],
+            ['name' => 'create agreements', 'label' => 'Skapa'],
+            ['name' => 'edit agreements', 'label' => 'Redigera'],
+            ['name' => 'delete agreements', 'label' => 'Ta bort'],
 
             //documents
-            ['name' => 'view signed-documents'],
-            ['name' => 'create signed-documents'],
-            ['name' => 'edit signed-documents'],
-            ['name' => 'delete signed-documents'],
+            ['name' => 'view signed-documents', 'label' => 'Visa'],
+            ['name' => 'create signed-documents', 'label' => 'Skapa'],
+            ['name' => 'edit signed-documents', 'label' => 'Redigera'],
+            ['name' => 'delete signed-documents', 'label' => 'Ta bort'],
 
             //payouts
-            ['name' => 'view payouts'],
-            ['name' => 'create payouts'],
-            ['name' => 'edit payouts'],
-            ['name' => 'delete payouts'],
+            ['name' => 'view payouts', 'label' => 'Visa'],
+            ['name' => 'create payouts', 'label' => 'Skapa'],
+            ['name' => 'edit payouts', 'label' => 'Redigera'],
+            ['name' => 'delete payouts', 'label' => 'Ta bort'],
 
             //notes
-            ['name' => 'view notes'],
-            ['name' => 'create notes'],
-            ['name' => 'edit notes'],
-            ['name' => 'delete notes'],
+            ['name' => 'view notes', 'label' => 'Visa'],
+            ['name' => 'create notes', 'label' => 'Skapa'],
+            ['name' => 'edit notes', 'label' => 'Redigera'],
+            ['name' => 'delete notes', 'label' => 'Ta bort'],
 
             //my team
-            ['name' => 'view my-team'],
-            ['name' => 'create my-team'],
-            ['name' => 'edit my-team'],
-            ['name' => 'delete my-team'],
-            ['name' => 'view team-reports'],
+            ['name' => 'view my-team', 'label' => 'Visa'],
+            ['name' => 'create my-team', 'label' => 'Skapa'],
+            ['name' => 'edit my-team', 'label' => 'Redigera'],
+            ['name' => 'delete my-team', 'label' => 'Ta bort'],
+            ['name' => 'view team-reports', 'label' => 'Visa Teamrapporter'],
 
             //settings
-            ['name' => 'view company'],
-            ['name' => 'view sms'],
-            ['name' => 'view plan'],
+            ['name' => 'view company', 'label' => 'Visa Företag'],
+            ['name' => 'view sms', 'label' => 'Visa SMS'],
+            ['name' => 'view plan', 'label' => 'Visa Plan'],
 
             //help
-            ['name' => 'view help-categories'],
-            ['name' => 'create help-categories'],
-            ['name' => 'edit help-categories'],
-            ['name' => 'delete help-categories'],
-            ['name' => 'view help-videos'],
-            ['name' => 'create help-videos'],
-            ['name' => 'edit help-videos'],
-            ['name' => 'delete help-videos'],
-            ['name' => 'view help-center'],
+            ['name' => 'view help-categories', 'label' => 'Visa'],
+            ['name' => 'create help-categories', 'label' => 'Skapa'],
+            ['name' => 'edit help-categories', 'label' => 'Redigera'],
+            ['name' => 'delete help-categories', 'label' => 'Ta bort'],
+            ['name' => 'view help-videos', 'label' => 'Visa'],
+            ['name' => 'create help-videos', 'label' => 'Skapa'],
+            ['name' => 'edit help-videos', 'label' => 'Redigera'],
+            ['name' => 'delete help-videos', 'label' => 'Ta bort'],
+            ['name' => 'view help-center', 'label' => 'Visa'],
         ]; 
 
-        // Create or update permissions
+        // Skapa or update permissions
         $this->createOrUpdatePermissions($permissions);
 
         // Assign permissions to roles
@@ -164,6 +164,7 @@ class PermissionSeeder extends Seeder
             Permission::updateOrCreate(
                 ['name' => $permissionData['name']], // Search by name
                 [
+                    'label' => $permissionData['label'],
                     'guard_name' => 'api',
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),

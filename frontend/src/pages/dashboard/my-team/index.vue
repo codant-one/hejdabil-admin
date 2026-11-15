@@ -10,8 +10,10 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 
 const sectionEl = ref(null);
+
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+
 const route = useRoute();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -24,6 +26,7 @@ const role = ref(null)
 const userTab = ref(null)
 const isRequestOngoing = ref(false)
 const isFormEdited = ref(false);
+
 let nextRoute = null;
 
 const tabMyTeamRef = ref(null)

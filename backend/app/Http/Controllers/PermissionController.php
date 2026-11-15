@@ -16,14 +16,16 @@ class PermissionController extends Controller
      /**
      * Display a listing of the resource.
      */
-    public function all(){
+    public function all(Request $request){
 
         try {
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'permissions' => CacheService::getPermissions()
+                    'permissions' => $request->boolean('with_labels')
+                        ? Permission::query()->get(['name', 'label'])
+                        : CacheService::getPermissions()
                 ]
             ], 200);
 
