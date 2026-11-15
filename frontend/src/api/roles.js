@@ -10,6 +10,10 @@ class Roles {
         return axios.post('/roles', data)
     }
 
+    show(id) {
+        return axios.get(`/roles/${id}`)
+    }
+
     update(data, id) {
         return axios.put(`/roles/${id}`, data)
     }

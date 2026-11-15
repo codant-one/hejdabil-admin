@@ -1,14 +1,17 @@
 <script setup>
 
-import tree from './tree.vue'
-import create from './create.vue'
-import show from './show.vue'
-import edit from './edit.vue'
-import destroy from './destroy.vue'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-
+import { ref } from "vue";
+import { useDisplay } from "vuetify";
+import { themeConfig } from '@themeConfig'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import { useRolesStores } from '@/stores/useRoles'
 import { excelParser } from '@/plugins/csv/excelParser'
+import html2pdf from 'html2pdf.js';
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
+
+const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null);
 
 const rolesStores = useRolesStores()
 
@@ -18,17 +21,35 @@ const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalRoles = ref(0)
-const selectedRows = ref([])
 
-const isRoleDetailDialog = ref(false)
-const isRoleEditDialog = ref(false)
-const isRoleDeleteDialog = ref(false)
+const isConfirmDeleteDialogVisible = ref(false)
+const isDeleting = ref(false)
+const isMobileActionDialogVisible = ref(false);
+const hasLoaded = ref(false);
 
 const selectedRol = ref({})
-const permissionsRol = ref([]) 
-const readonly = ref(false)
 
 const isRequestOngoing = ref(true)
+
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+const exporteraMobile = ref(false);
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const company = ref(readCachedCompany())
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const advisor = ref({
   type: '',
@@ -40,8 +61,10 @@ const advisor = ref({
 const paginationData = computed(() => {
   const firstIndex = roles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = roles.value.length + (currentPage.value - 1) * rowPerPage.value
+
+  return `${totalRoles.value} resultat`;
   
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalRoles.value } roller`
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalRoles.value } roller`
 })
 
 // 👉 watching current page
@@ -72,43 +95,180 @@ async function fetchData() {
   totalRoles.value = rolesStores.rolesTotalCount
 
   isRequestOngoing.value = false
+  hasLoaded.value = true
+
+  const roleAlert = rolesStores.creationAlert ?? rolesStores.updateAlert
+
+  if (roleAlert) {
+    advisor.value = { ...roleAlert, show: true }
+    rolesStores.creationAlert = null
+    rolesStores.updateAlert = null
+  }
 }
 
+const createRole = () => {
+  router.push({ name : 'dashboard-admin-roles-create' })
+}
 
-// show dialogs
-const showRoleDetailDialog = function(rol){
-  isRoleDetailDialog.value = true
-  selectedRol.value = { ...rol }
-
-  rol.permissions.forEach(function(pe) {
-    permissionsRol.value.push(pe.name)
+const showRole = function(rol){
+  router.push({
+    name: 'dashboard-admin-roles-id',
+    params: { id: rol.id }
   })
-
-  selectedRol.value.assignedPermissions = permissionsRol
-  readonly.value= true
 }
 
-const showRoleEditDialog = function(rol){
-  isRoleEditDialog.value = true
-  selectedRol.value = { ...rol }
-
-  rol.permissions.forEach(function(pe) {
-    permissionsRol.value.push(pe.name)
+const editRole = function(rol){
+  router.push({
+    name: 'dashboard-admin-roles-edit-id',
+    params: { id: rol.id }
   })
-
-  selectedRol.value.assignedPermissions = permissionsRol
-  readonly.value= false
 }
 
-const showRoledDeleteDialog = function($rol){
-  isRoleDeleteDialog.value = true
-  selectedRol.value = { ...$rol }
+const showDeleteDialog = roleData => {
+  selectedRol.value = { ...roleData }
+  isMobileActionDialogVisible.value = false
+  isConfirmDeleteDialogVisible.value = true
 }
 
-const showAlert = function(alert) {
-  advisor.value.show = alert.value.show
-  advisor.value.type = alert.value.type
-  advisor.value.message = alert.value.message
+const removeRole = async () => {
+  if (isDeleting.value)
+    return
+
+  isDeleting.value = true
+  isRequestOngoing.value = true
+  isConfirmDeleteDialogVisible.value = false
+  advisor.value.show = false
+
+  try {
+    await rolesStores.deleteRole(selectedRol.value.id)
+    selectedRol.value = {}
+    await fetchData()
+    window.scrollTo(0, 0)
+
+    advisor.value = {
+      type: 'success',
+      message: 'Roll raderad!',
+      show: true,
+    }
+  } catch (error) {
+    const isForbidden = error?.response?.status === 403
+      || error?.status === 403
+      || (typeof error?.message === 'string' && error.message.startsWith('User does not have the right permissions.'))
+
+    advisor.value = {
+      type: 'error',
+      message: isForbidden
+        ? 'Du har inte tillräckligt med behörigheter'
+        : error?.feedback === 'not_found' ? error.message : 'Ett serverfel uppstod. Försök igen.',
+      show: true,
+    }
+  } finally {
+    isDeleting.value = false
+    isRequestOngoing.value = false
+  }
+}
+
+const downloadPDF = async () => {
+  exporteraMobile.value = false
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1 ,
+      orderByField: "id",
+      orderBy: "desc"
+    }
+
+    await rolesStores.fetchRoles(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+    
+    const rows = rolesStores.getRoles.map(element => ({
+      id: element.id,
+      name: element.name,
+    }))
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'Roller',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      ${(() => {
+        return `
+      <tr style="height: 48px;">
+        <td style="width: 10%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
+        <td style="width: 90%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
+      </tr>
+    `
+      })()}
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: 10%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+                      <td style="text-align: center; width: 90%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'roller.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
 }
 
 const downloadCSV = async () => {
@@ -135,199 +295,382 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <section>
-    <VRow>
-      <LoadingOverlay :is-loading="isRequestOngoing" />
+  <section class="page-section" ref="sectionEl">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            {{ advisor.message }}
-        </VAlert>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
 
-        <VCard
-          v-if="roles"
-          id="rol-list"
-        >
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <!-- 👉 Rows per page -->
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                class="w-100"
-                :items="[10, 20, 30, 50]"
-              />
-            </div>
+    <VCard class="card-fill">
+      <VCardTitle
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
+      >
+        <div class="align-center font-blauer">
+          <h2>Roller</h2>
+        </div>
 
-            <create @data="fetchData" @alert="showAlert"/>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-            <tree />
-
-            <VSpacer class="d-none d-md-block"/>
-
-            <VBtn
-              variant="tonal"
-              color="secondary"
-              prepend-icon="tabler-file-export"
-              class="w-100 w-md-auto"
-              @click="downloadCSV"
-            >
-              Exportera
-            </VBtn>
-
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-              <!-- 👉 Search  -->
-              <div class="search rol-list-filter">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök roll"
-                  density="compact"
-                  class="w-100 w-md-auto"
-                  clearable
-                />
-              </div>
-            </div>
-          </VCardText>
-
-          <VDivider />
-
-          <!-- SECTION Table -->
-          <VTable class="text-no-wrap rol-list-table">
-            <!-- 👉 Table head -->
-            <thead class="text-uppercase">
-              <tr>
-
-                <th scope="col">
-                  ROLL
-                </th>
-
-                <th scope="col" v-if="$can('view', 'roles') || $can('edit','roles') || $can('delete','roles')"> </th>
-              </tr>
-            </thead>
-
-            <!-- 👉 Table Body -->
-            <tbody>
-              <tr
-                v-for="rol in roles"
-                :key="rol.id"
-                style="height: 3rem;"
+        <div class="d-flex gap-4">
+          <VMenu v-if="windowWidth >= 1024">
+            <template #activator="{ props }">
+              <VBtn
+                id="payout-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
               >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
 
-                <!-- 👉 nombre -->
-                <td>
-                  {{ rol.name }}
-                </td>
+            <VList>
+              <VListItem @click="downloadPDF">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="downloadCSV">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
 
-                <!-- 👉 Actions -->
-                <td style="width: 3rem;">
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
-                      </VBtn>
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
+
+          <VBtn
+            v-if="$can('create', 'roles')"
+            class="btn-gradient"
+            block
+            @click="createRole"
+          >
+              <VIcon icon="custom-plus" size="24" />
+              Skapa roll
+          </VBtn>
+
+        </div>
+      </VCardTitle>
+
+      <VCardText
+        class="d-flex align-center justify-space-between gap-1"
+        :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
+      >
+        <!-- 👉 Search  -->
+        <div class="search">
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+        </div>
+
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <div
+          v-if="!$vuetify.display.mdAndDown"
+          class="d-flex align-center visa-select"
+        >
+          <span class="text-no-wrap pr-4">Visa</span>
+          <VSelect
+            v-model="rowPerPage"
+            class="custom-select-hover"
+            :items="[10, 20, 30, 50]"
+          />
+        </div>
+      </VCardText>
+
+      <!-- SECTION Table -->
+      <VTable
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="roles.length"
+        class="px-4 pb-6 text-no-wrap"
+      >
+        <!-- 👉 Table head -->
+        <thead>
+          <tr>
+
+            <th scope="col">
+              Roll
+            </th>
+
+            <th scope="col" v-if="$can('view', 'roles') || $can('edit','roles') || $can('delete','roles')"> </th>
+          </tr>
+        </thead>
+
+        <!-- 👉 Table Body -->
+        <tbody v-show="roles.length">
+          <tr
+            v-for="rol in roles"
+            :key="rol.id"
+            style="height: 3rem;"
+          >
+
+            <!-- 👉 nombre -->
+            <td>
+              {{ rol.name }}
+            </td>
+
+            <!-- 👉 Actions -->
+            <td style="width: 3rem;">
+              <VMenu>
+                <template #activator="{ props }">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                    <VIcon icon="custom-dots-vertical" size="22" />
+                  </VBtn>
+                </template>
+                <VList>
+                  <VListItem
+                      v-if="$can('view', 'roles')"
+                      @click="showRole(rol)">
+                    <template #prepend>
+                      <VIcon icon="custom-eye" size="24" />
                     </template>
-                    <VList>
-                      <VListItem
-                         v-if="$can('view', 'roles')"
-                         @click="showRoleDetailDialog(rol)">
-                        <template #prepend>
-                          <VIcon icon="tabler-eye" />
-                        </template>
-                        <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'roles')"
-                         @click="showRoleEditDialog(rol)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','roles')"
-                        @click="showRoledDeleteDialog(rol)">
-                        <template #prepend>
-                          <VIcon icon="tabler-trash" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-              </tr>
-            </tbody>
+                    <VListItemTitle>Visa</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if="$can('edit', 'roles')"
+                      @click="editRole(rol)">
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('delete','roles')"
+                    @click="showDeleteDialog(rol)">
+                    <template #prepend>
+                      <VIcon icon="custom-waste" size="24" />
+                    </template>
+                    <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </td>
+          </tr>
+        </tbody>
+      </VTable>
 
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!roles.length">
-              <tr>
-                <td
-                  colspan="3"
-                  class="text-center text-body-1"
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !roles.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-supplier"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">  Inga roller har skapats ännu</div>
+          <div class="empty-state-text">
+            Här visas alla roller som du har skapat.
+          </div>
+        </div>
+
+        <VBtn
+          v-if="$can('create', 'roles') "
+          class="btn-ghost"
+          block
+          @click="createRole"
+        >
+            Skapa roll
+            <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
+      <!-- !SECTION -->
+
+      <!-- SECTION Mobile Table -->
+      <VExpansionPanels
+          class="expansion-panels pb-6 px-6"
+          v-if="roles.length && windowWidth < 1024"
+        >
+          <VExpansionPanel v-for="rol in roles" :key="rol.id">
+            <VExpansionPanelTitle
+              collapse-icon="custom-chevron-right"
+              expand-icon="custom-chevron-down"
+            >
+              <div class="d-flex align-center gap-x-3">
+                <div class="ml-3 d-flex flex-column">
+                  {{ rol.name }}
+                </div>
+              </div>
+            </VExpansionPanelTitle>
+            
+            <VExpansionPanelText>
+
+              <div class="d-flex justify-end flex-wrap gap-4">
+                <VBtn 
+                  v-if="$can('view', 'roles') || $can('edit', 'roles') || $can('delete', 'roles')"
+                  class="btn-light" 
+                  icon 
+                  @click="selectedRol = rol; isMobileActionDialogVisible = true"
                 >
-                  Det finns inga roller
-                </td>
-              </tr>
-            </tfoot>
-          </VTable>
-          <!-- !SECTION -->
+                  <VIcon icon="custom-dots-vertical" size="24" />
+                </VBtn>
+              </div>
+            </VExpansionPanelText>
+          </VExpansionPanel>
+      </VExpansionPanels>
+      <!-- !SECTION -->
 
-          <VDivider />
+      <!-- SECTION Pagination -->
+      <VCardText
+        v-if="roles.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
 
-          <!-- SECTION Pagination -->
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
-            <!-- 👉 Pagination meta -->
-            <span class="text-sm text-disabled">
-              {{ paginationData }}
-            </span>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
 
-            <VSpacer class="d-none d-md-block"/>
+    </VCard>
 
-            <!-- 👉 Pagination -->
-            <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="4"
-              :length="totalPages"
-              @next="selectedRows = []"
-              @prev="selectedRows = []"
-            />
-          </VCardText>
+    <VDialog
+      v-model="isConfirmDeleteDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        :disabled="isDeleting"
+        @click="isConfirmDeleteDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
-          <show 
-            v-model:isDrawerOpen="isRoleDetailDialog"
-            :role="selectedRol"
-            :readonly="readonly"
-            @close="permissionsRol = []"
-            @readonly="readonly = false"/>
-          
-          <edit 
-            v-model:isDrawerOpen="isRoleEditDialog"
-            :role="selectedRol"
-            @data="fetchData"
-            @close="permissionsRol = []"
-            @alert="showAlert"
-            @readonly="readonly = true"/>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Ta bort roll
+          </div>
+        </VCardText>
 
-          <destroy 
-            v-model:isDrawerOpen="isRoleDeleteDialog"
-            :role="selectedRol"
-            @data="fetchData"
-            @alert="showAlert"/>
-        </VCard>
-      </VCol>
-    </VRow>
+        <VCardText class="dialog-text">
+          Är du säker att du vill ta bort rollen <strong>{{ selectedRol.name }}</strong>?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            :disabled="isDeleting"
+            @click="isConfirmDeleteDialogVisible = false"
+          >
+            Avbryt
+          </VBtn>
+          <VBtn
+            class="btn-gradient"
+            :loading="isDeleting"
+            :disabled="isDeleting"
+            @click="removeRole"
+          >
+            Radera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+              v-if="$can('view', 'roles')"
+              @click="showRole(selectedRol); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-eye" size="24" />
+            </template>
+            <VListItemTitle>Visa</VListItemTitle>
+          </VListItem>
+          <VListItem
+              v-if="$can('edit', 'roles')"
+              @click="editRole(selectedRol); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('delete','roles')"
+            @click="showDeleteDialog(selectedRol)">
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="downloadPDF">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="downloadCSV">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 

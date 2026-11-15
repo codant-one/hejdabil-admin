@@ -413,6 +413,23 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
@@ -808,7 +825,7 @@ const downloadCSV = async () => {
       <!-- !SECTION -->
 
       <!-- SECTION Pagination -->
-       <VCardText
+      <VCardText
         v-if="users.length"
         :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
         class="align-center flex-wrap gap-4 pt-0 px-6"

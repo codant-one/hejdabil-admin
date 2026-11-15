@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\RoleRequest;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
 
-use App\Models\Role;
+use App\Http\Requests\RoleRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Spatie\Permission\Middlewares\PermissionMiddleware;
+
+use App\Models\Role;
 use App\Services\CacheService;
 
 class RoleController extends Controller
@@ -18,7 +19,8 @@ class RoleController extends Controller
         $this->middleware('jwt');
         $this->middleware(PermissionMiddleware::class . ':view roles|administrator')->only(['index']);
         $this->middleware(PermissionMiddleware::class . ':create roles|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edir roles|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':view roles|edit roles|administrator')->only(['show']);
+        $this->middleware(PermissionMiddleware::class . ':edit roles|administrator')->only(['update']);
         $this->middleware(PermissionMiddleware::class . ':delete roles|administrator')->only(['destroy']);
         $this->middleware(PermissionMiddleware::class . ':view users|administrator')->only(['all']);
     }
@@ -65,6 +67,34 @@ class RoleController extends Controller
               'success' => false,
               'message' => 'database_error',
               'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id): JsonResponse
+    {
+        try {
+            $role = Role::with('permissions')->find($id);
+
+            if (!$role)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Rollen hittades inte'
+                ], 404);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'role' => $role
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
             ], 500);
         }
     }
