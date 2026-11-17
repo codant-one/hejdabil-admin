@@ -156,25 +156,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','clients') && hasAssignedPermission('view clients')"
                                     class="permission-label"
                                 >
-                                    view clients
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','clients') && hasAssignedPermission('create clients')"
                                     class="permission-label"
                                 >
-                                    create clients
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','clients') && hasAssignedPermission('edit clients')"
                                     class="permission-label"
                                 >
-                                    edit clients
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','clients') && hasAssignedPermission('delete clients')"
                                     class="permission-label"
                                 >
-                                    delete clients
+                                    Ta bort
                                 </div>
                             </div>
                         </div>
@@ -193,25 +193,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','billings') && hasAssignedPermission('view billings')"
                                     class="permission-label"
                                 >
-                                    view billings
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','billings') && hasAssignedPermission('create billings')"
                                     class="permission-label"
                                 >
-                                    create billings
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','billings') && hasAssignedPermission('edit billings')"
                                     class="permission-label"
                                 >
-                                    edit billings
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','billings') && hasAssignedPermission('delete billings')"
                                     class="permission-label"
                                 >
-                                    delete billings
+                                    Ta bort
                                 </div>
                             </div>
                         </div>
@@ -249,25 +249,25 @@ const hasAssignedPermission = permission => {
                                             v-if="canWithPlan('view','stock') && hasAssignedPermission('view stock')"
                                             class="permission-label"
                                         >
-                                            view stock
+                                            Visa
                                         </div>
                                         <div
                                             v-if="canWithPlan('create','stock') && hasAssignedPermission('create stock')"
                                             class="permission-label"
                                         >
-                                            create stock
+                                            Skapa
                                         </div>
                                         <div
                                             v-if="canWithPlan('edit','stock') && hasAssignedPermission('edit stock')"
                                             class="permission-label"
                                         >
-                                            edit stock
+                                            Redigera
                                         </div>
                                         <div
                                             v-if="canWithPlan('delete','stock') && hasAssignedPermission('delete stock')"
                                             class="permission-label"
                                         >
-                                            delete stock
+                                            Ta bort
                                         </div>
                                     </div>
                                     <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Sålda Fordon" 
@@ -286,13 +286,13 @@ const hasAssignedPermission = permission => {
                                             v-if="canWithPlan('view','sold') && hasAssignedPermission('view sold')"
                                             class="permission-label"
                                         >
-                                            view sold
+                                            Visa
                                         </div>
                                         <div
                                             v-if="canWithPlan('delete','sold') && hasAssignedPermission('delete sold')"
                                             class="permission-label"
                                         >
-                                            delete sold
+                                            Ta bort
                                         </div>
                                     </div>                                
                                 </div>
@@ -314,25 +314,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','agreements') && hasAssignedPermission('view agreements')"
                                     class="permission-label"
                                 >
-                                    view agreements
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','agreements') && hasAssignedPermission('create agreements')"
                                     class="permission-label"
                                 >
-                                    create agreements
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','agreements') && hasAssignedPermission('edit agreements')"
                                     class="permission-label"
                                 >
-                                    edit agreements
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','agreements') && hasAssignedPermission('delete agreements')"
                                     class="permission-label"
                                 >
-                                    delete agreements
+                                    Ta bort
                                 </div>
                             </div>
                         </div>
@@ -353,25 +353,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','signed-documents') && hasAssignedPermission('view signed-documents')"
                                     class="permission-label"
                                 >
-                                    view signed-documents
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','signed-documents') && hasAssignedPermission('create signed-documents')"
                                     class="permission-label"
                                 >
-                                    create signed-documents
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','signed-documents') && hasAssignedPermission('edit signed-documents')"
                                     class="permission-label"
                                 >
-                                    edit signed-documents
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','signed-documents') && hasAssignedPermission('delete signed-documents')"
                                     class="permission-label"
                                 >
-                                    delete signed-documents
+                                    Ta bort
                                 </div>
                             </div>
                         </div>
@@ -390,25 +390,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','payouts') && hasAssignedPermission('view payouts')"
                                     class="permission-label"
                                 >
-                                    view payouts
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','payouts') && hasAssignedPermission('create payouts')"
                                     class="permission-label"
                                 >
-                                    create payouts
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','payouts') && hasAssignedPermission('edit payouts')"
                                     class="permission-label"
                                 >
-                                    edit payouts
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','payouts') && hasAssignedPermission('delete payouts')"
                                     class="permission-label"
                                 >
-                                    delete payouts
+                                    Ta bort
                                 </div>
                             </div> 
                         </div>
@@ -427,25 +427,25 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','notes') && hasAssignedPermission('view notes')"
                                     class="permission-label"
                                 >
-                                    view notes
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','notes') && hasAssignedPermission('create notes')"
                                     class="permission-label"
                                 >
-                                    create notes
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','notes') && hasAssignedPermission('edit notes')"
                                     class="permission-label"
                                 >
-                                    edit notes
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','notes') && hasAssignedPermission('delete notes')"
                                     class="permission-label"
                                 >
-                                    delete notes
+                                    Ta bort
                                 </div>
                             </div>
                         </div>
@@ -465,31 +465,31 @@ const hasAssignedPermission = permission => {
                                     v-if="canWithPlan('view','my-team') && hasAssignedPermission('view my-team')"
                                     class="permission-label"
                                 >
-                                    view my-team
+                                    Visa
                                 </div>
                                 <div
                                     v-if="canWithPlan('create','my-team') && hasAssignedPermission('create my-team')"
                                     class="permission-label"
                                 >
-                                    create my-team
+                                    Skapa
                                 </div>
                                 <div
                                     v-if="canWithPlan('edit','my-team') && hasAssignedPermission('edit my-team')"
                                     class="permission-label"
                                 >
-                                    edit my-team
+                                    Redigera
                                 </div>
                                 <div
                                     v-if="canWithPlan('delete','my-team') && hasAssignedPermission('delete my-team')"
                                     class="permission-label"
                                 >
-                                    delete my-team
+                                    Ta bort
                                 </div>
                                 <div
                                     v-if="canWithPlan('view','team-reports') && hasAssignedPermission('view team-reports')"
                                     class="permission-label"
                                 >
-                                    view team-reports
+                                    Visa Teamrapporter
                                 </div>
                             </div>
                         </div>

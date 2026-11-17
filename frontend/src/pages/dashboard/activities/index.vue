@@ -48,6 +48,7 @@ const mode = ref('Lista')
 
 const modules = [
   { name: 'Användare', id: 'users_admin' },
+  { name: 'Roller', id: 'roles' },
   { name: 'Mitt team', id: 'users' },
   { name: 'Leverantör', id: 'suppliers' },
   { name: 'Admin faktura', id: 'suppliers_invoices' },
@@ -67,6 +68,7 @@ const modules = [
 
 const MODULE_PERMISSION_SUBJECTS = {
   users_admin: ['users-admin'],
+  roles: ['roles'],
   users: ['my-team'],
   suppliers: ['suppliers'],
   clients: ['clients'],
@@ -128,6 +130,7 @@ const isDeleteAccountActive = computed(() =>
 const activityModuleLabels = {
   users: 'Mitt team',
   users_admin: 'Användare',
+  roles: 'Roller',
   agreements: 'Avtal',
   billings: 'Fakturor',
   invoices: 'Attribut fakturor',
@@ -149,6 +152,7 @@ const activityModuleLabels = {
 const activityModuleSingularLabels = {
   users_admin: 'Användare',
   users: 'Mitt team',
+  roles: 'Roller',
   agreements: 'Avtal',
   billings: 'Faktura',
   invoices: 'Attribut faktura',
