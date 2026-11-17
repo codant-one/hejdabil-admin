@@ -1,11 +1,11 @@
 <script setup>
 
-import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
 import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { PHONE_INPUT_DEFAULTS, formatPhonePayload, normalizePhoneInput } from '@/@core/utils/phone'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { usePermissionsStores } from '@/stores/usePermissions'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import router from '@/router'
@@ -33,6 +33,7 @@ const isPasswordVisible = ref(false)
 const isUserPermissionsDialog = ref(false)
 
 const usersStores = useSuppliersStores()
+const permissionsStores = usePermissionsStores()
 const emitter = inject("emitter")
 const err = ref(null);
 
@@ -54,8 +55,107 @@ const landline = ref('')
 const address = ref('----')
 const position = ref(null)
 const assignedPermissions = ref([])
-const readonly =  ref(false)
 const permissionsRol = ref([])
+const isPermissionsLoading = ref(false)
+const permissionsLoaded = ref(false)
+const permissionLoadError = ref('')
+const permissionLabels = ref(new Map())
+
+const modulePermissions = (subject, actions = ['view', 'create', 'edit', 'delete']) =>
+    actions.map(action => ({
+        value: `${action} ${subject}`,
+        disabled: subject === 'roles' && action === 'delete',
+    }))
+
+const permissionSections = [
+    {
+        title: 'Konto & team',
+        modules: [
+            {
+                title: 'Mitt team',
+                description: 'Företagsprofil och team',
+                permissions: [
+                    ...modulePermissions('my-team'),
+                    { value: 'view team-reports' },
+                ],
+            },
+        ],
+    },
+    {
+        title: 'Moduler',
+        modules: [
+            { title: 'Kunder', description: 'Kundregister och historik', permissions: modulePermissions('clients') },
+            { title: 'Fakturor', description: 'Fakturor kopplade till affärer', permissions: modulePermissions('billings') },
+            {
+                title: 'Fordonslager',
+                description: 'Fordon, märken och modeller',
+                children: [
+                    { title: 'Lager', permissions: modulePermissions('stock') },
+                    { title: 'Sålda fordon', permissions: modulePermissions('sold', ['view', 'delete']) },
+                ],
+            },
+            { title: 'Avtal', description: 'Köp- och försäljningsavtal', permissions: modulePermissions('agreements') },
+            { title: 'Signera dokument', description: 'Dokument för digital signering', permissions: modulePermissions('signed-documents') },
+            { title: 'Swish', description: 'Utbetalningar och betalningar', permissions: modulePermissions('payouts') },
+            { title: 'Mina värderingar', description: 'Värderingar och anteckningar', permissions: modulePermissions('notes') },
+        ],
+    },
+]
+
+const getModuleRows = module => module.children ?? [module]
+
+const getSectionPermissions = section =>
+    section.modules.flatMap(module => getModuleRows(module).flatMap(row => row.permissions))
+
+const selectablePermissions = section => getSectionPermissions(section).filter(permission => !permission.disabled)
+
+const selectedCount = section =>
+    selectablePermissions(section).filter(permission => assignedPermissions.value.includes(permission.value)).length
+
+const isSectionSelected = section => selectedCount(section) === selectablePermissions(section).length
+const isSectionIndeterminate = section => selectedCount(section) > 0 && !isSectionSelected(section)
+const selectablePermissionValues = [...new Set(
+    permissionSections.flatMap(selectablePermissions).map(permission => permission.value),
+)]
+const totalPermissions = selectablePermissionValues.length
+const selectedPermissionsCount = computed(() =>
+    selectablePermissionValues.filter(permission => assignedPermissions.value.includes(permission)).length,
+)
+
+const toggleSection = (section, checked) => {
+    const values = selectablePermissions(section).map(permission => permission.value)
+
+    assignedPermissions.value = checked
+        ? [...new Set([...assignedPermissions.value, ...values])]
+        : assignedPermissions.value.filter(permission => !values.includes(permission))
+}
+
+async function loadPermissions() {
+    if (isPermissionsLoading.value)
+        return
+
+    isPermissionsLoading.value = true
+    permissionLoadError.value = ''
+
+    try {
+        const { permissions } = await permissionsStores.allPermissions({ with_labels: true })
+        const labels = new Map(permissions.map(permission => [permission.name, permission.label]))
+        const hasMissingLabels = permissionSections.flatMap(getSectionPermissions)
+            .some(permission => !labels.get(permission.value)?.trim())
+
+        if (hasMissingLabels)
+            throw new Error('En eller flera behörigheter saknar etikett. Kontrollera behörigheterna och försök igen.')
+
+        permissionLabels.value = labels
+        permissionsLoaded.value = true
+    } catch (error) {
+        permissionLoadError.value = error instanceof Error
+            ? error.message
+            : 'Det gick inte att hämta behörigheterna. Försök igen.'
+    } finally {
+        isPermissionsLoading.value = false
+    }
+}
 
 const hasPhoneValue = value => !!String(value ?? '').trim()
 
@@ -89,6 +189,7 @@ onMounted(async () => {
     checkIfMobile()
    
     window.addEventListener('resize', checkIfMobile)
+    await loadPermissions()
 })
 
 const checkIfMobile = () => {
@@ -472,7 +573,7 @@ const goToProfile = () => {
                     </VTab>
                 </MobileScrollTabs>
                       
-                <VCardText class="px-0">
+                <VCardText class="px-0 pb-2">
                     <VWindow v-model="currentTab">
                         <!--Försäljning-->
                         <VWindowItem class="px-md-0">
@@ -571,7 +672,7 @@ const goToProfile = () => {
 
                         <!--Inbytesfordon-->
                         <VWindowItem class="px-md-0">
-                            <VRow class="px-md-3">
+                            <!-- <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="text-modules mb-5">
                                         Modules
@@ -969,12 +1070,134 @@ const goToProfile = () => {
                                         </div>
                                     </div>
                                 </VCol>
-                            </VRow>
+                            </VRow> -->
+
+                            <VAlert
+                                v-if="permissionLoadError"
+                                type="error"
+                                variant="tonal"
+                                class="mb-4"
+                            >
+                                {{ permissionLoadError }}
+                                <VBtn
+                                    variant="text"
+                                    :disabled="isPermissionsLoading"
+                                    @click="loadPermissions"
+                                >
+                                    Försök igen
+                                </VBtn>
+                            </VAlert>
+                            <p
+                                v-if="isPermissionsLoading"
+                                class="text-medium-emphasis"
+                                role="status"
+                            >
+                                Hämtar behörigheter...
+                            </p>
+                            <fieldset
+                                v-if="permissionsLoaded"
+                                class="permission-fieldset"
+                                :disabled="isPermissionsLoading || isRequestOngoing"
+                                aria-label="Behörigheter"
+                            >
+                                <section
+                                    v-for="section in permissionSections"
+                                    :key="section.title"
+                                    class="permission-section"
+                                    :aria-label="section.title"
+                                >
+                                    <header class="permission-section-header">
+                                        <h3>{{ section.title }}</h3>
+                                        <span class="permission-count">
+                                            {{ selectedCount(section) }}/{{ selectablePermissions(section).length }}
+                                        </span>
+                                        <div class="section-select-all">
+                                            <VCheckbox
+                                                :model-value="isSectionSelected(section)"
+                                                :indeterminate="isSectionIndeterminate(section)"
+                                                true-icon="custom-checked-filled-checkbox"
+                                                false-icon="custom-empty-checkbox"
+                                                indeterminate-icon="custom-minus-checkbox"
+                                                color="#454545"
+                                                :ripple="false"
+                                                hide-details
+                                                :disabled="isPermissionsLoading || isRequestOngoing"
+                                                :aria-label="`Välj alla i ${section.title}`"
+                                                label="Välj alla"
+                                                @update:model-value="toggleSection(section, $event)"
+                                            />
+                                        </div>
+                                    </header>
+
+                                    <div
+                                        v-for="module in section.modules"
+                                        :key="module.title"
+                                        class="permission-module"
+                                        role="group"
+                                        :aria-label="module.title"
+                                    >
+                                        <div class="module-heading d-flex flex-column justify-content-start">
+                                            <h4>{{ module.title }}</h4>
+                                            <p v-if="module.description">{{ module.description }}</p>
+                                        </div>
+                                        <div class="module-rows">
+                                            <div
+                                                v-for="row in getModuleRows(module)"
+                                                :key="row.title"
+                                                class="permission-row"
+                                                :class="{ 'permission-row-nested': module.children }"
+                                                role="group"
+                                                :aria-label="row.title"
+                                            >
+                                                <span
+                                                    v-if="module.children"
+                                                    class="permission-row-title"
+                                                >
+                                                    {{ row.title }}
+                                                </span>
+                                                <div class="permission-options">
+                                                    <div
+                                                        v-for="permission in row.permissions"
+                                                        :key="permission.value"
+                                                        class="permission-chip"
+                                                        :class="{
+                                                            'permission-chip-selected': assignedPermissions.includes(permission.value),
+                                                            'permission-chip-disabled': permission.disabled,
+                                                        }"
+                                                        :title="permission.disabled ? 'Endast SuperAdmin kan tilldela denna behörighet.' : undefined"
+                                                    >
+                                                        <VCheckbox
+                                                            v-model="assignedPermissions"
+                                                            :value="permission.value"
+                                                            :label="permissionLabels.get(permission.value)"
+                                                            :aria-label="permissionLabels.get(permission.value)"
+                                                            :disabled="isRequestOngoing || permission.disabled"
+                                                            true-icon="custom-checked-filled-checkbox"
+                                                            false-icon="custom-empty-checkbox"
+                                                            indeterminate-icon="custom-minus-checkbox"
+                                                            color="#454545"
+                                                            :ripple="false"
+                                                            hide-details
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </fieldset>
                         </VWindowItem>
                     </VWindow>
                 </VCardText>
 
-                <VCardText class="p-0 d-flex w-100">
+                <VCardText
+                    class="p-0 d-flex w-100 align-center justify-between my-4 gap-4"
+                    :class="windowWidth < 1024 ? 'flex-column' : ''"
+                >
+                    <span v-if="currentTab === 1 && permissionsLoaded" class="selection-summary" aria-live="polite">
+                        <strong style="color: #1C2925;">{{ selectedPermissionsCount }}</strong>
+                        av {{ totalPermissions }} behörigheter aktiva
+                    </span>
                     <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'"/>
                     <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                         <VBtn
@@ -1389,6 +1612,274 @@ const goToProfile = () => {
         border: 1px solid #E7E7E7;
         border-radius: 16px !important;
         padding: 16px;
+    }
+
+    .permission-fieldset {
+        min-inline-size: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .permission-section {
+        overflow: hidden;
+        border: 1px solid #E3EAE6;
+        border-radius: 16px;
+
+        & + & {
+            margin-block-start: 20px;
+        }
+    }
+
+    .permission-section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        background: #F6FAF8;
+
+        h3 {
+            font-weight: 700;
+            font-size: 17px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #1C2925;
+        }
+    }
+
+    .permission-count {
+        padding: 2px 9px;
+        border: 1px solid #E3EAE6;
+        border-radius: 999px;
+        background: #FFFFFF;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0;
+        color: #6B7A75;
+    }
+
+    .section-select-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-inline-start: auto;
+        cursor: pointer;
+        white-space: nowrap;
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #1C2925;
+    }
+
+    .section-select-all,
+    .permission-chip {
+        .v-selection-control {
+            min-height: 24px;
+        }
+
+        .v-selection-control__wrapper {
+            --v-selection-control-size: 24px;
+
+            margin-inline-end: 8px;
+        }
+
+        .v-label {
+            color: inherit;
+            font: inherit;
+            opacity: 1;
+            margin-left: 0;
+        }
+    }
+
+    .permission-module {
+        display: grid;
+        grid-template-columns: minmax(160px, 23%) minmax(0, 1fr);
+        gap: 24px;
+        padding: 16px 20px;
+        border-block-start: 1px solid #edf1ef;
+    }
+
+    .module-heading {
+        h4 {
+            font-weight: 600;
+            font-size: 15px;
+            line-height: 100%;
+            letter-spacing: 0;
+            color: #1C2925;
+        }
+
+        p {
+            margin: 2px 0 0;
+            font-weight: 400;
+            font-size: 12.5px;
+            line-height: 16.88px;
+            letter-spacing: 0;
+            color: #6B7A75;
+        }
+    }
+
+    .permission-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        & + & {
+            margin-block-start: 10px;
+        }
+    }
+
+    .permission-row-nested {
+        display: grid;
+        grid-template-columns: 90px minmax(0, 1fr);
+    }
+
+    .permission-row-title {
+        font-weight: 600;
+        font-size: 13px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #6B7A75;
+    }
+
+    .permission-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .permission-chip {
+        display: inline-flex;
+        flex: 0 1 auto;
+        align-items: center;
+        padding: 8px 16px;
+        border: 1px solid #E3EAE6;
+        border-radius: 10px;
+        background: #FFFFFF;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #1C2925;
+        cursor: pointer;
+
+        .v-input {
+            flex: 1 1 auto;
+            min-inline-size: 0;
+        }
+
+        .v-input__control,
+        .v-selection-control {
+            min-inline-size: 0;
+            inline-size: 100%;
+        }
+
+        .v-selection-control__wrapper {
+            flex-shrink: 0;
+        }
+
+        &:focus-within {
+            outline: 2px solid #55786b;
+            outline-offset: 2px;
+        }
+    }
+
+    .permission-chip-selected {
+        border-color: #B9E5CB;
+        background: #F1FAF5;
+    }
+
+    .permission-chip-disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .permission-fieldset:disabled .v-label {
+        cursor: wait;
+    }
+
+    .module-heading p {
+        color: #6e7c78;
+    }
+
+    .selection-summary {
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #6B7A75;
+    }
+
+    @media (max-width: 767px) {
+        .permission-section-header,
+        .permission-module {
+            padding: 14px;
+        }
+
+        .permission-section-header {
+            gap: 8px;
+
+            h3 {
+                font-size: 16px;
+            }
+        }
+
+        .permission-module {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .module-heading {
+            h4 {
+                font-weight: 600;
+                font-size: 15px;
+                line-height: 100%;
+                letter-spacing: 0;
+            }
+
+            p {
+                margin-block-start: 4px;
+                font-weight: 400;
+                font-size: 12.5px;
+                line-height: 100%;
+                letter-spacing: 0;
+            }
+        }
+
+        .permission-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 6px;
+        }
+
+        .permission-row-title {
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .permission-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .permission-chip {
+            min-inline-size: 0;
+            min-block-size: 34px;
+
+            .v-label {
+                min-inline-size: 0;
+                overflow-wrap: anywhere;
+                line-height: 1.35;
+                white-space: normal;
+                margin-left: 0;
+            }
+        }
+
+        .permission-row-nested .permission-chip {
+            font-size: 10px;
+            letter-spacing: 0.04em;
+        }
     }
 </style>
 <style lang="scss">

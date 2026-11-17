@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Role;
 use App\Services\CacheService;
+use App\Models\SupplierActivity;
 
 class RoleController extends Controller
 {
@@ -108,6 +109,22 @@ class RoleController extends Controller
 
             $role = Role::createRole($request);
 
+            SupplierActivity::createActivity([
+                'entity_id' => $role->id,
+                'entity_type' => 'roles',
+                'action_type' => 'create_role',
+                'title' => 'Roll #'.$role->id.' '.$role->name.' tillagd',
+                'description' => 'En ny roll har lagts till.',
+                'icon' => 'custom-profile',
+                'route' => '/dashboard/admin/roles/'.$role->id,
+                'metadata' => json_encode([
+                    'role_id' => $role->id,
+                    'new_values' => $request->only([
+                        'name', 'permissions'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -131,7 +148,7 @@ class RoleController extends Controller
     {
         try {
 
-            $role = Role::find($id);
+            $role = Role::with('permissions')->find($id);
 
             if (!$role)
                 return response()->json([
@@ -140,7 +157,28 @@ class RoleController extends Controller
                     'message' => 'Rollen hittades inte'
                 ], 404);
 
+            $oldValues = $role->only(['name']);
+            $oldValues['permissions'] = $role->permissions->pluck('name')->toArray();
+            
+
             $role->updateRole($request, $role); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $role->id,
+                'entity_type' => 'roles',
+                'action_type' => 'update_role',
+                'title' => 'Roll #'.$role->id.' '.$role->name.' uppdaterad',
+                'description' => 'En roll har uppdaterats.',
+                'icon' => 'custom-profile',
+                'route' => '/dashboard/admin/roles/'.$role->id,
+                'metadata' => json_encode([
+                    'role_id' => $role->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $request->only([
+                        'name', 'permissions'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -165,7 +203,7 @@ class RoleController extends Controller
     {
         try {
 
-            $role = Role::find($id);
+            $role = Role::with('permissions')->find($id);
         
             if (!$role)
                 return response()->json([
@@ -174,7 +212,28 @@ class RoleController extends Controller
                     'message' => 'Rollen hittades inte'
                 ], 404);
 
+            $oldValues = $role->only(['name']);
+            $oldValues['permissions'] = $role->permissions->pluck('name')->toArray();
+
             $role->deleteRole($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $role->id,
+                'entity_type' => 'roles',
+                'action_type' => 'delete_role',
+                'title' => 'Roll #'.$role->id.' '.$role->name.' borttagen',
+                'description' => 'En roll har tagits bort.',
+                'icon' => 'custom-profile',
+                'route' => '/dashboard/admin/roles/'.$role->id,
+                'metadata' => json_encode([
+                    'role_id' => $role->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $role->id)
+                ->where('entity_type', 'roles')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

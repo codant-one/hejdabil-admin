@@ -156,16 +156,16 @@ class UsersController extends Controller
 
             $user = User::with('roles', 'userDetail')->find($id);
 
-            $oldValues = $user->only(['name', 'last_name', 'email']);
-            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
-            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
-        
             if (!$user)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Användaren hittades inte'
                 ], 404);
+            
+            $oldValues = $user->only(['name', 'last_name', 'email']);
+            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
+            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
 
             $user->updateUser($request, $user); 
 
@@ -211,16 +211,16 @@ class UsersController extends Controller
 
             $user = User::with('roles', 'userDetail')->find($id);
 
-            $oldValues = $user->only(['name', 'last_name', 'email']);
-            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
-            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
-        
             if (!$user)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Användaren hittades inte'
                 ], 404);
+            
+            $oldValues = $user->only(['name', 'last_name', 'email']);
+            $oldValues['personal_address'] = $user->userDetail->personal_address ?? null;
+            $oldValues['personal_phone'] = $user->userDetail->personal_phone ?? null;
             
             $user->deleteUser($id);
 
