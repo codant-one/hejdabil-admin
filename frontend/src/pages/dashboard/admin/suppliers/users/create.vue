@@ -1,4 +1,5 @@
 <script setup>
+import permissions from './permissions.vue'
 
 import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useDisplay } from "vuetify";
@@ -606,7 +607,7 @@ const goToProfile = () => {
 
                         <!--Inbytesfordon-->
                         <VWindowItem class="px-md-0">
-                            <VRow class="px-md-3">
+                            <!-- <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="text-modules mb-5">
                                         Modules
@@ -1004,7 +1005,10 @@ const goToProfile = () => {
                                         </div>
                                     </div>
                                 </VCol>
-                            </VRow>
+                            </VRow> -->
+
+                            <permissions
+                                v-model:assigned-permissions="assignedPermissions"/>
                         </VWindowItem>
                     </VWindow>
                 </VCardText>
