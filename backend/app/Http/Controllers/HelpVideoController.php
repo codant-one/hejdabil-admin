@@ -19,7 +19,7 @@ use App\Models\SupplierActivity;
 class HelpVideoController extends Controller
 {
     private const ACTIVITY_FIELDS = [
-        'help_category_id', 'state_id', 'title', 'description', 'video_url', 'provider', 'thumbnail_url',
+        'help_category_id', 'state_id', 'title', 'description', 'slug', 'video_url', 'provider', 'thumbnail_url',
     ];
 
     public function __construct()

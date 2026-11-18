@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\HelpVideoController;
 use App\Http\Requests\HelpVideoRequest;
 use App\Models\SupplierActivity;
+use App\Services\ActivityMetadataResolver;
 use App\Services\CacheService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
@@ -367,6 +368,7 @@ class HelpVideoListingTest extends TestCase
 
         $this->assertSame($created['id'], $creation['help_video_id']);
         $this->assertSame('New tutorial', $creation['new_values']['title']);
+        $this->assertSame('new-tutorial', $creation['new_values']['slug']);
         $this->assertSame($creation['new_values'], $update['old_values']);
         $this->assertSame('Updated tutorial', $update['new_values']['title']);
         $this->assertSame(['state_id' => 2], $deactivation['old_values']);
@@ -376,6 +378,32 @@ class HelpVideoListingTest extends TestCase
         $this->assertSame($deactivation['old_values'], $activation['new_values']);
         $this->assertStringEndsWith(' aktiverad', $activities[3]->title);
         $this->assertSame($update['new_values'], $deletion['old_values']);
+    }
+
+    public function test_help_video_activity_resolves_category_and_state_names_in_both_snapshots(): void
+    {
+        DB::table('help_categories')->insert([
+            'id' => 2, 'name' => 'Archived category', 'label' => 'archived', 'state_id' => 1,
+        ]);
+        $activity = new SupplierActivity([
+            'entity_type' => 'help_videos',
+            'metadata' => json_encode([
+                'old_values' => ['help_category_id' => '2', 'state_id' => 1],
+                'new_values' => ['help_category_id' => 1, 'state_id' => 2],
+            ]),
+        ]);
+        $deletedCategoryActivity = new SupplierActivity([
+            'entity_type' => 'help_videos',
+            'metadata' => ['old_values' => ['help_category_id' => 999]],
+        ]);
+
+        (new ActivityMetadataResolver())->enrichCollection(collect([$activity, $deletedCategoryActivity]));
+
+        $this->assertSame([
+            'old_values' => ['help_category_id' => 'Archived category', 'state_id' => 'Inaktiv'],
+            'new_values' => ['help_category_id' => 'Overview', 'state_id' => 'Aktiv'],
+        ], $activity->metadata);
+        $this->assertSame(999, $deletedCategoryActivity->metadata['old_values']['help_category_id']);
     }
 
     public function test_thumbnail_upload_is_saved_preserved_and_replaced(): void
