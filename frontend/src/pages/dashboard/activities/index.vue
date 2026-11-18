@@ -64,6 +64,7 @@ const modules = [
   { name: 'Land', id: 'countries' },
   { name: 'Planer', id: 'plans'},
   { name: 'Hjälpkategorier', id: 'help_categories' },
+  { name: 'Hjälpvideor', id: 'help_videos' }
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -83,7 +84,8 @@ const MODULE_PERMISSION_SUBJECTS = {
   notes: ['notes'],
   countries: ['countries'],
   plans: ['plans'],
-  help_categories: ['help-categories']
+  help_categories: ['help-categories'],
+  help_videos: ['help-videos']
 }
 
 const hasModuleAccess = moduleId => {
@@ -148,7 +150,8 @@ const activityModuleLabels = {
   currencies: 'Valuta',
   countries: 'Land',
   plans: 'Planer',
-  help_categories: 'Hjälpkategorier'
+  help_categories: 'Hjälpkategorier',
+  help_videos: 'Hjälpvideor'
 }
 
 const activityModuleSingularLabels = {
@@ -171,7 +174,8 @@ const activityModuleSingularLabels = {
   currencies: 'Valuta',
   countries: 'Land',
   plans: 'Planer',
-  help_categories: 'Hjälpkategorier'
+  help_categories: 'Hjälpkategorier',
+  help_videos: 'Hjälpvideor'
 }
 
 const activityActionLabels = {
