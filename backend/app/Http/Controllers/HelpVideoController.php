@@ -14,6 +14,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Models\HelpVideo;
 use App\Models\HelpCategory;
 use App\Models\State;
+use App\Models\SupplierActivity;
 
 class HelpVideoController extends Controller
 {
