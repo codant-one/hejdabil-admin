@@ -14,6 +14,7 @@ export default [
             to: 'dashboard-admin-invoices', 
             action: 'view', 
             subject: 'invoices', 
+            icon: { icon: 'custom-facture' },
           }
         ]
       },
@@ -28,12 +29,14 @@ export default [
             to: 'dashboard-admin-help-categories', 
             action: 'view', 
             subject: 'help-categories', 
+            icon: { icon: 'custom-help-center-category' }
           },
           { 
             title: 'Videor', 
             to: 'dashboard-admin-help-videos', 
             action: 'view', 
             subject: 'help-videos', 
+            icon: { icon: 'custom-help-center-video' }
           }
         ]
       },

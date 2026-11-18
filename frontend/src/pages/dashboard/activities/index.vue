@@ -12,7 +12,6 @@ import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
 import navItems from '@/navigation/vertical'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
-import countries from '@/api/countries'
 
 const activitiesStore = useActivitiesStore()
 const emitter = inject('emitter')
@@ -63,7 +62,8 @@ const modules = [
   { name: 'Attribut fakturor', id: 'invoices' },
   { name: 'Valuta', id: 'currencies' },
   { name: 'Land', id: 'countries' },
-  { name: 'Planer', id: 'plans'}
+  { name: 'Planer', id: 'plans'},
+  { name: 'Hjälpkategorier', id: 'help_categories' },
 ]
 
 const MODULE_PERMISSION_SUBJECTS = {
@@ -82,7 +82,8 @@ const MODULE_PERMISSION_SUBJECTS = {
   payouts: ['payouts'],
   notes: ['notes'],
   countries: ['countries'],
-  plans: ['plans']
+  plans: ['plans'],
+  help_categories: ['help-categories']
 }
 
 const hasModuleAccess = moduleId => {
@@ -146,7 +147,8 @@ const activityModuleLabels = {
   models: 'Modell',
   currencies: 'Valuta',
   countries: 'Land',
-  plans: 'Planer'
+  plans: 'Planer',
+  help_categories: 'Hjälpkategorier'
 }
 
 const activityModuleSingularLabels = {
@@ -168,7 +170,8 @@ const activityModuleSingularLabels = {
   models: 'Modell',
   currencies: 'Valuta',
   countries: 'Land',
-  plans: 'Planer'
+  plans: 'Planer',
+  help_categories: 'Hjälpkategorier'
 }
 
 const activityActionLabels = {

@@ -35,6 +35,8 @@ const logoCropped = ref(null)
 const logoOld = ref(null)
 const iconPath = ref('')
 const filename = ref([])
+const selectedIconFile = ref(null)
+const fileInput = ref(null)
 const cropper = ref()
 const isEdit = ref(false)
 
@@ -117,6 +119,9 @@ const reallyCloseAndReset = () => {
     logoOld.value = null
     iconPath.value = ''
     filename.value = []
+    selectedIconFile.value = null
+    if (fileInput.value)
+      fileInput.value.value = ''
     label.value = ''
 
     isEdit.value = false 
@@ -147,6 +152,14 @@ const resetAvatar = () => {
   logoCropped.value = null
   logoOld.value = null
   iconPath.value = ''
+  selectedIconFile.value = null
+}
+
+const clearSelectedImage = () => {
+  resetAvatar()
+  filename.value = []
+  if (fileInput.value)
+    fileInput.value.value = ''
 }
 
 const resizeImage = function(file, maxWidth, maxHeight, quality) {
@@ -187,14 +200,12 @@ const resizeImage = function(file, maxWidth, maxHeight, quality) {
   })
 }
 
-const blobToBase64 = blob => {
+const blobToDataURL = blob => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
     reader.readAsDataURL(blob)
-    reader.onload = () => {
-      resolve(reader.result.split(',')[1])
-    }
+    reader.onload = () => resolve(reader.result)
     reader.onerror = error => {
       reject(error)
     }
@@ -202,17 +213,41 @@ const blobToBase64 = blob => {
 }
 
 const onImageSelected = event => {
-  const file = event.target.files[0]
+  const file = event.target?.files?.[0] || event.dataTransfer?.files?.[0]
 
   if (!file) return
-  // logoOld.value = file
+  if (!['image/png', 'image/jpeg', 'image/bmp', 'image/webp', 'image/svg+xml'].includes(file.type)) {
+    advisor.value = {
+      type: 'error',
+      message: 'Ogiltigt filformat. Använd SVG, PNG, JPEG, BMP eller WEBP.',
+      show: true,
+    }
+    if (event.target?.type === 'file')
+      event.target.value = ''
 
-  URL.createObjectURL(file)
+    return
+  }
+
+  filename.value = [file]
+  selectedIconFile.value = file
+  advisor.value.show = false
+  if (event.target?.type === 'file')
+    event.target.value = ''
+
+  if (file.type === 'image/svg+xml') {
+    blobToDataURL(file).then(dataURL => {
+      logoCropped.value = dataURL
+    })
+
+    return
+  }
 
   resizeImage(file, 1200, 1200, 1)
-    .then(async blob => {
-        let r = await blobToBase64(blob)
-        logoCropped.value = 'data:image/jpeg;base64,' + r
+    .then(blob => {
+      return blobToDataURL(blob)
+    })
+    .then(dataURL => {
+      logoCropped.value = dataURL
     })
 }
 
@@ -248,7 +283,9 @@ const getCroppedLogoBlob = () => {
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-      const blob = getCroppedLogoBlob()
+      const blob = selectedIconFile.value
+        ? (selectedIconFile.value.type === 'image/svg+xml' ? selectedIconFile.value : getCroppedLogoBlob())
+        : null
       logoOld.value = blob
       if (!logoOld.value && !iconPath.value) {
         advisor.value = {
@@ -319,19 +356,47 @@ watch(currentData, () => {
           />
       </VListItem>
       <VListItem>
-        <VLabel
-          class="mb-1 text-body-2 text-high-emphasis"
-          text="Ikon"
-        />
-        <VFileInput 
-          v-model="filename"
-          class="mb-2"
-          accept="image/png, image/jpeg, image/bmp, image/webp"
-          prepend-icon="tabler-camera"
-          :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
-          @change="onImageSelected"
-          @click:clear="resetAvatar"
-        />
+        <div
+          class="file-upload-area"
+          :class="{ 'has-file': filename.length > 0 }"
+          @click="fileInput?.click()"
+          @dragover.prevent
+          @drop.prevent="onImageSelected"
+        >
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/svg+xml, image/png, image/jpeg, image/bmp, image/webp"
+            class="d-none"
+            @click.stop
+            @change="onImageSelected"
+          >
+          <template v-if="!filename.length">
+            <VIcon
+              icon="custom-attach"
+              :size="24"
+              color="grey"
+            />
+            <span class="file-upload-text">Bifoga ditt Ikon</span>
+          </template>
+          <template v-else>
+            <VIcon
+              icon="custom-attach"
+              :size="24"
+              color="grey"
+            />
+            <span class="file-upload-text">{{ filename[0].name }}</span>
+            <span
+              class="file-remove-btn"
+              @click.stop="clearSelectedImage"
+            >
+              <VIcon
+                icon="custom-close"
+                size="10"
+              />
+            </span>
+          </template>
+        </div>
       </VListItem>
       <VListItem>
         <VLabel
@@ -572,5 +637,45 @@ watch(currentData, () => {
 
   .border-img .v-img__img--contain {
       padding: 10px;
+  }
+
+  .file-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed #E7E7E7;
+    border-radius: 8px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #F6F6F6;
+    position: relative;
+  }
+
+  .file-upload-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    max-width: calc(100% - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgb(var(--v-theme-surface));
   }
 </style>

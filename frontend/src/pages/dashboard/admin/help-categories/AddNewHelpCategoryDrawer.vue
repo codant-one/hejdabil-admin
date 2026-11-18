@@ -1,7 +1,6 @@
 <script setup>
 
 import { themeConfig } from '@themeConfig'
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { requiredValidator } from '@/@core/utils/validators'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
@@ -35,6 +34,8 @@ const logoCropped = ref(null)
 const logoOld = ref(null)
 const iconPath = ref('')
 const filename = ref([])
+const selectedIconFile = ref(null)
+const fileInput = ref(null)
 const cropper = ref()
 const isEdit = ref(false)
 
@@ -103,7 +104,7 @@ watchEffect(async() => {
   }
 })
 
-// 👉 drawer close
+// 👉 dialog close
 const reallyCloseAndReset = () => {
   emit("update:isDrawerOpen", false)
   // emit('resetDuplicate')
@@ -117,6 +118,9 @@ const reallyCloseAndReset = () => {
     logoOld.value = null
     iconPath.value = ''
     filename.value = []
+    selectedIconFile.value = null
+    if (fileInput.value)
+      fileInput.value.value = ''
     label.value = ''
 
     isEdit.value = false 
@@ -147,6 +151,14 @@ const resetAvatar = () => {
   logoCropped.value = null
   logoOld.value = null
   iconPath.value = ''
+  selectedIconFile.value = null
+}
+
+const clearSelectedImage = () => {
+  resetAvatar()
+  filename.value = []
+  if (fileInput.value)
+    fileInput.value.value = ''
 }
 
 const resizeImage = function(file, maxWidth, maxHeight, quality) {
@@ -187,14 +199,12 @@ const resizeImage = function(file, maxWidth, maxHeight, quality) {
   })
 }
 
-const blobToBase64 = blob => {
+const blobToDataURL = blob => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
     reader.readAsDataURL(blob)
-    reader.onload = () => {
-      resolve(reader.result.split(',')[1])
-    }
+    reader.onload = () => resolve(reader.result)
     reader.onerror = error => {
       reject(error)
     }
@@ -202,17 +212,41 @@ const blobToBase64 = blob => {
 }
 
 const onImageSelected = event => {
-  const file = event.target.files[0]
+  const file = event.target?.files?.[0] || event.dataTransfer?.files?.[0]
 
   if (!file) return
-  // logoOld.value = file
+  if (!['image/png', 'image/jpeg', 'image/bmp', 'image/webp', 'image/svg+xml'].includes(file.type)) {
+    advisor.value = {
+      type: 'error',
+      message: 'Ogiltigt filformat. Använd SVG, PNG, JPEG, BMP eller WEBP.',
+      show: true,
+    }
+    if (event.target?.type === 'file')
+      event.target.value = ''
 
-  URL.createObjectURL(file)
+    return
+  }
+
+  filename.value = [file]
+  selectedIconFile.value = file
+  advisor.value.show = false
+  if (event.target?.type === 'file')
+    event.target.value = ''
+
+  if (file.type === 'image/svg+xml') {
+    blobToDataURL(file).then(dataURL => {
+      logoCropped.value = dataURL
+    })
+
+    return
+  }
 
   resizeImage(file, 1200, 1200, 1)
-    .then(async blob => {
-        let r = await blobToBase64(blob)
-        logoCropped.value = 'data:image/jpeg;base64,' + r
+    .then(blob => {
+      return blobToDataURL(blob)
+    })
+    .then(dataURL => {
+      logoCropped.value = dataURL
     })
 }
 
@@ -248,7 +282,9 @@ const getCroppedLogoBlob = () => {
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-      const blob = getCroppedLogoBlob()
+      const blob = selectedIconFile.value
+        ? (selectedIconFile.value.type === 'image/svg+xml' ? selectedIconFile.value : getCroppedLogoBlob())
+        : null
       logoOld.value = blob
       if (!logoOld.value && !iconPath.value) {
         advisor.value = {
@@ -299,141 +335,162 @@ watch(currentData, () => {
 </script>
 
 <template>
-  <VNavigationDrawer
-    temporary
-    :width="550"
-    location="end"
-    class="scrollable-content right-drawer rounded-left-4"
+  <VDialog
+    persistent
+    class="action-dialog help-category-dialog"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
-    <!-- 👉 Title -->
-    <div class="d-flex align-center pa-6">
-      <h6 class="title-modal font-blauer">
-        {{ getTitle }}
-      </h6>
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="closeNavigationDrawer"
+    >
+      <VIcon
+        size="16"
+        icon="custom-close"
+      />
+    </VBtn>
 
-      <VSpacer />
-
-      <!-- 👉 Close btn -->
-      <VBtn
-        icon
-        class="btn-white"
-        @click="closeNavigationDrawer"
-      >
-        <VIcon
-          size="20"
-          icon="custom-close"
-        />
-      </VBtn>
-    </div>
-    
-    <VDivider />
-
-    <PerfectScrollbar 
-      :options="{ wheelPropagation: false }" 
-      class="scrollbar-no-border"
+    <VForm
+      ref="refForm"
+      v-model="isFormValid"
+      validate-on="submit"
+      @submit.prevent="onSubmit"
     >
       <VCard
         flat
-        class="card-form help-category-desktop"
+        class="card-form"
       >
-        <VCardText>
-          <!-- 👉 Form -->
-          <VForm
-            ref="refForm"
-            v-model="isFormValid"
-            validate-on="submit"
-            @submit.prevent="onSubmit"
-          >
-            <VRow>
-              <VCol
-                  v-if="advisor.show"
-                  cols="12"
-                  md="12"
-                >
-                  <VAlert
-                    :color="advisor.type"
-                    class="alert-no-shrink custom-alert"
-                    style="flex: none;"
-                  >
-                    <VAlertTitle>{{ advisor.message }}</VAlertTitle>
-                  </VAlert>
-              </VCol>
+        <VCardText class="dialog-title-box">
+          <VIcon
+            size="32"
+            icon="custom-help-center-category"
+            class="action-icon"
+          />
+          <div class="dialog-title">
+            {{ getTitle }}
+          </div>
+        </VCardText>
 
-              <VCol cols="12" md="12" v-if="logoCropped">
-                  <Cropper
-                      ref="cropper"
-                      class="cropper-container"
-                      preview-class="cropper-preview"
-                      background-class="cropper-background"
-                      :src="logoCropped"
-                      :stencil-props="{
-                          previewClass: 'cropper-preview-circle'
-                      }"
-                      @change="onCropChange"
-                  />
-              </VCol>
-              <VCol cols="12" md="12">
-                <VLabel
-                  class="mb-1 text-body-2 text-high-emphasis"
-                  text="Ikon"
-                />
-                <VFileInput 
-                  v-model="filename"
-                  class="mb-2"
-                  accept="image/png, image/jpeg, image/bmp, image/webp"
-                  prepend-icon="tabler-camera"
-                  :rules="isEdit ? [] : [v => (v && v.length > 0) || 'krävs *']"
-                  @change="onImageSelected"
-                  @click:clear="resetAvatar"
-                />
-              </VCol>
-              <VCol cols="12" md="12">
-                <VLabel
-                  class="mb-1 text-body-2 text-high-emphasis"
-                  text="Namn*"
-                />
-                <VTextField
-                    v-model="name"
-                    :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12" md="12">
-                <VLabel
-                  class="mb-1 text-body-2 text-high-emphasis"
-                  text="Etikett*"
-                />
-                <VTextField
-                    v-model="label"
-                    :rules="[requiredValidator]"
-                />
-              </VCol>
-              <!-- 👉 Submit and Cancel -->
-              <VCol
-                cols="12"
-                class="pb-0"
+        <VCardText class="dialog-text">
+          <VRow>
+            <VCol
+              v-if="advisor.show"
+              cols="12"
+            >
+              <VAlert
+                :color="advisor.type"
+                class="alert-no-shrink custom-alert"
+                style="flex: none;"
               >
-                <VBtn
-                  type="button"
-                  class="btn-light me-3"
-                  @click="closeNavigationDrawer"
+                <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+              </VAlert>
+            </VCol>
+
+            <VCol
+              v-if="logoCropped"
+              cols="12"
+            >
+              <Cropper
+                ref="cropper"
+                class="cropper-container"
+                preview-class="cropper-preview"
+                background-class="cropper-background"
+                :src="logoCropped"
+                :stencil-props="{
+                  previewClass: 'cropper-preview-circle'
+                }"
+                @change="onCropChange"
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <div
+                class="file-upload-area"
+                :class="{ 'has-file': filename.length > 0 }"
+                @click="fileInput?.click()"
+                @dragover.prevent
+                @drop.prevent="onImageSelected"
+              >
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/svg+xml, image/png, image/jpeg, image/bmp, image/webp"
+                  class="d-none"
+                  @click.stop
+                  @change="onImageSelected"
                 >
-                  Avbryt
-                </VBtn>
-                <VBtn
-                  type="submit"
-                  class="btn-gradient"
-                >
-                  {{ isEdit ? "Uppdatering" : "Lägg till" }}
-                </VBtn>
-              </VCol>
-            </VRow>
-          </VForm>
+                <template v-if="!filename.length">
+                  <VIcon
+                    icon="custom-attach"
+                    :size="24"
+                    color="grey"
+                  />
+                  <span class="file-upload-text">Bifoga ditt Ikon</span>
+                </template>
+                <template v-else>
+                  <VIcon
+                    icon="custom-attach"
+                    :size="24"
+                    color="grey"
+                  />
+                  <span class="file-upload-text">{{ filename[0].name }}</span>
+                  <span
+                    class="file-remove-btn"
+                    @click.stop="clearSelectedImage"
+                  >
+                    <VIcon
+                      icon="custom-close"
+                      size="10"
+                    />
+                  </span>
+                </template>
+              </div>
+            </VCol>
+
+            <VCol cols="12">
+              <VLabel
+                class="mb-1 text-body-2 text-high-emphasis"
+                text="Namn*"
+              />
+              <VTextField
+                v-model="name"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <VLabel
+                class="mb-1 text-body-2 text-high-emphasis"
+                text="Etikett*"
+              />
+              <VTextField
+                v-model="label"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            type="button"
+            class="btn-light"
+            @click="closeNavigationDrawer"
+          >
+            Avbryt
+          </VBtn>
+          <VBtn
+            class="btn-gradient"
+            type="submit"
+          >
+            {{ isEdit ? "Uppdatering" : "Lägg till" }}
+          </VBtn>
         </VCardText>
       </VCard>
-    </PerfectScrollbar>
-  </VNavigationDrawer>
+    </VForm>
+  </VDialog>
 
   <!-- Confirm leave without saving -->
   <VDialog
@@ -484,86 +541,6 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
-  @media (min-width: 1024px) {
-    .card-form.help-category-desktop {
-      .v-input:not(.v-textarea) {
-        .v-input__control {
-          .v-field {
-            background-color: #f6f6f6 !important;
-            min-height: 40px !important;
-            /*height: 40px !important;*/
-
-            .v-text-field__suffix {
-              padding: 8px 16px !important;
-            }
-
-            .v-field__input {
-              min-height: 40px !important;
-              /*height: 40px !important;*/
-              padding: 8px 16px !important;
-
-              input {
-                min-height: 40px !important;
-                height: 40px !important;
-              }
-            }
-
-            .v-field-label {
-              top: 12px !important;
-            }
-
-            .v-field__append-inner {
-              align-items: center;
-              padding-top: 0px;
-            }
-
-            .v-text-field__prefix {
-              height: 40px;
-            }
-          }
-        }
-      }
-
-      .v-input.always-show-prefix {
-        .v-input__control {
-          .v-field {
-            .v-field__input {
-              padding: 8px 0 !important;
-            }
-          }
-        }
-      }
-
-      .v-select .v-field {
-        .v-select__selection {
-            align-items: center;
-            color: #454545;
-        }
-
-        .v-field__input > input {
-          top: 0px;
-          left: 18px;
-
-        }
-
-        .v-field__input input::placeholder,
-        input.v-field__input::placeholder,
-        .v-field__input textarea::placeholder,
-        textarea.v-field__input::placeholder {
-            color: #454545 !important;
-            opacity: 1 !important;
-          }
-      }
-
-      .selector-country {
-        .v-input__prepend {
-          margin-inline-end: 6px !important;
-        }
-      }
-
-    }
-  }
-
   :deep(.vue-simple-handler) {
       background: #57F287 !important;
   }
@@ -606,5 +583,45 @@ watch(currentData, () => {
 
   .border-img .v-img__img--contain {
       padding: 10px;
+  }
+
+  .file-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed #E7E7E7;
+    border-radius: 8px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #F6F6F6;
+    position: relative;
+  }
+
+  .file-upload-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    max-width: calc(100% - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgb(var(--v-theme-surface));
   }
 </style>

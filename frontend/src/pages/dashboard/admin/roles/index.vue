@@ -337,7 +337,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Roller</h2>
+          <h2>Roller <span v-if="hasLoaded">({{ totalRoles }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
