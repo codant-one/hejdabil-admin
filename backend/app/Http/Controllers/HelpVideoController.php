@@ -18,6 +18,10 @@ use App\Models\SupplierActivity;
 
 class HelpVideoController extends Controller
 {
+    private const ACTIVITY_FIELDS = [
+        'help_category_id', 'state_id', 'title', 'description', 'video_url', 'provider', 'thumbnail_url',
+    ];
+
     public function __construct()
     {
         $this->middleware(PermissionMiddleware::class . ':view help-videos|administrator')->only(['index']);
@@ -95,6 +99,20 @@ class HelpVideoController extends Controller
                 throw $ex;
             }
 
+            SupplierActivity::createActivity([
+                'entity_id' => $helpVideo->id,
+                'entity_type' => 'help_videos',
+                'action_type' => 'create_help_video',
+                'title' => 'Hjälpvideo #'.$helpVideo->id.' tillagd',
+                'description' => 'En ny hjälpvideo har lagts till.',
+                'icon' => 'custom-help-center-video',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_video_id' => $helpVideo->id,
+                    'new_values' => $helpVideo->only(self::ACTIVITY_FIELDS),
+                ]),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -158,6 +176,7 @@ class HelpVideoController extends Controller
                     'message' => 'Videon hittades inte'
                 ], 404);
 
+            $oldValues = $helpVideo->only(self::ACTIVITY_FIELDS);
             $oldThumbnail = $helpVideo->thumbnail_url;
             $path = $this->storeThumbnail($request);
             try {
@@ -177,7 +196,22 @@ class HelpVideoController extends Controller
                     throw new \RuntimeException('Kunde inte ta bort den gamla miniatyrbilden.');
                 }
             }
-            
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpVideo->id,
+                'entity_type' => 'help_videos',
+                'action_type' => 'update_help_video',
+                'title' => 'Hjälpvideo #'.$helpVideo->id.' uppdaterad',
+                'description' => 'Hjälpvideon har uppdaterats.',
+                'icon' => 'custom-help-center-video',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_video_id' => $helpVideo->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $helpVideo->only(self::ACTIVITY_FIELDS),
+                ]),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -210,7 +244,22 @@ class HelpVideoController extends Controller
                     'message' => 'Videon hittades inte'
                 ], 404);
             
+            $oldValues = $helpVideo->only(self::ACTIVITY_FIELDS);
             $helpVideo->deleteHelpVideo($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpVideo->id,
+                'entity_type' => 'help_videos',
+                'action_type' => 'delete_help_video',
+                'title' => 'Hjälpvideo #'.$helpVideo->id.' borttagen',
+                'description' => 'Hjälpvideon har tagits bort.',
+                'icon' => 'custom-help-center-video',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_video_id' => $helpVideo->id,
+                    'old_values' => $oldValues,
+                ]),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -241,8 +290,26 @@ class HelpVideoController extends Controller
                 ], 404);
             }
 
+            $oldValues = $helpVideo->only(['state_id']);
             $helpVideo->state_id = $helpVideo->state_id === 1 ? 2 : 1;
             $helpVideo->update();
+
+            $stateAction = $helpVideo->state_id === 2 ? 'aktiverad' : 'inaktiverad';
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpVideo->id,
+                'entity_type' => 'help_videos',
+                'action_type' => 'update_help_video_state',
+                'title' => 'Hjälpvideo #'.$helpVideo->id.' '.$stateAction,
+                'description' => 'Hjälpvideon har '.$stateAction.'.',
+                'icon' => 'custom-help-center-video',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_video_id' => $helpVideo->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $helpVideo->only(['state_id']),
+                ]),
+            ]);
 
             return response()->json([
                 'success' => true,
