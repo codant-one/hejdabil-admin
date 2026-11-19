@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\HelpVideoController;
 use App\Http\Requests\HelpVideoRequest;
+use App\Models\SupplierActivity;
+use App\Services\ActivityMetadataResolver;
 use App\Services\CacheService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +29,28 @@ class HelpVideoListingTest extends TestCase
             'database.connections.sqlite.database' => ':memory:',
         ]);
         DB::purge('sqlite');
+
+        $user = new class {
+            public int $id = 1;
+
+            public function getRoleNames()
+            {
+                return collect(['Admin']);
+            }
+        };
+        Auth::shouldReceive('check')->andReturn(true);
+        Auth::shouldReceive('user')->andReturn($user);
+
+        Schema::create('supplier_activities', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('supplier_id')->nullable();
+            $table->unsignedBigInteger('entity_id');
+            foreach (['entity_type', 'action_type', 'title', 'description', 'icon', 'route', 'metadata'] as $field) {
+                $table->text($field)->nullable();
+            }
+            $table->timestamps();
+        });
 
         Schema::create('states', function (Blueprint $table) {
             $table->id();
@@ -325,6 +350,60 @@ class HelpVideoListingTest extends TestCase
         $toggled = $controller->updateState($created['id'])->getData(true)['data']['helpVideo'];
         $this->assertSame('Overview', $toggled['category']['name']);
         $this->assertSame('Inaktiv', $toggled['state']['name']);
+
+        $this->assertSame(200, $controller->updateState($created['id'])->getStatusCode());
+        $this->assertSame(200, $controller->destroy($created['id'])->getStatusCode());
+        $this->assertSame(404, $controller->updateState($created['id'])->getStatusCode());
+
+        $activities = SupplierActivity::where('entity_type', 'help_videos')
+            ->where('entity_id', $created['id'])->orderBy('id')->get();
+        $this->assertSame([
+            'create_help_video', 'update_help_video', 'update_help_video_state',
+            'update_help_video_state', 'delete_help_video',
+        ], $activities->pluck('action_type')->all());
+
+        [$creation, $update, $deactivation, $activation, $deletion] = $activities
+            ->map(fn ($activity) => json_decode($activity->metadata, true, flags: JSON_THROW_ON_ERROR))
+            ->all();
+
+        $this->assertSame($created['id'], $creation['help_video_id']);
+        $this->assertSame('New tutorial', $creation['new_values']['title']);
+        $this->assertSame('new-tutorial', $creation['new_values']['slug']);
+        $this->assertSame($creation['new_values'], $update['old_values']);
+        $this->assertSame('Updated tutorial', $update['new_values']['title']);
+        $this->assertSame(['state_id' => 2], $deactivation['old_values']);
+        $this->assertSame(['state_id' => 1], $deactivation['new_values']);
+        $this->assertStringEndsWith(' inaktiverad', $activities[2]->title);
+        $this->assertSame($deactivation['new_values'], $activation['old_values']);
+        $this->assertSame($deactivation['old_values'], $activation['new_values']);
+        $this->assertStringEndsWith(' aktiverad', $activities[3]->title);
+        $this->assertSame($update['new_values'], $deletion['old_values']);
+    }
+
+    public function test_help_video_activity_resolves_category_and_state_names_in_both_snapshots(): void
+    {
+        DB::table('help_categories')->insert([
+            'id' => 2, 'name' => 'Archived category', 'label' => 'archived', 'state_id' => 1,
+        ]);
+        $activity = new SupplierActivity([
+            'entity_type' => 'help_videos',
+            'metadata' => json_encode([
+                'old_values' => ['help_category_id' => '2', 'state_id' => 1],
+                'new_values' => ['help_category_id' => 1, 'state_id' => 2],
+            ]),
+        ]);
+        $deletedCategoryActivity = new SupplierActivity([
+            'entity_type' => 'help_videos',
+            'metadata' => ['old_values' => ['help_category_id' => 999]],
+        ]);
+
+        (new ActivityMetadataResolver())->enrichCollection(collect([$activity, $deletedCategoryActivity]));
+
+        $this->assertSame([
+            'old_values' => ['help_category_id' => 'Archived category', 'state_id' => 'Inaktiv'],
+            'new_values' => ['help_category_id' => 'Overview', 'state_id' => 'Aktiv'],
+        ], $activity->metadata);
+        $this->assertSame(999, $deletedCategoryActivity->metadata['old_values']['help_category_id']);
     }
 
     public function test_thumbnail_upload_is_saved_preserved_and_replaced(): void
@@ -361,6 +440,9 @@ class HelpVideoListingTest extends TestCase
             $this->assertNotSame($original, $replacement);
             Storage::disk('public')->assertMissing($original);
             Storage::disk('public')->assertExists($replacement);
+            $metadata = json_decode(SupplierActivity::latest('id')->firstOrFail()->metadata, true);
+            $this->assertSame($original, $metadata['old_values']['thumbnail_url']);
+            $this->assertSame($replacement, $metadata['new_values']['thumbnail_url']);
 
             $this->deleteJson('/api/help-videos/'.$created['id'])->assertOk();
             Storage::disk('public')->assertMissing($replacement);

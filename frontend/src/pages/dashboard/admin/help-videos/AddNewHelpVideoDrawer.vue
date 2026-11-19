@@ -1,322 +1,410 @@
 <script setup>
-import { useDisplay } from 'vuetify'
-import { VDialog, VNavigationDrawer } from 'vuetify/components'
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+
 import { Cropper } from 'vue-advanced-cropper'
-import 'vue-advanced-cropper/dist/style.css'
 import { requiredValidator } from '@/@core/utils/validators'
 import { resolveHelpVideoThumbnailUrl } from '@/@core/utils/helpVideo'
 import HelpVideoPreview from '@/components/common/HelpVideoPreview.vue'
+import modalWarningIcon from '@/assets/images/icons/alerts/modal-warning-icon.svg'
+import 'vue-advanced-cropper/dist/style.css'
 
 const props = defineProps({
   isDrawerOpen: { type: Boolean, required: true },
-  video: { type: Object, default: () => ({}) },
-  modules: { type: Array, default: () => [] },
+  helpVideo: { type: Object, default: () => ({}) },
+  categories: { type: Array, default: () => [] },
   busy: { type: Boolean, default: false },
+  errorMessage: { type: String, default: '' },
 })
 
-const emit = defineEmits(['update:isDrawerOpen', 'videoData'])
-const { mdAndDown } = useDisplay()
-const refForm = ref()
+const emit = defineEmits(['update:isDrawerOpen', 'help-video-data'])
 const form = ref({})
 const initialData = ref('')
-const confirmLeave = ref(false)
-const thumbnailFile = ref([])
-const thumbnailPreview = ref(null)
-const cropper = ref()
+const isConfirmLeaveVisible = ref(false)
+const isSubmitting = ref(false)
+const fileInput = ref(null)
+const cropper = ref(null)
+const thumbnailFile = ref(null)
+const thumbnailPreview = ref('')
+const isThumbnailReady = ref(false)
 const imageError = ref('')
+const acceptedImageTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/webp']
+const providers = [
+  { title: 'YouTube', value: 'youtube' },
+  { title: 'Vimeo', value: 'vimeo' },
+  { title: 'MP4', value: 'mp4' },
+]
 let resolveLeave = null
-const dirty = computed(() => JSON.stringify(form.value) !== initialData.value || !!thumbnailPreview.value)
-const title = computed(() => form.value.id ? 'Uppdatera video' : 'Lägg till video')
+
+const isBusy = computed(() => props.busy || isSubmitting.value)
+const isDirty = computed(() => JSON.stringify(form.value) !== initialData.value || Boolean(thumbnailFile.value))
+const getTitle = computed(() => form.value.id ? 'Uppdatera video' : 'Lägg till video')
 const previewThumbnail = computed(() => thumbnailPreview.value || resolveHelpVideoThumbnailUrl(form.value.thumbnail_url))
 
-const clearThumbnailSelection = () => {
+const clearSelectedImage = () => {
   if (thumbnailPreview.value) URL.revokeObjectURL(thumbnailPreview.value)
-  thumbnailPreview.value = null
+  thumbnailPreview.value = ''
+  thumbnailFile.value = null
+  isThumbnailReady.value = false
   imageError.value = ''
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 const onThumbnailSelected = event => {
-  clearThumbnailSelection()
+  if (isBusy.value) return
 
-  const file = event.target.files?.[0]
+  const file = event.target?.files?.[0] || event.dataTransfer?.files?.[0]
+  if (!file) return
 
-  if (file && ['image/jpeg', 'image/png', 'image/bmp', 'image/webp'].includes(file.type) && file.size <= 10 * 1024 * 1024)
-    thumbnailPreview.value = URL.createObjectURL(file)
+  if (fileInput.value) fileInput.value.value = ''
+  if (!acceptedImageTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+    imageError.value = acceptedImageTypes.includes(file.type)
+      ? 'Bilden får vara högst 10 MB.'
+      : 'Välj en bild i PNG, JPEG, BMP eller WebP.'
+
+    return
+  }
+
+  clearSelectedImage()
+  thumbnailFile.value = file
+  thumbnailPreview.value = URL.createObjectURL(file)
+}
+
+const onThumbnailError = () => {
+  isThumbnailReady.value = false
+  imageError.value = 'Kunde inte läsa bilden. Välj en annan miniatyrbild.'
 }
 
 watch(() => props.isDrawerOpen, open => {
-  clearThumbnailSelection()
-  thumbnailFile.value = []
+  clearSelectedImage()
   if (!open) return
+
   form.value = {
-    id: props.video.id ?? null,
-    help_category_id: props.video.help_category_id ?? null,
-    state_id: props.video.state_id ?? 2,
-    title: props.video.title ?? '',
-    description: props.video.description ?? '',
-    video_url: props.video.video_url ?? '',
-    provider: props.video.provider ?? 'youtube',
-    thumbnail_url: props.video.thumbnail_url ?? '',
+    id: props.helpVideo.id ?? null,
+    help_category_id: props.helpVideo.help_category_id ?? null,
+    state_id: props.helpVideo.state_id ?? 2,
+    title: props.helpVideo.title ?? '',
+    description: props.helpVideo.description ?? '',
+    video_url: props.helpVideo.video_url ?? '',
+    provider: props.helpVideo.provider ?? 'youtube',
+    thumbnail_url: props.helpVideo.thumbnail_url ?? '',
   }
   initialData.value = JSON.stringify(form.value)
-  nextTick(() => refForm.value?.resetValidation())
-})
+}, { immediate: true })
 
-onBeforeUnmount(clearThumbnailSelection)
-
-const close = () => {
-  if (props.busy) return
-  if (dirty.value) confirmLeave.value = true
-  else emit('update:isDrawerOpen', false)
-}
-
-const discard = () => {
-  confirmLeave.value = false
+const reallyCloseAndReset = () => {
+  isConfirmLeaveVisible.value = false
   emit('update:isDrawerOpen', false)
   resolveLeave?.(true)
   resolveLeave = null
 }
 
+const closeNavigationDrawer = () => {
+  if (isBusy.value) return
+  if (isDirty.value) isConfirmLeaveVisible.value = true
+  else reallyCloseAndReset()
+}
+
 const cancelDiscard = () => {
-  confirmLeave.value = false
+  isConfirmLeaveVisible.value = false
   resolveLeave?.(false)
   resolveLeave = null
 }
 
 onBeforeRouteLeave(() => {
-  if (!props.isDrawerOpen || !dirty.value) return true
-  confirmLeave.value = true
+  if (!props.isDrawerOpen) return true
+  if (isBusy.value) return false
+  if (!isDirty.value) return true
+  isConfirmLeaveVisible.value = true
 
   return new Promise(resolve => { resolveLeave = resolve })
 })
 
-const submit = async () => {
-  const result = await refForm.value.validate()
+onBeforeUnmount(() => {
+  clearSelectedImage()
+  resolveLeave?.(false)
+})
 
-  if (!result.valid) return
-  const data = new FormData()
+const onSubmit = async event => {
+  if (isBusy.value || imageError.value || (thumbnailFile.value && !isThumbnailReady.value)) return
 
-  Object.entries(form.value).forEach(([key, value]) => {
-    if (key !== 'id' && key !== 'thumbnail_url') data.append(key, value ?? '')
-  })
+  isSubmitting.value = true
+  try {
+    const { valid } = await event
+    if (!valid) return
 
-  if (thumbnailPreview.value) {
-    try {
-      const canvas = cropper.value?.getResult()?.canvas
-      if (!canvas) throw new Error('Bilden är inte redo för uppladdning.')
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
-      if (!blob) throw new Error('Kunde inte bearbeta miniatyrbilden.')
-      data.append('thumbnail', blob, 'thumbnail.png')
-    } catch (error) {
-      imageError.value = error.message || 'Kunde inte bearbeta miniatyrbilden.'
+    const data = new FormData()
+    Object.entries(form.value).forEach(([key, value]) => {
+      if (key !== 'id' && key !== 'thumbnail_url') data.append(key, value ?? '')
+    })
 
-      return
+    if (thumbnailFile.value) {
+      try {
+        const canvas = cropper.value?.getResult()?.canvas
+        if (!canvas?.width || !canvas.height) throw new Error('Bilden är inte redo för uppladdning.')
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+        if (!blob) throw new Error('Kunde inte bearbeta miniatyrbilden.')
+
+        data.append('thumbnail', blob, 'thumbnail.png')
+      } catch {
+        imageError.value = 'Kunde inte bearbeta miniatyrbilden. Välj miniatyrbilden igen.'
+
+        return
+      }
     }
+
+    emit('help-video-data', { id: form.value.id, data }, form.value.id ? 'update' : 'create')
+  } finally {
+    isSubmitting.value = false
   }
-  emit('videoData', { id: form.value.id, data }, form.value.id ? 'update' : 'create')
 }
 </script>
 
 <template>
-  <component
-    :is="mdAndDown ? VDialog : VNavigationDrawer"
+  <VDialog
     :model-value="isDrawerOpen"
-    :width="mdAndDown ? undefined : 550"
-    location="end"
-    temporary
-    :persistent="busy"
-    :class="mdAndDown ? '' : 'scrollable-content right-drawer rounded-left-4'"
-    :content-class="mdAndDown ? 'dialog-bottom-full-width' : undefined"
-    @update:model-value="!$event && close()"
+    persistent
+    scrollable
+    class="action-dialog help-video-dialog"
   >
-    <div class="d-flex align-center pa-6">
-      <h6 class="title-modal font-blauer">
-        {{ title }}
-      </h6>
-      <VSpacer />
-      <VBtn
-        icon
-        class="btn-white"
-        :disabled="busy"
-        aria-label="Stäng"
-        @click="close"
-      >
-        <VIcon
-          size="20"
-          icon="custom-close"
-        />
-      </VBtn>
-    </div>
-    <VDivider />
-    <PerfectScrollbar
-      class="scrollbar-no-border"
-      :options="{ wheelPropagation: false }"
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      aria-label="Stäng"
+      :disabled="isBusy"
+      @click="closeNavigationDrawer"
     >
-      <VCard
-        flat
-        class="card-form"
-      >
-        <VCardText>
-          <VForm
-            ref="refForm"
-            validate-on="submit"
-            @submit.prevent="submit"
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VForm class="help-video-form-layout" validate-on="submit" @submit.prevent="onSubmit">
+      <VCard flat class="card-form help-video-form">
+        <VCardText class="dialog-title-box d-flex flex-row align-center gap-3">
+          <VIcon icon="custom-help-center-video" size="32" class="action-icon" />
+          <div class="dialog-title">{{ getTitle }}</div>
+        </VCardText>
+        <VDivider />
+
+
+        <VCardText class="d-flex flex-column gap-4 help-video-form-body">
+          <VAlert v-if="errorMessage" type="error" variant="tonal" class="help-video-alert">
+            {{ errorMessage }}
+          </VAlert>
+
+          <VSelect
+            v-model="form.help_category_id"
+            :items="categories"
+            item-title="name"
+            item-value="id"
+            placeholder="Kategorier"
+            aria-label="Kategorier"
+            persistent-placeholder
+            :rules="[requiredValidator]"
+          />
+          <div>
+            <VLabel for="help-video-title" class="mb-1 text-body-2 text-high-emphasis" text="Titel" />
+            <VTextField
+              id="help-video-title"
+              v-model="form.title"
+              maxlength="255"
+              :rules="[requiredValidator]"
+            />
+          </div>
+          <div>
+            <VLabel for="help-video-description" class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
+            <VTextarea id="help-video-description" v-model="form.description" rows="1" auto-grow />
+          </div>
+          <VSelect
+            v-model="form.provider"
+            :items="providers"
+            placeholder="Leverantör"
+            aria-label="Leverantör"
+            :rules="[requiredValidator]"
+          />
+          <div>
+            <VLabel for="help-video-url" class="mb-1 text-body-2 text-high-emphasis" text="Videolänk" />
+            <VTextField
+              id="help-video-url"
+              v-model="form.video_url"
+              maxlength="255"
+              :rules="[requiredValidator]"
+            />
+          </div>
+
+          <div class="file-upload-area" @dragover.prevent @drop.prevent="onThumbnailSelected">
+            <input
+              ref="fileInput"
+              type="file"
+              :accept="acceptedImageTypes.join(',')"
+              class="d-none"
+              :disabled="isBusy"
+              @change="onThumbnailSelected"
+            >
+            <button
+              type="button"
+              class="file-upload-trigger"
+              :disabled="isBusy"
+              @click="fileInput?.click()"
+            >
+              <VIcon icon="custom-attach" size="24" color="grey" />
+              <span class="file-upload-text">{{ thumbnailFile?.name || 'Miniatyrbild' }}</span>
+            </button>
+            <VBtn
+              v-if="thumbnailFile"
+              icon
+              type="button"
+              class="btn-white file-remove-btn"
+              aria-label="Ta bort vald miniatyrbild"
+              :disabled="isBusy"
+              @click="clearSelectedImage"
+            >
+              <VIcon icon="custom-close" size="12" />
+            </VBtn>
+          </div>
+          <VAlert v-if="imageError" type="error" variant="tonal" class="help-video-alert">
+            {{ imageError }}
+          </VAlert>
+          <Cropper
+            v-if="thumbnailPreview"
+            :key="thumbnailPreview"
+            ref="cropper"
+            class="thumbnail-cropper"
+            :src="thumbnailPreview"
+            @ready="isThumbnailReady = true"
+            @error="onThumbnailError"
+          />
+          <VImg v-else-if="previewThumbnail" :src="previewThumbnail" alt="Miniatyrbild" max-height="250" contain />
+
+          <div v-if="isDrawerOpen" class="video-preview-field">
+            <h3 class="text-body-2 font-weight-bold mb-2">Förhandsvisning</h3>
+            <HelpVideoPreview
+              :provider="form.provider"
+              :url="form.video_url"
+              :title="form.title || 'Förhandsvisning'"
+              :thumbnail="previewThumbnail || ''"
+            />
+          </div>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn type="button" class="btn-light" :disabled="isBusy" @click="closeNavigationDrawer">
+            Avbryt
+          </VBtn>
+          <VBtn
+            type="submit"
+            class="btn-gradient"
+            :loading="isBusy"
+            :disabled="!!thumbnailFile && !isThumbnailReady"
           >
-            <VRow>
-              <VCol cols="12">
-                <VSelect
-                  v-model="form.help_category_id"
-                  :items="modules"
-                  item-title="name"
-                  item-value="id"
-                  label="Kategorier"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextField
-                  v-model="form.title"
-                  label="Titel"
-                  maxlength="255"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextarea
-                  v-model="form.description"
-                  label="Beskrivning"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VSelect
-                  v-model="form.provider"
-                  :items="['youtube', 'vimeo', 'mp4']"
-                  label="Leverantör"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextField
-                  v-model="form.video_url"
-                  label="Videolänk"
-                  maxlength="255"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                  Miniatyrbild
-                </VLabel>
-                <VFileInput
-                  v-model="thumbnailFile"
-                  accept="image/png,image/jpeg,image/bmp,image/webp"
-                  prepend-icon="tabler-camera"
-                  :disabled="busy"
-                  :rules="[
-                    files => !files?.length || ['image/jpeg', 'image/png', 'image/bmp', 'image/webp'].includes(files[0].type) || 'Välj en bild i PNG, JPEG, BMP eller WebP.',
-                    files => !files?.length || files[0].size <= 10 * 1024 * 1024 || 'Bilden får vara högst 10 MB.',
-                  ]"
-                  @change="onThumbnailSelected"
-                  @click:clear="clearThumbnailSelection"
-                />
-                <VAlert
-                  v-if="imageError"
-                  type="error"
-                  variant="tonal"
-                  class="mt-2"
-                >
-                  {{ imageError }}
-                </VAlert>
-              </VCol>
-              <VCol
-                v-if="thumbnailPreview"
-                cols="12"
-              >
-                <Cropper
-                  ref="cropper"
-                  class="thumbnail-cropper"
-                  :src="thumbnailPreview"
-                />
-              </VCol>
-              <VCol
-                v-else-if="previewThumbnail"
-                cols="12"
-              >
-                <VImg
-                  :src="previewThumbnail"
-                  alt="Miniatyrbild"
-                  max-height="250"
-                  contain
-                />
-              </VCol>
-              <VCol
-                v-if="isDrawerOpen"
-                cols="12"
-              >
-                <h3 class="mb-3">
-                  Förhandsvisning
-                </h3>
-                <HelpVideoPreview
-                  :provider="form.provider"
-                  :url="form.video_url"
-                  :title="form.title || 'Förhandsvisning'"
-                  :thumbnail="previewThumbnail || ''"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                class="d-flex justify-end gap-3"
-              >
-                <VBtn
-                  class="btn-light"
-                  :disabled="busy"
-                  @click="close"
-                >
-                  Avbryt
-                </VBtn>
-                <VBtn
-                  type="submit"
-                  class="btn-gradient"
-                  :loading="busy"
-                >
-                  Spara
-                </VBtn>
-              </VCol>
-            </VRow>
-          </VForm>
+            Spara
+          </VBtn>
         </VCardText>
       </VCard>
-    </PerfectScrollbar>
-  </component>
-  <VDialog
-    v-model="confirmLeave"
-    persistent
-    class="action-dialog"
-  >
+    </VForm>
+  </VDialog>
+
+  <VDialog v-model="isConfirmLeaveVisible" persistent class="action-dialog">
+    <VBtn icon class="btn-white close-btn" aria-label="Stäng" @click="cancelDiscard">
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
     <VCard>
-      <VCardTitle>Osparade ändringar</VCardTitle>
-      <VCardText>Vill du lämna utan att spara?</VCardText>
-      <VCardActions class="justify-end">
-        <VBtn
-          class="btn-light"
-          @click="cancelDiscard"
-        >
-          Avbryt
-        </VBtn>
-        <VBtn
-          class="btn-gradient"
-          @click="discard"
-        >
-          Lämna
-        </VBtn>
-      </VCardActions>
+      <VCardText class="dialog-title-box">
+        <img :src="modalWarningIcon" alt="" class="action-icon">
+        <div class="dialog-title">Avsluta utan att spara?</div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="cancelDiscard">Avbryt</VBtn>
+        <VBtn class="btn-gradient" @click="reallyCloseAndReset">Ja, fortsätt</VBtn>
+      </VCardText>
     </VCard>
   </VDialog>
 </template>
 
 <style scoped>
+.help-video-form-layout,
+.help-video-form {
+  min-block-size: 0;
+}
+
+.help-video-form > :is(.dialog-title-box, .v-divider, .dialog-actions) {
+  flex: 0 0 auto;
+}
+
+.help-video-form-body {
+  scrollbar-width: none;
+}
+
+.help-video-form-body > * {
+  flex-shrink: 0;
+}
+
+.help-video-form-body::-webkit-scrollbar {
+  display: none;
+}
+
+.help-video-form .dialog-title {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #5d5d5d;
+}
+
+.file-upload-area {
+  position: relative;
+  border: 1px dashed #e7e7e7;
+  border-radius: 8px;
+  background-color: #f6f6f6;
+}
+
+.file-upload-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 80px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px;
+}
+
+.file-upload-text {
+  max-width: calc(100% - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
 .thumbnail-cropper {
-  max-height: 300px;
+  height: 250px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.help-video-alert {
+  flex: 0 0 auto;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.video-preview-field div {
+  padding: 16px;
+  gap: 16px;
+  display: flex;
+  border-radius: 8px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #878787 !important;
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
 }
 </style>

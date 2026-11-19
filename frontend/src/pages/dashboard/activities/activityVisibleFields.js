@@ -55,6 +55,12 @@ const resolveFieldConfig = (fieldOrKey, options = {}) => {
 
 const normalizeComparableValue = value => String(value ?? '').trim().toLowerCase()
 
+const helpVideoProviderLabels = new Map([
+  ['youtube', 'YouTube'],
+  ['vimeo', 'Vimeo'],
+  ['mp4', 'MP4'],
+])
+
 const agreementTypeAliases = {
   1: ['1', 'försäljningsavtal', 'sales-agreement', 'sales'],
   2: ['2', 'inköpsavtal', 'purchase-agreement', 'purchase'],
@@ -672,6 +678,22 @@ export const activityVisibleFieldsByModule = {
     'price_annual',
     customField('features', value => value.map(feature => feature.name).join(', '), { label: 'Funktioner' }),
     'state_id'
+  ],
+  help_categories: [
+    textField('name', { label: 'Namn' }),
+    textField('label', { label: 'Etikett' }),
+    textField('icon', { label: 'Ikon' }),
+    textField('state_id', { label: 'Status' }),
+  ],
+  help_videos: [
+    textField('help_category_id', { label: 'Hjälpkategori' }),
+    textField('title', { label: 'Titel' }),
+    textField('description', { label: 'Beskrivning' }),
+    textField('slug', { label: 'URL-slug' }),
+    textField('video_url', { label: 'Videolänk' }),
+    customField('provider', value => helpVideoProviderLabels.get(normalizeComparableValue(value)) ?? value, { label: 'Leverantör' }),
+    textField('thumbnail_url', { label: 'Miniatyrbild' }),
+    textField('state_id', { label: 'Status' }),
   ]
 }
 

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\HelpCategory;
+use App\Models\SupplierActivity;
 
 class HelpCategoryController extends Controller
 {
@@ -89,6 +90,22 @@ class HelpCategoryController extends Controller
                 $helpCategory->update();
             } 
 
+            SupplierActivity::createActivity([
+                'entity_id' => $helpCategory->id,
+                'entity_type' => 'help_categories',
+                'action_type' => 'create_help_category',
+                'title' => 'Hjälpkategori #'.$helpCategory->id.' tillagd',
+                'description' => 'En ny hjälpkategori har lagts till.',
+                'icon' => 'custom-help-center-category',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_category_id' => $helpCategory->id,
+                    'new_values' => $helpCategory->only([
+                        'name', 'label', 'state_id', 'icon'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -152,6 +169,8 @@ class HelpCategoryController extends Controller
                     'message' => 'Kategori hittades inte'
                 ], 404);
 
+            $oldValues = $helpCategory->only(['name', 'label', 'state_id', 'icon']);
+
             $helpCategory->updateHelpCategory($request, $helpCategory); 
 
             if ($request->hasFile('logo')) {
@@ -164,6 +183,23 @@ class HelpCategoryController extends Controller
                 $helpCategory->icon = $file_data['filePath'];
                 $helpCategory->update();
             } 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpCategory->id,
+                'entity_type' => 'help_categories',
+                'action_type' => 'update_help_category',
+                'title' => 'Hjälpkategori #'.$helpCategory->id.' uppdaterad',
+                'description' => 'Hjälpkategorin har uppdaterats.',
+                'icon' => 'custom-help-center-category',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_category_id' => $helpCategory->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $helpCategory->only([
+                        'name', 'label', 'state_id', 'icon'
+                    ])
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -197,7 +233,23 @@ class HelpCategoryController extends Controller
                     'message' => 'Kategori hittades inte'
                 ], 404);
             
+            $oldValues = $helpCategory->only(['name', 'label', 'state_id', 'icon']);
+
             $helpCategory->deleteHelpCategory($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpCategory->id,
+                'entity_type' => 'help_categories',
+                'action_type' => 'delete_help_category',
+                'title' => 'Hjälpkategori #'.$helpCategory->id.' borttagen',
+                'description' => 'Hjälpkategorin har tagits bort.',
+                'icon' => 'custom-help-center-category',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_category_id' => $helpCategory->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -228,8 +280,26 @@ class HelpCategoryController extends Controller
                 ], 404);
             }
 
+            $oldValues = $helpCategory->only(['state_id']);
             $helpCategory->state_id = $helpCategory->state_id === 1 ? 2 : 1;
             $helpCategory->update();
+
+            $stateAction = $helpCategory->state_id === 2 ? 'aktiverad' : 'inaktiverad';
+
+            SupplierActivity::createActivity([
+                'entity_id' => $helpCategory->id,
+                'entity_type' => 'help_categories',
+                'action_type' => 'update_help_category_state',
+                'title' => 'Hjälpkategori #'.$helpCategory->id.' '.$stateAction,
+                'description' => 'Hjälpkategorin har '.$stateAction.'.',
+                'icon' => 'custom-help-center-category',
+                'route' => null,
+                'metadata' => json_encode([
+                    'help_category_id' => $helpCategory->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $helpCategory->only(['state_id'])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,

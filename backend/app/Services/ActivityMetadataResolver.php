@@ -7,11 +7,13 @@ use Illuminate\Support\Collection;
 use App\Models\Offer;
 use App\Models\SupplierActivity;
 use App\Models\Commission;
+use App\Models\HelpCategory;
 use App\Models\Type;
 
 class ActivityMetadataResolver
 {
     private ?Collection $invoiceTypes = null;
+    private ?Collection $helpCategories = null;
 
     public function enrichCollection(Collection $activities): Collection
     {
@@ -95,6 +97,7 @@ class ActivityMetadataResolver
             'fuel_id', 'fuel_id_interchange' => $this->resolveFromCatalog(CacheService::getFuels(), $value),
             'gearbox_id', 'gearbox_id_interchange' => $this->resolveFromCatalog(CacheService::getGearboxes(), $value),
             'guaranty_type_id' => $this->resolveFromCatalog(CacheService::getGuarantyTypes(), $value),
+            'help_category_id' => $this->resolveFromCatalog($this->helpCategories ??= HelpCategory::all(['id', 'name', 'label']), $value),
             'insurance_type_id' => $this->resolveFromCatalog(CacheService::getInsuranceTypes(), $value),
             'iva_id', 'iva_purchase_id', 'iva_sale_id', 'iva_purchase_id_interchange', 'iva_sale_id_interchange' => $this->resolveFromCatalog(CacheService::getIvas(), $value, ['name', 'value']),
             'model_id', 'model_id_interchange' => $this->resolveFromCatalog(CacheService::getCarModels(), $value, ['name', 'model', 'brand.name']),

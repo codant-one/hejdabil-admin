@@ -85,6 +85,18 @@ const getHelpCategoryIconUrl = helpCategory => {
 
 const hasHelpCategoryIcon = helpCategory => Boolean(getHelpCategoryIconUrl(helpCategory))
 
+const isSvgHelpCategoryIcon = helpCategory => /\.svg(?:$|[?#])/i.test(normalizeIconPath(helpCategory?.icon) || '')
+
+const getHelpCategoryIconMaskStyle = helpCategory => {
+  const iconUrl = getHelpCategoryIconUrl(helpCategory)
+  const maskImage = iconUrl ? `url("${iconUrl}")` : 'none'
+
+  return {
+    maskImage,
+    WebkitMaskImage: maskImage,
+  }
+}
+
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -576,7 +588,7 @@ onBeforeUnmount(() => {
               <template #activator="{ props }">
                 <VBtn
                   id="payout-export-button"
-                  class="btn-light w-auto d-none"
+                  class="btn-light w-auto"
                   block
                   v-bind="props"
                 >
@@ -598,7 +610,7 @@ onBeforeUnmount(() => {
             <VBtn
               v-if="windowWidth < 1024"
               id="payout-export-button"
-              class="btn-light w-auto d-none"
+              class="btn-light w-auto"
               block
               @click="exporteraMobile = true"
             >
@@ -723,16 +735,19 @@ onBeforeUnmount(() => {
                   <VAvatar
                     v-if="hasHelpCategoryIcon(HelpCategory)"
                     size="38"
-                    variant="tonal"
                     rounded
-                    :image="getHelpCategoryIconUrl(HelpCategory)"
-                  />
+                    :image="isSvgHelpCategoryIcon(HelpCategory) ? undefined : getHelpCategoryIconUrl(HelpCategory)"
+                  >
+                    <span
+                      v-if="isSvgHelpCategoryIcon(HelpCategory)"
+                      class="help-category-icon-mask"
+                      :style="getHelpCategoryIconMaskStyle(HelpCategory)"
+                    />
+                  </VAvatar>
                   <VAvatar
                       v-else
                       size="38"
-                      variant="tonal"
                       rounded
-                      color="secondary"
                   >
                       <VIcon size="x-large" icon="custom-picture" />
                   </VAvatar>
@@ -809,12 +824,12 @@ onBeforeUnmount(() => {
         >
           <VIcon
             :size="$vuetify.display.mdAndDown ? 80 : 120"
-            icon="custom-f-car-2"
+            icon="custom-f-list"
           />
           <div class="empty-state-content">
-            <div class="empty-state-title">Inga kategorier har lagts till ännu</div>
+            <div class="empty-state-title"> Inga kategorier skapade än</div>
             <div class="empty-state-text">
-              Lägg till dina kategorier för att enkelt kunna organisera och hantera ditt fordonslager.
+              Här kommer alla dina skapade kategorier att listas.
             </div>
           </div>
           <VBtn
@@ -829,7 +844,7 @@ onBeforeUnmount(() => {
           <VBtn
             class="btn-ghost"
             v-if="$vuetify.display.mdAndDown && $can('create', 'help-categories')"
-            @click="isAddNewHelpCategoryDrawerVisible = true"
+            @click="isDialogOpen = true"
           >
             Lägg till kategori
             <VIcon icon="custom-arrow-right" size="24" />
@@ -849,17 +864,19 @@ onBeforeUnmount(() => {
                   <VAvatar
                     v-if="hasHelpCategoryIcon(HelpCategory)"
                     size="38"
-                    color="#454545"
-                    variant="tonal"
                     class="me-3"
                     rounded
-                    :image="getHelpCategoryIconUrl(HelpCategory)"
-                  />
+                    :image="isSvgHelpCategoryIcon(HelpCategory) ? undefined : getHelpCategoryIconUrl(HelpCategory)"
+                  >
+                    <span
+                      v-if="isSvgHelpCategoryIcon(HelpCategory)"
+                      class="help-category-icon-mask"
+                      :style="getHelpCategoryIconMaskStyle(HelpCategory)"
+                    />
+                  </VAvatar>
                   <VAvatar
                       v-else
                       size="38"
-                      color="#454545"
-                      variant="tonal"
                       class="me-3"
                       rounded
                   >
@@ -867,7 +884,7 @@ onBeforeUnmount(() => {
                   </VAvatar>
 
                   <div class="d-flex flex-column gap-1">
-                      <span class="text-aqua">{{ HelpCategory.name }}</span>
+                      <span class="title-panel">{{ HelpCategory.name }}</span>
                       <span class="text-neutral-3">
                         {{ HelpCategory.label }}
                       </span>
@@ -1186,6 +1203,26 @@ onBeforeUnmount(() => {
     width: 100%;
     max-height: 75vh;
     overflow-y: auto;
+  }
+
+  .help-category-icon-mask {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: #6E9383;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    mask-mode: alpha;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  @media (max-width: 991px) {
+    .title-panel {
+      color: #6E9383 !important;
+    }
   }
 </style>
 

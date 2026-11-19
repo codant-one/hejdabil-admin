@@ -4,7 +4,11 @@ const props = defineProps({
   url: { type: String, default: '' },
   title: { type: String, default: 'Förhandsvisning' },
   thumbnail: { type: String, default: '' },
+  showPoster: { type: Boolean, default: false },
 })
+
+const hasStarted = ref(false)
+const player = ref(null)
 
 const youtubeEmbedUrl = (url, host, path) => {
   let id = null
@@ -47,15 +51,46 @@ const embedUrl = computed(() => {
 
   return null
 })
+
+const isPosterVisible = computed(() => props.showPoster && Boolean(props.thumbnail && embedUrl.value) && !hasStarted.value)
+
+const iframeUrl = computed(() => {
+  if (!embedUrl.value || !hasStarted.value) return embedUrl.value
+
+  const url = new URL(embedUrl.value)
+  url.searchParams.set('autoplay', '1')
+
+  return url.href
+})
+
+const startPlayback = async () => {
+  hasStarted.value = true
+  await nextTick()
+  player.value?.focus({ preventScroll: true })
+}
 </script>
 
 <template>
   <div>
+    <button
+      v-if="isPosterVisible"
+      type="button"
+      class="help-video-preview help-video-poster"
+      :aria-label="`Spela upp: ${title}`"
+      @click="startPlayback"
+    >
+      <img :src="thumbnail" alt="">
+      <span class="help-video-poster-play">
+        <VIcon icon="tabler-player-play" size="72" />
+      </span>
+    </button>
     <video
-      v-if="embedUrl && provider === 'mp4'"
+      v-else-if="embedUrl && provider === 'mp4'"
       :key="`video-${embedUrl}`"
+      ref="player"
       :src="embedUrl"
       :poster="thumbnail || undefined"
+      :autoplay="hasStarted"
       :aria-label="title"
       controls
       preload="metadata"
@@ -64,18 +99,22 @@ const embedUrl = computed(() => {
     <iframe
       v-else-if="embedUrl"
       :key="`iframe-${embedUrl}`"
-      :src="embedUrl"
+      ref="player"
+      :src="iframeUrl"
       :title="title"
-      allow="fullscreen; picture-in-picture"
+      :allow="hasStarted ? 'autoplay; fullscreen; picture-in-picture' : 'fullscreen; picture-in-picture'"
       class="help-video-preview"
     />
-    <VAlert
-      v-else
-      type="info"
-      variant="tonal"
-    >
+    <div v-else class="d-flex gap-4">
+      <VIcon
+        size="32"
+        icon="custom-info-color"
+        class="flex-shrink-0"
+      />
+      <span>
       Ange en giltig videolänk för den valda leverantören för att visa förhandsvisningen.
-    </VAlert>
+      </span>
+    </div>
   </div>
 </template>
 
@@ -85,5 +124,33 @@ const embedUrl = computed(() => {
   width: 100%;
   aspect-ratio: 16 / 9;
   border: 0;
+}
+
+.help-video-poster {
+  position: relative;
+  background: #252525;
+  cursor: pointer;
+}
+
+.help-video-poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.help-video-poster-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgb(0 0 0 / 25%);
+}
+
+.help-video-poster:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
 }
 </style>
