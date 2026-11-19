@@ -380,6 +380,10 @@ const cardActivityGroups = computed(() => {
   }))
 })
 
+watch(searchQuery, () => {
+  currentPage.value = 1
+}, { flush: 'sync' })
+
 watchEffect(fetchData)
 
 function normalizeRangeValue(value) {
