@@ -83,18 +83,19 @@ const getHelpCategoryIconUrl = helpCategory => {
   return normalizedIcon ? `${themeConfig.settings.urlStorage}${normalizedIcon}` : null
 }
 
-const hasHelpCategoryIcon = helpCategory => Boolean(getHelpCategoryIconUrl(helpCategory))
+const failedIconUrls = ref(new Set())
+
+const hasHelpCategoryIcon = helpCategory => {
+  const iconUrl = getHelpCategoryIconUrl(helpCategory)
+  return Boolean(iconUrl && !failedIconUrls.value.has(iconUrl))
+}
 
 const isSvgHelpCategoryIcon = helpCategory => /\.svg(?:$|[?#])/i.test(normalizeIconPath(helpCategory?.icon) || '')
 
-const getHelpCategoryIconMaskStyle = helpCategory => {
+const onHelpCategoryIconError = helpCategory => {
   const iconUrl = getHelpCategoryIconUrl(helpCategory)
-  const maskImage = iconUrl ? `url("${iconUrl}")` : 'none'
-
-  return {
-    maskImage,
-    WebkitMaskImage: maskImage,
-  }
+  if (iconUrl)
+    failedIconUrls.value.add(iconUrl)
 }
 
 
@@ -732,24 +733,16 @@ onBeforeUnmount(() => {
               <td> {{ HelpCategory.id }} </td>
               <td class="w-100">
                 <div class="d-flex align-center gap-x-4">
-                  <VAvatar
-                    v-if="hasHelpCategoryIcon(HelpCategory)"
-                    size="38"
-                    rounded
-                    :image="isSvgHelpCategoryIcon(HelpCategory) ? undefined : getHelpCategoryIconUrl(HelpCategory)"
-                  >
-                    <span
-                      v-if="isSvgHelpCategoryIcon(HelpCategory)"
-                      class="help-category-icon-mask"
-                      :style="getHelpCategoryIconMaskStyle(HelpCategory)"
+                  <VAvatar size="38" rounded>
+                    <img
+                      v-if="hasHelpCategoryIcon(HelpCategory)"
+                      :src="getHelpCategoryIconUrl(HelpCategory)"
+                      class="help-category-icon"
+                      :class="{ 'help-category-icon-svg': isSvgHelpCategoryIcon(HelpCategory) }"
+                      alt=""
+                      @error="onHelpCategoryIconError(HelpCategory)"
                     />
-                  </VAvatar>
-                  <VAvatar
-                      v-else
-                      size="38"
-                      rounded
-                  >
-                      <VIcon size="x-large" icon="custom-picture" />
+                    <VIcon v-else size="x-large" icon="custom-picture" />
                   </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="text-body-1 font-weight-medium text-high-emphasis">{{ HelpCategory.name }}</span>
@@ -861,26 +854,16 @@ onBeforeUnmount(() => {
               expand-icon="custom-chevron-down"
             >
               <div class="d-flex align-center w-100">
-                  <VAvatar
-                    v-if="hasHelpCategoryIcon(HelpCategory)"
-                    size="38"
-                    class="me-3"
-                    rounded
-                    :image="isSvgHelpCategoryIcon(HelpCategory) ? undefined : getHelpCategoryIconUrl(HelpCategory)"
-                  >
-                    <span
-                      v-if="isSvgHelpCategoryIcon(HelpCategory)"
-                      class="help-category-icon-mask"
-                      :style="getHelpCategoryIconMaskStyle(HelpCategory)"
+                  <VAvatar size="38" class="me-3" rounded>
+                    <img
+                      v-if="hasHelpCategoryIcon(HelpCategory)"
+                      :src="getHelpCategoryIconUrl(HelpCategory)"
+                      class="help-category-icon"
+                      :class="{ 'help-category-icon-svg': isSvgHelpCategoryIcon(HelpCategory) }"
+                      alt=""
+                      @error="onHelpCategoryIconError(HelpCategory)"
                     />
-                  </VAvatar>
-                  <VAvatar
-                      v-else
-                      size="38"
-                      class="me-3"
-                      rounded
-                  >
-                      <VIcon size="x-large" icon="custom-picture" />                   
+                    <VIcon v-else size="x-large" icon="custom-picture" />
                   </VAvatar>
 
                   <div class="d-flex flex-column gap-1">
@@ -1205,18 +1188,17 @@ onBeforeUnmount(() => {
     overflow-y: auto;
   }
 
-  .help-category-icon-mask {
+  .help-category-icon {
     display: block;
     width: 100%;
     height: 100%;
-    background-color: #6E9383;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    mask-mode: alpha;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
+    object-fit: cover;
+  }
+
+  .help-category-icon-svg {
+    object-fit: contain;
+    /* Preserve the SVG tint without requiring CORS headers on storage images. */
+    filter: brightness(0) invert(61.72%) sepia(90.66%) saturate(8.18) hue-rotate(101.98deg) brightness(2.25) contrast(0.0355);
   }
 
   @media (max-width: 991px) {

@@ -40,6 +40,9 @@ const fileInput = ref(null)
 const cropper = ref()
 const isEdit = ref(false)
 
+const iconPreviewSrc = computed(() => logoCropped.value || (iconPath.value ? `${themeConfig.settings.urlStorage}${iconPath.value}` : null))
+const shouldCropIcon = computed(() => Boolean(logoCropped.value && selectedIconFile.value && selectedIconFile.value.type !== 'image/svg+xml'))
+
 const initialData = ref(null)
 const isConfirmLeaveVisible = ref(false)
 
@@ -91,7 +94,6 @@ watchEffect(async() => {
       name.value = props.helpCategory.name
       label.value = props.helpCategory.label
       iconPath.value = normalizeLogoPath(props.helpCategory.icon) || ''
-      logoCropped.value = iconPath.value ? `${themeConfig.settings.urlStorage}${iconPath.value}` : null
 
       await nextTick()
       refForm.value?.resetValidation()
@@ -146,6 +148,14 @@ const closeNavigationDrawer = () => {
 
 const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
+}
+
+const onIconPreviewError = () => {
+  advisor.value = {
+    type: 'error',
+    message: 'Det gick inte att visa ikonen.',
+    show: true,
+  }
 }
 
 const resetAvatar = () => {
@@ -229,6 +239,7 @@ const onImageSelected = event => {
   }
 
   filename.value = [file]
+  logoCropped.value = null
   selectedIconFile.value = file
   advisor.value.show = false
   if (event.target?.type === 'file')
@@ -342,8 +353,9 @@ watch(currentData, () => {
         </VAlert>
       </VListItem>
 
-      <VListItem v-if="logoCropped">
+      <VListItem v-if="iconPreviewSrc">
           <Cropper
+              v-if="shouldCropIcon"
               ref="cropper"
               class="cropper-container"
               preview-class="cropper-preview"
@@ -353,6 +365,13 @@ watch(currentData, () => {
                   previewClass: 'cropper-preview-circle'
               }"
               @change="onCropChange"
+          />
+          <img
+            v-else
+            :src="iconPreviewSrc"
+            class="cropper-container icon-preview"
+            alt="Hjälpkategoriikon"
+            @error="onIconPreviewError"
           />
       </VListItem>
       <VListItem>
@@ -602,6 +621,11 @@ watch(currentData, () => {
       background-color: #f5f5f5;
       border-radius: 8px;
       overflow: hidden;
+  }
+
+  .icon-preview {
+      display: block;
+      object-fit: contain;
   }
 
   .cropper-preview {
