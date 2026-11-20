@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
                     @click="previewVideo = video"
                   >
                     <template #prepend>
-                      <VIcon icon="custom-eye" size="24" />
+                      <VIcon icon="custom-eye-search" size="24" />
                     </template>
                     <VListItemTitle>Förhandsvisa</VListItemTitle>
                   </VListItem>
@@ -695,7 +695,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="d-flex gap-4">
               <VBtn class="btn-light flex-1" @click="previewVideo = video">
-                <VIcon icon="custom-eye" size="24" />
+                <VIcon icon="custom-eye-search" size="24" />
                 Förhandsvisa
               </VBtn>
               <VBtn
@@ -765,7 +765,7 @@ onBeforeUnmount(() => {
     >
       <VCard v-if="previewVideo">
         <VCardText class="dialog-title-box d-flex flex-row align-center">
-          <VIcon icon="custom-help-center-video" size="32" class="action-icon flex-shrink-0" />
+          <VIcon icon="custom-eye-search" size="32" class="action-icon flex-shrink-0" />
           <div id="help-video-preview-title" class="dialog-title preview-video-title text-wrap">
             {{ previewVideo.title }}
           </div>
@@ -792,6 +792,7 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
     <VDialog
       :model-value="!!confirmation"
       persistent
