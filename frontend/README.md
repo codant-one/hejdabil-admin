@@ -23,10 +23,28 @@ and asks the user to log in with a password. Cancellation and connection errors
 do not delete enrollment. Changed biometric enrollment may invalidate protected
 credentials and require password login again.
 
-Disabling revokes **all** account device tokens through the backend before
-deleting local credentials and the flag. Network failure leaves enrollment
-enabled so revocation can be retried. Password changes on the backend also
-revoke these tokens; a subsequent biometric login clears them on HTTP 401.
+Enrollment and device login use the same persistent device ID as push registration.
+Disabling revokes only the current device's token, unregisters push, and then
+clears local credentials and the flag. Failed revocation leaves enrollment
+enabled for retry. Password changes also revoke device tokens; a subsequent
+biometric login clears local enrollment on HTTP 401.
+
+Native push starts after authentication, including 2FA. Login follows `query.to`
+or a pending notification route before using the default destination. Before
+logout clears the JWT, push is deactivated if biometrics remain enabled, or
+unregistered otherwise. Confirming account deletion removes push listeners and
+clears the pending notification route.
+
+## Device notifications
+
+There is no GET endpoint for the device preference. The native switch reads
+`data.notifications_enabled` (boolean) from the existing `POST /push-tokens`
+registration response, so no new backend field is needed. It stays disabled
+until that value is available and saves changes via `PATCH /push-tokens/preferences`.
+
+The bell refreshes its total from `GET /notifications/unread-count` after login
+and when the app returns to the foreground. Echo and push updates share ID
+deduplication. The bell shows `9+` above nine; the recent list stays compact.
 
 The web platform never invokes the biometric plugin, Preferences or device
 authentication endpoints. Password login remembers only the email, not the

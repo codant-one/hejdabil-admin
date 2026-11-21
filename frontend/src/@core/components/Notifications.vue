@@ -11,6 +11,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  unreadCount: {
+    type: Number,
+    required: true,
+  },
   badgeProps: {
     type: null,
     required: false,
@@ -26,7 +30,7 @@ const props = defineProps({
 const emit = defineEmits(["click:readAllNotifications", "click:notification", "open"]);
 
 const isMenuOpen = ref(false);
-const unreadCount = computed(() => props.notifications.filter(n => !n.read).length);
+const badgeCount = computed(() => props.unreadCount > 4 ? '+4' : props.unreadCount);
 
 // Al abrir el menú el padre resincroniza el listado con el servidor.
 watch(isMenuOpen, isOpen => {
@@ -54,18 +58,7 @@ const closeMenu = () => {
 <template>
   <VBtn icon variant="text" class="btn-custom-notifications" :style="notificationButtonStyle">
     <VIcon icon="custom-bell" size="24" />
-    <span>+{{ unreadCount }}</span>
-    <VBadge 
-      location="bottom right" 
-      class="d-none"
-      floating 
-      bordered
-      :color="'#79fca2'" 
-      :text-color="'#416054'"
-      :offset-x="2"
-      :content="'+' + unreadCount">
-      <VIcon icon="custom-bell" size="24" />
-    </VBadge>
+    <span>{{ badgeCount }}</span>
 
     <VMenu
       v-model="isMenuOpen"
@@ -190,7 +183,7 @@ const closeMenu = () => {
             <VProgressCircular
               indeterminate
               size="28"
-              color="primary"
+              :color="'#00EEB0'"
             />
           </div>
 

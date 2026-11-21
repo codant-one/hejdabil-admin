@@ -3,6 +3,7 @@ import { Preferences } from '@capacitor/preferences'
 import { AccessControl, BiometricAuthError, NativeBiometric } from '@capgo/capacitor-native-biometric'
 import axios from '@axios'
 import { useLoginSession } from '@/composables/useLoginSession'
+import { usePushNotifications } from '@/composables/usePushNotifications'
 
 const server = 'bilflogg.se'
 const preferenceKey = 'biometric_login_user'
@@ -28,6 +29,15 @@ const getDeviceName = () => {
 
 export const useBiometricLogin = () => {
   const { completeLogin } = useLoginSession()
+  const { getDeviceId, setSessionActive, unregister } = usePushNotifications()
+
+  const requireDeviceId = async () => {
+    const id = await getDeviceId()
+    if (!id)
+      throw new Error('Device ID unavailable')
+
+    return id
+  }
 
   const clearLocal = async () => {
     // Hide the option even if deleting the secure credentials fails.
@@ -79,7 +89,10 @@ export const useBiometricLogin = () => {
     if (!user?.id || !localStorage.getItem('accessToken'))
       throw new Error('Logga in med ditt lösenord innan du aktiverar biometrisk inloggning.')
 
-    const { data } = await axios.post('auth/device-token', { device_name: getDeviceName() })
+    const { data } = await axios.post('auth/device-token', {
+      device_id: await requireDeviceId(),
+      device_name: getDeviceName(),
+    })
 
     // Clear the flag first: partial enrollment must never appear enabled.
     await Preferences.remove({ key: preferenceKey })
@@ -115,7 +128,10 @@ export const useBiometricLogin = () => {
       throw error
     }
 
-    const response = await axios.post('auth/device-login', { token: credentials.password }, {
+    const response = await axios.post('auth/device-login', {
+      token: credentials.password,
+      device_id: await requireDeviceId(),
+    }, {
       skipAuthHeader: true,
       skipAuthRedirect: true,
       validateStatus: status => status === 401 || (status >= 200 && status < 300),
@@ -132,9 +148,27 @@ export const useBiometricLogin = () => {
     if (!Capacitor.isNativePlatform())
       return
 
-    await axios.delete('auth/device-token')
+    await axios.delete('auth/device-token', { data: { device_id: await requireDeviceId() } })
+    await unregister()
     await clearLocal()
   }
 
-  return { isAvailable, isEnabled, enable, login, disable }
+  const endPushSession = async () => {
+    if (!Capacitor.isNativePlatform())
+      return
+
+    // Keep the token if secure storage cannot confirm enrollment.
+    const enabled = await isEnabled().catch(error => {
+      console.warn('[useBiometricLogin] Could not check enrollment', error?.message)
+
+      return true
+    })
+
+    if (enabled)
+      await setSessionActive(false)
+    else
+      await unregister()
+  }
+
+  return { isAvailable, isEnabled, enable, login, disable, endPushSession }
 }

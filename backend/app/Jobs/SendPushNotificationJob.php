@@ -15,8 +15,8 @@ class SendPushNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $connection = 'redis';
-    public $queue = 'push-notifications';
+    //public $connection = 'redis';
+    //public $queue = 'push-notifications';
     public $tries = 3;
     public $timeout = 30;
 
@@ -24,6 +24,9 @@ class SendPushNotificationJob implements ShouldQueue
         private readonly int $userId,
         private readonly int $notificationId
     ) {
+
+        $this->onConnection('redis');
+        $this->onQueue('push-notifications');
     }
 
     public function handle(FcmPushService $fcmPushService): void

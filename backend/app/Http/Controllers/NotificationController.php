@@ -22,6 +22,13 @@ class NotificationController extends Controller
 {
     private const DEFAULT_NOTIFY_VIA_EMAIL = false;
 
+    public function unreadCount(): JsonResponse
+    {
+        return response()->json([
+            'count' => Notification::forUser(Auth::id())->unread()->count(),
+        ]);
+    }
+
      /**
      * Display a listing of the resource.
      */

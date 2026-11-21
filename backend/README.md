@@ -9,14 +9,18 @@
 
 ## Device authentication
 
-- `POST /api/auth/device-token` requires a JWT and returns a 64-character device token once (HTTP 201). Only its SHA-256 hash is stored; it expires after 90 days.
-- `POST /api/auth/device-login` accepts `{"token":"..."}` without a JWT and is limited to five attempts per minute. Invalid, expired, revoked, malformed and orphaned tokens all return `{"message":"invalid_credentials","data":null}` (HTTP 401). Inactive users return `user_inactive` (HTTP 403).
+- `POST /api/auth/device-token` requires a JWT and a UUID `device_id` (string, max 64), replacing tokens only for that device, and returns a 64-character device token once (HTTP 201). Only its SHA-256 hash is stored; it expires after 90 days.
+- `POST /api/auth/device-login` accepts `{"token":"...","device_id":"..."}` without a JWT and is limited to five attempts per minute. The UUID must match the token's device; legacy tokens without a device ID must be reissued. Invalid, expired, revoked, malformed and orphaned tokens all return `{"message":"invalid_credentials","data":null}` (HTTP 401). Inactive users return `user_inactive` (HTTP 403).
 - Its named IP limiter is equivalent to `throttle:5,1` and replaces the global API limiter on this route so the JWT guard does not attempt to parse the device token while resolving a throttle key.
 - Successful device logins preserve the normal login response: `success`, `message`, and `data` containing `accessToken`, `token_type`, `user_data`, and `userAbilities`.
 - `DEVICE_LOGIN_BYPASSES_2FA` defaults to `false`. Device login requires enabled 2FA even in debug mode unless this flag is `true`; it preserves `2fa-generate` when a secret needs provisioning and `2fa` otherwise. Normal password login retains its existing debug behavior.
-- `DELETE /api/auth/device-token` requires a JWT and revokes all device tokens belonging to the authenticated user (HTTP 200).
+- `DELETE /api/auth/device-token` requires a JWT. With a UUID `device_id` (string, max 64), it revokes only that user's tokens for that device and deletes matching push tokens atomically (HTTP 200). Omitting `device_id` retains the legacy behavior of revoking all device tokens.
 - Eloquent password updates revoke device tokens before the password is persisted, including password resets and administrative updates.
-- The existing `suppliers:delete-account` command deletes device tokens as part of its transactional purge of tables with a `user_id` column. Scheduled deletion alone does not deny device login; definitive deletion removes the user and its tokens.
+- The existing `suppliers:delete-account` command deletes all device and push tokens as part of its transactional purge of tables with a `user_id` column. Scheduled deletion alone does not deny device login; definitive deletion removes the user and its tokens.
+
+## Notifications
+
+- `GET /api/notifications/unread-count` uses `cors`, `jwt` and `throttle:api` and returns `{"count":0}` with a database count of only the authenticated user's unread notifications (excluding public notifications).
 
 ## Help center
 

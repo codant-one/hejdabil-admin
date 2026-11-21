@@ -6,11 +6,13 @@ import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { usePushNotifications } from '@/composables/usePushNotifications'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import InlineBanner from '@/components/common/InlineBanner.vue'
 import BiometricLoginSwitch from '@/components/common/BiometricLoginSwitch.vue'
+import DeviceNotificationsSwitch from '@/components/common/DeviceNotificationsSwitch.vue'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
@@ -18,6 +20,7 @@ const profileStores = useProfileStores()
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const suppliersStores = useSuppliersStores()
+const { removeListeners, clearPendingRoute } = usePushNotifications()
 
 const refVForm = ref()
 const supplierData = ref(null)
@@ -477,6 +480,8 @@ const confirmAccountDeletion = async () => {
       cancellation_reason: cancellationReason,
       cancellation_feedback: cancellationFeedbackText,
     })
+    await removeListeners()
+    await clearPendingRoute()
     await syncUserDataAfterDeletionRequest(response)
 
     closeDeleteVerification()
@@ -752,6 +757,7 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <BiometricLoginSwitch />
+        <DeviceNotificationsSwitch />
 
         <div v-if="supplierData">
           <VCardText class="card-delete-account" v-if="role === 'Supplier' && supplierData?.deletion_scheduled_at === null">

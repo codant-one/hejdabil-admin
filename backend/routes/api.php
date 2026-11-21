@@ -99,6 +99,7 @@ Route::group([
 });
 
 Route::middleware(['cors', 'jwt', 'throttle:api'])->group(function () {
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('push-tokens', [PushTokenController::class, 'store']);
     Route::delete('push-tokens', [PushTokenController::class, 'destroy']);
     Route::patch('push-tokens/session', [PushTokenController::class, 'deactivateSession']);

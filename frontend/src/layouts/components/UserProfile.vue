@@ -4,6 +4,7 @@ import { initialAbility } from "@/plugins/casl/ability";
 import { canWithPlan } from "@/@layouts/plugins/casl";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
+import { useBiometricLogin } from "@/composables/useBiometricLogin";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 defineProps({
@@ -14,6 +15,7 @@ defineProps({
 })
 
 const authStores = useAuthStores();
+const { endPushSession } = useBiometricLogin();
 const router = useRouter();
 const route = useRoute();
 const ability = useAppAbility();
@@ -76,7 +78,9 @@ const truncateText = (text, length = 28) => {
 const logout = async () => {
   const token = localStorage.getItem("accessToken");
 
-  // Clear auth data BEFORE calling the API to prevent 401s on in-flight requests
+  // Push cleanup still needs the JWT.
+  await endPushSession();
+
   localStorage.removeItem("user_data");
   localStorage.removeItem("accessToken");
   localStorage.removeItem("userAbilities");

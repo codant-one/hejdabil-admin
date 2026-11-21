@@ -3,16 +3,18 @@
 import { initialAbility } from '@/plugins/casl/ability'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
+import { useBiometricLogin } from '@/composables/useBiometricLogin'
 
 import logo from "@images/logos/bilflogg-logo.svg";
 
 const router = useRouter()
 const ability = useAppAbility()
 const authStores = useAuthStores()
+const { endPushSession } = useBiometricLogin()
 
 const { width: windowWidth } = useWindowSize()
 
-const back = function(){
+const back = async function(){
   const abilities = localStorage.getItem('userAbilities')
   const permissions = Array.from(JSON.parse(abilities))
   const band = ref(false)
@@ -27,7 +29,10 @@ const back = function(){
     router.replace('/info')
   } else {
 
-    authStores.logout()
+    const token = localStorage.getItem('accessToken')
+
+    await endPushSession()
+    authStores.logout(token)
       .then(response => {
         // Remove "user_data" from localStorage
         localStorage.removeItem('user_data')

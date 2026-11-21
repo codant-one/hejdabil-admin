@@ -43,6 +43,21 @@ class RoleEditingTest extends TestCase
             $table->unsignedBigInteger('role_id');
         });
 
+        Schema::create('supplier_activities', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('supplier_id')->nullable();
+            $table->unsignedBigInteger('entity_id');
+            $table->string('entity_type');
+            $table->string('action_type');
+            $table->string('title');
+            $table->string('description');
+            $table->string('icon');
+            $table->string('route')->nullable();
+            $table->text('metadata')->nullable();
+            $table->timestamps();
+        });
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->withoutMiddleware([
             VerifyJwt::class,
@@ -53,6 +68,7 @@ class RoleEditingTest extends TestCase
 
         $actor = new User();
         $actor->id = 99;
+        $actor->setRelation('roles', collect([new Role(['name' => 'Admin', 'guard_name' => 'api'])]));
         $this->actingAs($actor, 'api');
     }
 
@@ -83,6 +99,7 @@ class RoleEditingTest extends TestCase
 
         $this->getJson("/api/roles/{$role->id}")
             ->assertOk()
+            ->assertJsonPath('data.role.name', 'Sales')
             ->assertJsonCount(1, 'data.role.permissions')
             ->assertJsonPath('data.role.permissions.0.name', 'create clients');
     }

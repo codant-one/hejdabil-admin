@@ -16,6 +16,7 @@ async function createHarness({ native = true, query = {} } = {}) {
   let message = 'login_success'
   let strongBiometry = true
   const deviceToken = 'd'.repeat(64)
+  const deviceId = 'c0bf087c-144f-4240-81d1-e736023962a5'
   const user = { id: 7, is_2fa: 1 }
   const abilities = [{ action: 'view', subject: 'Auth' }]
   const localStorage = {
@@ -23,7 +24,7 @@ async function createHarness({ native = true, query = {} } = {}) {
     setItem: (key, value) => values.set(key, String(value)),
     removeItem: key => values.delete(key),
   }
-  const context = vm.createContext({ localStorage })
+  const context = vm.createContext({ localStorage, navigator: { userAgent: 'Android 14; Pixel 8)' } })
   const plugin = {
     isAvailable: async options => {
       calls.push(['available', options])
@@ -72,14 +73,27 @@ async function createHarness({ native = true, query = {} } = {}) {
         },
       }
     },
-    delete: async url => {
-      calls.push(['delete-remote', url])
+    delete: async (url, config) => {
+      calls.push(['delete-remote', url, config?.data?.device_id])
       if (networkError)
         throw networkError
     },
   }
   const stubs = {
-    '@capacitor/core': { Capacitor: { isNativePlatform: () => native } },
+    '@/stores/useNotifications': { useNotificationsStore: () => ({ init: async () => {} }) },
+    '@capacitor/core': {
+      Capacitor: { isNativePlatform: () => native, getPlatform: () => 'android' },
+    },
+    '@/composables/usePushNotifications': {
+      usePushNotifications: () => ({
+        init: async () => calls.push(['push-init', values.get('accessToken')]),
+        setSessionActive: async active => calls.push(['push-session', active, values.get('accessToken')]),
+        unregister: async () => calls.push(['push-unregister', values.get('accessToken')]),
+        getDeviceId: async () => deviceId,
+        getPendingRoute: async () => preferences.get('push_pending_route'),
+        clearPendingRoute: async () => preferences.delete('push_pending_route'),
+      }),
+    },
     '@capacitor/preferences': {
       Preferences: {
         get: async ({ key }) => {
@@ -135,7 +149,7 @@ async function createHarness({ native = true, query = {} } = {}) {
   const session = cache.get('@/composables/useLoginSession').namespace.useLoginSession()
 
   return {
-    biometric, session, calls, values, preferences, deviceToken,
+    biometric, session, calls, values, preferences, deviceToken, deviceId,
     authenticate() {
       localStorage.setItem('user_data', JSON.stringify(user))
       localStorage.setItem('accessToken', 'password-login-jwt')
@@ -157,13 +171,14 @@ async function createHarness({ native = true, query = {} } = {}) {
   }
 }
 
-test('all five methods are no-ops on web', async () => {
+test('biometric methods are no-ops on web', async () => {
   const h = await createHarness({ native: false })
   assert.equal(await h.biometric.isAvailable(), false)
   assert.equal(await h.biometric.isEnabled(), false)
   await h.biometric.enable()
   await h.biometric.login()
   await h.biometric.disable()
+  await h.biometric.endPushSession()
   assert.equal(h.calls.length, 0)
   assert.equal(h.values.size, 0)
   assert.equal(h.preferences.size, 0)
@@ -173,6 +188,7 @@ test('enrollment stores a protected device token, never the account password', a
   const h = await createHarness()
   h.authenticate()
   await h.biometric.enable()
+  assert.equal(h.calls.find(([method]) => method === 'post')[2].device_id, h.deviceId)
   const credentials = h.calls.find(([method]) => method === 'set')[1]
   assert.equal(credentials.server, 'bilflogg.se')
   assert.equal(credentials.username, '7')
@@ -216,6 +232,7 @@ for (const message of ['login_success', '2fa', '2fa-generate']) {
     const [, url, body, config] = h.calls[request]
     assert.equal(url, 'auth/device-login')
     assert.equal(body.token, h.deviceToken)
+    assert.equal(body.device_id, h.deviceId)
     assert.equal(config.skipAuthHeader, true)
     assert.equal(config.skipAuthRedirect, true)
     assert.equal(config.validateStatus(401), true)
@@ -227,6 +244,9 @@ for (const message of ['login_success', '2fa', '2fa-generate']) {
     assert.equal(h.values.get('token'), message === 'login_success' ? undefined : '2fa-secret')
     assert.equal(h.values.get('qr'), message === '2fa-generate' ? 'qr-url' : undefined)
     assert.equal(h.calls.find(([method]) => method === 'navigate')[1], message === 'login_success' ? '/info' : '/')
+    assert.deepEqual(h.calls.filter(([method]) => method.startsWith('push-')), message === 'login_success'
+      ? [['push-init', 'jwt'], ['push-session', true, 'jwt']]
+      : [])
     assert.equal(h.calls.some(([method]) => method === 'ability'), true)
   })
 }
@@ -273,9 +293,12 @@ test('network errors preserve enrollment and do not navigate', async () => {
 test('disable revokes on the backend before deleting local credentials and flag', async () => {
   const h = await createHarness()
   await h.enroll()
+  h.authenticate()
   await h.biometric.disable()
-  assert.equal(h.calls[0][0], 'delete-remote')
-  assert.equal(h.calls[0][1], 'auth/device-token')
+  assert.deepEqual(h.calls.slice(0, 2), [
+    ['delete-remote', 'auth/device-token', h.deviceId],
+    ['push-unregister', 'password-login-jwt'],
+  ])
   assert.equal(await h.biometric.isEnabled(), false)
   assert.equal(h.calls.some(([method]) => method === 'delete-local'), true)
 })
@@ -291,6 +314,7 @@ test('failed remote revocation retains local enrollment for retry', async () => 
 
 test('password login remembers only email, clears legacy password and awaits enrollment before redirect', async () => {
   const h = await createHarness({ query: { to: '/dashboard/panel' } })
+  h.preferences.set('push_pending_route', '/dashboard/notifications')
   h.values.set('password', 'legacy-password')
   const response = {
     message: 'login_success',
@@ -310,16 +334,21 @@ test('password login remembers only email, clears legacy password and awaits enr
   assert.equal(h.values.get('remember_me'), 'true')
   assert.equal(JSON.parse(h.values.get('is_2fa')).status, false)
   assert.equal(h.calls.at(-1)[1], '/dashboard/panel')
+  assert.deepEqual(h.calls.filter(([method]) => method === 'navigate'), [['navigate', '/dashboard/panel']])
+  assert.equal(h.preferences.has('push_pending_route'), false)
 })
 
 test('pending 2FA never offers enrollment before verification; completion does', async () => {
   const h = await createHarness()
+  h.preferences.set('push_pending_route', '/dashboard/notifications')
   await h.session.completeLogin({
     message: '2fa',
     data: { accessToken: 'jwt', user_data: { id: 7 }, userAbilities: [], token: 'secret' },
   }, {
     beforeNavigate: async () => assert.fail('offered before 2FA'),
   })
+  assert.equal(h.calls.some(([method]) => method.startsWith('push-')), false)
+  assert.equal(h.preferences.get('push_pending_route'), '/dashboard/notifications')
   let offered = false
   await h.session.completeTwoFactorLogin(async () => {
     assert.equal(h.values.has('is_2fa'), false)
@@ -327,5 +356,36 @@ test('pending 2FA never offers enrollment before verification; completion does',
     offered = true
   })
   assert.equal(offered, true)
-  assert.equal(h.calls.at(-1)[1], '/info')
+  assert.deepEqual(h.calls.slice(-3), [
+    ['push-init', 'jwt'],
+    ['push-session', true, 'jwt'],
+    ['navigate', '/dashboard/notifications'],
+  ])
+  assert.equal(h.preferences.has('push_pending_route'), false)
+})
+
+test('web login does not activate native push or consume a pending push route', async () => {
+  const h = await createHarness({ native: false })
+  h.preferences.set('push_pending_route', '/dashboard/notifications')
+  await h.session.completeLogin({
+    message: 'login_success',
+    data: { accessToken: 'jwt', user_data: { id: 7 }, userAbilities: [] },
+  })
+  assert.equal(h.calls.some(([method]) => method.startsWith('push-')), false)
+  assert.deepEqual(h.calls.at(-1), ['navigate', '/info'])
+  assert.equal(h.preferences.get('push_pending_route'), '/dashboard/notifications')
+})
+
+test('logout deactivates enrolled devices and unregisters other devices with the JWT', async () => {
+  const h = await createHarness()
+  await h.enroll()
+  h.authenticate()
+  await h.biometric.endPushSession()
+  assert.deepEqual(h.calls.at(-1), ['push-session', false, 'password-login-jwt'])
+  assert.equal(h.calls.some(([method]) => method === 'push-unregister'), false)
+
+  const notEnrolled = await createHarness()
+  notEnrolled.authenticate()
+  await notEnrolled.biometric.endPushSession()
+  assert.deepEqual(notEnrolled.calls.at(-1), ['push-unregister', 'password-login-jwt'])
 })

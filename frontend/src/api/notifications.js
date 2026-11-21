@@ -26,6 +26,10 @@ class Notifications {
         return axios.get('/notifications/list/recent')
     }
 
+    unreadCount() {
+        return axios.get('/notifications/unread-count', { skipAuthRedirect: true })
+    }
+
     markAsRead(id) {
         return axios.post(`/notifications/${id}/read`)
     }

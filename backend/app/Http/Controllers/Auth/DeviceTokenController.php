@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -23,6 +24,7 @@ class DeviceTokenController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
+            'device_id' => 'required|string|uuid|max:64',
             'device_name' => 'nullable|string|max:100',
         ]);
 
@@ -34,6 +36,7 @@ class DeviceTokenController extends Controller
         }
 
         $deviceName = $request->input('device_name');
+        $deviceId = $request->input('device_id');
 
         // Purge this user's dead tokens and replace the active one of the same device.
         $user->deviceTokens()
@@ -42,13 +45,12 @@ class DeviceTokenController extends Controller
             })
             ->delete();
 
-        if ($deviceName) {
-            $user->deviceTokens()->where('device_name', $deviceName)->delete();
-        }
+        $user->deviceTokens()->where('device_id', $deviceId)->delete();
 
         $token = Str::random(64);
         $deviceToken = $user->deviceTokens()->create([
             'token' => $token,
+            'device_id' => $deviceId,
             'device_name' => $deviceName,
             'expires_at' => now()->addDays(90),
         ]);
@@ -66,6 +68,7 @@ class DeviceTokenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'token' => 'required|string|size:64',
+            'device_id' => 'required|string|uuid|max:64',
         ]);
 
         if ($validator->fails()) {
@@ -76,7 +79,8 @@ class DeviceTokenController extends Controller
             $query->withTrashed();
         }])->where('token_hash', hash('sha256', $request->input('token')))->first();
 
-        if (! $deviceToken || $deviceToken->revoked_at !== null ||
+        if (! $deviceToken || $deviceToken->device_id !== $request->input('device_id') ||
+            $deviceToken->revoked_at !== null ||
             $deviceToken->expires_at === null || $deviceToken->expires_at->lessThanOrEqualTo(now())) {
             return $this->invalidToken();
         }
@@ -107,15 +111,34 @@ class DeviceTokenController extends Controller
         return $response;
     }
 
-    public function destroy(): JsonResponse
+    public function destroy(Request $request): JsonResponse
     {
         if (! $user = Auth::user()) {
             return $this->invalidToken();
         }
 
-        $user->deviceTokens()->whereNull('revoked_at')->update([
-            'revoked_at' => now(),
+        $validator = Validator::make($request->all(), [
+            'device_id' => 'sometimes|required|string|uuid|max:64',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'validation_error',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        $deviceId = $request->input('device_id');
+
+        DB::transaction(function () use ($user, $deviceId) {
+            $tokens = $user->deviceTokens()->whereNull('revoked_at');
+            if ($deviceId !== null) {
+                $tokens->where('device_id', $deviceId);
+                $user->pushTokens()->where('device_id', $deviceId)->delete();
+            }
+
+            $tokens->update(['revoked_at' => now()]);
+        });
 
         return response()->json([
             'message' => 'device_tokens_revoked',

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Console\Commands\DeleteAccount;
 use App\Events\ForceLogoutUserEvent;
 use App\Models\DeviceToken;
+use App\Models\PushToken;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\LoginResponseService;
@@ -53,6 +54,10 @@ class DeviceTokenTest extends TestCase
         });
         $migration = require database_path('migrations/2026_10_14_000000_create_device_tokens_table.php');
         $migration->up();
+        $migration = require database_path('migrations/2026_11_20_000000_add_device_id_to_device_tokens_table.php');
+        $migration->up();
+        $migration = require database_path('migrations/2026_11_02_000000_create_push_tokens_table.php');
+        $migration->up();
 
         $service = Mockery::mock(LoginResponseService::class)->makePartial();
         $service->shouldReceive('tokenData')->andReturnUsing(function (User $user, string $token) {
@@ -85,7 +90,8 @@ class DeviceTokenTest extends TestCase
         $user = $this->user();
         $jwt = Auth::login($user);
 
-        $response = $this->withToken($jwt)->postJson('/api/auth/device-token')
+        $deviceId = (string) Str::uuid();
+        $response = $this->withToken($jwt)->postJson('/api/auth/device-token', ['device_id' => $deviceId])
             ->assertCreated()->assertJsonPath('message', 'device_token_created');
         $plaintext = $response->json('data.token');
         $stored = DeviceToken::sole();
@@ -93,6 +99,7 @@ class DeviceTokenTest extends TestCase
         $this->assertSame(64, strlen($plaintext));
         $this->assertSame(hash('sha256', $plaintext), $stored->token_hash);
         $this->assertSame($user->id, $stored->user_id);
+        $this->assertSame($deviceId, $stored->device_id);
         $this->assertTrue($stored->expires_at->equalTo(now()->addDays(90)));
         $this->assertNull($stored->last_used_at);
         $this->assertNull($stored->revoked_at);
@@ -110,7 +117,7 @@ class DeviceTokenTest extends TestCase
             'email' => $user->email, 'password' => 'original-password',
         ])->assertOk()->json();
         Auth::forgetGuards();
-        $device = $this->postJson('/api/auth/device-login', ['token' => $plaintext])
+        $device = $this->postJson('/api/auth/device-login', ['token' => $plaintext, 'device_id' => $stored->device_id])
             ->assertOk()->assertJsonPath('message', 'login_success')->json();
 
         $this->assertSame(array_keys($normal), array_keys($device));
@@ -133,6 +140,10 @@ class DeviceTokenTest extends TestCase
             'malformed' => ['malformed'],
             'not a string' => ['array'],
             'missing token' => ['missing'],
+            'missing device' => ['missing-device'],
+            'wrong device' => ['wrong-device'],
+            'malformed device' => ['malformed-device'],
+            'legacy token' => ['legacy'],
         ];
     }
 
@@ -159,7 +170,16 @@ class DeviceTokenTest extends TestCase
         } elseif ($state === 'array') {
             $plaintext = ['invalid'];
         }
-        $payload = $state === 'missing' ? [] : ['token' => $plaintext];
+        $payload = $state === 'missing' ? [] : ['token' => $plaintext, 'device_id' => $stored->device_id];
+        if ($state === 'missing-device') {
+            unset($payload['device_id']);
+        } elseif ($state === 'wrong-device') {
+            $payload['device_id'] = (string) Str::uuid();
+        } elseif ($state === 'malformed-device') {
+            $payload['device_id'] = 'not-a-uuid';
+        } elseif ($state === 'legacy') {
+            $stored->update(['device_id' => null]);
+        }
 
         $this->postJson('/api/auth/device-login', $payload)->assertStatus(401)
             ->assertExactJson(['message' => 'invalid_credentials', 'data' => null]);
@@ -175,7 +195,7 @@ class DeviceTokenTest extends TestCase
         $this->postJson('/api/auth/login', [
             'email' => $user->email, 'password' => 'original-password',
         ])->assertStatus(403)->assertJsonPath('message', 'user_inactive');
-        $this->postJson('/api/auth/device-login', ['token' => $plaintext])->assertStatus(403)
+        $this->postJson('/api/auth/device-login', ['token' => $plaintext, 'device_id' => $stored->device_id])->assertStatus(403)
             ->assertExactJson(['message' => 'user_inactive', 'data' => null]);
         $this->assertNull($stored->fresh()->last_used_at);
     }
@@ -208,7 +228,7 @@ class DeviceTokenTest extends TestCase
             $this->app->instance('pragmarx.google2fa', $google2fa);
         }
 
-        $response = $this->postJson('/api/auth/device-login', ['token' => $plaintext])
+        $response = $this->postJson('/api/auth/device-login', ['token' => $plaintext, 'device_id' => $stored->device_id])
             ->assertOk()->assertJsonPath('message', $message)->assertJsonPath('success', true);
         $this->assertNotEmpty($response->json('data.accessToken'));
         $this->assertNotNull($stored->fresh()->last_used_at);
@@ -247,7 +267,7 @@ class DeviceTokenTest extends TestCase
     {
         $user = $this->user();
         $user->forceFill(['is_2fa' => 1, 'token_2fa' => $secret])->save();
-        [$plaintext] = $this->deviceToken($user);
+        [$plaintext, $stored] = $this->deviceToken($user);
         if ($secret === null) {
             $google2fa = Mockery::mock();
             $google2fa->shouldReceive('generateSecretKey')->twice()->andReturn('generated-secret');
@@ -263,7 +283,7 @@ class DeviceTokenTest extends TestCase
         if ($secret === null) {
             $user->refresh()->forceFill(['token_2fa' => null])->save();
         }
-        $device = $this->postJson('/api/auth/device-login', ['token' => $plaintext])
+        $device = $this->postJson('/api/auth/device-login', ['token' => $plaintext, 'device_id' => $stored->device_id])
             ->assertOk()->assertJsonPath('message', $message)->json();
 
         unset($normal['data']['accessToken'], $device['data']['accessToken']);
@@ -305,6 +325,101 @@ class DeviceTokenTest extends TestCase
         $this->assertTrue(Hash::check('new-password', $user->fresh()->password));
     }
 
+    public function test_issuance_replaces_only_the_same_device_even_when_names_match(): void
+    {
+        $user = $this->user();
+        [, $first] = $this->deviceToken($user);
+        [, $second] = $this->deviceToken($user);
+        $first->update(['device_name' => 'Phone']);
+        $second->update(['device_name' => 'Phone']);
+
+        $this->withToken(Auth::login($user))->postJson('/api/auth/device-token', [
+            'device_id' => $first->device_id,
+            'device_name' => 'Phone',
+        ])->assertCreated();
+
+        $this->assertNull($first->fresh());
+        $this->assertNotNull($second->fresh());
+        $this->assertSame(2, $user->deviceTokens()->count());
+    }
+
+    public function test_revocation_affects_only_the_authenticated_users_device(): void
+    {
+        $user = $this->user();
+        [, $first] = $this->deviceToken($user);
+        [, $second] = $this->deviceToken($user);
+        [, $other] = $this->deviceToken($this->user('other@example.test'));
+        $other->update(['device_id' => $first->device_id]);
+
+        $this->withToken(Auth::login($user))->deleteJson('/api/auth/device-token', [
+            'device_id' => $first->device_id,
+        ])->assertOk();
+
+        $this->assertNotNull($first->fresh()->revoked_at);
+        $this->assertNull($second->fresh()->revoked_at);
+        $this->assertNull($other->fresh()->revoked_at);
+    }
+
+    public function test_disabling_biometrics_deletes_only_matching_push_tokens(): void
+    {
+        $user = $this->user();
+        [, $device] = $this->deviceToken($user);
+        $matching = $this->pushToken($user, $device->device_id);
+        $second = $this->pushToken($user, (string) Str::uuid());
+        $other = $this->pushToken($this->user('other@example.test'), $device->device_id);
+        $jwt = Auth::login($user);
+
+        $this->withToken($jwt)->deleteJson('/api/auth/device-token', [
+            'device_id' => $device->device_id,
+        ])->assertOk();
+        $this->withToken($jwt)->deleteJson('/api/auth/device-token', [
+            'device_id' => $device->device_id,
+        ])->assertOk();
+
+        $this->assertNull($matching->fresh());
+        $this->assertNotNull($second->fresh());
+        $this->assertNotNull($other->fresh());
+    }
+
+    public static function invalidDeviceIds(): array
+    {
+        return [
+            'null' => [null],
+            'empty' => [''],
+            'not a UUID' => ['device-1'],
+            'too long' => [str_repeat('a', 65)],
+            'array' => [['invalid']],
+        ];
+    }
+
+    #[DataProvider('invalidDeviceIds')]
+    public function test_invalid_device_ids_cannot_issue_or_revoke_tokens(mixed $deviceId): void
+    {
+        $user = $this->user();
+        [, $device] = $this->deviceToken($user);
+        $push = $this->pushToken($user, $device->device_id);
+        $jwt = Auth::login($user);
+
+        $this->withToken($jwt)->postJson('/api/auth/device-token', [
+            'device_id' => $deviceId,
+        ])->assertStatus(422);
+        $this->withToken($jwt)->deleteJson('/api/auth/device-token', [
+            'device_id' => $deviceId,
+        ])->assertStatus(422);
+
+        $this->assertNull($device->fresh()->revoked_at);
+        $this->assertNotNull($push->fresh());
+        $this->assertSame(1, DeviceToken::count());
+    }
+
+    public function test_issuance_requires_device_id(): void
+    {
+        $this->withToken(Auth::login($this->user()))
+            ->postJson('/api/auth/device-token')->assertStatus(422);
+
+        $this->assertSame(0, DeviceToken::count());
+    }
+
     public function test_public_login_is_throttled_after_five_attempts(): void
     {
         for ($attempt = 0; $attempt < 5; $attempt++) {
@@ -331,7 +446,7 @@ class DeviceTokenTest extends TestCase
         $this->withToken($jwt)->deleteJson('/api/auth/device-token')->assertStatus(401);
     }
 
-    public function test_existing_account_purge_deletes_device_tokens_without_relying_on_cascade(): void
+    public function test_existing_account_purge_deletes_device_and_push_tokens_without_relying_on_cascade(): void
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
@@ -349,6 +464,9 @@ class DeviceTokenTest extends TestCase
         $user = $this->user();
         [, $stored] = $this->deviceToken($user);
         [, $other] = $this->deviceToken($this->user('other@example.test'));
+        $push = $this->pushToken($user, $stored->device_id);
+        $secondPush = $this->pushToken($user, (string) Str::uuid());
+        $otherPush = $this->pushToken($other->user, $other->device_id);
         $supplier = Supplier::create(['user_id' => $user->id]);
         Schema::disableForeignKeyConstraints();
         Event::fake([ForceLogoutUserEvent::class]);
@@ -357,6 +475,9 @@ class DeviceTokenTest extends TestCase
         $purge->invoke(new DeleteAccount, $supplier->id, false);
 
         $this->assertNull($stored->fresh());
+        $this->assertNull($push->fresh());
+        $this->assertNull($secondPush->fresh());
+        $this->assertNotNull($otherPush->fresh());
         $this->assertNull($user->fresh());
         $this->assertNotNull($other->fresh());
         Event::assertDispatched(ForceLogoutUserEvent::class);
@@ -376,9 +497,19 @@ class DeviceTokenTest extends TestCase
         $token = Str::random(64);
         $stored = $user->deviceTokens()->create([
             'token' => $token,
+            'device_id' => (string) Str::uuid(),
             'expires_at' => now()->addDays(90),
         ]);
 
         return [$token, $stored];
+    }
+
+    private function pushToken(User $user, string $deviceId): PushToken
+    {
+        return $user->pushTokens()->create([
+            'token' => Str::random(150),
+            'platform' => 'android',
+            'device_id' => $deviceId,
+        ]);
     }
 }

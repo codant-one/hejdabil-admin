@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { App } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import Notifications from '@/api/notifications'
 import Settings from '@/api/settings'
 import Configs from '@/api/configs'
@@ -23,6 +25,11 @@ const playedNotificationSoundAt = new Map()
 let windowListenersRegistered = false
 let publicChannelSubscribed = false
 let recentRequestSeq = 0
+let unreadRequestSeq = 0
+let unreadRevision = 0
+let unreadSessionToken
+const seenNotificationIds = new Set()
+const readNotificationIds = new Set()
 let soundPreferenceRequestSeq = 0
 let lastVisibilityRefreshAt = 0
 
@@ -160,6 +167,7 @@ export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
     recentNotifications: [],
+    unreadCount: 0,
     // Usuario cuyo listado/canal/preferencia están cargados en el store.
     currentUserId: null,
     // false hasta conocer la preferencia del usuario actual: nunca suena "por defecto".
@@ -176,9 +184,6 @@ export const useNotificationsStore = defineStore('notifications', {
   getters:{
     getNotifications(){
         return this.notifications
-    },
-    unreadRecentCount() {
-      return this.recentNotifications.filter(notification => !notification.read).length
     },
   },
   actions: {
@@ -210,6 +215,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 this.notifications.splice(index, 1)
 
               this.recentNotifications = this.recentNotifications.filter(item => item.id !== id)
+              void this.refreshUnreadCount()
 
               return Promise.resolve(response)
           })
@@ -232,6 +238,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
           // Keep dropdown in sync with bulk-delete action.
           this.recentNotifications = []
+          void this.refreshUnreadCount()
 
           return Promise.resolve(response)
         })
@@ -354,11 +361,47 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
+    async refreshUnreadCount() {
+      const token = unreadSessionToken
+      if (!token || token !== localStorage.getItem('accessToken') || isTwoFactorPending())
+        return
+
+      const requestSeq = ++unreadRequestSeq
+      try {
+        let revision
+        do {
+          revision = unreadRevision
+          const { data } = await Notifications.unreadCount()
+          if (requestSeq !== unreadRequestSeq || token !== localStorage.getItem('accessToken'))
+            return
+
+          // A fresh snapshot avoids counting mutations already included by the server twice.
+          if (revision === unreadRevision) {
+            if (!Number.isSafeInteger(data?.count) || data.count < 0)
+              throw new Error('Invalid unread notification count')
+
+            this.unreadCount = data.count
+            return
+          }
+        } while (true)
+      } catch (error) {
+        console.error('Error loading unread notification count:', error)
+      }
+    },
+
     registerWindowListeners() {
       if (windowListenersRegistered || typeof window === 'undefined')
         return
 
       windowListenersRegistered = true
+      const isNative = Capacitor.isNativePlatform()
+
+      if (isNative) {
+        App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive)
+            void this.syncWithStoredUser({ refreshList: false, refreshUnread: true })
+        }).catch(error => console.error('Error listening for app state changes:', error))
+      }
 
       // Se difiere para que login/logout terminen de escribir user_data y accessToken.
       const scheduleSync = () => setTimeout(() => this.syncWithStoredUser({ refreshList: false }), 0)
@@ -383,7 +426,7 @@ export const useNotificationsStore = defineStore('notifications', {
           return
 
         lastVisibilityRefreshAt = now
-        this.syncWithStoredUser({ refreshList: true, refreshSound: true })
+        this.syncWithStoredUser({ refreshList: true, refreshSound: true, refreshUnread: !isNative })
       })
     },
 
@@ -423,10 +466,15 @@ export const useNotificationsStore = defineStore('notifications', {
     resetUserState(userId = null) {
       recentRequestSeq++
       soundPreferenceRequestSeq++
+      unreadRequestSeq++
+      unreadSessionToken = undefined
+      seenNotificationIds.clear()
+      readNotificationIds.clear()
 
       this.leavePrivateChannel()
       this.currentUserId = normalizeUserId(userId)
       this.recentNotifications = []
+      this.unreadCount = 0
       this.recentLoading = false
       this.notificationSoundEnabled = false
     },
@@ -434,11 +482,11 @@ export const useNotificationsStore = defineStore('notifications', {
     /**
      * Alinea el store con el usuario guardado en localStorage (canal privado, listado y sonido).
      */
-    async syncWithStoredUser({ userId = null, refreshList = true, refreshSound = false } = {}) {
+    async syncWithStoredUser({ userId = null, refreshList = true, refreshSound = false, refreshUnread = false } = {}) {
       const resolvedUserId = normalizeUserId(userId ?? this.getStoredUserId())
-      const hasToken = !!localStorage.getItem('accessToken')
+      const token = localStorage.getItem('accessToken')
 
-      if (!resolvedUserId || !hasToken || isTwoFactorPending()) {
+      if (!resolvedUserId || !token || isTwoFactorPending()) {
         if (this.currentUserId || this.privateChannelUserId || this.recentNotifications.length)
           this.resetUserState(null)
 
@@ -448,13 +496,15 @@ export const useNotificationsStore = defineStore('notifications', {
       ensureEchoConnected()
       this.subscribeToPublicChannel()
 
-      if (this.currentUserId !== resolvedUserId) {
+      if (this.currentUserId !== resolvedUserId || unreadSessionToken !== token) {
         this.resetUserState(resolvedUserId)
+        unreadSessionToken = token
         this.subscribeToPrivateChannel(resolvedUserId)
 
         await Promise.all([
           this.loadNotificationSoundPreference(),
           this.fetchRecent(),
+          this.refreshUnreadCount(),
         ])
 
         return
@@ -465,6 +515,7 @@ export const useNotificationsStore = defineStore('notifications', {
       await Promise.all([
         refreshSound ? this.loadNotificationSoundPreference() : null,
         refreshList ? this.fetchRecent() : null,
+        refreshUnread ? this.refreshUnreadCount() : null,
       ])
     },
 
@@ -610,7 +661,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     addFromBackend(data) {
       // Sin sesión activa no se muestra ni suena nada.
-      if (!this.currentUserId)
+      if (!this.currentUserId || unreadSessionToken !== localStorage.getItem('accessToken') || isTwoFactorPending())
         return
 
       const mapped = {
@@ -619,12 +670,23 @@ export const useNotificationsStore = defineStore('notifications', {
         route: data?.route ?? '/dashboard',
       }
 
-      const isDuplicate = mapped.id !== undefined
-        && mapped.id !== null
-        && this.recentNotifications.some(notification => notification.id === mapped.id)
+      const id = normalizeUserId(mapped.id)
+      const isDuplicate = id !== null && (
+        seenNotificationIds.has(id)
+        || readNotificationIds.has(id)
+        || this.recentNotifications.some(notification => String(notification.id) === id)
+      )
+
+      if (id !== null)
+        seenNotificationIds.add(id)
 
       if (isDuplicate)
         return
+
+      if (!mapped.read) {
+        this.unreadCount++
+        unreadRevision++
+      }
 
       // Solo si "notifyViaSound" está activado en la configuración.
       if (this.notificationSoundEnabled === true && canPlayNotificationSoundForId(mapped.id))
@@ -649,12 +711,24 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     async markAsRead(notificationId) {
+      const token = unreadSessionToken
+      const id = String(notificationId)
       try {
         await Notifications.markAsRead(notificationId)
-        
+
+        if (!token || token !== unreadSessionToken || token !== localStorage.getItem('accessToken'))
+          return
+
+        if (!readNotificationIds.has(id)) {
+          readNotificationIds.add(id)
+          this.unreadCount = Math.max(0, this.unreadCount - 1)
+          unreadRevision++
+        }
+
         // Eliminar del dropdown y completar con la siguiente más reciente
-        this.recentNotifications = this.recentNotifications.filter(n => n.id !== notificationId)
+        this.recentNotifications = this.recentNotifications.filter(n => String(n.id) !== id)
         this.fetchRecent()
+        void this.refreshUnreadCount()
       } catch (error) {
         console.error('Error marking notification as read:', error)
         throw error
@@ -672,12 +746,24 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     async markAllRead() {
+      const token = unreadSessionToken
       try {
         await Notifications.markAllAsRead()
-        
+
+        if (!token || token !== unreadSessionToken || token !== localStorage.getItem('accessToken'))
+          return
+
         // Limpiar el dropdown
         recentRequestSeq++
+        for (const notification of this.recentNotifications) {
+          const id = normalizeUserId(notification.id)
+          if (id !== null)
+            readNotificationIds.add(id)
+        }
         this.recentNotifications = []
+        this.unreadCount = 0
+        unreadRevision++
+        void this.refreshUnreadCount()
       } catch (error) {
         console.error('Error marking all notifications as read:', error)
       }

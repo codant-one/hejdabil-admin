@@ -55,6 +55,7 @@ const onNotificationClick = async (notification) => {
   <Notifications 
     :notifications="notificationsStore.recentNotifications" 
     :loading="notificationsStore.recentLoading"
+    :unread-count="notificationsStore.unreadCount"
     @open="onMenuOpen"
     @click:readAllNotifications="onReadAll" 
     @click:notification="onNotificationClick"
