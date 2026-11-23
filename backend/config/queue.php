@@ -15,6 +15,8 @@ return [
 
     'default' => env('QUEUE_CONNECTION', 'redis'),
 
+    'push_connection' => env('PUSH_QUEUE_CONNECTION', 'redis'),
+
     /*
     |--------------------------------------------------------------------------
     | Queue Connections

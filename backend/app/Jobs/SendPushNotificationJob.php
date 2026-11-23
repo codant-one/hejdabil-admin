@@ -25,7 +25,7 @@ class SendPushNotificationJob implements ShouldQueue
         private readonly int $notificationId
     ) {
 
-        $this->onConnection('redis');
+        $this->onConnection(config('queue.push_connection'));
         $this->onQueue('push-notifications');
     }
 
