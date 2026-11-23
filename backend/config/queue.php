@@ -13,9 +13,9 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'redis'),
+    'default' => env('QUEUE_CONNECTION', 'sync'),
 
-    'push_connection' => env('PUSH_QUEUE_CONNECTION', 'redis'),
+    'push_connection' => env('PUSH_QUEUE_CONNECTION', 'database'),
 
     /*
     |--------------------------------------------------------------------------

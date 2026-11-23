@@ -15,7 +15,6 @@ class SendPushNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    //public $connection = 'redis';
     //public $queue = 'push-notifications';
     public $tries = 3;
     public $timeout = 30;
