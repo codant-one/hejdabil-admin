@@ -2,11 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Jobs\SendPushNotificationJob;
 use App\Models\Notification;
 use App\Models\PushToken;
 use App\Models\User;
 use App\Services\FcmPushService;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
@@ -120,6 +122,23 @@ class FcmPushServiceTest extends TestCase
 
         $service = new FcmPushService($messaging);
         $service->send($user, $notification);
+    }
+
+    public function test_observer_dispatches_push_job_after_response(): void
+    {
+        Bus::fake();
+
+        $user = $this->createUser();
+        $notification = Notification::query()->create([
+            'user_id' => $user->id,
+            'title' => 'Title',
+            'subtitle' => 'Subtitle',
+            'text' => 'Text',
+            'route' => '/dashboard/panel',
+        ]);
+
+        Bus::assertDispatchedAfterResponse(SendPushNotificationJob::class);
+        $this->assertNotNull($notification->id);
     }
 
     private function createUser(): User
