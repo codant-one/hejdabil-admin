@@ -27,8 +27,14 @@ class FcmPushService
             ->where('notifications_enabled', true)
             ->get();
 
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $unreadCount = Notification::forUser($user->id)->unread()->count();
+
         foreach ($tokens as $token) {
-            $message = $this->buildMessage($token, $notification);
+            $message = $this->buildMessage($token, $notification, $unreadCount);
 
             try {
                 $this->messaging->send($message);
@@ -52,7 +58,7 @@ class FcmPushService
         }
     }
 
-    private function buildMessage(PushToken $pushToken, Notification $notification): CloudMessage
+    private function buildMessage(PushToken $pushToken, Notification $notification, int $unreadCount): CloudMessage
     {
         $isSessionActive = (bool) $pushToken->session_active;
 
@@ -80,10 +86,12 @@ class FcmPushService
             ->withApnsConfig(ApnsConfig::fromArray([
                 'headers' => [
                     'apns-priority' => '10',
+                    'apns-push-type' => 'alert',
                 ],
                 'payload' => [
                     'aps' => [
                         'sound' => 'default',
+                        'badge' => $unreadCount,
                     ],
                 ],
             ]));

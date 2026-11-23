@@ -93,10 +93,66 @@ class FcmPushServiceTest extends TestCase
         $this->assertDatabaseMissing('push_tokens', ['id' => $pushToken->id]);
     }
 
+    public function test_it_sends_an_ios_alert_with_the_users_unread_count(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser('other@example.com');
+        $notification = $this->createNotification($user);
+        $this->createNotification($user);
+        $this->createNotification($user)->update(['read' => true]);
+        $this->createNotification($other);
+        $this->createNotification($user)->update(['user_id' => null]);
+
+        $pushToken = PushToken::query()->create([
+            'user_id' => $user->id,
+            'token' => 'ios-token-value',
+            'platform' => 'ios',
+            'device_id' => 'device-ios',
+            'session_active' => true,
+            'notifications_enabled' => true,
+        ]);
+
+        $messaging = Mockery::mock(Messaging::class);
+        $messaging->shouldReceive('send')
+            ->once()
+            ->withArgs(function ($message) use ($notification, $pushToken) {
+                $payload = $message->jsonSerialize();
+
+                $this->assertSame($pushToken->token, $payload['token']);
+                $this->assertSame([
+                    'title' => 'Original title',
+                    'body' => 'Original text',
+                ], $payload['notification']);
+                $this->assertSame([
+                    'notification_id' => (string) $notification->id,
+                    'route' => '/dashboard/panel',
+                    'type' => 'bell',
+                ], $payload['data']);
+                $this->assertSame('high', $payload['android']['priority']);
+                $this->assertSame([
+                    'headers' => [
+                        'apns-priority' => '10',
+                        'apns-push-type' => 'alert',
+                    ],
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                            'badge' => 2,
+                        ],
+                    ],
+                ], $payload['apns']);
+
+                return true;
+            });
+
+        (new FcmPushService($messaging))->send($user, $notification);
+    }
+
     public function test_it_sends_generic_text_for_inactive_sessions(): void
     {
         $user = $this->createUser();
         $notification = $this->createNotification($user);
+        $notification->update(['read' => true]);
 
         PushToken::query()->create([
             'user_id' => $user->id,
@@ -113,11 +169,14 @@ class FcmPushServiceTest extends TestCase
             ->withArgs(function ($message) use ($notification) {
                 $payload = $message->jsonSerialize();
 
-                return ($payload['notification']['title'] ?? null) === 'Bilflogg'
-                    && ($payload['notification']['body'] ?? null) === 'Du har en ny notis'
-                    && ($payload['data']['notification_id'] ?? null) === (string) $notification->id
-                    && ! array_key_exists('route', $payload['data'])
-                    && ! array_key_exists('type', $payload['data']);
+                $this->assertSame([
+                    'title' => 'Bilflogg',
+                    'body' => 'Du har en ny notis',
+                ], $payload['notification']);
+                $this->assertSame(0, $payload['apns']['payload']['aps']['badge']);
+                $this->assertSame(['notification_id' => (string) $notification->id], $payload['data']);
+
+                return true;
             });
 
         $service = new FcmPushService($messaging);
@@ -141,10 +200,10 @@ class FcmPushServiceTest extends TestCase
         $this->assertNotNull($notification->id);
     }
 
-    private function createUser(): User
+    private function createUser(string $email = 'user@example.com'): User
     {
         return User::query()->create([
-            'email' => 'user@example.com',
+            'email' => $email,
             'password' => 'password',
             'name' => 'Test User',
         ]);
