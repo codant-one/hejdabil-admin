@@ -332,8 +332,8 @@ onBeforeUnmount(() => {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  /* Image filters avoid the cross-origin restriction on CSS masks. */
-  filter: brightness(0) invert(61.72%) sepia(90.66%) saturate(8.18) hue-rotate(101.98deg) brightness(2.25) contrast(0.0355);
+  /* Tints the SVG to #6E9383 without requiring CORS headers on storage images. */
+  filter: brightness(0) saturate(100%) invert(60%) sepia(11%) saturate(714%) hue-rotate(101deg) brightness(89%) contrast(84%);
 }
 
 .help-category-link-active .help-category-icon,
