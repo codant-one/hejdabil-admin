@@ -21,6 +21,7 @@
 ## Notifications
 
 - `GET /api/notifications/unread-count` uses `cors`, `jwt` and `throttle:api` and returns `{"count":0}` with a database count of only the authenticated user's unread notifications (excluding public notifications).
+- iOS FCM alerts use that same unread count as the APNs badge. For an active session, the FCM body uses the notification's `text`, not `subtitle`. For an inactive session, it uses `Du har en ny notis`.
 
 ## Help center
 
