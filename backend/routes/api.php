@@ -40,6 +40,7 @@ use App\Http\Controllers\{
     DocumentController,
     PayoutController,
     NotificationController,
+    BroadcastNotificationController,
     CountryController,
     ReminderController,
     SettingController,
@@ -162,6 +163,16 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
         Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
         Route::post('/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clearAll');
+    });
+
+    /* ADMIN: CUSTOM NOTIFICATIONS (BROADCAST) */
+    Route::group(['prefix' => 'admin/notifications-broadcast'], function () {
+        Route::get('/', [BroadcastNotificationController::class, 'index'])->name('admin.notifications-broadcast.index');
+        Route::get('/roles', [BroadcastNotificationController::class, 'roles'])->name('admin.notifications-broadcast.roles');
+        Route::get('/users', [BroadcastNotificationController::class, 'users'])->name('admin.notifications-broadcast.users');
+        Route::post('/preview-count', [BroadcastNotificationController::class, 'previewCount'])->name('admin.notifications-broadcast.preview-count');
+        Route::post('/', [BroadcastNotificationController::class, 'store'])->name('admin.notifications-broadcast.store');
+        Route::delete('/{id}', [BroadcastNotificationController::class, 'destroy'])->whereNumber('id')->name('admin.notifications-broadcast.destroy');
     });
 
     //Users

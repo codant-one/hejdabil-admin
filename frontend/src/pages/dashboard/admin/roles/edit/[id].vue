@@ -117,6 +117,7 @@ const permissionSections = [
       { title: 'Valuta', description: 'Tillgängliga valutor', permissions: modulePermissions('currencies') },
       { title: 'Land', description: 'Tillgängliga länder', permissions: modulePermissions('countries') },
       { title: 'Planer', description: 'Abonnemang och funktioner', permissions: modulePermissions('plans') },
+      { title: 'Notifikationer', description: 'Administrera notifikationer', permissions: modulePermissions('notifications', ['view', 'create', 'delete']) },
     ],
   },
   {

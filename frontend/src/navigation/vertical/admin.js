@@ -57,9 +57,16 @@ export default [
       { 
         title: 'Planer', 
         icon: { icon: 'custom-cash' },
-        to: 'dashboard-admin-plans', 
+        to: 'dashboard-admin-plans',
         action: 'view',
         subject: 'plans'
+      },
+      {
+        title: 'Notifikationer',
+        icon: { icon: 'custom-alarm' },
+        to: 'dashboard-admin-notifications',
+        action: 'view',
+        subject: 'notifications'
       }
     ]
   },
