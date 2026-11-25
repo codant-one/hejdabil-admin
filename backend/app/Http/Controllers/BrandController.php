@@ -244,8 +244,6 @@ class BrandController extends Controller
                     'message' => 'Märke hittades inte'
                 ], 404);
             
-            $brand->deleteBrand($id);
-
             $fields = [
                 'name',
                 'url',
@@ -253,6 +251,8 @@ class BrandController extends Controller
             ];
 
             $oldValues = $brand->only($fields);
+
+            $brand->deleteBrand($id);
 
             SupplierActivity::createActivity([
                 'entity_id' => $brand->id,

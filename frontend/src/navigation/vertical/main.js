@@ -81,6 +81,13 @@ export default [
     to: 'dashboard-admin-notes',  
     action: 'view', 
     subject: 'notes'
+  },
+  {
+    title: 'Papperskorg',
+    icon: { icon: 'custom-waste' },
+    to: 'dashboard-activities-trash',
+    action: 'view',
+    subject: 'trash'
   }
 ]
   

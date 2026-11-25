@@ -151,7 +151,8 @@ const activityModuleLabels = {
   countries: 'Land',
   plans: 'Planer',
   help_categories: 'Hjälpkategorier',
-  help_videos: 'Hjälpvideor'
+  help_videos: 'Hjälpvideor',
+  trash: 'Papperskorgar'
 }
 
 const activityModuleSingularLabels = {
@@ -175,7 +176,8 @@ const activityModuleSingularLabels = {
   countries: 'Land',
   plans: 'Planer',
   help_categories: 'Hjälpkategorier',
-  help_videos: 'Hjälpvideor'
+  help_videos: 'Hjälpvideor',
+  trash: 'Papperskorg'
 }
 
 const activityActionLabels = {
@@ -198,7 +200,7 @@ const activityActionLabels = {
   activate: 'aktiverad',
   deactivate: 'inaktiverad',
   swish: 'Swish',
-  password: 'Lösenord'
+  password: 'Lösenord',
 }
 
 const activityDetailTitles = {

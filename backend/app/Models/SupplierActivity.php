@@ -47,6 +47,22 @@ class SupplierActivity extends Model
         });
     }
 
+    public function scopeWhereSearchActionDeleted($query, $search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('entity_type', 'LIKE', '%' . $search . '%')
+              ->orWhere('title', 'LIKE', '%' . $search . '%')
+              ->orWhere('metadata', 'LIKE', '%' . $search . '%')
+              ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            });
+        });
+    }
+
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
         $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
     }
@@ -70,10 +86,15 @@ class SupplierActivity extends Model
 
         if ($filters->get('module') !== null) {
             $query->where('entity_type', $filters->get('module'));
+            // $query->where('entity_type', 'LIKE', '%' . $filters->get('module') . '%');
         }
 
         if ($filters->get('search')) {
-             $query->whereSearch($filters->get('search'));
+            if ($filters->get('action') !== 'delete') {
+                $query->whereSearch($filters->get('search'));
+            } else {
+                $query->whereSearchActionDeleted($filters->get('search'));
+            }
         }
 
         if ($filters->get('date_from') && $filters->get('date_to')) {

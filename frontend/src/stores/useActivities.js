@@ -46,6 +46,42 @@ export const useActivitiesStore = defineStore('activities', {
                     this.setLoading(false)
                 })
             
+        },
+        deleteActivity(id) {
+            this.setLoading(true)
+
+            return Activities.delete(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        deleteAllActivities(id) {
+            this.setLoading(true)
+
+            return Activities.deleteAll()
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        restoreActivity(id) {
+            this.setLoading(true)
+
+            return Activities.restoreItem(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
         }
     }
 })

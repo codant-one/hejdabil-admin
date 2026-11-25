@@ -30,11 +30,15 @@ class RoleEditingTest extends TestCase
         DB::purge('sqlite');
 
         foreach (['roles', 'permissions'] as $name) {
-            Schema::create($name, function (Blueprint $table) {
+            Schema::create($name, function (Blueprint $table) use ($name) {
                 $table->id();
                 $table->string('name');
                 $table->string('guard_name');
                 $table->timestamps();
+
+                if ($name === 'roles') {
+                    $table->softDeletes();
+                }
             });
         }
 

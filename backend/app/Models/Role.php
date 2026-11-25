@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends \Spatie\Permission\Models\Role
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
@@ -68,6 +69,24 @@ class Role extends \Spatie\Permission\Models\Role
         $role = self::find($id);
         $role->permissions()->detach();
         $role->delete();
+    }
+
+    /**
+     * Restore a deleted item and return activity data
+     *
+     * @param int $id
+     * @param object $metadata
+     * @return array
+     */
+    public static function restoreItem($id, $metadata) {
+        $permissions = $metadata->old_values->permissions ?? [];
+        $role = self::find($id);
+
+        if (!$role)
+            return null;
+
+        $role->permissions()->detach();  
+        $role->syncPermissions($permissions);
     }
 
 }

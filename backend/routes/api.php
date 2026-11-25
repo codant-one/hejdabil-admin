@@ -364,6 +364,11 @@ Route::group(['middleware' => ['cors','jwt','idle','subscription.readonly','thro
 
     //Messaging
     Route::get('sms-messages', [SmsMessageController::class, 'index']);
+
+    //Activities / Trash
+    Route::group(['prefix' => 'activities'], function () {
+        Route::post('trash/restore/{id}', [ActivitiesController::class, 'restoreItem'])->name('activities.trash.restore');
+    });
 });
 
 //Public Endpoints

@@ -13,6 +13,25 @@ use App\Services\ActivityMetadataResolver;
 use App\Services\CacheService;
 
 use App\Models\SupplierActivity;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Supplier;
+use App\Models\SupplierInvoice;
+use App\Models\Client;
+use App\Models\Billing;
+use App\Models\Vehicle;
+use App\Models\Agreement;
+use App\Models\Document;
+use App\Models\Payout;
+use App\Models\Brand;
+use App\Models\CarModel;
+use App\Models\Invoice;
+use App\Models\Currency;
+use App\Models\Country;
+use App\Models\Plan;
+use App\Models\HelpCategory;
+use App\Models\HelpVideo;
+use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
 
 class ActivitiesController extends Controller
 {
@@ -30,6 +49,28 @@ class ActivitiesController extends Controller
         'my-team',
     ];
 
+    private const MODULES = [
+        'users_admin' => User::class,
+        'roles' => Role::class,
+        'users' => User::class,
+        'suppliers' => Supplier::class,
+        'suppliers_invoices' => SupplierInvoice::class,
+        'clients' => Client::class,
+        'billings' => Billing::class,
+        'vehicles' => Vehicle::class,
+        'agreements' => Agreement::class,
+        'documents' => Document::class,
+        'payouts' => Payout::class,
+        'brands' => Brand::class,
+        'models' => CarModel::class,
+        'invoices' => Invoice::class,
+        'currencies' => Currency::class,
+        'countries' => Country::class,
+        'plans' => Plan::class,
+        'help_categories' => HelpCategory::class,
+        'help_videos' => HelpVideo::class,
+    ];
+
 
     /**
      * Display a listing of the resource.
@@ -45,6 +86,22 @@ class ActivitiesController extends Controller
                                 'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
                                 'user.userDetail:user_id,avatar_id,logo'
                             ])
+                            ->where(function ($actionQuery) use ($request) {
+                                if ($request->has('action')) {
+                                    $actionQuery->where('action_type', 'LIKE', '%' . $request->action . '%');
+                                    
+                                    //Para no mostrar los eventos de la papelera (trash) 
+                                    //cuando se filtra por delete, es decir cuando se usa el index en la papelera
+                                    if ($request->action === 'delete') {
+                                        $actionQuery->where('entity_type', '!=' ,'trash');
+                                    }
+                                }
+                            })
+                            ->where(function ($stateQuery) use ($request) {
+                                if ($request->has('state_id')) {
+                                    $stateQuery->where('state_id', $request->state_id);
+                                }
+                            })
                             ->applyFilters(
                                 $request->only([
                                     'search',
@@ -53,19 +110,21 @@ class ActivitiesController extends Controller
                                     'supplier_id',
                                     'user_id',
                                     'module',
+                                    'action',
                                     'date_from',
                                     'date_to',
                                 ])
                             )
                             ->where(function ($activitiesQuery) {
-                                $activitiesQuery
-                                    ->whereRaw("LOWER(action_type) NOT LIKE ?", ['%update%'])
+                                    $activitiesQuery
+                                        ->whereRaw("LOWER(action_type) NOT LIKE ?", ['%update%'])
                                     ->orWhereNull('metadata')
                                     ->orWhereRaw('JSON_VALID(metadata) = 0')
                                     ->orWhereRaw("JSON_EXTRACT(metadata, '$.old_values') IS NULL")
                                     ->orWhereRaw("JSON_EXTRACT(metadata, '$.new_values') IS NULL")
                                     ->orWhereRaw("JSON_EXTRACT(metadata, '$.old_values') <> JSON_EXTRACT(metadata, '$.new_values')");
                             });
+
 
             $this->applyPermissionFilters($query);
 
@@ -156,7 +215,140 @@ class ActivitiesController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try {
+
+            $activity = SupplierActivity::with([
+                                'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                                'user.userDetail:user_id,avatar_id,logo'
+                            ])->find($id);
+        
+            if (!$activity)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Registret hittades inte'
+                ], 404);
+            
+            $fields = [
+                'id',
+                'user_id',
+                'entity_id',
+                'state_id',
+                'entity_type',
+                'action_type',
+                'title',
+                'description',
+                'icon',
+                'route',
+                'metadata'
+            ];
+
+            $oldValues = $activity->only($fields);
+            $metadata = json_decode($activity->metadata);
+            $title = $metadata->title ?? $activity->title;
+
+            $activity->state_id = 5; //Remove
+            $activity->update();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $activity->id,
+                'entity_type' => 'trash',
+                'action_type' => 'delete_trash',
+                'title' => 'Registret #'.$activity->id.' '.$title.' borttagen',
+                'description' => 'Registret har tagits bort.',
+                'icon' => 'custom-waste',
+                'metadata' => json_encode([
+                    'activity_id' => $activity->id,
+                    'title' => 'Registret #'.$activity->id.' '.$title,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $activity->id)
+                ->where('entity_type', 'trash')
+                ->update(['route' => null]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'activity' => $activity
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore deleted Item
+     */ 
+    public function restoreItem($id): JsonResponse
+    {
+        try {
+
+            $activity = SupplierActivity::find($id);
+
+            if (!$activity)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Registret hittades inte'
+                ], 404);
+
+            $idToRestore = $activity->entity_id;
+            $moduleClass = self::MODULES[$activity->entity_type];
+            $itemToRestore = $moduleClass::withTrashed()->find($idToRestore);
+
+            if (!$itemToRestore)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Registret som skulle återställas hittades inte'
+                ], 404);
+
+            $itemToRestore->restore();
+            $activity->update(['state_id' => 1]);
+
+            $metadata = json_decode($activity->metadata);   
+            $title = $metadata->title ?? $activity->title;
+
+            if (method_exists($moduleClass, 'restoreItem')) {
+                $moduleClass::restoreItem($idToRestore, $metadata);
+            }
+
+            SupplierActivity::createActivity([
+                'entity_id' => $activity->id,
+                'entity_type' => 'trash',
+                'action_type' => 'update_trash',
+                'title' => 'Registret #'.$itemToRestore->id.' '.$title.' (borttaget) återställt',
+                'description' => 'Ett borttaget register har återställts.',
+                'icon' => 'custom-waste',
+                'route' => null,
+                'metadata' => json_encode([
+                    'activity_id' => $activity->id,
+                    'title' => 'Registret #'.$activity->id.' '.$title,
+                ])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'activity' => $activity
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     private function getCurrentSupplierId(): int

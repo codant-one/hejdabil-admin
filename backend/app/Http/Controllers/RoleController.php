@@ -227,6 +227,7 @@ class RoleController extends Controller
                 'route' => '/dashboard/admin/roles/'.$role->id,
                 'metadata' => json_encode([
                     'role_id' => $role->id,
+                    'title' => 'Roll #'.$role->id.' '.$role->name,
                     'old_values' => $oldValues
                 ])
             ]);
