@@ -74,6 +74,11 @@ class PermissionSeeder extends Seeder
             ['name' => 'create plans', 'label' => 'Skapa'],
             ['name' => 'edit plans', 'label' => 'Redigera'],
             ['name' => 'delete plans', 'label' => 'Ta bort'],
+
+            //notifications
+            ['name' => 'view notifications', 'label' => 'Visa'],
+            ['name' => 'create notifications', 'label' => 'Skapa'],
+            ['name' => 'delete notifications', 'label' => 'Ta bort'],
             
             //clients
             ['name' => 'view clients', 'label' => 'Visa'],
@@ -210,6 +215,7 @@ class PermissionSeeder extends Seeder
             'view currencies', 'create currencies', 'edit currencies', 'delete currencies', //currencies
             'view countries', 'create countries', 'edit countries', 'delete countries', //countries
             'view plans', 'create plans', 'edit plans', 'delete plans', //plans
+            'view notifications', 'create notifications', 'delete notifications', //notifications
             'view help-categories', 'create help-categories', 'edit help-categories', 'delete help-categories', //help-categories
             'view help-videos', 'create help-videos', 'edit help-videos', 'delete help-videos', //help-videos
             'view help-center', //help-center

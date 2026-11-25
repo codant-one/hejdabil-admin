@@ -39,7 +39,7 @@ class AddRoles extends Command
      */
     public function handle()
     {
-        $roles = ['SuperAdmin', 'Administrator', 'Operator', 'Supplier', 'User'];
+        $roles = ['SuperAdmin', 'Administrator', 'Supplier', 'User'];
 
         $this->info("Finding this role on Roles table");   
 

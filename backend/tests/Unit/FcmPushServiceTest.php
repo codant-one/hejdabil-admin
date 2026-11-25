@@ -186,6 +186,7 @@ class FcmPushServiceTest extends TestCase
     public function test_observer_dispatches_push_job_after_response(): void
     {
         Bus::fake();
+        $this->simulateRunningInConsole(false); // web request
 
         $user = $this->createUser();
         $notification = Notification::query()->create([
@@ -198,6 +199,31 @@ class FcmPushServiceTest extends TestCase
 
         Bus::assertDispatchedAfterResponse(SendPushNotificationJob::class);
         $this->assertNotNull($notification->id);
+    }
+
+    public function test_observer_queues_push_job_directly_when_running_in_console(): void
+    {
+        Queue::fake();
+        $this->simulateRunningInConsole(true); // queue worker / artisan
+
+        $user = $this->createUser();
+        $notification = Notification::query()->create([
+            'user_id' => $user->id,
+            'title' => 'Title',
+            'subtitle' => 'Subtitle',
+            'text' => 'Text',
+            'route' => '/dashboard/panel',
+        ]);
+
+        Queue::assertPushedOn('push-notifications', SendPushNotificationJob::class, function ($job) use ($notification) {
+            return $job->connection === config('queue.push_connection')
+                && (fn () => $this->notificationId)->call($job) === $notification->id;
+        });
+    }
+
+    private function simulateRunningInConsole(bool $console): void
+    {
+        (fn () => $this->isRunningInConsole = $console)->call($this->app);
     }
 
     private function createUser(string $email = 'user@example.com'): User

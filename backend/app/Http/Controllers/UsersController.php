@@ -46,8 +46,7 @@ class UsersController extends Controller
                          ->withTrashed()
                          ->whereHas('roles', function ($query) {
                             $query->where('name', 'SuperAdmin')
-                                ->orWhere('name', 'Administrator')
-                                ->orWhere('name', 'Operator');
+                                ->orWhere('name', 'Administrator');
                          })
                          ->applyFilters(
                             $request->only([
