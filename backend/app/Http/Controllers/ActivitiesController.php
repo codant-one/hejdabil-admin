@@ -258,12 +258,12 @@ class ActivitiesController extends Controller
                 'entity_id' => $activity->id,
                 'entity_type' => 'trash',
                 'action_type' => 'delete_trash',
-                'title' => 'Registret #'.$activity->id.' '.$title.' borttagen',
+                'title' => $title.' borttagen',
                 'description' => 'Registret har tagits bort.',
                 'icon' => 'custom-waste',
                 'metadata' => json_encode([
                     'activity_id' => $activity->id,
-                    'title' => 'Registret #'.$activity->id.' '.$title,
+                    'title' => $title.' borttagen',
                     'old_values' => $oldValues
                 ])
             ]);
@@ -329,13 +329,13 @@ class ActivitiesController extends Controller
                 'entity_id' => $activity->id,
                 'entity_type' => 'trash',
                 'action_type' => 'update_trash',
-                'title' => 'Registret #'.$itemToRestore->id.' '.$title.' (borttaget) återställt',
+                'title' => $title.' (borttaget) återställt',
                 'description' => 'Ett borttaget register har återställts.',
                 'icon' => 'custom-waste',
                 'route' => null,
                 'metadata' => json_encode([
                     'activity_id' => $activity->id,
-                    'title' => 'Registret #'.$activity->id.' '.$title,
+                    'title' => $title.' (borttaget) återställt',
                 ])
             ]);
 
