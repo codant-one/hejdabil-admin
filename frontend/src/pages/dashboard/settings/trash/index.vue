@@ -1,13 +1,11 @@
 <script setup>
 
-import { reactive, ref, toRaw } from "vue";
+import { reactive, ref } from "vue";
 import { useDisplay } from "vuetify";
-import { themeConfig } from '@themeConfig'
-import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
+import { formatDateTime } from '@/@core/utils/formatters'
 import { useActivitiesStore } from '@/stores/useActivities'
 import { canWithPlan } from '@/@layouts/plugins/casl'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -24,7 +22,6 @@ const advisor = ref({
   message: '',
   show: false
 })
-
 
 const registers = ref([])
 const searchQuery = ref('')
@@ -121,30 +118,6 @@ const activityModuleLabels = {
   help_videos: 'Hjälpvideor'
 }
 
-const activityModuleSingularLabels = {
-  users_admin: 'Användare',
-  users: 'Mitt team',
-  roles: 'Roller',
-  agreements: 'Avtal',
-  billings: 'Faktura',
-  invoices: 'Attribut faktura',
-  clients: 'Kund',
-  suppliers: 'Leverantör',
-  suppliers_invoices: 'Faktura',
-  documents: 'Dokument',
-  notes: 'Anteckning',
-  comment_notes: 'Kommentar',
-  payouts: 'Utbetalning',
-  vehicles: 'Fordon',
-  brands: 'Märke',
-  models: 'Modell',
-  currencies: 'Valuta',
-  countries: 'Land',
-  plans: 'Planer',
-  help_categories: 'Hjälpkategorier',
-  help_videos: 'Hjälpvideor'
-}
-
 const hasModuleAccess = moduleId => {
   const subjects = MODULE_PERMISSION_SUBJECTS[moduleId] ?? []
 
@@ -219,8 +192,6 @@ async function fetchData(cleanFilters = false) {
         supplier_id: supplier_id.value,
         user_id: userId.value,
         state_id: 2, //Actives
-        // user: searchQuery.value ?? null,
-        // title: searchQuery.value ?? null,
         action: 'delete',
         module: module.value ?? matchingModule?.id,
     }
@@ -283,7 +254,6 @@ const resolveStatus = deleted_at => {
     return { class: 'days', days: diffInDays, text: text }
   return { class: 'warning', days: diffInDays, text: text }
 }
-
 
 const showRestoreDialog = registerData => {
   isConfirmRestoreDialogVisible.value = true
@@ -385,17 +355,6 @@ const removeAllRegisters = async () => {
   return true
 }
 
-const handleMobileDialogUpdate = (val) => {
-  if (val === false && isRegisterFormEdited.value) {
-    // keep dialog open and show confirm
-    isDialogOpen.value = true;
-    isConfirmLeaveVisible.value = true;
-    leaveContext.value = 'mobile';
-    return;
-  }
-  isDialogOpen.value = val;
-};
-
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -417,7 +376,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="page-section" ref="sectionEl">
+  <section class="page-section bg-white" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
@@ -431,26 +390,36 @@ onBeforeUnmount(() => {
     </VSnackbar>
 
     <VCard class="card-fill">
-      <VCardTitle
-        class="d-flex gap-6 justify-space-between"
-        :class="[
-          windowWidth < 1024 ? 'flex-column' : 'flex-row',
-          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
-        ]"
-      >
-        <div class="align-center font-blauer">
-          <h2>Papperskorg <span v-if="hasLoaded">({{ totalRegisters }})</span></h2>
+      <VCardText class="pb-0" v-if="windowWidth < 1024">
+        <div class="d-flex flex-column gap-4 flex-1">
+          <VBtn
+            class="btn-light"
+            style="width: 120px;"
+            :to="{ name: 'dashboard-settings' }"
+          >
+            <VIcon icon="custom-return" size="24" />
+            Tillbaka
+          </VBtn>
 
-            <div
-                class="mb-7 text-wrap subtitle-text text-neutral-3 w-60 mt-4"
-            >
-                Borttagna objekt sparas här i 30 dagar innan de tas bort permanent. Du kan återställa dem när som helst under den perioden.
-            </div>
+          <span class="title-settings pb-4 border-bottom-settings">
+            Papperskorg
+          </span>
         </div>
+      </VCardText>
 
-        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
-        
-      </VCardTitle>
+      <VCardText class="pb-0">
+        <div :class="windowWidth < 1024 ? 'pb-4' : 'pb-6'">
+          <div class="settings-layout__sidebar">
+            <div class="d-flex flex-column gap-4">
+              <span class="subtitle-settings">Papperskorg</span>
+              <span class="text-settings">
+                Borttagna objekt sparas här i 30 dagar innan de tas bort permanent. Du kan återställa dem när som helst under den perioden.
+              </span>
+            </div>
+          </div>
+          <div class="settings-layout__content"> </div>
+        </div>
+      </VCardText>
 
       <VCardText
         class="d-flex align-center justify-space-between gap-1"
@@ -463,16 +432,13 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        
-
         <VBtn
           v-if="hasLoaded"
           class="btn-white-2 px-3"
           @click="showAllDeleteDialog"
-          :class="windowWidth < 1023 ? 'd-none' : 'd-flex'"
         >
-          <VIcon icon="custom-clean" size="24" />
-          <span class="d-none d-md-block">Töm papperskorgen</span>
+          <VIcon icon="custom-clean" size="24" color="#6E9383"/>
+          <span class="text-gunmetal-3 d-none d-md-block">Töm papperskorgen</span>
         </VBtn>
 
         <VBtn
@@ -550,7 +516,7 @@ onBeforeUnmount(() => {
             <th scope="col"> Borttagen av </th>
             <th scope="col"> Borttagen datum</th>
             <th scope="col" class="text-center"> Status </th>
-            <th scope="col" v-if="$can('edit', 'activities') || $can('delete', 'activities')"></th>
+            <th scope="col" v-if="$can('view', 'trash')"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -573,7 +539,7 @@ onBeforeUnmount(() => {
               </div>
             </td> 
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'countries') || $can('delete', 'countries')">      
+            <td class="text-center" style="width: 3rem;" v-if="$can('view', 'trash')">      
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -582,7 +548,7 @@ onBeforeUnmount(() => {
                 </template>
                 <VList>
                   <VListItem
-                      v-if="$can('edit', 'activities')"
+                      v-if="$can('view', 'trash')"
                       @click="showRestoreDialog(register)">
                     <template #prepend>
                       <VIcon icon="custom-return" size="24" />
@@ -590,7 +556,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Återställ</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','activities')"
+                    v-if="$can('view', 'trash')"
                     @click="showDeleteDialog(register)">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
@@ -746,7 +712,7 @@ onBeforeUnmount(() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <VIcon size="32" icon="custom-clean" class="action-icon" />
           <div class="dialog-title">
             Ta bort alla objekt permanent
           </div>

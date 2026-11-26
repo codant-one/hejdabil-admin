@@ -14,6 +14,7 @@ const supplier_id = ref(0)
 const supplierData = ref(null)
 const plans = ref(null)
 const userTab = ref(0)
+const boss = ref(null)
 
 const userData = ref(null)
 const role = ref('')
@@ -97,6 +98,12 @@ async function loadUserData() {
     supplier_id.value = userData.value.supplier.id;
 
     supplierData.value = await suppliersStores.showSupplier(supplier_id.value);
+
+    if (role.value === 'Supplier') {
+        boss.value = supplierData.value
+    } else {
+        boss.value = supplierData.value.boss
+    }
 
     plans.value = suppliersStores.getPlans;
 
@@ -306,7 +313,7 @@ const activeSubscription = async () => {
                                         Prenumeration
                                     </div>
                                     <div class="p-0 card-content">
-                                        {{ formatDateSimple(supplierData.start_date) }} - {{ formatDateSimple(supplierData.end_date) }}
+                                        {{ formatDateSimple(boss.start_date) }} - {{ formatDateSimple(boss.end_date) }}
                                     </div>
                                 </div>
                             </VCardText>
@@ -375,7 +382,7 @@ const activeSubscription = async () => {
                                     Prenumeration
                                 </div>
                                 <div class="p-0 card-content">
-                                    {{ formatDateSimple(supplierData.start_date) }} - {{ formatDateSimple(supplierData.end_date) }}
+                                    {{ formatDateSimple(boss.start_date) }} - {{ formatDateSimple(boss.end_date) }}
                                 </div>
                             </div>
                         </VCardText>
