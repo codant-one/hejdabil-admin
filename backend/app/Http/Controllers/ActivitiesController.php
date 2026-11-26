@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
@@ -94,6 +95,9 @@ class ActivitiesController extends Controller
                                     //cuando se filtra por delete, es decir cuando se usa el index en la papelera
                                     if ($request->action === 'delete') {
                                         $actionQuery->where('entity_type', '!=' ,'trash');
+
+                                        // Only keep activities whose referenced record is still soft deleted
+                                        $this->applyTrashedEntityFilter($actionQuery);
                                     }
                                 }
                             })
@@ -349,6 +353,50 @@ class ActivitiesController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Restrict the query to activities whose entity (entity_type + entity_id)
+     * points to a record that exists and has deleted_at NOT NULL.
+     * entity_type is resolved to its model through self::MODULES.
+     */
+    private function applyTrashedEntityFilter($query): void
+    {
+        $activitiesTable = (new SupplierActivity())->getTable();
+
+        $query->where(function ($trashedQuery) use ($activitiesTable) {
+            $hasCondition = false;
+
+            foreach (self::MODULES as $entityType => $modelClass) {
+                // Models without soft deletes can never be in the trash
+                if (!in_array(SoftDeletes::class, class_uses_recursive($modelClass), true)) {
+                    continue;
+                }
+
+                $model = new $modelClass();
+                $table = $model->getTable();
+                $keyName = $model->getKeyName();
+                $deletedAtColumn = $model->getDeletedAtColumn();
+
+                $trashedQuery->orWhere(function ($moduleQuery) use ($activitiesTable, $entityType, $table, $keyName, $deletedAtColumn) {
+                    $moduleQuery
+                        ->where($activitiesTable . '.entity_type', $entityType)
+                        ->whereExists(function ($existsQuery) use ($activitiesTable, $table, $keyName, $deletedAtColumn) {
+                            $existsQuery
+                                ->selectRaw('1')
+                                ->from($table)
+                                ->whereColumn($table . '.' . $keyName, $activitiesTable . '.entity_id')
+                                ->whereNotNull($table . '.' . $deletedAtColumn);
+                        });
+                });
+
+                $hasCondition = true;
+            }
+
+            if (!$hasCondition) {
+                $trashedQuery->whereRaw('1 = 0');
+            }
+        });
     }
 
     private function getCurrentSupplierId(): int

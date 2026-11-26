@@ -34,7 +34,6 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmRestoreDialogVisible = ref(false)
 const isConfirmAllDeleteDialogVisible = ref(false)
 const isDialogOpen = ref(false)
-const leaveContext = ref(null); // 'mobile' | 'route' | null
 const hasLoaded = ref(false);
 const isMobileActionDialogVisible = ref(false);
 const selectedRegister = ref({})
@@ -355,6 +354,35 @@ const removeAllRegisters = async () => {
   return true
 }
 
+function formatActivityDateTime(dateString) {
+  const date = new Date(dateString)
+
+  if (Number.isNaN(date.getTime()))
+    return '-'
+
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+
+  const rawDateLabel = date.toDateString() === now.toDateString()
+    ? 'Today'
+    : date.toDateString() === yesterday.toDateString()
+      ? 'Igår'
+      : date.toLocaleDateString('sv-SE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+
+  const dateLabel = rawDateLabel.replace('.', '')
+  const timeLabel = date.toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return `${dateLabel}, ${timeLabel}`
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -513,8 +541,8 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col"> Typ </th>
             <th scope="col"> Mottagare </th>
-            <th scope="col"> Borttagen av </th>
-            <th scope="col"> Borttagen datum</th>
+            <th scope="col" class="text-center"> Borttagen av </th>
+            <th scope="col" class="text-center"> Borttagen datum</th>
             <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('view', 'trash')"></th>
           </tr>
@@ -528,8 +556,12 @@ onBeforeUnmount(() => {
 
             <td> {{ activityModuleLabels[register.entity_type] ?? register.entity_type }} </td>
             <td> {{ register.metadata.title ?? register.title }} </td>
-            <td> {{ register.user.name + ' ' + register.user.last_name }} </td>
-            <td> {{ formatDateTime(register.metadata.deleted_at ?? register.created_at) }} </td>
+            <td class="text-center"> 
+              {{ register.user.name + ' ' + register.user.last_name }} 
+            </td>
+            <td class="text-center"> 
+              {{ formatActivityDateTime(register.metadata.deleted_at ?? register.created_at) }} 
+            </td>
             <td class="d-flex justify-center align-center"> 
               <div
                 class="status-chip text-neutral-3"
@@ -587,12 +619,10 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-
-
       <VCardText
         v-if="registers.length"
         :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-        class="align-center flex-wrap gap-4 pt-0 px-6"
+        class="align-center flex-wrap gap-4 py-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
@@ -755,12 +785,12 @@ onBeforeUnmount(() => {
     letter-spacing: 0;
   }
 
-  .status-chip-days{
+  .status-chip-days {
     background-color: #E7E7E7 !important;
     border: 0px;
   }
 
-  .status-chip-warning{
+  .status-chip-warning {
     background-color: #FFEC88 !important;
     border: 0px;
   }

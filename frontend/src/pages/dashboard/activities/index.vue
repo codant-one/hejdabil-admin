@@ -152,7 +152,7 @@ const activityModuleLabels = {
   plans: 'Planer',
   help_categories: 'Hjälpkategorier',
   help_videos: 'Hjälpvideor',
-  trash: 'Papperskorgar'
+  trash: 'Papperskorg'
 }
 
 const activityModuleSingularLabels = {
