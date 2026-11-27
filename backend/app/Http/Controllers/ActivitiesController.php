@@ -228,6 +228,31 @@ class ActivitiesController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Registret hittades inte'
                 ], 404);
+
+            $notForceDelete = [
+                'users',
+                'users_admin',
+                'clients'
+            ];
+
+            //Si no esta en la lista adminte forzar borrado por encima del
+            //softdelete.
+            if(!in_array($activity->entity_type, $notForceDelete)) {
+
+                $idToRestore = $activity->entity_id;
+                $moduleClass = self::MODULES[$activity->entity_type];
+                $itemToRestore = $moduleClass::withTrashed()->find($idToRestore);
+
+                if (!$itemToRestore)
+                    return response()->json([
+                        'success' => false,
+                        'feedback' => 'not_found',
+                        'message' => 'Registret som skulle tas bort hittades inte'
+                    ], 404);
+
+                $itemToRestore->forceDestroy();
+            }
+
             
             $fields = [
                 'id',

@@ -357,6 +357,15 @@ const removeRegister = async () => {
   return true
 }
 
+const canBePermanentlyDeleted = registerData => {
+  let notForceDelete = [
+    'users',
+    'users_admin',
+    'clients',
+  ]
+  return !notForceDelete.includes(registerData.entity_type);
+}
+
 const showAllDeleteDialog = () => {
   isConfirmAllDeleteDialogVisible.value = true
 }
@@ -590,7 +599,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Återställ</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','activities')"
+                    v-if="$can('delete','activities') && canBePermanentlyDeleted(register)"
                     @click="showDeleteDialog(register)">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
