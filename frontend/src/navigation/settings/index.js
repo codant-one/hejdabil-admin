@@ -61,6 +61,13 @@ const settingsNavItems = [
     to: 'dashboard-settings-sms-logs',
     action: 'view',
     subject: 'sms'
+  },
+  {
+    title: 'Papperskorg',
+    icon: { icon: 'custom-waste' },
+    to: 'dashboard-settings-trash',
+    action: 'view',
+    subject: 'trash'
   }
 ]
 

@@ -70,6 +70,7 @@ const permissionSections = [
           { value: 'view company' },
           { value: 'view sms' },
           { value: 'view plan' },
+          { value: 'view trash' }
         ],
       },
     ],

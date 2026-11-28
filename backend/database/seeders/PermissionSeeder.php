@@ -7,6 +7,7 @@ use Carbon\Carbon;
 
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
@@ -137,6 +138,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'view company', 'label' => 'Visa Företag'],
             ['name' => 'view sms', 'label' => 'Visa SMS'],
             ['name' => 'view plan', 'label' => 'Visa Plan'],
+            ['name' => 'view trash', 'label' => 'Visa Papperskorg'],
 
             //help
             ['name' => 'view help-categories', 'label' => 'Visa'],
@@ -155,6 +157,9 @@ class PermissionSeeder extends Seeder
 
         // Assign permissions to roles
         $this->assignPermissionsToRoles();
+
+        // Clear Spatie's permission cache so the new assignments take effect immediately
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
@@ -199,7 +204,7 @@ class PermissionSeeder extends Seeder
         $adminPermissions = [
             'view users', 'create users', 'edit users', 'delete users', //users
             'view roles', 'create roles', 'edit roles', //roles
-            'view company', 'view sms', //settings
+            'view company', 'view sms', 'view trash', //settings
             'view clients', 'create clients', 'edit clients', 'delete clients',//clients
             'view billings', 'create billings', 'edit billings', 'delete billings', //billing
             'view suppliers', 'create suppliers', 'edit suppliers', 'delete suppliers', //suppliers
@@ -231,7 +236,7 @@ class PermissionSeeder extends Seeder
         $supplierPermissions = [
             'view users', 'create users', 'edit users', 'delete users', //users
             'view my-team', 'create my-team', 'edit my-team', 'delete my-team', 'view team-reports', //my-teams
-            'view company', 'view sms', 'view plan', //settings
+            'view company', 'view sms', 'view plan', 'view trash', //settings
             'view clients', 'create clients', 'edit clients', 'delete clients',//clients
             'view billings', 'create billings', 'edit billings', 'delete billings', //billing
             'view stock', 'create stock', 'edit stock', 'delete stock', //stock
@@ -247,6 +252,18 @@ class PermissionSeeder extends Seeder
         $supplier = Role::where('name', 'Supplier')->first();
         if ($supplier) {
             $supplier->syncPermissions($supplierPermissions);
+        }
+
+        // Define specific permissions for the User
+        $userPermissions = [
+            'view company', 'view sms', 'view plan', 'view trash', //settings
+            'view help-center', //help-center
+        ];
+
+        // Assign specific permissions to the User
+        $user = Role::where('name', 'User')->first();
+        if ($user) {
+            $user->syncPermissions($userPermissions);
         }
     }
 }

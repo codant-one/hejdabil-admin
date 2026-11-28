@@ -51,7 +51,7 @@ const toggle = async value => {
         <div class="d-flex flex-column gap-4">
           <span class="subtitle-settings">Pushnotiser</span>
           <span class="text-settings">
-            Inställningen gäller endast den här enheten. Avaktivering stoppar pushnotiser här utan att påverka dina andra enheter. Du kan aktivera funktionen igen när som helst.
+            Den här inställningen gäller endast för den enhet du använder just nu. Om du stänger av pushnotiser påverkas inte dina andra enheter. Du kan när som helst aktivera dem igen.
           </span>
         </div>
       </div>
@@ -65,7 +65,7 @@ const toggle = async value => {
           @update:model-value="toggle"
         >
           <template #label>
-            <span class="notifications-switch__label">Notiser på den här enheten</span>
+            <span class="notifications-switch__label">Tillåt pushnotiser på den här enheten</span>
           </template>
         </VSwitch>
 

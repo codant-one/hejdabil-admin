@@ -249,7 +249,7 @@ const handleNavScroll = (evt) => {
     }
 
     a:hover {
-      background-color: #E7E7E7 !important;
+      background-color: #BDD2C8 !important;
     }
 
     a:hover span {

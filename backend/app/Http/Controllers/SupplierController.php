@@ -295,7 +295,8 @@ class SupplierController extends Controller
             $supplier = Supplier::with([
                 'user.userDetail',
                 'state',
-                'plan'
+                'plan',
+                'boss'
             ])
             ->withTrashed()
             ->clientsCount()

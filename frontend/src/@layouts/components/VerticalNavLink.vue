@@ -127,6 +127,7 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
 
 <style lang="scss">
 .layout-vertical-nav {
+
   .nav-link a {
     display: flex;
     align-items: center;
@@ -134,17 +135,17 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
 
   .nav-link-setting {
     background: #FFFFFF;
-    border-radius: 8px !important;
+    border-radius: 64px !important;
   }
 
   .nav-link-setting-active {
-    background: #E7E7E7;
-    border-radius: 8px !important;
+    background: #BDD2C8;
+    border-radius: 64px !important;
   }
 
   .nav-link-setting-disabled {
     background: #FFFFFF;
-    border-radius: 8px !important;
+    border-radius: 64px !important;
     cursor: not-allowed;
     opacity: 0.7;
   }
